@@ -583,20 +583,18 @@
         currentReportDate = dateKey;
         const [y, m, d] = dateKey.split('-');
         
-        // Синхронізуємо місяць перегляду з обраною датою
-        calViewDate = new Date(parseInt(y), parseInt(m) - 1, 1);
+        calViewDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
         
-        document.getElementById('lblSelectedDate').innerText = `${d}.${m}.${y}`;
-        document.getElementById('calendarDropdown').classList.add('hidden');
+        const lbl = document.getElementById('lblSelectedDate');
+        if (lbl) lbl.innerText = `${d}.${m}.${y}`;
+        
+        const cal = document.getElementById('calendarDropdown');
+        if (cal) cal.classList.add('hidden');
         
         syncHeaderDate();
         
-        // Якщо дата є серед заповнених у місяці — підтягуємо показники автоматично
-        if (availableDatesWithData.includes(dateKey)) {
-            refreshSharePointData();
-        } else {
-            alert(`На дату ${d}.${m}.${y} даних у SharePoint ще немає. Ви можете внести їх через кнопку "Внести дані".`);
-        }
+        // Завжди робимо запит до SharePoint без блокуючих alert
+        refreshSharePointData();
     }
 
     function syncHeaderDate() {
@@ -641,52 +639,75 @@
 
     async function refreshSharePointData() {
         const btn = document.getElementById('btnRefreshSP');
-        btn.classList.add('is-generating');
-        btn.disabled = true;
+        if (btn) {
+            btn.classList.add('is-generating');
+            btn.disabled = true;
+        }
 
         try {
+            const [y, m, d] = currentReportDate.split('-');
+            const dotDate = `${d}.${m}.${y}`; // "26.08.2026"
+
             const response = await fetch(GET_METRICS_FLOW_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reportDate: currentReportDate })
+                body: JSON.stringify({ 
+                    reportDate: currentReportDate,
+                    reportDateDot: dotDate
+                })
             });
 
             if (!response.ok) throw new Error("HTTP " + response.status);
             const result = await response.json();
 
+            // Оновлюємо та фарбуємо дати з будь-якого формату
             if (result.availableDates && Array.isArray(result.availableDates)) {
-                availableDatesWithData = [...new Set(result.availableDates.map(cleanDateKey))].filter(Boolean);
+                availableDatesWithData = [...new Set(result.availableDates.map(raw => {
+                    if (!raw) return '';
+                    const s = String(raw).trim();
+                    const mDot = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+                    if (mDot) return `${mDot[3]}-${mDot[2].padStart(2, '0')}-${mDot[1].padStart(2, '0')}`;
+                    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+                    return s;
+                }))].filter(Boolean);
+                
                 updateCalendarTriggerDot();
+                renderCalendar();
             }
 
-            if (result.metrics && result.metrics.length > 0 && globalData) {
+            // Заповнюємо таблиці, якщо прийшли рядки
+            if (result.metrics && Array.isArray(result.metrics) && result.metrics.length > 0 && globalData) {
                 result.metrics.forEach(m => {
-                    if (m.Category === "Оборотний капітал") {
-                        const row = globalData.workingCapital.find(r => r.title.uk.trim() === m.Title.trim());
-                        if (row) { row.current = m.Value; row.previous = m.LimitValue; row.delta = m.Value - m.LimitValue; }
-                    } else if (m.Category === "Запаси") {
-                        const row = globalData.fuelInventories.find(r => r.title.uk.trim() === m.Title.trim());
-                        if (row) { row.current = m.Value; row.previous = m.LimitValue; row.delta = m.Value - m.LimitValue; }
-                    } else if (m.Category === "Фінансування") {
-                        const row = globalData.creditLimits.find(r => r.title.uk.trim() === m.Title.trim());
-                        if (row) { row.drawn = m.Value; row.limit = m.LimitValue; row.available = m.LimitValue - m.Value; }
+                    const cat = (m.Category || '').trim();
+                    const title = (m.Title || '').trim();
+                    const val = Number(m.Value) || 0;
+                    const lim = Number(m.LimitValue) || 0;
+
+                    if (cat === "Оборотний капітал") {
+                        const row = globalData.workingCapital.find(r => r.title.uk.trim() === title);
+                        if (row) { row.current = val; row.previous = lim; row.delta = val - lim; }
+                    } else if (cat === "Запаси") {
+                        const row = globalData.fuelInventories.find(r => r.title.uk.trim() === title);
+                        if (row) { row.current = val; row.previous = lim; row.delta = val - lim; }
+                    } else if (cat === "Фінансування") {
+                        const row = globalData.creditLimits.find(r => r.title.uk.trim() === title);
+                        if (row) { row.drawn = val; row.limit = lim; row.available = lim - val; }
                     }
                 });
 
-                if (result.summaryUk) globalData.summary.uk = result.summaryUk.split('\n').filter(l => l.trim().length > 0);
-                if (result.summaryEn) globalData.summary.en = result.summaryEn.split('\n').filter(l => l.trim().length > 0);
-
+                // Автоперерахунок підсумків оборотного капіталу
+                recalcOperational();
+                commitOperational();
                 updateLanguageDOM();
                 safeUpdateChart();
-                alert(`Дані на дату ${currentReportDate} успішно оновлено!`);
-            } else {
-                alert(`На дату ${currentReportDate} збережених метрик не знайдено.`);
             }
         } catch (err) {
-            alert("Помилка синхронізації з SharePoint: " + err.message);
+            console.error("Помилка синхронізації:", err);
         } finally {
-            btn.classList.remove('is-generating');
-            btn.disabled = false;
+            if (btn) {
+                btn.classList.remove('is-generating');
+                btn.disabled = false;
+            }
         }
     }
 

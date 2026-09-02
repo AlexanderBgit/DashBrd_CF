@@ -30,19 +30,19 @@
             width: 1587px; 
             height: 1122px; 
             margin: 0 auto; 
-            display: flex;
-            flex-direction: column;
+            display: flex; 
+            flex-direction: column; 
             background-color: #f3f4f6; 
             padding: 25px 30px 15px 35px; 
-            box-sizing: border-box;
+            box-sizing: border-box; 
             overflow: hidden; 
         }
         
         body.preview-mode {
             background-color: #334155; 
-            padding: 20px 0;
-            display: flex;
-            justify-content: center;
+            padding: 20px 0; 
+            display: flex; 
+            justify-content: center; 
             overflow-x: hidden;
         }
         
@@ -119,21 +119,37 @@
 <body class="bg-slate-100">
 
     <!-- Фіксована панель керування праворуч -->
-    <div class="fixed top-6 right-6 flex space-x-3 print-hide z-50">
-        <!-- Кнопка внесення оперативних даних -->
-        <button onclick="openOperationalEditor()" class="bg-blue-600 text-white px-4 py-2.5 rounded-full shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex items-center gap-2 cursor-pointer font-semibold text-xs tracking-wide" title="Внести або редагувати оперативні дані">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-            </svg>
+    <div class="fixed top-6 right-6 flex items-center space-x-2.5 print-hide z-50">
+        <!-- 1. Завантажити Excel -->
+        <button onclick="toggleUploadModal(true)" class="bg-slate-800 text-white px-3.5 py-2.5 rounded-full shadow-lg hover:bg-slate-700 hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer font-semibold text-xs tracking-wide" title="Завантажити файл Excel">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <span>Excel</span>
+        </button>
+
+        <!-- 2. Тестовий режим -->
+        <button onclick="loadDemoDashboard()" class="bg-indigo-600 text-white px-3.5 py-2.5 rounded-full shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer font-semibold text-xs tracking-wide" title="Запустити тестовий перегляд">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>Демо</span>
+        </button>
+
+        <!-- 3. Оновити з SharePoint -->
+        <button onclick="refreshSharePointData()" id="btnRefreshSP" class="bg-emerald-600 text-white px-3.5 py-2.5 rounded-full shadow-lg hover:bg-emerald-700 hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer font-semibold text-xs tracking-wide" title="Оновити дані з SharePoint без перезавантаження">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>SharePoint</span>
+        </button>
+
+        <!-- Внести оперативні дані -->
+        <button onclick="openOperationalEditor()" class="bg-blue-600 text-white px-3.5 py-2.5 rounded-full shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer font-semibold text-xs tracking-wide" title="Внести або редагувати оперативні дані">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
             <span>Внести дані</span>
         </button>
+
+        <!-- Меню видимості блоків -->
         <div class="relative group">
-            <button onclick="toggleBlockMenu()" class="bg-slate-700 text-white p-3.5 rounded-full shadow-lg hover:bg-slate-800 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Налаштування відображення блоків">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-                </svg>
+            <button onclick="toggleBlockMenu()" class="bg-slate-700 text-white p-2.5 rounded-full shadow-lg hover:bg-slate-800 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Налаштування відображення блоків">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
             </button>
-            <div id="blockMenu" class="absolute top-14 right-0 bg-white border border-slate-200 rounded-xl shadow-xl p-3 flex flex-col gap-2 w-64 hidden origin-top-right transition-all">
+            <div id="blockMenu" class="absolute top-12 right-0 bg-white border border-slate-200 rounded-xl shadow-xl p-3 flex flex-col gap-2 w-64 hidden origin-top-right transition-all z-50">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 px-1" id="lblMenuTitle">Видимість блоків</h3>
                 <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors text-slate-700 text-sm font-medium">
                     <input type="checkbox" checked onchange="toggleVisibility('blockMainTable', this)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
@@ -168,104 +184,49 @@
             </div>
         </div>
 
-        <button onclick="toggleLanguage()" id="langBtn" class="bg-slate-800 text-white px-5 py-2.5 rounded-full shadow-lg hover:scale-105 transition-all font-bold text-sm tracking-widest cursor-pointer">EN</button>
-        <button onclick="generatePDF()" id="btnGeneratePDF" class="bg-red-600 text-white p-3.5 rounded-full shadow-lg hover:bg-red-700 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Завантажити PDF">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <button onclick="toggleLanguage()" id="langBtn" class="bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg hover:scale-105 transition-all font-bold text-xs tracking-widest cursor-pointer">EN</button>
+        <button onclick="generatePDF()" id="btnGeneratePDF" class="bg-red-600 text-white p-2.5 rounded-full shadow-lg hover:bg-red-700 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Завантажити PDF">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         </button>
-        <button onclick="togglePreview()" class="bg-indigo-600 text-white p-3.5 rounded-full shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Попередній перегляд (A3)">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+        <button onclick="togglePreview()" class="bg-indigo-600 text-white p-2.5 rounded-full shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Попередній перегляд (A3)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
         </button>
-        <button onclick="window.print()" class="bg-slate-700 text-white p-3.5 rounded-full shadow-lg hover:bg-slate-800 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Друк (Ctrl+P)">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+        <button onclick="window.print()" class="bg-slate-700 text-white p-2.5 rounded-full shadow-lg hover:bg-slate-800 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Друк (Ctrl+P)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
         </button>
     </div>
 
-    <!-- Панель в режимі попереднього перегляду -->
-    <div id="previewToolbar" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white p-3 rounded-full shadow-2xl flex items-center gap-4 z-50 hidden">
-        <span class="pl-4 font-semibold text-slate-300 text-sm hidden sm:inline">Режим формату A3</span>
-        <button onclick="generatePDF()" id="btnGeneratePDFPreview" class="bg-red-600 hover:bg-red-500 text-white px-5 py-2 rounded-full font-bold shadow transition-colors cursor-pointer flex items-center gap-2">
-            Завантажити PDF
-        </button>
-        <button onclick="togglePreview()" class="bg-slate-600 hover:bg-slate-500 text-white px-5 py-2 rounded-full font-bold shadow transition-colors cursor-pointer mr-1">Закрити прев'ю</button>
-    </div>
-
-    <!-- Завантаження Excel або запуск демо-режиму -->
-    <div id="uploadZone" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 print-hide">
-        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center border-2 border-dashed border-slate-300 hover:border-indigo-500 transition-all">
+    <!-- Модальне вікно Drag & Drop -->
+    <div id="uploadZone" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 print-hide hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center border-2 border-dashed border-slate-300 hover:border-indigo-500 transition-all relative">
+            <button onclick="toggleUploadModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
             <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            <h3 class="text-lg font-bold text-slate-800 mb-2">Executive Cash Flow Dashboard</h3>
-            <p class="text-sm text-slate-500 mb-4">Оберіть файл Excel або запустіть тестовий режим</p>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Імпорт файлу Excel</h3>
+            <p class="text-sm text-slate-500 mb-4">Оберіть файл Excel або перетягніть його сюди</p>
             <input type="file" id="excelFile" accept=".xlsx" class="hidden" onchange="handleFile(this.files)">
             <div class="flex flex-col gap-2.5">
                 <button onclick="document.getElementById('excelFile').click()" class="bg-slate-800 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-slate-700 transition-all cursor-pointer">
                     Вибрати файл з комп'ютера
                 </button>
-                <button onclick="loadDemoDashboard()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-indigo-700 transition-all cursor-pointer">
-                    Запустити тестовий перегляд дашборду
-                </button>
-            </div>
-        </div>
-    </div>
-    <!-- Модальне вікно внесення оперативних даних -->
-    <div id="operationalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
-            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
-                <h3 class="text-lg font-bold text-slate-800">Внесення даних на дату: <span id="operationalDateLabel" class="text-indigo-600"></span></h3>
-                <button onclick="closeOperationalEditor()" class="text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
-            </div>
-            <div id="operationalFormBody" class="px-6 py-4 overflow-y-auto space-y-6"></div>
-            <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 shrink-0">
-                <button onclick="closeOperationalEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
-                <button onclick="saveOperationalData()" id="btnSaveOperational" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer">Зберегти</button>
-            </div>
-        </div>
-    </div>
-    <!-- Модальне вікно редагування резюме для аналітика -->
-    <div id="editorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
-        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 text-left">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-800">Редагування резюме на дату: <span id="editorDateLabel" class="text-indigo-600"></span></h3>
-                <button onclick="closeSummaryEditor()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-            </div>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Резюме (Українська версія):</label>
-                    <p class="text-[11px] text-slate-400 mb-1">Звичайний рядок — жирний заголовок; рядок, що починається з • або - — маркований список.</p>
-                    <textarea id="editSummaryUk" rows="6" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Summary (English version):</label>
-                    <textarea id="editSummaryEn" rows="5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"></textarea>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-3 mt-5">
-                <button onclick="closeSummaryEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
-                <button onclick="saveSummaryToSharePoint()" id="btnSaveSummary" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2 cursor-pointer">
-                    Зберегти в SharePoint
+                <button onclick="toggleUploadModal(false)" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-semibold text-sm hover:bg-slate-300 transition-all cursor-pointer">
+                    Закрити
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Основний контейнер дашборду (Формат A3) -->
-    <div class="executive-container hidden" id="dashboardContent">
+    <div class="executive-container" id="dashboardContent">
         <!-- Шапка: заголовок + вибір дати -->
         <div class="w-full flex justify-between items-center mb-2.5 pt-1 shrink-0">
             <div class="flex flex-col items-start text-left">
                 <h1 class="text-slate-800 leading-none" id="dashboardTitle"></h1>
             </div>
 
-            <!-- Селектор дат звітів (приховується при друці) -->
+            <!-- Селектор дат звітів із маркуванням -->
             <div class="print-hide flex items-center gap-2 bg-white border border-slate-300 px-3 py-1.5 rounded-lg shadow-sm">
                 <span class="text-xs font-bold text-slate-500 uppercase">Дата звіту:</span>
                 <select id="reportDateSelector" onchange="onDateChange(this.value)" class="text-sm font-semibold text-slate-800 bg-transparent border-none outline-none cursor-pointer">
-                    <option value="2026-08-21">21.08.2026</option>
-                    <option value="2026-08-14">14.08.2026</option>
-                    <option value="2026-08-07">07.08.2026</option>
-                    <option value="2026-07-31">31.07.2026</option>
                 </select>
             </div>
         </div>
@@ -329,25 +290,21 @@
 
             <!-- Права частина: Резюме + Оборотний капітал + Запаси + Ліміти -->
             <div class="col-span-3 flex flex-col justify-between h-full">
-                <!-- Блок Управлінське резюме з кнопкою редагування -->
+                <!-- Блок Управлінське резюме -->
                 <div class="summary-block flex-grow mb-2.5 relative" id="blockSummary">
                     <div class="flex justify-between items-start mb-1">
                         <h2 class="block-title" style="margin-bottom: 0;" id="titleSummary"></h2>
                         <div class="print-hide flex items-center space-x-1.5 z-30">
-                            <!-- Кнопка відкриття редактора резюме -->
                             <button onclick="openSummaryEditor()" class="pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1" title="Редагувати резюме">
                                 ✏️ Редагувати
                             </button>
 
                             <div class="relative inline-block text-left">
                                 <button onclick="toggleDropdown('summarySettingsDropdown')" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-600 p-1.5 rounded shadow-sm transition-colors cursor-pointer" title="Налаштування тексту резюме">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-                                    </svg>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                                 </button>
                                 <div id="summarySettingsDropdown" class="absolute right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl p-2 hidden flex flex-col gap-2 w-44 z-40">
                                     <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 px-1">Форматування тексту</div>
-                                    
                                     <div class="flex justify-between items-center px-1">
                                         <span class="text-xs font-medium text-slate-700">Розмір шрифту</span>
                                         <div class="flex space-x-1">
@@ -355,7 +312,6 @@
                                             <button onclick="changeSummaryFontSize(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">A+</button>
                                         </div>
                                     </div>
-                                    
                                     <div class="flex justify-between items-center px-1">
                                         <span class="text-xs font-medium text-slate-700">Відстань рядків</span>
                                         <div class="flex space-x-1">
@@ -363,7 +319,6 @@
                                             <button onclick="changeSummaryGap(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕+</button>
                                         </div>
                                     </div>
-                                    
                                     <div class="flex justify-between items-center px-1">
                                         <span class="text-xs font-medium text-slate-700">Ширина літер</span>
                                         <div class="flex space-x-1">
@@ -380,7 +335,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="summary-content" id="summaryTexts"></div>
                 </div>                
 
@@ -417,6 +371,47 @@
         </div>
     </div>
 
+    <!-- Модальне вікно внесення оперативних даних -->
+    <div id="operationalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
+                <h3 class="text-lg font-bold text-slate-800">Внесення даних на дату: <span id="operationalDateLabel" class="text-indigo-600"></span></h3>
+                <button onclick="closeOperationalEditor()" class="text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
+            </div>
+            <div id="operationalFormBody" class="px-6 py-4 overflow-y-auto space-y-6"></div>
+            <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 shrink-0">
+                <button onclick="closeOperationalEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
+                <button onclick="saveOperationalData()" id="btnSaveOperational" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальне вікно редагування резюме для аналітика -->
+    <div id="editorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 text-left">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Редагування резюме на дату: <span id="editorDateLabel" class="text-indigo-600"></span></h3>
+                <button onclick="closeSummaryEditor()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Резюме (Українська версія):</label>
+                    <textarea id="editSummaryUk" rows="6" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Summary (English version):</label>
+                    <textarea id="editSummaryEn" rows="5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-5">
+                <button onclick="closeSummaryEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
+                <button onclick="saveSummaryToSharePoint()" id="btnSaveSummary" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2 cursor-pointer">
+                    Зберегти в SharePoint
+                </button>
+            </div>
+        </div>
+    </div>
+
 <script>
     Chart.register(ChartDataLabels);
 
@@ -431,25 +426,191 @@
     let isSummaryHeadersBold = true; 
     let useCommaFormatEn = false;
 
-    // Вкажіть сюди URL вашого створеного потоку Save_CashFlow_Summary
     const SAVE_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/34cccd0ca98c4f9680dfef1b5d352f15/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vNKBrpfo-oLGwghHnImsmmMRrTOAB5_tvHHc4ZDRYJs";
-        // Потік для збереження оперативних даних (оборотний капітал, запаси, фінансування)
     const SAVE_OPERATIONAL_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/23/workflows/6bcd52afc5434180bac7b54245966d41/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=z1ohBufTQzxYrRyEO_zFsU0lphU-PjjqgPK12lcSX7c";
     
+    // Вставте сюди повну URL-адресу з блоку manual вашого потоку Get_CashFlow_Metrics (з ключем sig)
+    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1";
+
     let currentReportDate = "2026-08-21";
+    let availableDatesWithData = [];
+    const allReportDates = ["2026-08-21", "2026-08-14", "2026-08-07", "2026-07-31"];
+
+    function toggleUploadModal(show) {
+        const modal = document.getElementById('uploadZone');
+        if (show) modal.classList.remove('hidden');
+        else modal.classList.add('hidden');
+    }
+
+    function renderDateSelector() {
+        const selector = document.getElementById('reportDateSelector');
+        // Об'єднуємо статичні та отримані з SharePoint дати
+        const combined = Array.from(new Set([...allReportDates, ...availableDatesWithData])).filter(Boolean).sort().reverse();
+        
+        selector.innerHTML = combined.map(d => {
+            const hasData = availableDatesWithData.includes(d);
+            const [y, m, day] = d.split('-');
+            const marker = hasData ? '● ' : '○ ';
+            const status = hasData ? ' (є дані)' : '';
+            return `<option value="${d}" ${d === currentReportDate ? 'selected' : ''}>${marker}${day}.${m}.${y}${status}</option>`;
+        }).join('');
+    }
+
+    function syncHeaderDate() {
+        if (!globalData || !globalData.meta) return;
+        const [y, m, d] = currentReportDate.split('-');
+        const dateUk = `${d}.${m}.${y}`;
+        const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const dateEn = `${monthsEn[parseInt(m, 10) - 1]} ${d}, ${y}`;
+
+        globalData.meta.uk.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateUk} · млн грн</span>`;
+        globalData.meta.en.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateEn} · UAH mln</span>`;
+        
+        document.getElementById('dashboardTitle').innerHTML = globalData.meta[currentLang].title;
+    }
+
+    async function onDateChange(selectedDate) {
+        currentReportDate = selectedDate;
+        syncHeaderDate();
+        console.log("Зміна дати на:", selectedDate);
+    }
+
+    // Завантаження доступних дат при запуску сторінки
+    async function loadAvailableDatesFromSP() {
+        try {
+            const res = await fetch(GET_METRICS_FLOW_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reportDate: "" })
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const data = await res.json();
+            if (data.availableDates && Array.isArray(data.availableDates)) {
+                availableDatesWithData = [...new Set(data.availableDates)].filter(Boolean);
+                renderDateSelector();
+            }
+        } catch (err) {
+            console.warn("Не вдалося завантажити перелік дат із SharePoint:", err.message);
+        }
+    }
+
+    // Оновлення метрик без перезавантаження сторінки
+    async function refreshSharePointData() {
+        const btn = document.getElementById('btnRefreshSP');
+        btn.classList.add('is-generating');
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(GET_METRICS_FLOW_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reportDate: currentReportDate })
+            });
+
+            if (!response.ok) throw new Error("HTTP " + response.status);
+
+            const result = await response.json();
+
+            if (result.availableDates && Array.isArray(result.availableDates)) {
+                availableDatesWithData = [...new Set(result.availableDates)].filter(Boolean);
+                renderDateSelector();
+            }
+
+            if (result.metrics && result.metrics.length > 0 && globalData) {
+                result.metrics.forEach(m => {
+                    if (m.Category === "Оборотний капітал") {
+                        const row = globalData.workingCapital.find(r => r.title.uk.trim() === m.Title.trim());
+                        if (row) { row.current = m.Value; row.previous = m.LimitValue; row.delta = m.Value - m.LimitValue; }
+                    } else if (m.Category === "Запаси") {
+                        const row = globalData.fuelInventories.find(r => r.title.uk.trim() === m.Title.trim());
+                        if (row) { row.current = m.Value; row.previous = m.LimitValue; row.delta = m.Value - m.LimitValue; }
+                    } else if (m.Category === "Фінансування") {
+                        const row = globalData.creditLimits.find(r => r.title.uk.trim() === m.Title.trim());
+                        if (row) { row.drawn = m.Value; row.limit = m.LimitValue; row.available = m.LimitValue - m.Value; }
+                    }
+                });
+
+                if (result.summaryUk) globalData.summary.uk = result.summaryUk.split('\n').filter(l => l.trim().length > 0);
+                if (result.summaryEn) globalData.summary.en = result.summaryEn.split('\n').filter(l => l.trim().length > 0);
+
+                updateLanguageDOM();
+                safeUpdateChart();
+                alert(`Дані на дату ${currentReportDate} успішно оновлено!`);
+            } else {
+                alert(`На дату ${currentReportDate} збережених метрик не знайдено.`);
+            }
+        } catch (err) {
+            alert("Помилка синхронізації з SharePoint: " + err.message);
+        } finally {
+            btn.classList.remove('is-generating');
+            btn.disabled = false;
+        }
+    }
+
+    function initEmptyDashboard() {
+        globalData = {
+            meta: {
+                uk: { 
+                    title: "", titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", 
+                    titleSummary: "Управлінське резюме", titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн" 
+                },
+                en: { 
+                    title: "", titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", 
+                    titleSummary: "Executive Summary", titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln" 
+                }
+            },
+            kpis: [
+                { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: 0, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true },
+                { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: 0, unit: { uk: "дні", en: "days" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true },
+                { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: 0, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true },
+                { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: 0, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true }
+            ],
+            chart: { labels: ["T0", "T1", "T2", "T3", "M1", "M2", "M3"], ownCash: [0,0,0,0,0,0,0], ownCashMznn: [0,0,0,0,0,0,0], totalLiquidity: [0,0,0,0,0,0,0], postImportLiquidity: [0,0,0,0,0,0,0], minThreshold: 2500, periods: [] },
+            periodMap: {},
+            summary: {
+                uk: ["Оберіть файл Excel або завантажте дані з SharePoint."],
+                en: ["Select an Excel file or load data from SharePoint."]
+            },
+            mainTable: {
+                headers: [{ uk: "Стаття", en: "Item" }, { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" }, { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" }, { uk: "Δ", en: "Δ" }],
+                rows: []
+            },
+            workingCapital: [
+                { title: { uk: "Дебіторська заборгованість", en: "Accounts receivable" }, current: 0, delta: 0, isSub: false, isTotal: false, isGray: false },
+                { title: { uk: "- НАК Нафтогаз", en: "- NJSC Naftogaz" }, current: 0, delta: 0, isSub: true, isTotal: false, isGray: false },
+                { title: { uk: "- МОУ / АОЗ", en: "- MoD / DPA" }, current: 0, delta: 0, isSub: true, isTotal: false, isGray: false },
+                { title: { uk: "Аванси видані", en: "Advances paid" }, current: 0, delta: 0, isSub: false, isTotal: false, isGray: false },
+                { title: { uk: "Кредиторська заборгованість", en: "Accounts payable" }, current: 0, delta: 0, isSub: false, isTotal: false, isGray: false },
+                { title: { uk: "Аванси отримані", en: "Advances received" }, current: 0, delta: 0, isSub: false, isTotal: false, isGray: false },
+                { title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: 0, delta: 0, isSub: false, isTotal: true, isGray: false }
+            ],
+            fuelInventories: [
+                { title: { uk: "Бензин", en: "Gasoline" }, current: 0, delta: 0 },
+                { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 0, delta: 0 },
+                { title: { uk: "Газ комерційний (млн м³)", en: "Commercial gas (mln m³)" }, current: 0, delta: 0 },
+                { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 0, delta: 0 },
+                { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 0, delta: 0 }
+            ],
+            creditLimits: [
+                { title: { uk: "Кредитні лінії", en: "Credit lines" }, limit: 0, drawn: 0, available: 0 },
+                { title: { uk: "Постімпорт", en: "Post-import" }, limit: 0, drawn: 0, available: 0 },
+                { title: { uk: "Всього", en: "Total" }, limit: 0, drawn: 0, available: 0 }
+            ]
+        };
+        renderDateSelector();
+        syncHeaderDate();
+        updateLanguageDOM();
+        buildChart();
+    }
 
     function toggleSummaryBold() {
         isSummaryHeadersBold = document.getElementById('chk_summary_bold').checked;
         updateLanguageDOM();
     }
 
-    // --- РЕДАГУВАННЯ ОПЕРАТИВНИХ ДАНИХ З АВТОРОЗРАХУНКАМИ ---
-
-    // Знак компонента у формулі оборотного капіталу:
-    // ОК = Дебіторська + Аванси видані − Кредиторська − Аванси отримані
     function wcSign(titleUk) {
         const t = (titleUk || '').toLowerCase();
-        if (t.startsWith('-') || t.includes('нафтогаз') || t.includes('аоз') || t.includes('моу')) return 0; // ігноруємо деталізацію дебіторки
+        if (t.startsWith('-') || t.includes('нафтогаз') || t.includes('аоз') || t.includes('моу')) return 0;
         if (t.includes('дебітор')) return 1;
         if (t.includes('аванси видані')) return 1;
         if (t.includes('кредитор')) return -1;
@@ -484,10 +645,8 @@
         const lang = currentLang;
         let html = '';
 
-        // Значення "попередній" за замовчуванням = поточний − Δ (щоб імпорт з Excel лишався консистентним)
         const prevOf = (r) => (r.previous !== undefined ? r.previous : (r.current - r.delta));
 
-        // --- Оборотний капітал ---
         html += `<div>
             <div class="text-xs font-bold text-slate-500 uppercase mb-2">Оборотний капітал</div>
             <div class="grid grid-cols-[1fr_85px_85px_85px] gap-2 mb-1 text-[10px] font-bold text-slate-400 uppercase">
@@ -507,7 +666,6 @@
             }).join('')}
         </div>`;
 
-        // --- Запаси ---
         html += `<div>
             <div class="text-xs font-bold text-slate-500 uppercase mb-2">Запаси</div>
             <div class="grid grid-cols-[1fr_85px_85px_85px] gap-2 mb-1 text-[10px] font-bold text-slate-400 uppercase">
@@ -520,7 +678,6 @@
                 </div>`).join('')}
         </div>`;
 
-        // --- Ресурси фінансування ---
         html += `<div>
             <div class="text-xs font-bold text-slate-500 uppercase mb-2">Ресурси фінансування</div>
             <div class="grid grid-cols-[1fr_78px_78px_78px] gap-2 mb-1 text-[10px] font-bold text-slate-400 uppercase">
@@ -542,11 +699,10 @@
         </div>`;
 
         document.getElementById('operationalFormBody').innerHTML = html;
-        recalcOperational(); // початкове заповнення розрахункових клітинок
+        recalcOperational();
         document.getElementById('operationalModal').classList.remove('hidden');
     }
 
-    // Живий перерахунок під час введення
     function recalcOperational() {
         if (!globalData) return;
         let totalCur = 0, totalPrev = 0;
@@ -569,20 +725,19 @@
             setText('fuel-delta-' + i, opFmt(cur - prev));
         });
 
-    let totLimit = 0, totDrawn = 0;
-    globalData.creditLimits.forEach((r, i) => {
-        if (r.title.uk === 'Всього' || r.title.en === 'Total') return;
-        const lim = getInputVal('limit', i, 'limit');
-        const dr = getInputVal('limit', i, 'drawn');
-        setText('limit-avail-' + i, opFmt(lim - dr));
-        totLimit += lim; totDrawn += dr;
-    });
-    setText('limit-total-limit', opFmt(totLimit));
-    setText('limit-total-drawn', opFmt(totDrawn));
-    setText('limit-total-avail', opFmt(totLimit - totDrawn));
+        let totLimit = 0, totDrawn = 0;
+        globalData.creditLimits.forEach((r, i) => {
+            if (r.title.uk === 'Всього' || r.title.en === 'Total') return;
+            const lim = getInputVal('limit', i, 'limit');
+            const dr = getInputVal('limit', i, 'drawn');
+            setText('limit-avail-' + i, opFmt(lim - dr));
+            totLimit += lim; totDrawn += dr;
+        });
+        setText('limit-total-limit', opFmt(totLimit));
+        setText('limit-total-drawn', opFmt(totDrawn));
+        setText('limit-total-avail', opFmt(totLimit - totDrawn));
     }
 
-    // Запис розрахованих значень назад у globalData
     function commitOperational() {
         let totalCur = 0, totalPrev = 0;
         globalData.workingCapital.forEach((r, i) => {
@@ -602,16 +757,16 @@
             r.current = cur; r.previous = prev; r.delta = cur - prev;
         });
 
-    let totLimit = 0, totDrawn = 0;
-    globalData.creditLimits.forEach((r, i) => {
-        if (r.title.uk === 'Всього' || r.title.en === 'Total') return;
-        const lim = getInputVal('limit', i, 'limit');
-        const dr = getInputVal('limit', i, 'drawn');
-        r.limit = lim; r.drawn = dr; r.available = lim - dr;
-        totLimit += lim; totDrawn += dr;
-    });
-    const limTot = globalData.creditLimits.find(r => r.title.uk === 'Всього' || r.title.en === 'Total');
-    if (limTot) { limTot.limit = totLimit; limTot.drawn = totDrawn; limTot.available = totLimit - totDrawn; }
+        let totLimit = 0, totDrawn = 0;
+        globalData.creditLimits.forEach((r, i) => {
+            if (r.title.uk === 'Всього' || r.title.en === 'Total') return;
+            const lim = getInputVal('limit', i, 'limit');
+            const dr = getInputVal('limit', i, 'drawn');
+            r.limit = lim; r.drawn = dr; r.available = lim - dr;
+            totLimit += lim; totDrawn += dr;
+        });
+        const limTot = globalData.creditLimits.find(r => r.title.uk === 'Всього' || r.title.en === 'Total');
+        if (limTot) { limTot.limit = totLimit; limTot.drawn = totDrawn; limTot.available = totLimit - totDrawn; }
     }
 
     function closeOperationalEditor() {
@@ -620,62 +775,56 @@
 
     async function saveOperationalData() {
         const btn = document.getElementById('btnSaveOperational');
-
-        // 1. Оновлюємо локальний стан на сторінці
         commitOperational();
         updateLanguageDOM();
 
         btn.innerText = "Збереження...";
         btn.disabled = true;
 
-        // 2. Формуємо плоский список записів під структуру WeeklyFinancialMetrics
         const itemsToSave = [];
         let order = 10;
 
-        // Оборотний капітал
-            globalData.workingCapital.forEach(r => {
-                itemsToSave.push({
-                    Title: r.title.uk,
-                    Category: "Оборотний капітал", // замість WorkingCapital
-                    ReportDate: currentReportDate,
-                    Value: Number(r.current) || 0,
-                    LimitValue: Number(r.previous) || 0,
-                    Unit: "млн грн",
-                    OrderIndex: order,
-                    HasLimit: false
-                });
-                order += 10;
+        globalData.workingCapital.forEach(r => {
+            itemsToSave.push({
+                Title: r.title.uk,
+                Category: "Оборотний капітал",
+                ReportDate: currentReportDate,
+                Value: Number(r.current) || 0,
+                LimitValue: Number(r.previous) || 0,
+                Unit: "млн грн",
+                OrderIndex: order,
+                HasLimit: false
             });
+            order += 10;
+        });
 
-            // Запаси
-            globalData.fuelInventories.forEach(r => {
-                itemsToSave.push({
-                    Title: r.title.uk,
-                    Category: "Запаси", // замість Fuel
-                    ReportDate: currentReportDate,
-                    Value: Number(r.current) || 0,
-                    LimitValue: Number(r.previous) || 0,
-                    Unit: r.title.uk.includes("м³") ? "млн м³" : "тис. т",
-                    OrderIndex: order,
-                    HasLimit: false
-                });
-                order += 10;
+        globalData.fuelInventories.forEach(r => {
+            itemsToSave.push({
+                Title: r.title.uk,
+                Category: "Запаси",
+                ReportDate: currentReportDate,
+                Value: Number(r.current) || 0,
+                LimitValue: Number(r.previous) || 0,
+                Unit: r.title.uk.includes("м³") ? "млн м³" : "тис. т",
+                OrderIndex: order,
+                HasLimit: false
             });
+            order += 10;
+        });
 
-            // Ресурси фінансування
-            globalData.creditLimits.forEach(r => {
-                itemsToSave.push({
-                    Title: r.title.uk,
-                    Category: "Фінансування", // замість CreditLimits
-                    ReportDate: currentReportDate,
-                    Value: Number(r.drawn) || 0,
-                    LimitValue: Number(r.limit) || 0,
-                    Unit: "млн грн",
-                    OrderIndex: order,
-                    HasLimit: true
-                });
-                order += 10;
+        globalData.creditLimits.forEach(r => {
+            itemsToSave.push({
+                Title: r.title.uk,
+                Category: "Фінансування",
+                ReportDate: currentReportDate,
+                Value: Number(r.drawn) || 0,
+                LimitValue: Number(r.limit) || 0,
+                Unit: "млн грн",
+                OrderIndex: order,
+                HasLimit: true
             });
+            order += 10;
+        });
 
         const payload = {
             reportDate: currentReportDate,
@@ -690,6 +839,11 @@
             });
 
             if (!response.ok) throw new Error("Помилка HTTP " + response.status);
+
+            if (!availableDatesWithData.includes(currentReportDate)) {
+                availableDatesWithData.push(currentReportDate);
+                renderDateSelector();
+            }
 
             closeOperationalEditor();
             alert("Дані успішно збережено в SharePoint!");
@@ -1113,7 +1267,6 @@
 
     function getBilingualText(rawText) {
         if (rawText === undefined || rawText === null || String(rawText).trim() === "") return { uk: "", en: "" };
-        
         let textStr = String(rawText);
         let cleanStr = textStr.replace(/[\u00A0\u200B\t\r\n]/g, ' ').trim();
         const prefixMatch = cleanStr.match(/^([\s\-–—•*◦]+)/);
@@ -1121,8 +1274,7 @@
         const coreText = cleanStr.substring(prefix.length).trim();
 
         let englishTranslation = "";
-        const normAcronym = coreText.toUpperCase()
-            .replace(/А/g, 'A').replace(/О/g, 'O').replace(/З/g, 'Z');
+        const normAcronym = coreText.toUpperCase().replace(/А/g, 'A').replace(/О/g, 'O').replace(/З/g, 'Z');
 
         if (normAcronym === "AOZ") {
             englishTranslation = "DPA";
@@ -1138,10 +1290,7 @@
             .replace(/(\d+)\s*день/gi, '$1 day')
             .replace(/(\d+)\s*млн грн/gi, '$1 UAH mln');
 
-        return { 
-            uk: textStr, 
-            en: prefix + englishTranslation 
-        };
+        return { uk: textStr, en: prefix + englishTranslation };
     }
 
     function normalizePeriodKey(raw) {
@@ -1169,9 +1318,7 @@
     function toggleEnNumberFormat() {
         useCommaFormatEn = document.getElementById('chk_en_comma').checked;
         updateLanguageDOM();
-        if (myLiquidityChart) {
-            myLiquidityChart.update('none');
-        }
+        if (myLiquidityChart) myLiquidityChart.update('none');
     }
 
     function handleFile(files) {
@@ -1187,9 +1334,7 @@
                 alert("Помилка обробки файлу Excel: " + err.message); 
             }
         };
-        reader.onerror = function(err) {
-            alert("Помилка читання файлу: " + err);
-        };
+        reader.onerror = function(err) { alert("Помилка читання файлу: " + err); };
         reader.readAsArrayBuffer(files[0]);
     }
 
@@ -1380,10 +1525,9 @@
             workingCapital: workingCapital, fuelInventories: fuelInventories, creditLimits: creditLimits
         };
 
-        document.getElementById('uploadZone').classList.add('hidden');
-        document.getElementById('dashboardContent').classList.remove('hidden');
-
-        updateLanguageDOM(); buildChart();
+        toggleUploadModal(false);
+        updateLanguageDOM(); 
+        buildChart();
     }
 
     function loadDemoDashboard() {
@@ -1436,7 +1580,6 @@
                     { title: { uk: "Грошові залишки", en: "Cash balances" }, type: "main", values: [4789, 4639, 4709, 4909, 250], highlightNeg: false }
                 ]
             },
-            // Повний перелік статей оборотного капіталу:
             workingCapital: [
                 { title: { uk: "Дебіторська заборгованість", en: "Accounts receivable" }, current: 3450, delta: -120, isSub: false, isTotal: false, isGray: false },
                 { title: { uk: "- НАК Нафтогаз", en: "- NJSC Naftogaz" }, current: 1200, delta: -50, isSub: true, isTotal: false, isGray: false },
@@ -1446,7 +1589,6 @@
                 { title: { uk: "Аванси отримані", en: "Advances received" }, current: 520, delta: 25, isSub: false, isTotal: false, isGray: false },
                 { title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: -670, delta: -265, isSub: false, isTotal: true, isGray: false }
             ],
-            // Повний перелік статей запасів:
             fuelInventories: [
                 { title: { uk: "Бензин", en: "Gasoline" }, current: 44, delta: 3 },
                 { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 50, delta: -32 },
@@ -1454,7 +1596,6 @@
                 { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 85, delta: 0 },
                 { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 35, delta: -2 }
             ],
-            // Повний перелік ресурсів фінансування:
             creditLimits: [
                 { title: { uk: "Кредитні лінії", en: "Credit lines" }, limit: 5000, drawn: 2900, available: 2100 },
                 { title: { uk: "Постімпорт", en: "Post-import" }, limit: 1200, drawn: 350, available: 850 },
@@ -1463,9 +1604,7 @@
         };
 
         globalData = demoData;
-        document.getElementById('uploadZone').classList.add('hidden');
-        document.getElementById('dashboardContent').classList.remove('hidden');
-
+        toggleUploadModal(false);
         updateLanguageDOM();
         buildChart();
     }
@@ -1507,14 +1646,12 @@
 
         document.getElementById('summaryTexts').innerHTML = globalData.summary[lang].map(t => {
             const lines = t.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            
             let htmlContent = '';
             let inList = false;
 
             lines.forEach(line => {
                 if (/^[\s\u00A0]*[•◦\-*–—]/.test(line)) {
                     let text = line.replace(/^[•◦\-*–—\s\u00A0]+/, '');
-                    
                     if (!inList) {
                         htmlContent += '<ul style="margin: 0px !important; padding: 0px !important; list-style: none; display: flex; flex-direction: column; gap: 2px;">';
                         inList = true;
@@ -1526,12 +1663,11 @@
                         inList = false;
                     }
                     let pStyle = isSummaryHeadersBold 
-                        ? "font-weight: 700; color: #0f172a;"
+                        ? "font-weight: 700; color: #0f172a;" 
                         : "font-weight: 500; color: #334155;";
                     htmlContent += `<p style="margin: 0px !important; padding: 0px !important; line-height: 1.0; ${pStyle}">${line}</p>`;
                 }
             });
-            
             if (inList) htmlContent += '</ul>';
 
             return `<div class="summary-row"><div class="summary-cell" style="padding: 0px !important; margin: 0px !important;">${htmlContent}</div></div>`;
@@ -1587,11 +1723,9 @@
             
             row.values.forEach((v, idx) => {
                 let cellClass = "";
-                
                 if ((row.highlightNeg && v < 0) || (row.title.uk.trim() === "Виплати" && idx === deltaValIndex && v < 0)) {
                     cellClass = 'class="neg-bright"';
-                } 
-                else if (verifyHighlightActivation(row.title) && idx !== deltaValIndex) {
+                } else if (verifyHighlightActivation(row.title) && idx !== deltaValIndex) {
                     const referenceOutflow = totalOutflowsValues[idx];
                     if (referenceOutflow && referenceOutflow !== 0 && typeof v === 'number') {
                         if (Math.abs(v) > (Math.abs(referenceOutflow) * 0.45)) {
@@ -1645,16 +1779,12 @@
         updateLanguageDOM();
     }
 
-    // --- ФУНКЦІЇ ДЛЯ РЕДАКУВАННЯ ТА ЗБЕРЕЖЕННЯ РЕЗЮМЕ ---
     function openSummaryEditor() {
         document.getElementById('editorDateLabel').innerText = currentReportDate;
-        
         const ukText = globalData?.summary?.uk?.join('\n') || '';
         const enText = globalData?.summary?.en?.join('\n') || '';
-        
         document.getElementById('editSummaryUk').value = ukText;
         document.getElementById('editSummaryEn').value = enText;
-        
         document.getElementById('editorModal').classList.remove('hidden');
     }
 
@@ -1698,11 +1828,7 @@
         }
     }
 
-    async function onDateChange(selectedDate) {
-        currentReportDate = selectedDate;
-        console.log("Зміна дати на:", selectedDate);
-    }
-
+    // Drag-and-drop обробники
     const dropZone = document.getElementById('uploadZone');
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         dropZone.addEventListener(eventName, e => { 
@@ -1718,6 +1844,12 @@
             handleFile(e.dataTransfer.files); 
         }
     }, false);
+
+    // Автоматична ініціалізація при старті сторінки
+    window.addEventListener('DOMContentLoaded', () => {
+        initEmptyDashboard();
+        loadAvailableDatesFromSP();
+    });
 </script>
 </body>
 </html>

@@ -433,7 +433,7 @@
     const SAVE_OPERATIONAL_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/23/workflows/6bcd52afc5434180bac7b54245966d41/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=z1ohBufTQzxYrRyEO_zFsU0lphU-PjjqgPK12lcSX7c";
     
     // Вставте сюди повний URL вашого потоку Get_CashFlow_Metrics (з ключем sig=...)
-    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1";
+    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 
     let currentReportDate = "2026-08-21";
     let availableDatesWithData = [];
@@ -442,10 +442,14 @@
     function cleanDateKey(val) {
         if (!val) return '';
         const str = String(val).trim();
-        if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
+        // Обробка формату ДД.ММ.РРРР (02.09.2026 -> 2026-09-02)
         if (/^\d{2}\.\d{2}\.\d{4}/.test(str)) {
-            const parts = str.split('.');
-            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            const [d, m, y] = str.split('.');
+            return `${y}-${m}-${d}`;
+        }
+        // Обробка ISO-формату (2026-09-02T... -> 2026-09-02)
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+            return str.substring(0, 10);
         }
         return str;
     }

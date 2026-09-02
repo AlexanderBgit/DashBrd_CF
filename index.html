@@ -439,15 +439,22 @@
     let availableDatesWithData = [];
     let calViewDate = new Date(2026, 7, 1); // Серпень 2026
 
+    // Повна нормалізація будь-якого вхідного значення до YYYY-MM-DD
     function cleanDateKey(val) {
         if (!val) return '';
-        const str = String(val).trim();
-        // Обробка формату ДД.ММ.РРРР (02.09.2026 -> 2026-09-02)
-        if (/^\d{2}\.\d{2}\.\d{4}/.test(str)) {
-            const [d, m, y] = str.split('.');
-            return `${y}-${m}-${d}`;
+        // Якщо прийшов об'єкт { ReportDate: "..." } замість чистого рядка
+        if (typeof val === 'object') {
+            val = val.ReportDate || val.reportDate || val.Value || Object.values(val)[0] || '';
         }
-        // Обробка ISO-формату (2026-09-02T... -> 2026-09-02)
+        const str = String(val).trim();
+        
+        // Формат ДД.ММ.РРРР (наприклад, 14.09.2026 або 2.9.2026)
+        const dmyMatch = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+        if (dmyMatch) {
+            return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+        }
+        
+        // Формат ISO (2026-09-14T... або 2026-09-14)
         if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
             return str.substring(0, 10);
         }
@@ -484,20 +491,25 @@
         const month = calViewDate.getMonth();
         
         const monthNamesUk = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-        document.getElementById('calendarMonthYear').innerText = `${monthNamesUk[month]} ${year}`;
+        const monthTitle = document.getElementById('calendarMonthYear');
+        if (monthTitle) monthTitle.innerText = `${monthNamesUk[month]} ${year}`;
 
         const grid = document.getElementById('calendarDaysGrid');
+        if (!grid) return;
         grid.innerHTML = '';
 
+        // Понеділок = 0, Неділя = 6
         let firstDayIndex = new Date(year, month, 1).getDay() - 1;
         if (firstDayIndex === -1) firstDayIndex = 6;
 
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+        // Порожні слоти перед першим днем місяця
         for (let i = 0; i < firstDayIndex; i++) {
             grid.innerHTML += `<span class="py-1.5 text-transparent select-none">0</span>`;
         }
 
+        // Рендеринг днів
         for (let day = 1; day <= daysInMonth; day++) {
             const mStr = String(month + 1).padStart(2, '0');
             const dStr = String(day).padStart(2, '0');
@@ -506,11 +518,13 @@
             const hasData = availableDatesWithData.includes(dateKey);
             const isSelected = (cleanDateKey(currentReportDate) === dateKey);
 
-            let btnClass = "py-1.5 rounded-lg font-medium transition-all relative flex flex-col items-center justify-center cursor-pointer ";
+            let btnClass = "py-1.5 rounded-lg text-xs font-semibold transition-all relative flex flex-col items-center justify-center cursor-pointer ";
+            
             if (isSelected) {
                 btnClass += "bg-indigo-600 text-white font-bold shadow-md scale-105 z-10 ";
             } else if (hasData) {
-                btnClass += "bg-emerald-100 text-emerald-800 font-bold hover:bg-emerald-200 border border-emerald-300 ";
+                // Зелена плашка для дат із даними
+                btnClass += "!bg-emerald-100 !text-emerald-800 font-bold hover:!bg-emerald-200 border border-emerald-400 ";
             } else {
                 btnClass += "text-slate-700 hover:bg-slate-100 ";
             }
@@ -520,7 +534,7 @@
                 : '';
 
             grid.innerHTML += `
-                <button onclick="selectDateFromCalendar('${dateKey}')" class="${btnClass}">
+                <button type="button" onclick="selectDateFromCalendar('${dateKey}')" class="${btnClass}">
                     <span>${day}</span>
                     ${dot}
                 </button>
@@ -536,7 +550,7 @@
         const dotEl = document.querySelector('#btnCalendarTrigger span.rounded-full');
         if (dotEl) {
             dotEl.className = `w-2.5 h-2.5 rounded-full ${hasData ? 'bg-emerald-500 shadow-sm' : 'bg-slate-300'}`;
-            dotEl.title = hasData ? 'Є збережені дані в SharePoint' : 'Дані відсутні';
+            dotEl.title = hasData ? 'Є дані в SharePoint' : 'Дані відсутні';
         }
     }
 
@@ -564,23 +578,30 @@
         document.getElementById('dashboardTitle').innerHTML = globalData.meta[currentLang].title;
     }
 
+    // Завантаження дат з діагностикою в консоль
     async function loadAvailableDatesFromSP() {
         try {
+            console.log("Запит списку дат до SharePoint...");
             const res = await fetch(GET_METRICS_FLOW_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reportDate: "" })
             });
+            
             if (!res.ok) throw new Error("HTTP " + res.status);
             const data = await res.json();
+            console.log("Сирі дані з потоку (availableDates):", data.availableDates);
+
             if (data.availableDates && Array.isArray(data.availableDates)) {
-                availableDatesWithData = [...new Set(data.availableDates.map(cleanDateKey))].filter(Boolean);
+                // Очищення та приведення всіх дат до формату YYYY-MM-DD
+                availableDatesWithData = [...new Set(data.availableDates.map(cleanDateKey))].filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+                console.log("Розпізнані дати для календаря:", availableDatesWithData);
+
                 updateCalendarTriggerDot();
-                const cal = document.getElementById('calendarDropdown');
-                if (cal && !cal.classList.contains('hidden')) renderCalendar();
+                renderCalendar();
             }
         } catch (err) {
-            console.warn("Не вдалося завантажити перелік дат із SharePoint:", err.message);
+            console.warn("Помилка підвантаження доступних дат:", err.message);
         }
     }
 

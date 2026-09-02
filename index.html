@@ -36,10 +36,11 @@
             padding: 25px 30px 15px 35px; 
             box-sizing: border-box; 
             overflow: hidden; 
+            flex-shrink: 0;
         }
         
         body.preview-mode {
-            background-color: #334155; 
+            background-color: #1e293b; 
             padding: 20px 0; 
             display: flex; 
             justify-content: center; 
@@ -47,7 +48,7 @@
         }
         
         body.preview-mode .executive-container {
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
             transform-origin: top center;
             transform: scale(var(--preview-scale, 1));
         }
@@ -118,139 +119,106 @@
 </head>
 <body class="bg-slate-100">
 
-    <!-- Фіксована панель керування праворуч -->
-    <!-- <div class="fixed top-6 right-6 flex items-center space-x-2.5 print-hide z-50"> -->
-
-        <!-- Фіксована панель керування праворуч -->
-    <div class="fixed top-4 right-6 flex items-center space-x-2 print-hide z-50 bg-white/90 backdrop-blur-md p-1.5 rounded-full shadow-xl border border-slate-200">
-        
-        <!-- Інтерактивна кнопка виклику Календаря -->
+    <!-- ЄДИНА ПАНЕЛЬ КЕРУВАННЯ (без дублювання та накладень) -->
+    <div class="fixed top-4 right-6 flex items-center space-x-2 print-hide z-50 bg-white/95 backdrop-blur-md p-1.5 rounded-full shadow-xl border border-slate-200">
+        <!-- Інтерактивний вибір дати -->
         <div class="relative">
-            <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3.5 py-2 rounded-full font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-300">
+            <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-300">
                 <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <span id="lblSelectedDate">21.08.2026</span>
-                <span class="w-2 h-2 rounded-full bg-emerald-500" title="Є дані в SharePoint"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-300" title="Статус даних"></span>
                 <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
 
-            <!-- Спливаючий інтерактивний календар -->
-            <div id="calendarDropdown" class="absolute top-12 left-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden origin-top-left z-50">
+            <!-- Спливаючий календар -->
+            <div id="calendarDropdown" class="absolute top-11 left-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden origin-top-left z-50">
                 <div class="flex justify-between items-center mb-3">
                     <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-600 font-bold">&larr;</button>
                     <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase tracking-wider">Серпень 2026</span>
                     <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-600 font-bold">&rarr;</button>
                 </div>
-                <!-- Дні тижня -->
                 <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
                     <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
                 </div>
-                <!-- Сітка днів -->
                 <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
-                <!-- Легенда -->
                 <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
-                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Дані заповнено</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Є дані в SP</span>
                     <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span> Обрано</span>
                 </div>
             </div>
         </div>
 
-        <!-- Решта кнопок -->
-        <button onclick="toggleUploadModal(true)" class="bg-slate-800 text-white px-3 py-2 rounded-full hover:bg-slate-700 transition-all font-semibold text-xs flex items-center gap-1.5 cursor-pointer">
+        <button onclick="toggleUploadModal(true)" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
             <span>Excel</span>
         </button>
-        <button onclick="loadDemoDashboard()" class="bg-indigo-600 text-white px-3 py-2 rounded-full hover:bg-indigo-700 transition-all font-semibold text-xs flex items-center gap-1.5 cursor-pointer">
+        <button onclick="loadDemoDashboard()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
             <span>Демо</span>
         </button>
-        <button onclick="refreshSharePointData()" id="btnRefreshSP" class="bg-emerald-600 text-white px-3 py-2 rounded-full hover:bg-emerald-700 transition-all font-semibold text-xs flex items-center gap-1.5 cursor-pointer">
+        <button onclick="refreshSharePointData()" id="btnRefreshSP" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             <span>SharePoint</span>
         </button>
-        <button onclick="openOperationalEditor()" class="bg-blue-600 text-white px-3 py-2 rounded-full hover:bg-blue-700 transition-all font-semibold text-xs flex items-center gap-1.5 cursor-pointer">
-            <span>Внести дані</span>
-        </button>
-        <button onclick="toggleLanguage()" id="langBtn" class="bg-slate-800 text-white px-3 py-2 rounded-full font-bold text-xs cursor-pointer">EN</button>
-        <button onclick="generatePDF()" class="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-all cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-        </button>
-        <button onclick="window.print()" class="bg-slate-700 text-white p-2 rounded-full hover:bg-slate-800 transition-all cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-        </button>
-    </div>
-        <!-- 1. Завантажити Excel -->
-        <button onclick="toggleUploadModal(true)" class="bg-slate-800 text-white px-3.5 py-2.5 rounded-full shadow-lg hover:bg-slate-700 hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer font-semibold text-xs tracking-wide" title="Завантажити файл Excel">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-            <span>Excel</span>
-        </button>
-
-        <!-- 2. Тестовий режим -->
-        <button onclick="loadDemoDashboard()" class="bg-indigo-600 text-white px-3.5 py-2.5 rounded-full shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer font-semibold text-xs tracking-wide" title="Запустити тестовий перегляд">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <span>Демо</span>
-        </button>
-
-        <!-- 3. Оновити з SharePoint -->
-        <button onclick="refreshSharePointData()" id="btnRefreshSP" class="bg-emerald-600 text-white px-3.5 py-2.5 rounded-full shadow-lg hover:bg-emerald-700 hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer font-semibold text-xs tracking-wide" title="Оновити дані з SharePoint без перезавантаження">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            <span>SharePoint</span>
-        </button>
-
-        <!-- Внести оперативні дані -->
-        <button onclick="openOperationalEditor()" class="bg-blue-600 text-white px-3.5 py-2.5 rounded-full shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer font-semibold text-xs tracking-wide" title="Внести або редагувати оперативні дані">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        <button onclick="openOperationalEditor()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
             <span>Внести дані</span>
         </button>
 
-        <!-- Меню видимості блоків -->
+        <!-- Меню блоків -->
         <div class="relative group">
-            <button onclick="toggleBlockMenu()" class="bg-slate-700 text-white p-2.5 rounded-full shadow-lg hover:bg-slate-800 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Налаштування відображення блоків">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            <button onclick="toggleBlockMenu()" class="bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-full cursor-pointer" title="Видимість блоків">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
             </button>
-            <div id="blockMenu" class="absolute top-12 right-0 bg-white border border-slate-200 rounded-xl shadow-xl p-3 flex flex-col gap-2 w-64 hidden origin-top-right transition-all z-50">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 px-1" id="lblMenuTitle">Видимість блоків</h3>
-                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors text-slate-700 text-sm font-medium">
-                    <input type="checkbox" checked onchange="toggleVisibility('blockMainTable', this)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                    <span id="lblToggleMainTable">Прогноз грошових потоків</span>
+            <div id="blockMenu" class="absolute top-10 right-0 bg-white border border-slate-200 rounded-xl shadow-xl p-3 flex flex-col gap-2 w-64 hidden origin-top-right z-50">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">Видимість блоків</h3>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockMainTable', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Прогноз грошових потоків</span>
                 </label>
-                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors text-slate-700 text-sm font-medium">
-                    <input type="checkbox" checked onchange="toggleVisibility('blockSummary', this)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                    <span id="lblToggleSummary">Управлінське резюме</span>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockSummary', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Управлінське резюме</span>
                 </label>
-                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors text-slate-700 text-sm font-medium">
-                    <input type="checkbox" checked onchange="toggleVisibility('blockWC', this)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                    <span id="lblToggleWC">Оборотний капітал</span>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockWC', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Оборотний капітал</span>
                 </label>
-                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors text-slate-700 text-sm font-medium">
-                    <input type="checkbox" checked onchange="toggleVisibility('blockFuel', this)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                    <span id="lblToggleFuel">Запаси</span>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockFuel', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Запаси</span>
                 </label>
-                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors text-slate-700 text-sm font-medium">
-                    <input type="checkbox" checked onchange="toggleVisibility('blockLimits', this)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                    <span id="lblToggleLimits">Ресурси фінансування</span>
-                </label>
-                <div class="border-t border-slate-200 my-1"></div>
-                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors text-slate-700 text-sm font-medium">
-                    <input type="checkbox" id="chk_table_dates" onchange="forceTableRebuild()" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                    <span id="lblToggleTableDates">Дати в таблиці</span>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockLimits', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Ресурси фінансування</span>
                 </label>
                 <div class="border-t border-slate-200 my-1"></div>
-                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors text-slate-700 text-sm font-medium">
-                    <input type="checkbox" id="chk_en_comma" onchange="toggleEnNumberFormat()" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                    <span id="lblToggleEnFormat">Формат чисел EN (6,889)</span>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" id="chk_table_dates" onchange="forceTableRebuild()" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Дати в таблиці</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" id="chk_en_comma" onchange="toggleEnNumberFormat()" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Формат EN (6,889)</span>
                 </label>
             </div>
         </div>
 
-        <button onclick="toggleLanguage()" id="langBtn" class="bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg hover:scale-105 transition-all font-bold text-xs tracking-widest cursor-pointer">EN</button>
-        <button onclick="generatePDF()" id="btnGeneratePDF" class="bg-red-600 text-white p-2.5 rounded-full shadow-lg hover:bg-red-700 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Завантажити PDF">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <button onclick="toggleLanguage()" id="langBtn" class="bg-slate-800 text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer">EN</button>
+        <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full cursor-pointer" title="PDF">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         </button>
-        <button onclick="togglePreview()" class="bg-indigo-600 text-white p-2.5 rounded-full shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Попередній перегляд (A3)">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+        <button onclick="togglePreview()" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full cursor-pointer" title="Прев'ю A3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
         </button>
-        <button onclick="window.print()" class="bg-slate-700 text-white p-2.5 rounded-full shadow-lg hover:bg-slate-800 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Друк (Ctrl+P)">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+        <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-full cursor-pointer" title="Друк">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
         </button>
+    </div>
+
+    <!-- Тулбар режиму попереднього перегляду -->
+    <div id="previewToolbar" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white p-3 rounded-full shadow-2xl flex items-center gap-4 z-50 hidden">
+        <span class="pl-4 font-semibold text-slate-300 text-sm">Режим формату A3</span>
+        <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-500 text-white px-5 py-2 rounded-full font-bold shadow transition-colors cursor-pointer">Завантажити PDF</button>
+        <button onclick="togglePreview()" class="bg-slate-600 hover:bg-slate-500 text-white px-5 py-2 rounded-full font-bold shadow transition-colors cursor-pointer mr-1">Закрити прев'ю</button>
     </div>
 
     <!-- Модальне вікно Drag & Drop -->
@@ -259,27 +227,22 @@
             <button onclick="toggleUploadModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
             <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             <h3 class="text-lg font-bold text-slate-800 mb-2">Імпорт файлу Excel</h3>
-            <p class="text-sm text-slate-500 mb-4">Оберіть файл Excel або перетягніть його сюди</p>
+            <p class="text-sm text-slate-500 mb-4">Перетягніть .xlsx файл сюди або натисніть кнопку</p>
             <input type="file" id="excelFile" accept=".xlsx" class="hidden" onchange="handleFile(this.files)">
             <div class="flex flex-col gap-2.5">
-                <button onclick="document.getElementById('excelFile').click()" class="bg-slate-800 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-slate-700 transition-all cursor-pointer">
-                    Вибрати файл з комп'ютера
-                </button>
-                <button onclick="toggleUploadModal(false)" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-semibold text-sm hover:bg-slate-300 transition-all cursor-pointer">
-                    Закрити
-                </button>
+                <button onclick="document.getElementById('excelFile').click()" class="bg-slate-800 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-slate-700 transition-all cursor-pointer">Вибрати файл з комп'ютера</button>
+                <button onclick="toggleUploadModal(false)" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-semibold text-sm hover:bg-slate-300 transition-all cursor-pointer">Скасувати</button>
             </div>
         </div>
     </div>
 
     <!-- Основний контейнер дашборду (Формат A3) -->
     <div class="executive-container" id="dashboardContent">
-        <!-- Шапка: заголовок + вибір дати -->
+        <!-- Шапка -->
         <div class="w-full flex justify-between items-center mb-2.5 pt-1 shrink-0">
             <div class="flex flex-col items-start text-left">
                 <h1 class="text-slate-800 leading-none" id="dashboardTitle"></h1>
             </div>
-
         </div>
 
         <div class="grid grid-cols-12 gap-2.5 items-stretch flex-grow min-h-0">
@@ -291,8 +254,8 @@
                     <div class="flex justify-between items-start mb-1 shrink-0">
                         <h2 class="block-title" style="margin-bottom: 0;" id="titleChart"></h2>
                         <div class="print-hide flex space-x-1.5 opacity-60 hover:opacity-100 transition-opacity z-10">
-                            <button onclick="changeChartPadding(-5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer transition-colors" title="Зменшити відступ осі X">X-</button>
-                            <button onclick="changeChartPadding(5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer transition-colors" title="Збільшити відступ осі X">X+</button>
+                            <button onclick="changeChartPadding(-5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X-</button>
+                            <button onclick="changeChartPadding(5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X+</button>
                         </div>
                     </div>
                     <div style="position: relative; flex-grow: 1; width: 100%; min-height: 200px;">
@@ -310,23 +273,23 @@
                             </button>
                             <div id="outflowHighlightDropdown" class="absolute right-0 mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-xl p-2 hidden flex flex-col gap-1">
                                 <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
-                                    <input type="checkbox" id="chk_mandatory" checked onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                    <input type="checkbox" id="chk_mandatory" checked onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     <span class="truncate">Обов’язкові платежі (ЗП, податки, енергія)</span>
                                 </label>
                                 <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
-                                    <input type="checkbox" id="chk_production" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                    <input type="checkbox" id="chk_production" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     <span class="truncate">Переробка та виробництво</span>
                                 </label>
                                 <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
-                                    <input type="checkbox" id="chk_fuel" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                    <input type="checkbox" id="chk_fuel" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     <span class="truncate">Закупівля нафтопродуктів</span>
                                 </label>
                                 <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
-                                    <input type="checkbox" id="chk_strategic" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                    <input type="checkbox" id="chk_strategic" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     <span class="truncate">Стратегічні інвестиції</span>
                                 </label>
                                 <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
-                                    <input type="checkbox" id="chk_others" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                    <input type="checkbox" id="chk_others" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     <span class="truncate">Інші виплати</span>
                                 </label>
                             </div>
@@ -341,46 +304,37 @@
 
             <!-- Права частина: Резюме + Оборотний капітал + Запаси + Ліміти -->
             <div class="col-span-3 flex flex-col justify-between h-full">
-                <!-- Блок Управлінське резюме -->
                 <div class="summary-block flex-grow mb-2.5 relative" id="blockSummary">
                     <div class="flex justify-between items-start mb-1">
                         <h2 class="block-title" style="margin-bottom: 0;" id="titleSummary"></h2>
                         <div class="print-hide flex items-center space-x-1.5 z-30">
-                            <button onclick="openSummaryEditor()" class="pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1" title="Редагувати резюме">
+                            <button onclick="openSummaryEditor()" class="pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1">
                                 ✏️ Редагувати
                             </button>
-
                             <div class="relative inline-block text-left">
-                                <button onclick="toggleDropdown('summarySettingsDropdown')" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-600 p-1.5 rounded shadow-sm transition-colors cursor-pointer" title="Налаштування тексту резюме">
+                                <button onclick="toggleDropdown('summarySettingsDropdown')" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-600 p-1.5 rounded shadow-sm transition-colors cursor-pointer">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                                 </button>
                                 <div id="summarySettingsDropdown" class="absolute right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl p-2 hidden flex flex-col gap-2 w-44 z-40">
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 px-1">Форматування тексту</div>
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 px-1">Шрифт та відступи</div>
                                     <div class="flex justify-between items-center px-1">
-                                        <span class="text-xs font-medium text-slate-700">Розмір шрифту</span>
+                                        <span class="text-xs font-medium text-slate-700">Розмір</span>
                                         <div class="flex space-x-1">
-                                            <button onclick="changeSummaryFontSize(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">A-</button>
-                                            <button onclick="changeSummaryFontSize(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">A+</button>
+                                            <button onclick="changeSummaryFontSize(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold">A-</button>
+                                            <button onclick="changeSummaryFontSize(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold">A+</button>
                                         </div>
                                     </div>
                                     <div class="flex justify-between items-center px-1">
-                                        <span class="text-xs font-medium text-slate-700">Відстань рядків</span>
+                                        <span class="text-xs font-medium text-slate-700">Відстань</span>
                                         <div class="flex space-x-1">
-                                            <button onclick="changeSummaryGap(-2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕-</button>
-                                            <button onclick="changeSummaryGap(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕+</button>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between items-center px-1">
-                                        <span class="text-xs font-medium text-slate-700">Ширина літер</span>
-                                        <div class="flex space-x-1">
-                                            <button onclick="changeLetterSpacing(-0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">T-</button>
-                                            <button onclick="changeLetterSpacing(0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">T+</button>
+                                            <button onclick="changeSummaryGap(-2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold">↕-</button>
+                                            <button onclick="changeSummaryGap(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold">↕+</button>
                                         </div>
                                     </div>
                                     <div class="border-t border-slate-200 my-1 mx-1"></div>
-                                    <label class="flex items-center justify-between px-1 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors">
+                                    <label class="flex items-center justify-between px-1 cursor-pointer hover:bg-slate-50 p-1 rounded">
                                         <span class="text-xs font-medium text-slate-700">Жирні заголовки</span>
-                                        <input type="checkbox" checked id="chk_summary_bold" onchange="toggleSummaryBold()" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                        <input type="checkbox" checked id="chk_summary_bold" onchange="toggleSummaryBold()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     </label>
                                 </div>
                             </div>
@@ -393,7 +347,7 @@
                     <div class="flex justify-between items-start mb-1">
                         <h2 class="block-title" style="margin-bottom: 0;" id="titleWC"></h2>
                         <div class="print-hide relative z-20">
-                            <button onclick="toggleWcMenu()" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-xs font-bold cursor-pointer transition-colors" title="Налаштування кольору дельти">Δ 🎨</button>
+                            <button onclick="toggleWcMenu()" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-xs font-bold cursor-pointer">Δ 🎨</button>
                             <div id="wcMenu" class="absolute top-6 right-0 bg-white border border-slate-200 rounded-lg shadow-xl p-2 flex flex-col gap-1 w-52 hidden text-left font-normal text-xs normal-case z-30"></div>
                         </div>
                     </div>
@@ -422,7 +376,7 @@
         </div>
     </div>
 
-    <!-- Модальне вікно внесення оперативних даних -->
+    <!-- Модальне вікно оперативних даних -->
     <div id="operationalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
@@ -437,7 +391,7 @@
         </div>
     </div>
 
-    <!-- Модальне вікно редагування резюме для аналітика -->
+    <!-- Модальне вікно резюме -->
     <div id="editorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
         <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 text-left">
             <div class="flex justify-between items-center mb-4">
@@ -456,9 +410,7 @@
             </div>
             <div class="flex justify-end gap-3 mt-5">
                 <button onclick="closeSummaryEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
-                <button onclick="saveSummaryToSharePoint()" id="btnSaveSummary" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2 cursor-pointer">
-                    Зберегти в SharePoint
-                </button>
+                <button onclick="saveSummaryToSharePoint()" id="btnSaveSummary" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2 cursor-pointer">Зберегти в SharePoint</button>
             </div>
         </div>
     </div>
@@ -480,12 +432,23 @@
     const SAVE_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/34cccd0ca98c4f9680dfef1b5d352f15/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vNKBrpfo-oLGwghHnImsmmMRrTOAB5_tvHHc4ZDRYJs";
     const SAVE_OPERATIONAL_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/23/workflows/6bcd52afc5434180bac7b54245966d41/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=z1ohBufTQzxYrRyEO_zFsU0lphU-PjjqgPK12lcSX7c";
     
-    // Вставте сюди повну URL-адресу з блоку manual вашого потоку Get_CashFlow_Metrics (з ключем sig)
+    // Вставте сюди повний URL вашого потоку Get_CashFlow_Metrics (з ключем sig=...)
     const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1";
 
     let currentReportDate = "2026-08-21";
     let availableDatesWithData = [];
-    const allReportDates = ["2026-08-21", "2026-08-14", "2026-08-07", "2026-07-31"];
+    let calViewDate = new Date(2026, 7, 1); // Серпень 2026
+
+    function cleanDateKey(val) {
+        if (!val) return '';
+        const str = String(val).trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
+        if (/^\d{2}\.\d{2}\.\d{4}/.test(str)) {
+            const parts = str.split('.');
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return str;
+    }
 
     function toggleUploadModal(show) {
         const modal = document.getElementById('uploadZone');
@@ -493,32 +456,12 @@
         else modal.classList.add('hidden');
     }
 
-    function renderDateSelector() {
-        const selector = document.getElementById('reportDateSelector');
-        // Об'єднуємо статичні та отримані з SharePoint дати
-        const combined = Array.from(new Set([...allReportDates, ...availableDatesWithData])).filter(Boolean).sort().reverse();
-        
-        selector.innerHTML = combined.map(d => {
-            const hasData = availableDatesWithData.includes(d);
-            const [y, m, day] = d.split('-');
-            const marker = hasData ? '● ' : '○ ';
-            const status = hasData ? ' (є дані)' : '';
-            return `<option value="${d}" ${d === currentReportDate ? 'selected' : ''}>${marker}${day}.${m}.${y}${status}</option>`;
-        }).join('');
-    }
-
-    // Поточний перегляд у календарі (рік, місяць 0..11)
-    let calViewDate = new Date(2026, 7, 1); // Серпень 2026 за замовчуванням
-
     function toggleCalendarDropdown() {
         const el = document.getElementById('calendarDropdown');
         el.classList.toggle('hidden');
-        if (!el.classList.contains('hidden')) {
-            renderCalendar();
-        }
+        if (!el.classList.contains('hidden')) renderCalendar();
     }
 
-    // Закриття календаря при кліку поза ним
     document.addEventListener('click', (e) => {
         const cal = document.getElementById('calendarDropdown');
         const btn = document.getElementById('btnCalendarTrigger');
@@ -542,18 +485,15 @@
         const grid = document.getElementById('calendarDaysGrid');
         grid.innerHTML = '';
 
-        // Понеділок = 0, Неділя = 6
         let firstDayIndex = new Date(year, month, 1).getDay() - 1;
         if (firstDayIndex === -1) firstDayIndex = 6;
 
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        // Порожні комірки до 1 числа місяця
         for (let i = 0; i < firstDayIndex; i++) {
             grid.innerHTML += `<span class="py-1.5 text-transparent select-none">0</span>`;
         }
 
-        // Дні місяця
         for (let day = 1; day <= daysInMonth; day++) {
             const mStr = String(month + 1).padStart(2, '0');
             const dStr = String(day).padStart(2, '0');
@@ -563,19 +503,14 @@
             const isSelected = (cleanDateKey(currentReportDate) === dateKey);
 
             let btnClass = "py-1.5 rounded-lg font-medium transition-all relative flex flex-col items-center justify-center cursor-pointer ";
-            
             if (isSelected) {
-                // Обраний день — синій/індиго
                 btnClass += "bg-indigo-600 text-white font-bold shadow-md scale-105 z-10 ";
             } else if (hasData) {
-                // День із заповненими даними — контрастний зелений бейдж
                 btnClass += "bg-emerald-100 text-emerald-800 font-bold hover:bg-emerald-200 border border-emerald-300 ";
             } else {
-                // Звичайний день
                 btnClass += "text-slate-700 hover:bg-slate-100 ";
             }
 
-            // Зелена цятка під цифрою
             const dot = hasData 
                 ? `<span class="w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-emerald-600'} absolute bottom-0.5"></span>` 
                 : '';
@@ -591,25 +526,26 @@
         updateCalendarTriggerDot();
     }
 
+    function updateCalendarTriggerDot() {
+        const curClean = cleanDateKey(currentReportDate);
+        const hasData = availableDatesWithData.includes(curClean);
+        const dotEl = document.querySelector('#btnCalendarTrigger span.rounded-full');
+        if (dotEl) {
+            dotEl.className = `w-2.5 h-2.5 rounded-full ${hasData ? 'bg-emerald-500 shadow-sm' : 'bg-slate-300'}`;
+            dotEl.title = hasData ? 'Є збережені дані в SharePoint' : 'Дані відсутні';
+        }
+    }
+
     function selectDateFromCalendar(dateKey) {
         currentReportDate = dateKey;
         const [y, m, d] = dateKey.split('-');
-        
-        // Оновлюємо лейбл на кнопці
         document.getElementById('lblSelectedDate').innerText = `${d}.${m}.${y}`;
-        
-        // Закриваємо меню календаря
         document.getElementById('calendarDropdown').classList.add('hidden');
-
-        // Оновлюємо заголовок дашборду
         syncHeaderDate();
-        
-        // Якщо дата є в SharePoint — підтягуємо її автоматично
         if (availableDatesWithData.includes(dateKey)) {
             refreshSharePointData();
         }
     }
-
 
     function syncHeaderDate() {
         if (!globalData || !globalData.meta) return;
@@ -624,29 +560,6 @@
         document.getElementById('dashboardTitle').innerHTML = globalData.meta[currentLang].title;
     }
 
-    async function onDateChange(selectedDate) {
-        currentReportDate = selectedDate;
-        syncHeaderDate();
-        console.log("Зміна дати на:", selectedDate);
-    }
-
-    // Функція для приведення будь-якого формату дати з SharePoint до "YYYY-MM-DD"
-    function cleanDateKey(val) {
-        if (!val) return '';
-        const str = String(val).trim();
-        // Якщо прийшов ISO-формат: "2026-09-11T..." -> беремо перші 10 символів
-        if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-            return str.substring(0, 10);
-        }
-        // Якщо прийшов формат "11.09.2026"
-        if (/^\d{2}\.\d{2}\.\d{4}/.test(str)) {
-            const parts = str.split('.');
-            return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-        return str;
-    }
-
-    // Завантаження дат із SharePoint із нормальною обробкою відповідей
     async function loadAvailableDatesFromSP() {
         try {
             const res = await fetch(GET_METRICS_FLOW_URL, {
@@ -656,37 +569,17 @@
             });
             if (!res.ok) throw new Error("HTTP " + res.status);
             const data = await res.json();
-            
             if (data.availableDates && Array.isArray(data.availableDates)) {
-                // Очищаємо дати від часових поясів та дублікатів
                 availableDatesWithData = [...new Set(data.availableDates.map(cleanDateKey))].filter(Boolean);
-                console.log("Завантажені дати із SharePoint:", availableDatesWithData);
-                
-                // Оновлюємо колір індикатора на кнопці виклику календаря
                 updateCalendarTriggerDot();
-                
-                // Якщо календар зараз відкритий — перемальовуємо
                 const cal = document.getElementById('calendarDropdown');
-                if (cal && !cal.classList.contains('hidden')) {
-                    renderCalendar();
-                }
+                if (cal && !cal.classList.contains('hidden')) renderCalendar();
             }
         } catch (err) {
             console.warn("Не вдалося завантажити перелік дат із SharePoint:", err.message);
         }
     }
 
-    function updateCalendarTriggerDot() {
-        const curClean = cleanDateKey(currentReportDate);
-        const hasData = availableDatesWithData.includes(curClean);
-        const dotEl = document.querySelector('#btnCalendarTrigger span.rounded-full');
-        if (dotEl) {
-            dotEl.className = `w-2.5 h-2.5 rounded-full ${hasData ? 'bg-emerald-500 shadow-sm' : 'bg-slate-300'}`;
-            dotEl.title = hasData ? 'Є збережені дані в SharePoint' : 'Дані відсутні';
-        }
-    }
-
-    // Оновлення метрик без перезавантаження сторінки
     async function refreshSharePointData() {
         const btn = document.getElementById('btnRefreshSP');
         btn.classList.add('is-generating');
@@ -700,12 +593,11 @@
             });
 
             if (!response.ok) throw new Error("HTTP " + response.status);
-
             const result = await response.json();
 
             if (result.availableDates && Array.isArray(result.availableDates)) {
-                availableDatesWithData = [...new Set(result.availableDates)].filter(Boolean);
-                renderDateSelector();
+                availableDatesWithData = [...new Set(result.availableDates.map(cleanDateKey))].filter(Boolean);
+                updateCalendarTriggerDot();
             }
 
             if (result.metrics && result.metrics.length > 0 && globalData) {
@@ -789,7 +681,6 @@
                 { title: { uk: "Всього", en: "Total" }, limit: 0, drawn: 0, available: 0 }
             ]
         };
-        renderDateSelector();
         syncHeaderDate();
         updateLanguageDOM();
         buildChart();
@@ -1032,9 +923,10 @@
 
             if (!response.ok) throw new Error("Помилка HTTP " + response.status);
 
-            if (!availableDatesWithData.includes(currentReportDate)) {
-                availableDatesWithData.push(currentReportDate);
-                renderDateSelector();
+            const curClean = cleanDateKey(currentReportDate);
+            if (!availableDatesWithData.includes(curClean)) {
+                availableDatesWithData.push(curClean);
+                updateCalendarTriggerDot();
             }
 
             closeOperationalEditor();
@@ -1806,24 +1698,15 @@
         const lang = currentLang, meta = globalData.meta[lang];
 
         document.getElementById('dashboardTitle').innerHTML = meta.title; 
-        ['titleChart', 'titleMainTable', 'titleSummary', 'titleWC', 'titleFuel', 'titleLimits'].forEach(id => document.getElementById(id).innerText = meta[id]);
-        document.getElementById('thWCCurrent').innerText = lang === 'uk' ? 'Поточний' : 'Current';
-        document.getElementById('thFuelCurrent').innerText = lang === 'uk' ? 'Поточні' : 'Current';
-
-        const menuLabels = {
-            'lblMenuTitle': lang === 'uk' ? 'Видимість блоків' : 'Block Visibility',
-            'lblToggleMainTable': meta.titleMainTable, 
-            'lblToggleSummary': meta.titleSummary,
-            'lblToggleWC': meta.titleWC,
-            'lblToggleFuel': meta.titleFuel,
-            'lblToggleLimits': meta.titleLimits,
-            'lblToggleTableDates': lang === 'uk' ? 'Дати в таблиці' : 'Table Dates',
-            'lblToggleEnFormat': lang === 'uk' ? 'Формат чисел EN (6,889)' : 'EN Num Format (6,889)'
-        };
-        for (let id in menuLabels) {
+        ['titleChart', 'titleMainTable', 'titleSummary', 'titleWC', 'titleFuel', 'titleLimits'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.innerText = menuLabels[id];
-        }
+            if (el) el.innerText = meta[id];
+        });
+        
+        const thWC = document.getElementById('thWCCurrent');
+        if (thWC) thWC.innerText = lang === 'uk' ? 'Поточний' : 'Current';
+        const thFuel = document.getElementById('thFuelCurrent');
+        if (thFuel) thFuel.innerText = lang === 'uk' ? 'Поточні' : 'Current';
 
         document.getElementById('kpiContainer').innerHTML = globalData.kpis.map((kpi, idx) => `
             <div class="kpi-card">
@@ -1873,7 +1756,7 @@
         if (wcMenu) {
             wcMenu.innerHTML = globalData.workingCapital.map((row, idx) => `
                 <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-1 rounded text-slate-700 text-xs font-medium">
-                    <input type="checkbox" ${row.isGray ? 'checked' : ''} onchange="toggleWcDeltaColor(${idx})" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                    <input type="checkbox" ${row.isGray ? 'checked' : ''} onchange="toggleWcDeltaColor(${idx})" class="w-3.5 h-3.5 text-indigo-600 rounded">
                     <span class="truncate">${row.title[lang]}</span>
                 </label>
             `).join('');
@@ -1893,11 +1776,11 @@
         const totalOutflowsValues = totalOutflowsRow ? totalOutflowsRow.values : [];
 
         const activeHighlightMap = {
-            mandatory: document.getElementById('chk_mandatory').checked,
-            production: document.getElementById('chk_production').checked,
-            fuel: document.getElementById('chk_fuel').checked,
-            strategic: document.getElementById('chk_strategic').checked,
-            others: document.getElementById('chk_others').checked
+            mandatory: document.getElementById('chk_mandatory') ? document.getElementById('chk_mandatory').checked : true,
+            production: document.getElementById('chk_production') ? document.getElementById('chk_production').checked : false,
+            fuel: document.getElementById('chk_fuel') ? document.getElementById('chk_fuel').checked : false,
+            strategic: document.getElementById('chk_strategic') ? document.getElementById('chk_strategic').checked : false,
+            others: document.getElementById('chk_others') ? document.getElementById('chk_others').checked : false
         };
 
         const verifyHighlightActivation = (titleObj) => {
@@ -2020,7 +1903,6 @@
         }
     }
 
-    // Drag-and-drop обробники
     const dropZone = document.getElementById('uploadZone');
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         dropZone.addEventListener(eventName, e => { 
@@ -2037,7 +1919,6 @@
         }
     }, false);
 
-    // Автоматична ініціалізація при старті сторінки
     window.addEventListener('DOMContentLoaded', () => {
         initEmptyDashboard();
         loadAvailableDatesFromSP();

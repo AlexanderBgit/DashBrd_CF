@@ -633,49 +633,49 @@
         let order = 10;
 
         // Оборотний капітал
-        globalData.workingCapital.forEach(r => {
-            itemsToSave.push({
-                Title: r.title.uk,
-                Category: "WorkingCapital",
-                ReportDate: currentReportDate,
-                Value: Number(r.current) || 0,
-                LimitValue: Number(r.previous) || 0, // зберігаємо попереднє значення для дельти
-                Unit: "млн грн",
-                OrderIndex: order,
-                HasLimit: false
+            globalData.workingCapital.forEach(r => {
+                itemsToSave.push({
+                    Title: r.title.uk,
+                    Category: "Оборотний капітал", // замість WorkingCapital
+                    ReportDate: currentReportDate,
+                    Value: Number(r.current) || 0,
+                    LimitValue: Number(r.previous) || 0,
+                    Unit: "млн грн",
+                    OrderIndex: order,
+                    HasLimit: false
+                });
+                order += 10;
             });
-            order += 10;
-        });
 
-        // Запаси
-        globalData.fuelInventories.forEach(r => {
-            itemsToSave.push({
-                Title: r.title.uk,
-                Category: "Fuel",
-                ReportDate: currentReportDate,
-                Value: Number(r.current) || 0,
-                LimitValue: Number(r.previous) || 0,
-                Unit: r.title.uk.includes("м³") ? "млн м³" : "тис. т",
-                OrderIndex: order,
-                HasLimit: false
+            // Запаси
+            globalData.fuelInventories.forEach(r => {
+                itemsToSave.push({
+                    Title: r.title.uk,
+                    Category: "Запаси", // замість Fuel
+                    ReportDate: currentReportDate,
+                    Value: Number(r.current) || 0,
+                    LimitValue: Number(r.previous) || 0,
+                    Unit: r.title.uk.includes("м³") ? "млн м³" : "тис. т",
+                    OrderIndex: order,
+                    HasLimit: false
+                });
+                order += 10;
             });
-            order += 10;
-        });
 
-        // Ресурси фінансування
-        globalData.creditLimits.forEach(r => {
-            itemsToSave.push({
-                Title: r.title.uk,
-                Category: "CreditLimits",
-                ReportDate: currentReportDate,
-                Value: Number(r.drawn) || 0,        // Вибрано
-                LimitValue: Number(r.limit) || 0,   // Ліміт
-                Unit: "млн грн",
-                OrderIndex: order,
-                HasLimit: true
+            // Ресурси фінансування
+            globalData.creditLimits.forEach(r => {
+                itemsToSave.push({
+                    Title: r.title.uk,
+                    Category: "Фінансування", // замість CreditLimits
+                    ReportDate: currentReportDate,
+                    Value: Number(r.drawn) || 0,
+                    LimitValue: Number(r.limit) || 0,
+                    Unit: "млн грн",
+                    OrderIndex: order,
+                    HasLimit: true
+                });
+                order += 10;
             });
-            order += 10;
-        });
 
         const payload = {
             reportDate: currentReportDate,

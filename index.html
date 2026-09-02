@@ -120,6 +120,13 @@
 
     <!-- Фіксована панель керування праворуч -->
     <div class="fixed top-6 right-6 flex space-x-3 print-hide z-50">
+        <!-- Кнопка внесення оперативних даних -->
+        <button onclick="openOperationalEditor()" class="bg-blue-600 text-white px-4 py-2.5 rounded-full shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex items-center gap-2 cursor-pointer font-semibold text-xs tracking-wide" title="Внести або редагувати оперативні дані">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+            <span>Внести дані</span>
+        </button>
         <div class="relative group">
             <button onclick="toggleBlockMenu()" class="bg-slate-700 text-white p-3.5 rounded-full shadow-lg hover:bg-slate-800 hover:scale-105 transition-all flex items-center justify-center cursor-pointer" title="Налаштування відображення блоків">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +206,20 @@
             </div>
         </div>
     </div>
-
+    <!-- Модальне вікно внесення оперативних даних -->
+    <div id="operationalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
+                <h3 class="text-lg font-bold text-slate-800">Внесення даних на дату: <span id="operationalDateLabel" class="text-indigo-600"></span></h3>
+                <button onclick="closeOperationalEditor()" class="text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
+            </div>
+            <div id="operationalFormBody" class="px-6 py-4 overflow-y-auto space-y-6"></div>
+            <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 shrink-0">
+                <button onclick="closeOperationalEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
+                <button onclick="saveOperationalData()" id="btnSaveOperational" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer">Зберегти</button>
+            </div>
+        </div>
+    </div>
     <!-- Модальне вікно редагування резюме для аналітика -->
     <div id="editorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
         <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 text-left">
@@ -413,11 +433,223 @@
 
     // Вкажіть сюди URL вашого створеного потоку Save_CashFlow_Summary
     const SAVE_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/34cccd0ca98c4f9680dfef1b5d352f15/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vNKBrpfo-oLGwghHnImsmmMRrTOAB5_tvHHc4ZDRYJs";
+        // Потік для збереження оперативних даних (оборотний капітал, запаси, фінансування)
+    const SAVE_OPERATIONAL_FLOW_URL = "ВСТАВ_СЮДИ_URL_ОПЕРАТИВНОГО_ПОТОКУ";
+    
     let currentReportDate = "2026-08-21";
 
     function toggleSummaryBold() {
         isSummaryHeadersBold = document.getElementById('chk_summary_bold').checked;
         updateLanguageDOM();
+    }
+
+    // --- РЕДАГУВАННЯ ОПЕРАТИВНИХ ДАНИХ З АВТОРОЗРАХУНКАМИ ---
+
+    // Знак компонента у формулі оборотного капіталу:
+    // ОК = Дебіторська + Аванси видані − Кредиторська − Аванси отримані
+    function wcSign(titleUk) {
+        const t = (titleUk || '').toLowerCase();
+        if (t.includes('дебітор')) return 1;
+        if (t.includes('аванси видані')) return 1;
+        if (t.includes('кредитор')) return -1;
+        if (t.includes('аванси отримані')) return -1;
+        return 0; // не входить у суму (підрядки-деталізація тощо)
+    }
+
+    function opFmt(v) {
+        return Math.round(v).toLocaleString('uk-UA').replace(/\u202F/g, ' ');
+    }
+
+    function opInput(group, idx, field, value) {
+        return `<input type="number" step="any" data-group="${group}" data-idx="${idx}" data-field="${field}"
+            value="${value}" oninput="recalcOperational()"
+            class="w-full border border-slate-300 rounded-md px-2 py-1 text-sm text-right focus:ring-2 focus:ring-indigo-500 outline-none">`;
+    }
+
+    function opCalcCell(id, bold) {
+        return `<span id="${id}" class="block px-2 py-1 text-sm text-right ${bold ? 'font-bold text-slate-700' : 'font-semibold text-slate-500'} bg-slate-100 rounded-md"></span>`;
+    }
+
+    function getInputVal(group, idx, field) {
+        const el = document.querySelector(`#operationalFormBody input[data-group="${group}"][data-idx="${idx}"][data-field="${field}"]`);
+        return el ? parseNumberValue(el.value) : 0;
+    }
+
+    function setText(id, txt) { const el = document.getElementById(id); if (el) el.innerText = txt; }
+
+    function openOperationalEditor() {
+        if (!globalData) { alert("Спочатку завантажте дані дашборду."); return; }
+        document.getElementById('operationalDateLabel').innerText = currentReportDate;
+        const lang = currentLang;
+        let html = '';
+
+        // Значення "попередній" за замовчуванням = поточний − Δ (щоб імпорт з Excel лишався консистентним)
+        const prevOf = (r) => (r.previous !== undefined ? r.previous : (r.current - r.delta));
+
+        // --- Оборотний капітал ---
+        html += `<div>
+            <div class="text-xs font-bold text-slate-500 uppercase mb-2">Оборотний капітал</div>
+            <div class="grid grid-cols-[1fr_85px_85px_85px] gap-2 mb-1 text-[10px] font-bold text-slate-400 uppercase">
+                <span></span><span class="text-right">Поточний</span><span class="text-right">Попередній</span><span class="text-right">Δ</span>
+            </div>
+            ${globalData.workingCapital.map((r, i) => {
+                if (r.isTotal) {
+                    return `<div class="grid grid-cols-[1fr_85px_85px_85px] gap-2 items-center mb-1.5">
+                        <span class="text-sm font-bold text-slate-800">${r.title[lang]}</span>
+                        ${opCalcCell('wc-total-current', true)}${opCalcCell('wc-total-previous', true)}${opCalcCell('wc-total-delta', true)}
+                    </div>`;
+                }
+                return `<div class="grid grid-cols-[1fr_85px_85px_85px] gap-2 items-center mb-1.5">
+                    <span class="text-sm text-slate-700 ${r.isSub ? 'pl-3 text-slate-500' : ''}">${r.title[lang]}</span>
+                    ${opInput('wc', i, 'current', r.current)}${opInput('wc', i, 'previous', prevOf(r))}${opCalcCell('wc-delta-' + i)}
+                </div>`;
+            }).join('')}
+        </div>`;
+
+        // --- Запаси ---
+        html += `<div>
+            <div class="text-xs font-bold text-slate-500 uppercase mb-2">Запаси</div>
+            <div class="grid grid-cols-[1fr_85px_85px_85px] gap-2 mb-1 text-[10px] font-bold text-slate-400 uppercase">
+                <span></span><span class="text-right">Поточні</span><span class="text-right">Попередні</span><span class="text-right">Δ</span>
+            </div>
+            ${globalData.fuelInventories.map((r, i) => `
+                <div class="grid grid-cols-[1fr_85px_85px_85px] gap-2 items-center mb-1.5">
+                    <span class="text-sm text-slate-700">${r.title[lang]}</span>
+                    ${opInput('fuel', i, 'current', r.current)}${opInput('fuel', i, 'previous', prevOf(r))}${opCalcCell('fuel-delta-' + i)}
+                </div>`).join('')}
+        </div>`;
+
+        // --- Ресурси фінансування ---
+        html += `<div>
+            <div class="text-xs font-bold text-slate-500 uppercase mb-2">Ресурси фінансування</div>
+            <div class="grid grid-cols-[1fr_78px_78px_78px] gap-2 mb-1 text-[10px] font-bold text-slate-400 uppercase">
+                <span></span><span class="text-right">Ліміт</span><span class="text-right">Вибрано</span><span class="text-right">Доступно</span>
+            </div>
+            ${globalData.creditLimits.map((r, i) => {
+                const isTot = (r.title.uk === 'Всього' || r.title.en === 'Total');
+                if (isTot) {
+                    return `<div class="grid grid-cols-[1fr_78px_78px_78px] gap-2 items-center mb-1.5">
+                        <span class="text-sm font-bold text-slate-800">${r.title[lang]}</span>
+                        ${opCalcCell('limit-total-limit', true)}${opCalcCell('limit-total-drawn', true)}${opCalcCell('limit-total-avail', true)}
+                    </div>`;
+                }
+                return `<div class="grid grid-cols-[1fr_78px_78px_78px] gap-2 items-center mb-1.5">
+                    <span class="text-sm text-slate-700">${r.title[lang]}</span>
+                    ${opInput('limit', i, 'limit', r.limit)}${opInput('limit', i, 'drawn', r.drawn)}${opCalcCell('limit-avail-' + i)}
+                </div>`;
+            }).join('')}
+        </div>`;
+
+        document.getElementById('operationalFormBody').innerHTML = html;
+        recalcOperational(); // початкове заповнення розрахункових клітинок
+        document.getElementById('operationalModal').classList.remove('hidden');
+    }
+
+    // Живий перерахунок під час введення
+    function recalcOperational() {
+        if (!globalData) return;
+        let totalCur = 0, totalPrev = 0;
+
+        globalData.workingCapital.forEach((r, i) => {
+            if (r.isTotal) return;
+            const cur = getInputVal('wc', i, 'current');
+            const prev = getInputVal('wc', i, 'previous');
+            setText('wc-delta-' + i, opFmt(cur - prev));
+            const s = wcSign(r.title.uk);
+            if (!r.isSub && s !== 0) { totalCur += s * cur; totalPrev += s * prev; }
+        });
+        setText('wc-total-current', opFmt(totalCur));
+        setText('wc-total-previous', opFmt(totalPrev));
+        setText('wc-total-delta', opFmt(totalCur - totalPrev));
+
+        globalData.fuelInventories.forEach((r, i) => {
+            const cur = getInputVal('fuel', i, 'current');
+            const prev = getInputVal('fuel', i, 'previous');
+            setText('fuel-delta-' + i, opFmt(cur - prev));
+        });
+
+    let totLimit = 0, totDrawn = 0;
+    globalData.creditLimits.forEach((r, i) => {
+        if (r.title.uk === 'Всього' || r.title.en === 'Total') return;
+        const lim = getInputVal('limit', i, 'limit');
+        const dr = getInputVal('limit', i, 'drawn');
+        setText('limit-avail-' + i, opFmt(lim - dr));
+        totLimit += lim; totDrawn += dr;
+    });
+    setText('limit-total-limit', opFmt(totLimit));
+    setText('limit-total-drawn', opFmt(totDrawn));
+    setText('limit-total-avail', opFmt(totLimit - totDrawn));
+    }
+
+    // Запис розрахованих значень назад у globalData
+    function commitOperational() {
+        let totalCur = 0, totalPrev = 0;
+        globalData.workingCapital.forEach((r, i) => {
+            if (r.isTotal) return;
+            const cur = getInputVal('wc', i, 'current');
+            const prev = getInputVal('wc', i, 'previous');
+            r.current = cur; r.previous = prev; r.delta = cur - prev;
+            const s = wcSign(r.title.uk);
+            if (!r.isSub && s !== 0) { totalCur += s * cur; totalPrev += s * prev; }
+        });
+        const tot = globalData.workingCapital.find(r => r.isTotal);
+        if (tot) { tot.current = totalCur; tot.previous = totalPrev; tot.delta = totalCur - totalPrev; }
+
+        globalData.fuelInventories.forEach((r, i) => {
+            const cur = getInputVal('fuel', i, 'current');
+            const prev = getInputVal('fuel', i, 'previous');
+            r.current = cur; r.previous = prev; r.delta = cur - prev;
+        });
+
+    let totLimit = 0, totDrawn = 0;
+    globalData.creditLimits.forEach((r, i) => {
+        if (r.title.uk === 'Всього' || r.title.en === 'Total') return;
+        const lim = getInputVal('limit', i, 'limit');
+        const dr = getInputVal('limit', i, 'drawn');
+        r.limit = lim; r.drawn = dr; r.available = lim - dr;
+        totLimit += lim; totDrawn += dr;
+    });
+    const limTot = globalData.creditLimits.find(r => r.title.uk === 'Всього' || r.title.en === 'Total');
+    if (limTot) { limTot.limit = totLimit; limTot.drawn = totDrawn; limTot.available = totLimit - totDrawn; }
+    }
+
+    function closeOperationalEditor() {
+        document.getElementById('operationalModal').classList.add('hidden');
+    }
+
+    async function saveOperationalData() {
+        const btn = document.getElementById('btnSaveOperational');
+
+        // 1. Розрахунок + локальне оновлення дашборду (працює навіть без SharePoint)
+        commitOperational();
+        updateLanguageDOM();
+
+        // 2. Best-effort збереження через Power Automate
+        btn.innerText = "Збереження...";
+        btn.disabled = true;
+        const payload = {
+            type: "operational",
+            reportDate: currentReportDate,
+            workingCapital: globalData.workingCapital,
+            fuelInventories: globalData.fuelInventories,
+            creditLimits: globalData.creditLimits
+        };
+        try {
+            const response = await fetch(SAVE_OPERATIONAL_FLOW_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            closeOperationalEditor();
+            alert("Дані оновлено на дашборді та збережено в SharePoint.");
+        } catch (err) {
+            closeOperationalEditor();
+            alert("Дані оновлено на дашборді, але не збережено в SharePoint: " + err.message);
+        } finally {
+            btn.innerText = "Зберегти";
+            btn.disabled = false;
+        }
     }
 
     const chartTranslations = {

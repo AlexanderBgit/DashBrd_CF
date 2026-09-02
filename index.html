@@ -621,32 +621,81 @@
     async function saveOperationalData() {
         const btn = document.getElementById('btnSaveOperational');
 
-        // 1. Розрахунок + локальне оновлення дашборду (працює навіть без SharePoint)
+        // 1. Оновлюємо локальний стан на сторінці
         commitOperational();
         updateLanguageDOM();
 
-        // 2. Best-effort збереження через Power Automate
         btn.innerText = "Збереження...";
         btn.disabled = true;
+
+        // 2. Формуємо плоский список записів під структуру WeeklyFinancialMetrics
+        const itemsToSave = [];
+        let order = 10;
+
+        // Оборотний капітал
+        globalData.workingCapital.forEach(r => {
+            itemsToSave.push({
+                Title: r.title.uk,
+                Category: "WorkingCapital",
+                ReportDate: currentReportDate,
+                Value: Number(r.current) || 0,
+                LimitValue: Number(r.previous) || 0, // зберігаємо попереднє значення для дельти
+                Unit: "млн грн",
+                OrderIndex: order,
+                HasLimit: false
+            });
+            order += 10;
+        });
+
+        // Запаси
+        globalData.fuelInventories.forEach(r => {
+            itemsToSave.push({
+                Title: r.title.uk,
+                Category: "Fuel",
+                ReportDate: currentReportDate,
+                Value: Number(r.current) || 0,
+                LimitValue: Number(r.previous) || 0,
+                Unit: r.title.uk.includes("м³") ? "млн м³" : "тис. т",
+                OrderIndex: order,
+                HasLimit: false
+            });
+            order += 10;
+        });
+
+        // Ресурси фінансування
+        globalData.creditLimits.forEach(r => {
+            itemsToSave.push({
+                Title: r.title.uk,
+                Category: "CreditLimits",
+                ReportDate: currentReportDate,
+                Value: Number(r.drawn) || 0,        // Вибрано
+                LimitValue: Number(r.limit) || 0,   // Ліміт
+                Unit: "млн грн",
+                OrderIndex: order,
+                HasLimit: true
+            });
+            order += 10;
+        });
+
         const payload = {
-            type: "operational",
             reportDate: currentReportDate,
-            workingCapital: globalData.workingCapital,
-            fuelInventories: globalData.fuelInventories,
-            creditLimits: globalData.creditLimits
+            metrics: itemsToSave
         };
+
         try {
             const response = await fetch(SAVE_OPERATIONAL_FLOW_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (!response.ok) throw new Error("HTTP " + response.status);
+
+            if (!response.ok) throw new Error("Помилка HTTP " + response.status);
+
             closeOperationalEditor();
-            alert("Дані оновлено на дашборді та збережено в SharePoint.");
+            alert("Дані успішно збережено в SharePoint!");
         } catch (err) {
             closeOperationalEditor();
-            alert("Дані оновлено на дашборді, але не збережено в SharePoint: " + err.message);
+            alert("Дані оновлено локально, але сталася помилка запису в SharePoint: " + err.message);
         } finally {
             btn.innerText = "Зберегти";
             btn.disabled = false;

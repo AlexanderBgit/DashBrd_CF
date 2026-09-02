@@ -488,11 +488,15 @@
 
     function renderCalendar() {
         const year = calViewDate.getFullYear();
-        const month = calViewDate.getMonth();
+        const month = calViewDate.getMonth(); // 0..11
         
         const monthNamesUk = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
         const monthTitle = document.getElementById('calendarMonthYear');
         if (monthTitle) monthTitle.innerText = `${monthNamesUk[month]} ${year}`;
+
+        // Фільтруємо всі наявні дати саме для цього відкритого місяця
+        const targetMonthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+        const filledDatesInCurrentMonth = availableDatesWithData.filter(d => d.startsWith(targetMonthPrefix));
 
         const grid = document.getElementById('calendarDaysGrid');
         if (!grid) return;
@@ -504,18 +508,17 @@
 
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        // Порожні слоти перед першим днем місяця
+        // Порожні клітинки до 1 числа
         for (let i = 0; i < firstDayIndex; i++) {
             grid.innerHTML += `<span class="py-1.5 text-transparent select-none">0</span>`;
         }
 
-        // Рендеринг днів
+        // Дні місяця
         for (let day = 1; day <= daysInMonth; day++) {
-            const mStr = String(month + 1).padStart(2, '0');
             const dStr = String(day).padStart(2, '0');
-            const dateKey = `${year}-${mStr}-${dStr}`;
+            const dateKey = `${targetMonthPrefix}-${dStr}`;
 
-            const hasData = availableDatesWithData.includes(dateKey);
+            const hasData = filledDatesInCurrentMonth.includes(dateKey);
             const isSelected = (cleanDateKey(currentReportDate) === dateKey);
 
             let btnClass = "py-1.5 rounded-lg text-xs font-semibold transition-all relative flex flex-col items-center justify-center cursor-pointer ";
@@ -523,8 +526,8 @@
             if (isSelected) {
                 btnClass += "bg-indigo-600 text-white font-bold shadow-md scale-105 z-10 ";
             } else if (hasData) {
-                // Зелена плашка для дат із даними
-                btnClass += "!bg-emerald-100 !text-emerald-800 font-bold hover:!bg-emerald-200 border border-emerald-400 ";
+                // Виразне виділення дат, заповнених у поточному місяці
+                btnClass += "bg-emerald-100 text-emerald-800 font-bold hover:bg-emerald-200 border border-emerald-400 ";
             } else {
                 btnClass += "text-slate-700 hover:bg-slate-100 ";
             }
@@ -534,15 +537,37 @@
                 : '';
 
             grid.innerHTML += `
-                <button type="button" onclick="selectDateFromCalendar('${dateKey}')" class="${btnClass}">
+                <button type="button" onclick="selectDateFromCalendar('${dateKey}')" class="${btnClass}" title="${hasData ? 'Є збережені дані' : 'Немає даних'}">
                     <span>${day}</span>
                     ${dot}
                 </button>
             `;
         }
 
+        // Оновлюємо рядок підсумку заповненості місяця внизу календаря
+        updateMonthSummaryBanner(filledDatesInCurrentMonth.length, monthNamesUk[month]);
         updateCalendarTriggerDot();
     }
+
+    function updateMonthSummaryBanner(count, monthName) {
+        let banner = document.getElementById('calMonthSummary');
+        if (!banner) {
+            const footer = document.querySelector('#calendarDropdown .border-t');
+            if (footer) {
+                banner = document.createElement('div');
+                banner.id = 'calMonthSummary';
+                banner.className = 'mt-2 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded text-center';
+                footer.parentNode.insertBefore(banner, footer);
+            }
+        }
+        if (banner) {
+            banner.innerText = count > 0 
+                ? `Заповнено звітів у ${monthName.toLowerCase()}: ${count}` 
+                : `У ${monthName.toLowerCase()} звітів ще не внесено`;
+        }
+    }
+
+
 
     function updateCalendarTriggerDot() {
         const curClean = cleanDateKey(currentReportDate);
@@ -557,11 +582,20 @@
     function selectDateFromCalendar(dateKey) {
         currentReportDate = dateKey;
         const [y, m, d] = dateKey.split('-');
+        
+        // Синхронізуємо місяць перегляду з обраною датою
+        calViewDate = new Date(parseInt(y), parseInt(m) - 1, 1);
+        
         document.getElementById('lblSelectedDate').innerText = `${d}.${m}.${y}`;
         document.getElementById('calendarDropdown').classList.add('hidden');
+        
         syncHeaderDate();
+        
+        // Якщо дата є серед заповнених у місяці — підтягуємо показники автоматично
         if (availableDatesWithData.includes(dateKey)) {
             refreshSharePointData();
+        } else {
+            alert(`На дату ${d}.${m}.${y} даних у SharePoint ще немає. Ви можете внести їх через кнопку "Внести дані".`);
         }
     }
 

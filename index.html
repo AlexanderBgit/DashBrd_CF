@@ -498,20 +498,6 @@
         else modal.classList.add('hidden');
     }
 
-    function renderDateSelector() {
-        const selector = document.getElementById('reportDateSelector');
-        // Об'єднуємо статичні та отримані з SharePoint дати
-        const combined = Array.from(new Set([...allReportDates, ...availableDatesWithData])).filter(Boolean).sort().reverse();
-        
-        selector.innerHTML = combined.map(d => {
-            const hasData = availableDatesWithData.includes(d);
-            const [y, m, day] = d.split('-');
-            const marker = hasData ? '● ' : '○ ';
-            const status = hasData ? ' (є дані)' : '';
-            return `<option value="${d}" ${d === currentReportDate ? 'selected' : ''}>${marker}${day}.${m}.${y}${status}</option>`;
-        }).join('');
-    }
-
     // Поточний перегляд у календарі (рік, місяць 0..11)
     let calViewDate = new Date(2026, 7, 1); // Серпень 2026 за замовчуванням
 

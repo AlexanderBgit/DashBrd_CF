@@ -449,11 +449,12 @@
     // ОК = Дебіторська + Аванси видані − Кредиторська − Аванси отримані
     function wcSign(titleUk) {
         const t = (titleUk || '').toLowerCase();
+        if (t.startsWith('-') || t.includes('нафтогаз') || t.includes('аоз') || t.includes('моу')) return 0; // ігноруємо деталізацію дебіторки
         if (t.includes('дебітор')) return 1;
         if (t.includes('аванси видані')) return 1;
         if (t.includes('кредитор')) return -1;
         if (t.includes('аванси отримані')) return -1;
-        return 0; // не входить у суму (підрядки-деталізація тощо)
+        return 0;
     }
 
     function opFmt(v) {
@@ -1386,18 +1387,29 @@
                     { title: { uk: "Грошові залишки", en: "Cash balances" }, type: "main", values: [4789, 4639, 4709, 4909, 250], highlightNeg: false }
                 ]
             },
+            // Повний перелік статей оборотного капіталу:
             workingCapital: [
                 { title: { uk: "Дебіторська заборгованість", en: "Accounts receivable" }, current: 3450, delta: -120, isSub: false, isTotal: false, isGray: false },
+                { title: { uk: "- НАК Нафтогаз", en: "- NJSC Naftogaz" }, current: 1200, delta: -50, isSub: true, isTotal: false, isGray: false },
+                { title: { uk: "- МОУ / АОЗ", en: "- MoD / DPA" }, current: 850, delta: 10, isSub: true, isTotal: false, isGray: false },
+                { title: { uk: "Аванси видані", en: "Advances paid" }, current: 520, delta: -35, isSub: false, isTotal: false, isGray: false },
                 { title: { uk: "Кредиторська заборгованість", en: "Accounts payable" }, current: 4120, delta: 85, isSub: false, isTotal: false, isGray: false },
-                { title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: -670, delta: -205, isSub: false, isTotal: true, isGray: false }
+                { title: { uk: "Аванси отримані", en: "Advances received" }, current: 520, delta: 25, isSub: false, isTotal: false, isGray: false },
+                { title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: -670, delta: -265, isSub: false, isTotal: true, isGray: false }
             ],
+            // Повний перелік статей запасів:
             fuelInventories: [
-                { title: { uk: "Бензин", en: "Gasoline" }, current: 45, delta: 2 },
-                { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 78, delta: -4 }
+                { title: { uk: "Бензин", en: "Gasoline" }, current: 44, delta: 3 },
+                { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 50, delta: -32 },
+                { title: { uk: "Газ комерційний (млн м³)", en: "Commercial gas (mln m³)" }, current: 120, delta: 5 },
+                { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 85, delta: 0 },
+                { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 35, delta: -2 }
             ],
+            // Повний перелік ресурсів фінансування:
             creditLimits: [
                 { title: { uk: "Кредитні лінії", en: "Credit lines" }, limit: 5000, drawn: 2900, available: 2100 },
-                { title: { uk: "Всього", en: "Total" }, limit: 5000, drawn: 2900, available: 2100 }
+                { title: { uk: "Постімпорт", en: "Post-import" }, limit: 1200, drawn: 350, available: 850 },
+                { title: { uk: "Всього", en: "Total" }, limit: 6200, drawn: 3250, available: 2950 }
             ]
         };
 

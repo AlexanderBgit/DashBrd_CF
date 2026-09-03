@@ -336,6 +336,42 @@
                                         <span class="text-xs font-medium text-slate-700">Жирні заголовки</span>
                                         <input type="checkbox" checked id="chk_summary_bold" onchange="toggleSummaryBold()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     </label>
+                                    <div class="flex justify-between items-center px-1">
+                                        <span class="text-xs font-medium text-slate-700">Відстань</span>
+                                        <div class="flex space-x-1">
+                                            <button onclick="changeSummaryGap(-2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕-</button>
+                                            <button onclick="changeSummaryGap(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕+</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- ДОДАТИ ЦЕЙ БЛОК ДЛЯ УЩІЛЬНЕННЯ: -->
+                                    <div class="flex justify-between items-center px-1">
+                                        <span class="text-xs font-medium text-slate-700">Ширина літер</span>
+                                        <div class="flex space-x-1">
+                                            <button onclick="changeLetterSpacing(-0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors" title="Ущільнити шрифт">T-</button>
+                                            <button onclick="changeLetterSpacing(0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors" title="Розрідити шрифт">T+</button>
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-slate-200 my-1 mx-1"></div>
+                                    <div class="flex justify-between items-center px-1">
+                                        <span class="text-xs font-medium text-slate-700">Відстань</span>
+                                        <div class="flex space-x-1">
+                                            <button onclick="changeSummaryGap(-2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕-</button>
+                                            <button onclick="changeSummaryGap(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕+</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- ДОДАЙТЕ ЦЕЙ БЛОК: -->
+                                    <div class="flex justify-between items-center px-1">
+                                        <span class="text-xs font-medium text-slate-700">Ширина літер</span>
+                                        <div class="flex space-x-1">
+                                            <button onclick="changeLetterSpacing(-0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors" title="Ущільнити шрифт">T-</button>
+                                            <button onclick="changeLetterSpacing(0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors" title="Розрідити шрифт">T+</button>
+                                        </div>
+                                    </div>
+                                    <!-- КІНЕЦЬ БЛОКУ -->
+
+                                    <div class="border-t border-slate-200 my-1 mx-1"></div>
                                 </div>
                             </div>
                         </div>
@@ -1368,14 +1404,14 @@
     }
 
     function changeLetterSpacing(delta) {
-        currentLetterSpacing += delta;
+        currentLetterSpacing = Math.round((currentLetterSpacing + delta) * 10) / 10;
         if (currentLetterSpacing < -1) currentLetterSpacing = -1;
         if (currentLetterSpacing > 2) currentLetterSpacing = 2;
         applyLetterSpacing();
     }
 
     function applyLetterSpacing() {
-        document.querySelectorAll('#summaryTexts p, #summaryTexts span.bullet-text').forEach(el => {
+        document.querySelectorAll('#summaryTexts p, #summaryTexts span.bullet-text, #summaryTexts li').forEach(el => {
             el.style.letterSpacing = `${currentLetterSpacing}px`;
         });
     }
@@ -2024,10 +2060,12 @@
                 if (/^[\s\u00A0]*[•◦\-*–—]/.test(line)) {
                     let text = line.replace(/^[•◦\-*–—\s\u00A0]+/, '');
                     if (!inList) {
-                        htmlContent += '<ul style="margin: 0px !important; padding: 0px !important; list-style: none; display: flex; flex-direction: column; gap: 2px;">';
+                        // Було: gap: 2px -> Стало: gap: 1.5px
+                        htmlContent += '<ul style="margin: 0px !important; padding: 0px !important; list-style: none; display: flex; flex-direction: column; gap: 1.5px;">';
                         inList = true;
                     }
-                    htmlContent += `<li style="margin: 0px !important; padding: 0px !important; text-indent: 0; text-align: left; line-height: 1.0;"><span style="color: #94a3b8; margin-right: 6px; font-weight: bold;">•</span><span class="bullet-text">${text}</span></li>`;
+                    // Було: line-height: 1.0 -> Стало: line-height: 0.95
+                    htmlContent += `<li style="margin: 0px !important; padding: 0px !important; text-indent: 0; text-align: left; line-height: 0.95;"><span style="color: #94a3b8; margin-right: 6px; font-weight: bold;">•</span><span class="bullet-text">${text}</span></li>`;
                 } else {
                     if (inList) {
                         htmlContent += '</ul>';
@@ -2046,7 +2084,7 @@
         
         applySummaryFontSize(); 
         applySummaryGap();
-        applyLetterSpacing(); 
+        applyLetterSpacing();
 
         const wcMenu = document.getElementById('wcMenu');
         if (wcMenu) {

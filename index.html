@@ -600,6 +600,7 @@
         loadMetricsForSelectedDate(dateKey, dotDate);
     }
 
+    // Головна функція завантаження метрик обраної дати
     async function loadMetricsForSelectedDate(isoDate) {
         const btnSP = document.getElementById('btnRefreshSP');
         if (btnSP) {
@@ -612,60 +613,121 @@
             const response = await fetch(GET_METRICS_FLOW_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    reportDate: isoDate // летить чистий "2026-09-02"
-                })
+                body: JSON.stringify({ reportDate: isoDate })
             });
 
             if (!response.ok) throw new Error("HTTP " + response.status);
             const data = await response.json();
-            console.log("Отримані метрики:", data);
+            console.log("Отримані дані:", data);
 
-            // 1. Управлінське резюме
-            const summaryContainer = document.getElementById('managementSummaryText') 
-                || document.querySelector('#managementSummaryContainer p');
-            if (summaryContainer) {
-                const summaryText = (currentLang === 'uk' ? data.summaryUk : data.summaryEn) 
-                    || data.summaryUk 
-                    || data.summaryEn 
-                    || '';
-                summaryContainer.innerHTML = summaryText.trim()
-                    ? `<div class="text-sm text-slate-700 leading-relaxed whitespace-pre-line">${summaryText}</div>`
-                    : `<div class="text-sm text-slate-400 italic">Коментар до звіту за ${isoDate} відсутній.</div>`;
-            }
+            // Оновлюємо дашборд
+            applyMetricsToDashboard(data, isoDate);
 
-            // 2. Заповнення таблиць (Оборотний капітал, Запаси, Фінансування)
-            if (data.metrics && Array.isArray(data.metrics) && data.metrics.length > 0 && typeof globalData !== 'undefined') {
-                data.metrics.forEach(m => {
-                    const cat = (m.Category || '').trim();
-                    const title = (m.Title || '').trim();
-                    const val = Number(m.Value) || 0;
-                    const lim = Number(m.LimitValue) || 0;
-
-                    if (cat === "Оборотний капітал" && globalData.workingCapital) {
-                        const row = globalData.workingCapital.find(r => (r.title?.uk || '').trim() === title || (r.title?.en || '').trim() === title);
-                        if (row) { row.current = val; row.previous = lim; row.delta = val - lim; }
-                    } else if (cat === "Запаси" && globalData.fuelInventories) {
-                        const row = globalData.fuelInventories.find(r => (r.title?.uk || '').trim() === title || (r.title?.en || '').trim() === title);
-                        if (row) { row.current = val; row.previous = lim; row.delta = val - lim; }
-                    } else if (cat === "Фінансування" && globalData.creditLimits) {
-                        const row = globalData.creditLimits.find(r => (r.title?.uk || '').trim() === title || (r.title?.en || '').trim() === title);
-                        if (row) { row.drawn = val; row.limit = lim; row.available = lim - val; }
-                    }
-                });
-
-                if (typeof recalcOperational === 'function') recalcOperational();
-                if (typeof commitOperational === 'function') commitOperational();
-                if (typeof updateLanguageDOM === 'function') updateLanguageDOM();
-                if (typeof safeUpdateChart === 'function') safeUpdateChart();
-            }
         } catch (err) {
-            console.error("Помилка підвантаження метрик:", err);
+            console.error("Помилка завантаження метрик:", err);
         } finally {
             if (btnSP) {
                 btnSP.classList.remove('is-generating');
                 btnSP.disabled = false;
             }
+        }
+    }
+
+    // Функція рознесення даних по блоках інтерфейсу
+    function applyMetricsToDashboard(data, targetDate) {
+        // 1. Оновлення Управлінського резюме
+        const summaryContainer = document.getElementById('managementSummaryText') 
+            || document.querySelector('#managementSummaryContainer p')
+            || document.querySelector('.management-summary-content');
+
+        const ukText = (data?.summaryUk || '').trim();
+        const enText = (data?.summaryEn || '').trim();
+
+        // Зберігаємо для модального вікна "Редагувати"
+        window.currentSummaryUk = ukText;
+        window.currentSummaryEn = enText;
+
+        const displayText = (currentLang === 'uk' ? ukText : enText) || ukText || enText;
+
+        if (summaryContainer) {
+            if (displayText) {
+                summaryContainer.innerHTML = `<div class="text-sm text-slate-700 leading-relaxed whitespace-pre-line">${displayText}</div>`;
+            } else {
+                summaryContainer.innerHTML = `<div class="text-sm text-slate-400 italic">На дату ${targetDate} управлінське резюме відсутнє.</div>`;
+            }
+        }
+
+        // 2. Очищення та наповнення таблиць (Оборотний капітал, Запаси, Кредитні лінії)
+        if (typeof globalData !== 'undefined') {
+            // Скидаємо попередні значення
+            if (Array.isArray(globalData.workingCapital)) {
+                globalData.workingCapital.forEach(r => { r.current = 0; r.previous = 0; r.delta = 0; });
+            }
+            if (Array.isArray(globalData.fuelInventories)) {
+                globalData.fuelInventories.forEach(r => { r.current = 0; r.previous = 0; r.delta = 0; });
+            }
+            if (Array.isArray(globalData.creditLimits)) {
+                globalData.creditLimits.forEach(r => { r.drawn = 0; r.limit = 0; r.available = 0; });
+            }
+
+            const metricsList = Array.isArray(data?.metrics) ? data.metrics : [];
+            
+            metricsList.forEach(m => {
+                // Враховуємо, що Category може бути як рядком, так і об'єктом { Value: "..." }
+                const rawCat = (typeof m.Category === 'object' && m.Category !== null) ? m.Category.Value : m.Category;
+                const cat = String(rawCat || m.CategoryValue || '').trim().toLowerCase();
+                const title = String(m.Title || '').trim().toLowerCase();
+                const val = parseFloat(m.Value) || 0;
+                const lim = parseFloat(m.LimitValue) || 0;
+
+                // Оборотний капітал
+                if (cat.includes("оборотн") && Array.isArray(globalData.workingCapital)) {
+                    const row = globalData.workingCapital.find(r => {
+                        const uk = String(r.title?.uk || '').trim().toLowerCase();
+                        const en = String(r.title?.en || '').trim().toLowerCase();
+                        return uk === title || en === title || uk.includes(title) || title.includes(uk);
+                    });
+                    if (row) {
+                        row.current = val;
+                        row.previous = lim;
+                        row.delta = val - lim;
+                    }
+                }
+
+                // Запаси
+                if (cat.includes("запас") && Array.isArray(globalData.fuelInventories)) {
+                    const row = globalData.fuelInventories.find(r => {
+                        const uk = String(r.title?.uk || '').trim().toLowerCase();
+                        const en = String(r.title?.en || '').trim().toLowerCase();
+                        return uk === title || en === title;
+                    });
+                    if (row) {
+                        row.current = val;
+                        row.previous = lim;
+                        row.delta = val - lim;
+                    }
+                }
+
+                // Фінансування / Кредитні лінії
+                if ((cat.includes("фінанс") || cat.includes("кредит")) && Array.isArray(globalData.creditLimits)) {
+                    const row = globalData.creditLimits.find(r => {
+                        const uk = String(r.title?.uk || '').trim().toLowerCase();
+                        const en = String(r.title?.en || '').trim().toLowerCase();
+                        return uk === title || en === title;
+                    });
+                    if (row) {
+                        row.drawn = val;
+                        row.limit = lim;
+                        row.available = lim - val;
+                    }
+                }
+            });
+
+            // Викликаємо оновлення DOM та перерахунок UI
+            if (typeof recalcOperational === 'function') recalcOperational();
+            if (typeof commitOperational === 'function') commitOperational();
+            if (typeof updateLanguageDOM === 'function') updateLanguageDOM();
+            if (typeof safeUpdateChart === 'function') safeUpdateChart();
         }
     }
 

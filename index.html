@@ -723,20 +723,44 @@
             }
         });
 
-        // 4. Синхронізація значень з інпутами редактора
+        // 4. Підрахунок підсумків для оборотного капіталу
         if (Array.isArray(globalData.workingCapital)) {
-            globalData.workingCapital.forEach((r, i) => {
-                const curInp = document.querySelector(`input[data-group="wc"][data-idx="${i}"][data-field="current"]`);
-                const prevInp = document.querySelector(`input[data-group="wc"][data-idx="${i}"][data-field="previous"]`);
-                if (curInp) curInp.value = r.current;
-                if (prevInp) prevInp.value = r.previous;
+            let totalCur = 0, totalDelta = 0;
+            globalData.workingCapital.forEach(r => {
+                if (r.isTotal) return;
+                const s = typeof wcSign === 'function' ? wcSign(r.title?.uk) : 0;
+                if (!r.isSub && s !== 0) {
+                    totalCur += s * r.current;
+                    totalDelta += s * r.delta;
+                }
             });
+            const totRow = globalData.workingCapital.find(r => r.isTotal);
+            if (totRow) {
+                totRow.current = totalCur;
+                totRow.delta = totalDelta;
+            }
         }
 
-        // 5. Перерахунок підсумків і повне перемальовування інтерфейсу
-        if (typeof commitOperational === 'function') commitOperational();
-        if (typeof updateLanguageDOM === 'function') updateLanguageDOM();
-        if (typeof forceTableRebuild === 'function') forceTableRebuild();
+        // 5. Підрахунок підсумків для лімітів фінансування
+        if (Array.isArray(globalData.creditLimits)) {
+            let totLim = 0, totDr = 0;
+            globalData.creditLimits.forEach(r => {
+                const isTot = (r.title?.uk === 'Всього' || r.title?.en === 'Total');
+                if (!isTot) {
+                    totLim += r.limit;
+                    totDr += r.drawn;
+                }
+            });
+            const limTot = globalData.creditLimits.find(r => r.title?.uk === 'Всього' || r.title?.en === 'Total');
+            if (limTot) {
+                limTot.limit = totLim;
+                limTot.drawn = totDr;
+                limTot.available = totLim - totDr;
+            }
+        }
+
+        // 6. Оновлення відображення таблиць та інтерфейсу
+        updateLanguageDOM();
     }
 
     function syncHeaderDate() {

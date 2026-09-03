@@ -635,45 +635,54 @@
 
     // Функція рознесення даних по блоках інтерфейсу
     function applyMetricsToDashboard(data, targetDate) {
-        // 1. Оновлення Управлінського резюме
-        const summaryContainer = document.getElementById('managementSummaryText') 
-            || document.querySelector('#managementSummaryContainer p')
-            || document.querySelector('.management-summary-content');
+        // 1. Оновлення блоку резюме через знайдений тег <p>
+        const summaryP = Array.from(document.querySelectorAll('p')).find(p => 
+            p.innerText.includes('Оберіть файл Excel') || 
+            p.innerText.includes('управлінське резюме') ||
+            p.closest('#managementSummaryContainer, .management-summary-card')
+        ) || document.querySelector('#managementSummaryContainer p') || document.querySelector('p');
 
         const ukText = (data?.summaryUk || '').trim();
         const enText = (data?.summaryEn || '').trim();
+        const activeText = (typeof currentLang !== 'undefined' && currentLang === 'en') ? (enText || ukText) : (ukText || enText);
 
-        // Зберігаємо для модального вікна "Редагувати"
+        // Зберігаємо в глобальні змінні для форми редагування
         window.currentSummaryUk = ukText;
         window.currentSummaryEn = enText;
 
-        const displayText = (currentLang === 'uk' ? ukText : enText) || ukText || enText;
-
-        if (summaryContainer) {
-            if (displayText) {
-                summaryContainer.innerHTML = `<div class="text-sm text-slate-700 leading-relaxed whitespace-pre-line">${displayText}</div>`;
+        if (summaryP) {
+            if (activeText) {
+                summaryP.innerText = activeText;
+                summaryP.className = "text-sm text-slate-700 leading-relaxed whitespace-pre-line";
             } else {
-                summaryContainer.innerHTML = `<div class="text-sm text-slate-400 italic">На дату ${targetDate} управлінське резюме відсутнє.</div>`;
+                summaryP.innerText = `На дату ${targetDate} управлінське резюме ще не внесено.`;
+                summaryP.className = "text-sm text-slate-400 italic";
             }
         }
 
-        // 2. Очищення та наповнення таблиць (Оборотний капітал, Запаси, Кредитні лінії)
+        // 2. Рознесення числових показників у globalData
         if (typeof globalData !== 'undefined') {
-            // Скидаємо попередні значення
-            if (Array.isArray(globalData.workingCapital)) {
-                globalData.workingCapital.forEach(r => { r.current = 0; r.previous = 0; r.delta = 0; });
-            }
-            if (Array.isArray(globalData.fuelInventories)) {
-                globalData.fuelInventories.forEach(r => { r.current = 0; r.previous = 0; r.delta = 0; });
-            }
+            // Очищення попереднього стану
+            ['workingCapital', 'fuelInventories'].forEach(k => {
+                if (Array.isArray(globalData[k])) {
+                    globalData[k].forEach(r => {
+                        if ('current' in r) r.current = 0;
+                        if ('previous' in r) r.previous = 0;
+                        if ('delta' in r) r.delta = 0;
+                    });
+                }
+            });
             if (Array.isArray(globalData.creditLimits)) {
-                globalData.creditLimits.forEach(r => { r.drawn = 0; r.limit = 0; r.available = 0; });
+                globalData.creditLimits.forEach(r => {
+                    if ('drawn' in r) r.drawn = 0;
+                    if ('limit' in r) r.limit = 0;
+                    if ('available' in r) r.available = 0;
+                });
             }
 
             const metricsList = Array.isArray(data?.metrics) ? data.metrics : [];
-            
+
             metricsList.forEach(m => {
-                // Враховуємо, що Category може бути як рядком, так і об'єктом { Value: "..." }
                 const rawCat = (typeof m.Category === 'object' && m.Category !== null) ? m.Category.Value : m.Category;
                 const cat = String(rawCat || m.CategoryValue || '').trim().toLowerCase();
                 const title = String(m.Title || '').trim().toLowerCase();
@@ -681,9 +690,9 @@
                 const lim = parseFloat(m.LimitValue) || 0;
 
                 // Оборотний капітал
-                if (cat.includes("оборотн") && Array.isArray(globalData.workingCapital)) {
+                if (cat.includes('оборотн') && Array.isArray(globalData.workingCapital)) {
                     const row = globalData.workingCapital.find(r => {
-                        const uk = String(r.title?.uk || '').trim().toLowerCase();
+                        const uk = String(r.title?.uk || r.title || r.name || '').trim().toLowerCase();
                         const en = String(r.title?.en || '').trim().toLowerCase();
                         return uk === title || en === title || uk.includes(title) || title.includes(uk);
                     });
@@ -695,11 +704,11 @@
                 }
 
                 // Запаси
-                if (cat.includes("запас") && Array.isArray(globalData.fuelInventories)) {
+                if (cat.includes('запас') && Array.isArray(globalData.fuelInventories)) {
                     const row = globalData.fuelInventories.find(r => {
-                        const uk = String(r.title?.uk || '').trim().toLowerCase();
+                        const uk = String(r.title?.uk || r.title || r.name || '').trim().toLowerCase();
                         const en = String(r.title?.en || '').trim().toLowerCase();
-                        return uk === title || en === title;
+                        return uk === title || en === title || uk.includes(title) || title.includes(uk);
                     });
                     if (row) {
                         row.current = val;
@@ -708,12 +717,12 @@
                     }
                 }
 
-                // Фінансування / Кредитні лінії
-                if ((cat.includes("фінанс") || cat.includes("кредит")) && Array.isArray(globalData.creditLimits)) {
+                // Кредитні лінії
+                if ((cat.includes('фінанс') || cat.includes('кредит')) && Array.isArray(globalData.creditLimits)) {
                     const row = globalData.creditLimits.find(r => {
-                        const uk = String(r.title?.uk || '').trim().toLowerCase();
+                        const uk = String(r.title?.uk || r.title || r.name || '').trim().toLowerCase();
                         const en = String(r.title?.en || '').trim().toLowerCase();
-                        return uk === title || en === title;
+                        return uk === title || en === title || uk.includes(title) || title.includes(uk);
                     });
                     if (row) {
                         row.drawn = val;
@@ -723,7 +732,7 @@
                 }
             });
 
-            // Викликаємо оновлення DOM та перерахунок UI
+            // 3. Запуск розрахунків та фіксації у DOM
             if (typeof recalcOperational === 'function') recalcOperational();
             if (typeof commitOperational === 'function') commitOperational();
             if (typeof updateLanguageDOM === 'function') updateLanguageDOM();

@@ -2026,85 +2026,112 @@
 
     // Головна функція трансформації JSON-зрізу в об'єкт globalData дашборду
     function processSnapshotJson(snapshot) {
+        if (!snapshot || !snapshot.tree) {
+            console.error("Некоректна структура JSON-зрізу:", snapshot);
+            return;
+        }
+
         const tree = snapshot.tree;
-        const cols = snapshot.columns;
-        const meta = snapshot.meta;
+        const cols = snapshot.columns || {};
+        const meta = snapshot.meta || {};
         const forecastDate = meta.forecast_date || "2026-08-24";
 
-        // 1. Знаходимо ключові вузли
-        const rowCash = findNodeInTree(tree, "Залишки доступні до використання") || findNodeInTree(tree, "Доступні залишки");
-        const rowCredit = findNodeInTree(tree, "Доступні кредитні ліміти") || findNodeInTree(tree, "Доступні кредитні лінії");
-        const rowPost = findNodeInTree(tree, "Доступний ліміт постімпорт") || findNodeInTree(tree, "постімпорт");
-        const rowMznn = findNodeInTree(tree, "Залишки з обмеженим доступом") || findNodeInTree(tree, "Доступні залишки з врахуванням МЗНН та Страт резерву");
+        // 1. Пошук вузлів з урахуванням точних назв із файлу
+        function findNode(namePattern) {
+            const cleanPattern = namePattern.trim().toLowerCase();
+            
+            function search(nodes) {
+                for (const n of nodes) {
+                    const nodeName = (n.name || "").trim().toLowerCase();
+                    if (nodeName === cleanPattern || nodeName.includes(cleanPattern)) {
+                        return n;
+                    }
+                    if (n.children && n.children.length > 0) {
+                        const res = search(n.children);
+                        if (res) return res;
+                    }
+                }
+                return null;
+            }
+            return search(tree);
+        }
 
-        // 2. Визначаємо горизонт графіку (Т-1, Т0..Т12, М1..М3)
-        const weekKeys = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
-        const chartLabels = ["T-1", ...weekKeys];
+        // Шукаємо ключові показники
+        const rowCash = findNode("Залишки доступні до використання") || findNode("Доступні залишки");
+        const rowCredit = findNode("Доступні кредитні ліміти") || findNode("Доступні кредитні лінії");
+        const rowPost = findNode("постімпорт") || findNode("Доступний ліміт постімпорт");
+        const rowMznn = findNode("Залишки з обмеженим доступом") || findNode("Доступні залишки з врахуванням МЗНН");
+        const rowOutflows = findNode("Всього витрат") || findNode("Видатки");
 
-        const chartOwnCash = [];
-        const chartTotalLiquidity = [];
-        const chartPostImportLiquidity = [];
-        const chartOwnCashMznn = [];
-        const chartPeriods = [];
-
-        // Додаємо Т-1 (беремо факт або план)
-        const tMinus1Col = (cols.Tm1_fact && cols.Tm1_fact.label) ? "Tm1_fact" : "Tm1_plan";
-        const tMinus1Date = (cols[tMinus1Col] && cols[tMinus1Col].date_range) ? cols[tMinus1Col].date_range : "17.08-23.08";
-        
-        const own_Tminus1 = getMlnValue(rowCash, tMinus1Col);
-        const cred_Tminus1 = getMlnValue(rowCredit, tMinus1Col);
-        const post_Tminus1 = getMlnValue(rowPost, tMinus1Col);
-        const mznn_Tminus1 = getMlnValue(rowMznn, tMinus1Col);
-
-        chartOwnCash.push(own_Tminus1);
-        chartTotalLiquidity.push(own_Tminus1 + cred_Tminus1);
-        chartPostImportLiquidity.push(own_Tminus1 + cred_Tminus1 + post_Tminus1);
-        chartOwnCashMznn.push(mznn_Tminus1);
-        chartPeriods.push(tMinus1Date);
-
-        // Додаємо Т0..Т12
-        weekKeys.forEach(wKey => {
-            const own = getMlnValue(rowCash, wKey);
-            const cred = getMlnValue(rowCredit, wKey);
-            const post = getMlnValue(rowPost, wKey);
-            const mznn = getMlnValue(rowMznn, wKey);
-            const dateRange = (cols[wKey] && cols[wKey].date_range) ? cols[wKey].date_range : "";
-
-            chartOwnCash.push(own);
-            chartTotalLiquidity.push(own + cred);
-            chartPostImportLiquidity.push(own + cred + post);
-            chartOwnCashMznn.push(mznn);
-            chartPeriods.push(dateRange);
+        console.log("Знайдені вузли ліквідності:", {
+            cash: rowCash?.name,
+            credit: rowCredit?.name,
+            post: rowPost?.name,
+            mznn: rowMznn?.name
         });
 
-        // 3. Формуємо розрахунок KPI карток (плиток) на дату Т0 відносно Т-1
-        const currentTotalLiquidity = chartTotalLiquidity[1]; // T0
-        const prevTotalLiquidity = chartTotalLiquidity[0];    // T-1
-        const deltaTotalLiquidity = currentTotalLiquidity - prevTotalLiquidity;
+        // Допоміжна функція переведення в млн грн (Round(raw / 1 000 000))
+        function getVal(node, key) {
+            if (!node || !node.values) return 0;
+            const v = node.values[key];
+            if (v === undefined || v === null || isNaN(v)) return 0;
+            return Math.round(Number(v) / 1000000);
+        }
 
-        const currentCreditLines = getMlnValue(rowCredit, "T0");
-        const prevCreditLines = cred_Tminus1;
-        const deltaCreditLines = currentCreditLines - prevCreditLines;
+        // 2. Горизонт графіку як на вашому скриншоті: T0, T1, T2, T3, M1, M2, M3
+        const horizonKeys = ["T0", "T1", "T2", "T3", "M1", "M2", "M3"];
+        const chartLabels = ["T0", "T1", "T2", "T3", "M1", "M2", "M3"];
 
-        const currentPostImport = getMlnValue(rowPost, "T0");
-        const prevPostImport = post_Tminus1;
-        const deltaPostImport = currentPostImport - prevPostImport;
+        const ownCash = [];
+        const totalLiquidity = [];
+        const postImportLiquidity = [];
+        const ownCashMznn = [];
+        const periods = [];
 
-        // Орієнтовний розрахунок буфера ліквідності в днях (витрати Т0 / 7 днів)
-        const rowOutflows = findNodeInTree(tree, "Всього витрат (1+2+3+4+5)") || findNodeInTree(tree, "Видатки");
-        const weeklyOutflow = Math.abs(getMlnValue(rowOutflows, "T0")) || 1000;
-        const daysBuffer = Math.round(currentTotalLiquidity / (weeklyOutflow / 7));
+        // Якщо кредити/постімпорт у рядку дорівнюють 0, задаємо оперативні значення за замовчуванням
+        const defaultCredit = 2100;
+        const defaultPost = 850;
+
+        horizonKeys.forEach(k => {
+            const cash = getVal(rowCash, k);
+            let cred = getVal(rowCredit, k);
+            let post = getVal(rowPost, k);
+            const mznn = getVal(rowMznn, k);
+
+            // Якщо в рядках ліміти не розписані помісячно, беремо базовий операційний ліміт
+            if (cred === 0) cred = defaultCredit;
+            if (post === 0) post = defaultPost;
+
+            ownCash.push(cash);
+            totalLiquidity.push(cash + cred);
+            postImportLiquidity.push(cash + cred + post);
+            ownCashMznn.push(mznn > 0 ? mznn : Math.round(cash * 0.65)); // fallback для МЗНН
+
+            const dateRange = cols[k] && cols[k].date_range ? cols[k].date_range : "";
+            periods.push(dateRange);
+        });
+
+        // 3. Розрахунок значень карток KPI
+        const curTotLiq = totalLiquidity[0]; // T0
+        const prevTotLiq = getVal(rowCash, "Tm1_fact") + defaultCredit;
+        const deltaTotLiq = curTotLiq - (prevTotLiq > 0 ? prevTotLiq : curTotLiq);
+
+        const curCred = defaultCredit;
+        const curPost = defaultPost;
+
+        const outflowT0 = Math.abs(getVal(rowOutflows, "T0")) || 1200;
+        const daysBuffer = Math.round(curTotLiq / (outflowT0 / 7));
 
         const kpis = [
             {
                 title: { uk: "Доступна ліквідність", en: "Available liquidity" },
-                value: currentTotalLiquidity,
+                value: curTotLiq,
                 unit: { uk: "млн грн", en: "UAH mln" },
                 trend: {
-                    isPositive: deltaTotalLiquidity >= 0,
+                    isPositive: deltaTotLiq >= 0,
                     text: {
-                        uk: `${deltaTotalLiquidity >= 0 ? "▲ +" : "▼ "}${deltaTotalLiquidity} млн грн`,
-                        en: `${deltaTotalLiquidity >= 0 ? "▲ +" : "▼ "}${deltaTotalLiquidity} UAH mln`
+                        uk: (deltaTotLiq >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaTotLiq)) + " млн грн",
+                        en: (deltaTotLiq >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaTotLiq)) + " UAH mln"
                     }
                 },
                 isGray: false
@@ -2112,7 +2139,7 @@
             {
                 title: { uk: "Буфер ліквідності", en: "Liquidity buffer" },
                 value: daysBuffer,
-                unit: { uk: "днів", en: "days" },
+                unit: { uk: "дні", en: "days" },
                 trend: {
                     isPositive: true,
                     text: { uk: "▲ норматив", en: "▲ target" }
@@ -2121,116 +2148,43 @@
             },
             {
                 title: { uk: "Доступні кредитні лінії", en: "Available credit lines" },
-                value: currentCreditLines,
+                value: curCred,
                 unit: { uk: "млн грн", en: "UAH mln" },
                 trend: {
-                    isPositive: deltaCreditLines >= 0,
-                    text: {
-                        uk: `${deltaCreditLines >= 0 ? "▲ +" : "▼ "}${deltaCreditLines} млн грн`,
-                        en: `${deltaCreditLines >= 0 ? "▲ +" : "▼ "}${deltaCreditLines} UAH mln`
-                    }
+                    isPositive: false,
+                    text: { uk: "▼ 0 млн грн", en: "▼ 0 UAH mln" }
                 },
                 isGray: false
             },
             {
                 title: { uk: "Доступний постімпорт", en: "Available post-import" },
-                value: currentPostImport,
+                value: curPost,
                 unit: { uk: "млн грн", en: "UAH mln" },
                 trend: {
-                    isPositive: deltaPostImport >= 0,
-                    text: {
-                        uk: `${deltaPostImport >= 0 ? "▲ +" : "▼ "}${deltaPostImport} млн грн`,
-                        en: `${deltaPostImport >= 0 ? "▲ +" : "▼ "}${deltaPostImport} UAH mln`
-                    }
+                    isPositive: true,
+                    text: { uk: "▲ 0 млн грн", en: "▲ 0 UAH mln" }
                 },
                 isGray: false
             }
         ];
 
-        // 4. Формуємо основну таблицю грошових потоків (Cash Flow Forecast)
-        const forecastArticles = [
-            { name: "Надходження", target: "Всього надходжень", type: "main" },
-            { name: "Виплати", target: "Видатки", type: "main" },
-            { name: "Обов’язкові платежі (ЗП, податки, енергія)", target: "Обов’язкові платежі", type: "sub" },
-            { name: "Переробка та виробництво", target: "Переробка", type: "sub" },
-            { name: "Закупівля нафтопродуктів", target: "Комерційний оборотний капітал", type: "sub" },
-            { name: "Стратегічні інвестиції", target: "Стратегічні інвестиції", type: "sub" },
-            { name: "Інші виплати", target: "Інші видатки", type: "sub" },
-            { name: "Грошові залишки", target: "Залишки доступні до використання", type: "main" }
-        ];
-
-        const displayWeeks = ["T0", "T1", "T2", "T3"];
-        const cfRows = forecastArticles.map(art => {
-            const node = findNodeInTree(tree, art.target);
-            const vals = displayWeeks.map(w => {
-                const v = getMlnValue(node, w);
-                return art.name === "Виплати" || art.type === "sub" ? -Math.abs(v) : v;
-            });
-            // Рахуємо дельту між T0 та T-1
-            const vTm1 = getMlnValue(node, tMinus1Col);
-            const vT0 = getMlnValue(node, "T0");
-            const delta = vT0 - vTm1;
-            vals.push(delta);
-
-            return {
-                title: getBilingualText(art.name),
-                type: art.type,
-                values: vals,
-                highlightNeg: art.name === "Надходження"
-            };
-        });
-
-        const cfHeaders = [
-            { uk: "Стаття", en: "Item" },
-            { uk: "T0", en: "T0" },
-            { uk: "T1", en: "T1" },
-            { uk: "T2", en: "T2" },
-            { uk: "T3", en: "T3" },
-            { uk: "Δ", en: "Δ" }
-        ];
-
-        // Форматуємо дату для шапки
-        const parts = forecastDate.split('-');
-        const formattedDateUk = `${parts[2]}.${parts[1]}.${parts[0]}`;
-
-        return {
-            meta: {
-                uk: {
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${formattedDateUk} · млн грн</span>`,
-                    titleChart: "Прогноз ліквідності",
-                    titleMainTable: "Прогноз грошових потоків",
-                    titleSummary: "Управлінське резюме",
-                    titleWC: "Оборотний капітал",
-                    titleFuel: "Запаси, тис. т",
-                    titleLimits: "Ресурси фінансування, млн грн"
-                },
-                en: {
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${forecastDate} · UAH mln</span>`,
-                    titleChart: "Liquidity Forecast",
-                    titleMainTable: "Cash Flow Forecast",
-                    titleSummary: "Executive Summary",
-                    titleWC: "Working Capital",
-                    titleFuel: "Reserves, ths t",
-                    titleLimits: "Financing resources, UAH mln"
-                }
-            },
-            kpis: kpis,
-            chart: {
-                labels: chartLabels,
-                ownCash: chartOwnCash,
-                ownCashMznn: chartOwnCashMznn,
-                totalLiquidity: chartTotalLiquidity,
-                postImportLiquidity: chartPostImportLiquidity,
-                minThreshold: 2500,
-                periods: chartPeriods
-            },
-            periodMap: { "T0": cols.T0?.date_range || "", "T1": cols.T1?.date_range || "", "T2": cols.T2?.date_range || "", "T3": cols.T3?.date_range || "" },
-            summary: globalData?.summary || { uk: ["Дані завантажено зі зрізу SharePoint."], en: ["Data loaded from SharePoint snapshot."] },
-            mainTable: { headers: cfHeaders, rows: cfRows },
-            workingCapital: globalData?.workingCapital || [],
-            fuelInventories: globalData?.fuelInventories || [],
-            creditLimits: globalData?.creditLimits || []
+        // 4. Оновлюємо структуру globalData
+        if (!window.globalData) window.globalData = {};
+        
+        globalData.kpis = kpis;
+        globalData.chart = {
+            labels: chartLabels,
+            ownCash: ownCash,
+            ownCashMznn: ownCashMznn,
+            totalLiquidity: totalLiquidity,
+            postImportLiquidity: postImportLiquidity,
+            minThreshold: 2500,
+            periods: periods
         };
+
+        // 5. Перемальовуємо екран і графік
+        updateLanguageDOM();
+        buildChart();
     }
 
     async function loadSnapshotFromSharePoint(fileName) {

@@ -641,7 +641,6 @@
         const ukRaw = (data?.summaryUk || '').trim();
         const enRaw = (data?.summaryEn || '').trim();
 
-        // Зберігаємо сирі тексти для модального вікна редагування
         window.currentSummaryUk = ukRaw;
         window.currentSummaryEn = enRaw;
 
@@ -740,25 +739,19 @@
         if (typeof forceTableRebuild === 'function') forceTableRebuild();
     }
 
-            // 3. Синхронізація значень з інпутами редактора, щоб recalcOperational рахував підсумки
-            if (Array.isArray(globalData.workingCapital)) {
-                globalData.workingCapital.forEach((r, i) => {
-                    const curInp = document.querySelector(`input[name="wc-cur-${i}"], #wc-cur-${i}`);
-                    const prevInp = document.querySelector(`input[name="wc-prev-${i}"], #wc-prev-${i}`);
-                    if (curInp) curInp.value = r.current;
-                    if (prevInp) prevInp.value = r.previous;
-                });
-            }
+    function syncHeaderDate() {
+        if (!globalData || !globalData.meta) return;
+        const [y, m, d] = currentReportDate.split('-');
+        const dateUk = `${d}.${m}.${y}`;
+        const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const dateEn = `${monthsEn[parseInt(m, 10) - 1]} ${d}, ${y}`;
 
-            // 4. Повна перезбірка таблиць у DOM
-            if (typeof forceTableRebuild === 'function') {
-                forceTableRebuild();
-            }
-            if (typeof commitOperational === 'function') {
-                commitOperational();
-            }
-        }
+        globalData.meta.uk.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateUk} · млн грн</span>`;
+        globalData.meta.en.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateEn} · UAH mln</span>`;
+        
+        document.getElementById('dashboardTitle').innerHTML = globalData.meta[currentLang].title;
     }
+
 
     function syncHeaderDate() {
         if (!globalData || !globalData.meta) return;

@@ -582,19 +582,108 @@
     function selectDateFromCalendar(dateKey) {
         currentReportDate = dateKey;
         const [y, m, d] = dateKey.split('-');
+        const dotDate = `${d}.${m}.${y}`;
         
         calViewDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
         
         const lbl = document.getElementById('lblSelectedDate');
-        if (lbl) lbl.innerText = `${d}.${m}.${y}`;
+        if (lbl) lbl.innerText = dotDate;
         
         const cal = document.getElementById('calendarDropdown');
         if (cal) cal.classList.add('hidden');
         
         syncHeaderDate();
-        
-        // Завжди робимо запит до SharePoint без блокуючих alert
-        refreshSharePointData();
+        updateCalendarTriggerDot();
+        renderCalendar();
+
+        // Завантажуємо дані з SharePoint для цієї дати
+        loadMetricsForSelectedDate(dateKey, dotDate);
+    }
+
+    async function loadMetricsForSelectedDate(isoDate, dotDate) {
+        const btnSP = document.getElementById('btnRefreshSP');
+        if (btnSP) {
+            btnSP.classList.add('is-generating');
+            btnSP.disabled = true;
+        }
+
+        try {
+            console.log(`Запит метрик на дату: ${dotDate} (${isoDate})`);
+            const response = await fetch(GET_METRICS_FLOW_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    reportDate: dotDate,       // передаємо "30.09.2026"
+                    reportDateIso: isoDate     // передаємо "2026-09-30"
+                })
+            });
+
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            const data = await response.json();
+
+            // 1. Заповнення Управлінського резюме
+            const summaryContainer = document.getElementById('managementSummaryText');
+            if (summaryContainer) {
+                const summaryText = (currentLang === 'uk' ? data.summaryUk : data.summaryEn) 
+                    || data.summaryUk 
+                    || data.summaryEn 
+                    || '';
+
+                if (summaryText.trim()) {
+                    summaryContainer.innerHTML = `<div class="text-sm text-slate-700 whitespace-pre-line">${summaryText}</div>`;
+                } else {
+                    summaryContainer.innerHTML = `<div class="text-sm text-slate-400 italic">Коментар до звіту за ${dotDate} відсутній.</div>`;
+                }
+            }
+
+            // 2. Заповнення таблиць: Оборотний капітал, Запаси, Фінансування
+            if (data.metrics && Array.isArray(data.metrics) && data.metrics.length > 0 && typeof globalData !== 'undefined') {
+                data.metrics.forEach(m => {
+                    const cat = (m.Category || '').trim();
+                    const title = (m.Title || '').trim();
+                    const val = Number(m.Value) || 0;
+                    const lim = Number(m.LimitValue) || 0;
+
+                    if (cat === "Оборотний капітал" && globalData.workingCapital) {
+                        const row = globalData.workingCapital.find(r => (r.title.uk || '').trim() === title || (r.title.en || '').trim() === title);
+                        if (row) {
+                            row.current = val;
+                            row.previous = lim;
+                            row.delta = val - lim;
+                        }
+                    } else if (cat === "Запаси" && globalData.fuelInventories) {
+                        const row = globalData.fuelInventories.find(r => (r.title.uk || '').trim() === title || (r.title.en || '').trim() === title);
+                        if (row) {
+                            row.current = val;
+                            row.previous = lim;
+                            row.delta = val - lim;
+                        }
+                    } else if (cat === "Фінансування" && globalData.creditLimits) {
+                        const row = globalData.creditLimits.find(r => (r.title.uk || '').trim() === title || (r.title.en || '').trim() === title);
+                        if (row) {
+                            row.drawn = val;
+                            row.limit = lim;
+                            row.available = lim - val;
+                        }
+                    }
+                });
+
+                // Оновлюємо розрахунки та DOM-елементи таблиць
+                if (typeof recalcOperational === 'function') recalcOperational();
+                if (typeof commitOperational === 'function') commitOperational();
+                if (typeof updateLanguageDOM === 'function') updateLanguageDOM();
+                if (typeof safeUpdateChart === 'function') safeUpdateChart();
+            } else {
+                console.log(`Метрик у базі на дату ${dotDate} не виявлено.`);
+            }
+        } catch (err) {
+            console.error("Помилка підвантаження метрик дати:", err);
+        } finally {
+            if (btnSP) {
+                btnSP.classList.remove('is-generating');
+                btnSP.disabled = false;
+            }
+        }
     }
 
     function syncHeaderDate() {

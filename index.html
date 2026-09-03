@@ -635,48 +635,52 @@
 
     // Функція рознесення даних по блоках інтерфейсу
     function applyMetricsToDashboard(data, targetDate) {
-        // 1. Оновлення блоку резюме через знайдений тег <p>
-        const summaryP = Array.from(document.querySelectorAll('p')).find(p => 
-            p.innerText.includes('Оберіть файл Excel') || 
-            p.innerText.includes('управлінське резюме') ||
-            p.closest('#managementSummaryContainer, .management-summary-card')
-        ) || document.querySelector('#managementSummaryContainer p') || document.querySelector('p');
+        // 1. Оновлення Управлінського резюме
+        let summaryBox = document.getElementById('managementSummaryText');
+        if (!summaryBox) {
+            summaryBox = Array.from(document.querySelectorAll('p, div')).find(el => 
+                el.children.length === 0 && (
+                    el.innerText.includes('Оберіть файл Excel') || 
+                    el.innerText.includes('управлінське резюме')
+                )
+            ) || document.querySelector('#managementSummaryContainer p');
+            if (summaryBox) summaryBox.id = 'managementSummaryText';
+        }
 
         const ukText = (data?.summaryUk || '').trim();
         const enText = (data?.summaryEn || '').trim();
         const activeText = (typeof currentLang !== 'undefined' && currentLang === 'en') ? (enText || ukText) : (ukText || enText);
 
-        // Зберігаємо в глобальні змінні для форми редагування
         window.currentSummaryUk = ukText;
         window.currentSummaryEn = enText;
 
-        if (summaryP) {
+        if (summaryBox) {
             if (activeText) {
-                summaryP.innerText = activeText;
-                summaryP.className = "text-sm text-slate-700 leading-relaxed whitespace-pre-line";
+                summaryBox.innerText = activeText;
+                summaryBox.className = "text-sm text-slate-700 leading-relaxed whitespace-pre-line";
             } else {
-                summaryP.innerText = `На дату ${targetDate} управлінське резюме ще не внесено.`;
-                summaryP.className = "text-sm text-slate-400 italic";
+                summaryBox.innerText = `На дату ${targetDate} управлінське резюме ще не внесено.`;
+                summaryBox.className = "text-sm text-slate-400 italic";
             }
         }
 
-        // 2. Рознесення числових показників у globalData
+        // 2. Рознесення метрик по категоріях у globalData
         if (typeof globalData !== 'undefined') {
             // Очищення попереднього стану
             ['workingCapital', 'fuelInventories'].forEach(k => {
                 if (Array.isArray(globalData[k])) {
                     globalData[k].forEach(r => {
-                        if ('current' in r) r.current = 0;
-                        if ('previous' in r) r.previous = 0;
-                        if ('delta' in r) r.delta = 0;
+                        r.current = 0;
+                        r.previous = 0;
+                        r.delta = 0;
                     });
                 }
             });
             if (Array.isArray(globalData.creditLimits)) {
                 globalData.creditLimits.forEach(r => {
-                    if ('drawn' in r) r.drawn = 0;
-                    if ('limit' in r) r.limit = 0;
-                    if ('available' in r) r.available = 0;
+                    r.drawn = 0;
+                    r.limit = 0;
+                    r.available = 0;
                 });
             }
 
@@ -692,7 +696,7 @@
                 // Оборотний капітал
                 if (cat.includes('оборотн') && Array.isArray(globalData.workingCapital)) {
                     const row = globalData.workingCapital.find(r => {
-                        const uk = String(r.title?.uk || r.title || r.name || '').trim().toLowerCase();
+                        const uk = String(r.title?.uk || r.title || '').trim().toLowerCase();
                         const en = String(r.title?.en || '').trim().toLowerCase();
                         return uk === title || en === title || uk.includes(title) || title.includes(uk);
                     });
@@ -706,7 +710,7 @@
                 // Запаси
                 if (cat.includes('запас') && Array.isArray(globalData.fuelInventories)) {
                     const row = globalData.fuelInventories.find(r => {
-                        const uk = String(r.title?.uk || r.title || r.name || '').trim().toLowerCase();
+                        const uk = String(r.title?.uk || r.title || '').trim().toLowerCase();
                         const en = String(r.title?.en || '').trim().toLowerCase();
                         return uk === title || en === title || uk.includes(title) || title.includes(uk);
                     });
@@ -720,9 +724,9 @@
                 // Кредитні лінії
                 if ((cat.includes('фінанс') || cat.includes('кредит')) && Array.isArray(globalData.creditLimits)) {
                     const row = globalData.creditLimits.find(r => {
-                        const uk = String(r.title?.uk || r.title || r.name || '').trim().toLowerCase();
+                        const uk = String(r.title?.uk || r.title || '').trim().toLowerCase();
                         const en = String(r.title?.en || '').trim().toLowerCase();
-                        return uk === title || en === title || uk.includes(title) || title.includes(uk);
+                        return uk === title || en === title;
                     });
                     if (row) {
                         row.drawn = val;
@@ -732,11 +736,23 @@
                 }
             });
 
-            // 3. Запуск розрахунків та фіксації у DOM
-            if (typeof recalcOperational === 'function') recalcOperational();
-            if (typeof commitOperational === 'function') commitOperational();
-            if (typeof updateLanguageDOM === 'function') updateLanguageDOM();
-            if (typeof safeUpdateChart === 'function') safeUpdateChart();
+            // 3. Синхронізація значень з інпутами редактора, щоб recalcOperational рахував підсумки
+            if (Array.isArray(globalData.workingCapital)) {
+                globalData.workingCapital.forEach((r, i) => {
+                    const curInp = document.querySelector(`input[name="wc-cur-${i}"], #wc-cur-${i}`);
+                    const prevInp = document.querySelector(`input[name="wc-prev-${i}"], #wc-prev-${i}`);
+                    if (curInp) curInp.value = r.current;
+                    if (prevInp) prevInp.value = r.previous;
+                });
+            }
+
+            // 4. Повна перезбірка таблиць у DOM
+            if (typeof forceTableRebuild === 'function') {
+                forceTableRebuild();
+            }
+            if (typeof commitOperational === 'function') {
+                commitOperational();
+            }
         }
     }
 

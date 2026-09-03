@@ -652,6 +652,7 @@
     }
 
     // Головна функція завантаження метрик обраної дати
+
     async function loadMetricsForSelectedDate(isoDate) {
         const btnSP = document.getElementById('btnRefreshSP');
         if (btnSP) {
@@ -660,48 +661,46 @@
         }
 
         try {
-            console.log(`Запит метрик на дату: ${isoDate}`);
+            console.log(`Запит даних на дату: ${isoDate}`);
 
-            // 1. Паралельно запитуємо метрики з Power Automate та файл зрізу з SharePoint
-            const [metricsResponse, snapshotData] = await Promise.all([
-                fetch(GET_METRICS_FLOW_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reportDate: isoDate })
-                }).then(r => r.ok ? r.json() : null).catch(e => {
-                    console.warn("Помилка отримання метрик бічних таблиць:", e);
-                    return null;
-                }),
-                fetchSnapshotFromSharePoint(isoDate)
-            ]);
+            const response = await fetch(GET_METRICS_FLOW_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    reportDate: isoDate,
+                    reportDateDot: isoDate.split('-').reverse().join('.')
+                })
+            });
 
-            // 2. Якщо знайдено повний snapshot JSON — будуємо графік, плитки та CF-прогноз
-            if (snapshotData && snapshotData.tree) {
-                console.log("Завантажено snapshot JSON для графіку:", snapshotData);
-                processSnapshotJson(snapshotData);
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            const data = await response.json();
+            console.log("Отримані дані з потоку:", data);
+
+            // 1. Якщо потік повернув розпакований snapshotTree або snapshotJson — будуємо графік
+            const treeSource = data.snapshotTree || data.snapshot || data.snapshotJson;
+            if (treeSource && (treeSource.tree || treeSource.values)) {
+                console.log("Будуємо графік з отриманого зрізу:", treeSource);
+                processSnapshotJson(treeSource);
             } else {
-                console.warn("Snapshot JSON для дати не знайдено або він порожній");
+                console.warn("Потік повернув метрики, але вміст JSON-зрізу відсутній.");
             }
 
-            // 3. Застосовуємо бічні оперативні метрики (Оборотний капітал, Запаси, Резюме)
-            if (metricsResponse) {
-                console.log("Отримані оперативні дані:", metricsResponse);
-                applyMetricsToDashboard(metricsResponse, isoDate);
-            }
+            // 2. Наповнюємо бічні таблиці та управлінське резюме
+            applyMetricsToDashboard(data, isoDate);
 
-            // 4. Оновлюємо UI та перемальовуємо графік
+            // 3. Оновлюємо візуалізацію
             updateLanguageDOM();
             buildChart();
 
         } catch (err) {
-            console.error("Загальна помилка завантаження даних на дату:", err);
+            console.error("Помилка завантаження даних на дату:", err);
         } finally {
             if (btnSP) {
                 btnSP.classList.remove('is-generating');
                 btnSP.disabled = false;
             }
         }
-    }
+}
 
     // Функція рознесення даних по блоках інтерфейсу
     function applyMetricsToDashboard(data, targetDate) {

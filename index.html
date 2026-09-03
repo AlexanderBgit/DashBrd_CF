@@ -331,45 +331,19 @@
                                             <button onclick="changeSummaryGap(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold">↕+</button>
                                         </div>
                                     </div>
+                                    <div class="flex justify-between items-center px-1">
+                                        <span class="text-xs font-medium text-slate-700">Ширина літер</span>
+                                        <div class="flex space-x-1">
+                                            <button onclick="changeLetterSpacing(-0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold" title="Ущільнити шрифт">T-</button>
+                                            <button onclick="changeLetterSpacing(0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold" title="Розрідити шрифт">T+</button>
+                                        </div>
+                                    </div>
                                     <div class="border-t border-slate-200 my-1 mx-1"></div>
                                     <label class="flex items-center justify-between px-1 cursor-pointer hover:bg-slate-50 p-1 rounded">
                                         <span class="text-xs font-medium text-slate-700">Жирні заголовки</span>
                                         <input type="checkbox" checked id="chk_summary_bold" onchange="toggleSummaryBold()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     </label>
-                                    <div class="flex justify-between items-center px-1">
-                                        <span class="text-xs font-medium text-slate-700">Відстань</span>
-                                        <div class="flex space-x-1">
-                                            <button onclick="changeSummaryGap(-2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕-</button>
-                                            <button onclick="changeSummaryGap(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕+</button>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- ДОДАТИ ЦЕЙ БЛОК ДЛЯ УЩІЛЬНЕННЯ: -->
-                                    <div class="flex justify-between items-center px-1">
-                                        <span class="text-xs font-medium text-slate-700">Ширина літер</span>
-                                        <div class="flex space-x-1">
-                                            <button onclick="changeLetterSpacing(-0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors" title="Ущільнити шрифт">T-</button>
-                                            <button onclick="changeLetterSpacing(0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors" title="Розрідити шрифт">T+</button>
-                                        </div>
-                                    </div>
-                                    <div class="border-t border-slate-200 my-1 mx-1"></div>
-                                    <div class="flex justify-between items-center px-1">
-                                        <span class="text-xs font-medium text-slate-700">Відстань</span>
-                                        <div class="flex space-x-1">
-                                            <button onclick="changeSummaryGap(-2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕-</button>
-                                            <button onclick="changeSummaryGap(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors">↕+</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- ДОДАЙТЕ ЦЕЙ БЛОК: -->
-                                    <div class="flex justify-between items-center px-1">
-                                        <span class="text-xs font-medium text-slate-700">Ширина літер</span>
-                                        <div class="flex space-x-1">
-                                            <button onclick="changeLetterSpacing(-0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors" title="Ущільнити шрифт">T-</button>
-                                            <button onclick="changeLetterSpacing(0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold transition-colors" title="Розрідити шрифт">T+</button>
-                                        </div>
-                                    </div>
-                                    <!-- КІНЕЦЬ БЛОКУ -->
+                                </div>
 
                                     <div class="border-t border-slate-200 my-1 mx-1"></div>
                                 </div>
@@ -798,20 +772,6 @@
         // 6. Оновлення відображення таблиць та інтерфейсу
         updateLanguageDOM();
     }
-
-    function syncHeaderDate() {
-        if (!globalData || !globalData.meta) return;
-        const [y, m, d] = currentReportDate.split('-');
-        const dateUk = `${d}.${m}.${y}`;
-        const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const dateEn = `${monthsEn[parseInt(m, 10) - 1]} ${d}, ${y}`;
-
-        globalData.meta.uk.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateUk} · млн грн</span>`;
-        globalData.meta.en.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateEn} · UAH mln</span>`;
-        
-        document.getElementById('dashboardTitle').innerHTML = globalData.meta[currentLang].title;
-    }
-
 
     function syncHeaderDate() {
         if (!globalData || !globalData.meta) return;

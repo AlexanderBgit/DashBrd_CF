@@ -2055,231 +2055,233 @@ function findNodeByExactOrPartialName(nodes, searchName) {
     }
 
     function processSnapshotJson(snapshot) {
-        if (!snapshot || !snapshot.tree) {
-            throw new Error("Некоректний формат JSON: відсутній вузол 'tree'");
-        }
+    if (!snapshot || !snapshot.tree) {
+        throw new Error("Некоректний формат JSON: відсутній вузол 'tree'");
+    }
 
-        const tree = snapshot.tree;
-        const cols = snapshot.columns || {};
-        const meta = snapshot.meta || {};
-        const forecastDate = meta.forecast_date || "2026-08-24";
+    const tree = snapshot.tree;
+    const cols = snapshot.columns || {};
+    const meta = snapshot.meta || {};
+    const forecastDate = meta.forecast_date || "2026-08-24";
 
-        // 1. Пошук статей для ліквідності згідно з логікою макросу
-        const nodeCash = findNodeByExactOrPartialName(tree, "Залишки доступні до використання") 
-                    || findNodeByExactOrPartialName(tree, "Доступні залишки");
-        const nodeCredit = findNodeByExactOrPartialName(tree, "Доступні кредитні ліміти") 
-                        || findNodeByExactOrPartialName(tree, "Доступні кредитні лінії");
-        const nodePost = findNodeByExactOrPartialName(tree, "Доступний ліміт постімпорт") 
-                    || findNodeByExactOrPartialName(tree, "постімпорт");
-        const nodeMznn = findNodeByExactOrPartialName(tree, "Залишки з обмеженим доступом") 
-                    || findNodeByExactOrPartialName(tree, "МЗНН");
-
-        // Послідовність періодів для графіку: T-1, T0, T1, T2, T3, M1, M2, M3
-        const horizonKeys = ["Tm1_fact", "T0", "T1", "T2", "T3", "M1", "M2", "M3"];
-        const displayLabels = ["T-1", "T0", "T1", "T2", "T3", "M1", "M2", "M3"];
-
-        const ownCash = [];
-        const totalLiquidity = [];
-        const postImportLiquidity = [];
-        const ownCashMznn = [];
-        const periods = [];
-
-        // Базові ліміти, якщо вони не деталізовані помісячно у дереві
-        const baseCredit = 2100;
-        const basePost = 850;
-
-        horizonKeys.forEach((key, idx) => {
-            // Якщо факт T-1 відсутній, підтягуємо Tm1_plan
-            const actualKey = (key === "Tm1_fact" && (!nodeCash.values || nodeCash.values["Tm1_fact"] === undefined)) 
-                ? "Tm1_plan" 
-                : key;
-
-            const cash = extractMln(nodeCash, actualKey);
-            let cred = extractMln(nodeCredit, actualKey);
-            let post = extractMln(nodePost, actualKey);
-            const mznn = extractMln(nodeMznn, actualKey);
-
-            if (cred === 0) cred = baseCredit;
-            if (post === 0) post = basePost;
-
-            ownCash.push(cash);
-            totalLiquidity.push(cash + cred);
-            postImportLiquidity.push(cash + cred + post);
-            ownCashMznn.push(mznn);
-
-            // Формування підписів дат з колонок метаданих
-            const colDef = cols[actualKey] || cols[key];
-            periods.push(colDef && colDef.date_range ? colDef.date_range : "");
-        });
-
-        // 2. Плитки KPI (стан на T0 відносно Т-1)
-        const curTotLiq = totalLiquidity[1]; // T0
-        const prevTotLiq = totalLiquidity[0]; // T-1
-        const deltaTotLiq = curTotLiq - prevTotLiq;
-
-        const curCred = extractMln(nodeCredit, "T0") || baseCredit;
-        const prevCred = extractMln(nodeCredit, "Tm1_fact") || baseCredit;
-        const deltaCred = curCred - prevCred;
-
-        const curPost = extractMln(nodePost, "T0") || basePost;
-        const prevPost = extractMln(nodePost, "Tm1_fact") || basePost;
-        const deltaPost = curPost - prevPost;
-
-        const nodeOutflows = findNodeByExactOrPartialName(tree, "Всього витрат") 
-                        || findNodeByExactOrPartialName(tree, "Видатки");
-        const weeklyOutflow = Math.abs(extractMln(nodeOutflows, "T0")) || 1200;
-        const daysBuffer = Math.round(curTotLiq / (weeklyOutflow / 7));
-
-        const kpis = [
-            {
-                title: { uk: "Доступна ліквідність", en: "Available liquidity" },
-                value: curTotLiq,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: {
-                    isPositive: deltaTotLiq >= 0,
-                    text: {
-                        uk: (deltaTotLiq >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaTotLiq)) + " млн грн",
-                        en: (deltaTotLiq >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaTotLiq)) + " UAH mln"
-                    }
-                },
-                isGray: false
-            },
-            {
-                title: { uk: "Буфер ліквідності", en: "Liquidity buffer" },
-                value: daysBuffer,
-                unit: { uk: "дні", en: "days" },
-                trend: {
-                    isPositive: true,
-                    text: { uk: "▲ норматив", en: "▲ target" }
-                },
-                isGray: false
-            },
-            {
-                title: { uk: "Доступні кредитні лінії", en: "Available credit lines" },
-                value: curCred,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: {
-                    isPositive: deltaCred >= 0,
-                    text: {
-                        uk: (deltaCred >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaCred)) + " млн грн",
-                        en: (deltaCred >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaCred)) + " UAH mln"
-                    }
-                },
-                isGray: false
-            },
-            {
-                title: { uk: "Доступний постімпорт", en: "Available post-import" },
-                value: curPost,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: {
-                    isPositive: deltaPost >= 0,
-                    text: {
-                        uk: (deltaPost >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaPost)) + " млн грн",
-                        en: (deltaPost >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaPost)) + " UAH mln"
-                    }
-                },
-                isGray: false
+    // Рекурсивний пошук вузла за точною або частковою назвою
+    function findNode(searchPattern) {
+        const pattern = searchPattern.trim().toLowerCase();
+        function search(nodes) {
+            for (const n of nodes) {
+                const nName = (n.name || "").trim().toLowerCase();
+                if (nName === pattern || nName.includes(pattern)) {
+                    return n;
+                }
+                if (n.children && n.children.length > 0) {
+                    const found = search(n.children);
+                    if (found) return found;
+                }
             }
-        ];
+            return null;
+        }
+        return search(tree);
+    }
 
-        // 3. Формування таблиці прогнозу грошових потоків (CF Forecast)
-        const cfMapping = [
-            { name: "Надходження", target: "Всього надходжень", type: "main" },
-            { name: "Виплати", target: "Видатки", type: "main" },
-            { name: "Обов’язкові платежі (ЗП, податки, енергія)", target: "Обов’язкові платежі", type: "sub" },
-            { name: "Переробка та виробництво", target: "Переробка", type: "sub" },
-            { name: "Закупівля нафтопродуктів", target: "Комерційний оборотний капітал", type: "sub" },
-            { name: "Стратегічні інвестиції", target: "Стратегічні інвестиції", type: "sub" },
-            { name: "Інші виплати", target: "Інші видатки", type: "sub" },
-            { name: "Грошові залишки", target: "Залишки доступні до використання", type: "main" }
-        ];
+    // Безпечне отримання значення в млн грн (Round(val / 1 000 000))
+    function getVal(node, colKey) {
+        if (!node || !node.values) return 0;
+        const v = node.values[colKey];
+        if (v === undefined || v === null || isNaN(v)) return 0;
+        return Math.round(Number(v) / 1000000);
+    }
 
-        const cfWeeks = ["T0", "T1", "T2", "T3"];
-        const cfRows = cfMapping.map(item => {
-            const n = findNodeByExactOrPartialName(tree, item.target);
-            const vals = cfWeeks.map(w => {
-                const val = extractMln(n, w);
-                return (item.name === "Виплати" || item.type === "sub") ? -Math.abs(val) : val;
-            });
+    // 1. Пошук ключових рядків за назвами
+    const rowCash = findNode("Залишки доступні до використання") || findNode("Доступні залишки");
+    const rowCredit = findNode("Доступні кредитні ліміти") || findNode("Доступні кредитні лінії");
+    const rowPost = findNode("постімпорт") || findNode("Доступний ліміт постімпорт");
+    const rowMznn = findNode("Залишки з обмеженим доступом") || findNode("МЗНН");
+    const rowOutflows = findNode("Всього витрат") || findNode("Видатки");
 
-            // Дельта між Т0 та Т-1
-            const vTm1 = extractMln(n, "Tm1_fact") || extractMln(n, "Tm1_plan");
-            const vT0 = extractMln(n, "T0");
-            vals.push(vT0 - vTm1);
+    // 2. Періоди для побудови графіку
+    const horizonKeys = ["T0", "T1", "T2", "T3", "M1", "M2", "M3"];
+    const chartLabels = ["T0", "T1", "T2", "T3", "M1", "M2", "M3"];
 
-            return {
-                title: getBilingualText(item.name),
-                type: item.type,
-                values: vals,
-                highlightNeg: item.name === "Надходження"
-            };
-        });
+    const ownCash = [];
+    const totalLiquidity = [];
+    const postImportLiquidity = [];
+    const ownCashMznn = [];
+    const periods = [];
 
-        // 4. Формуємо глобальний об'єкт з повним набором обов'язкових полів
-        const dParts = forecastDate.split("-");
-        const dateFormatted = dParts.length === 3 ? `${dParts[2]}.${dParts[1]}.${dParts[0]}` : forecastDate;
+    const defaultCredit = 2100;
+    const defaultPost = 850;
 
-        const generatedGlobalData = {
-            meta: {
-                uk: {
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateFormatted} · млн грн</span>`,
-                    titleChart: "Прогноз ліквідності",
-                    titleMainTable: "Прогноз грошових потоків",
-                    titleSummary: "Управлінське резюме",
-                    titleWC: "Оборотний капітал",
-                    titleFuel: "Запаси, тис. т",
-                    titleLimits: "Ресурси фінансування, млн грн"
-                },
-                en: {
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${forecastDate} · UAH mln</span>`,
-                    titleChart: "Liquidity Forecast",
-                    titleMainTable: "Cash Flow Forecast",
-                    titleSummary: "Executive Summary",
-                    titleWC: "Working Capital",
-                    titleFuel: "Reserves, ths t",
-                    titleLimits: "Financing resources, UAH mln"
+    horizonKeys.forEach(k => {
+        const cash = getVal(rowCash, k);
+        let cred = getVal(rowCredit, k);
+        let post = getVal(rowPost, k);
+        const mznn = getVal(rowMznn, k);
+
+        if (cred === 0) cred = defaultCredit;
+        if (post === 0) post = defaultPost;
+
+        ownCash.push(cash);
+        totalLiquidity.push(cash + cred);
+        postImportLiquidity.push(cash + cred + post);
+        ownCashMznn.push(mznn > 0 ? mznn : Math.round(cash * 0.65));
+
+        const dateRange = (cols[k] && cols[k].date_range) ? cols[k].date_range : "";
+        periods.push(dateRange);
+    });
+
+    // 3. Розрахунок KPI карток
+    const curTotLiq = totalLiquidity[0]; // T0
+    const prevCash = getVal(rowCash, "Tm1_fact") || getVal(rowCash, "Tm1_plan");
+    const prevTotLiq = prevCash + defaultCredit;
+    const deltaTotLiq = curTotLiq - (prevTotLiq > 0 ? prevTotLiq : curTotLiq);
+
+    const curCred = getVal(rowCredit, "T0") || defaultCredit;
+    const curPost = getVal(rowPost, "T0") || defaultPost;
+
+    const outflowT0 = Math.abs(getVal(rowOutflows, "T0")) || 1200;
+    const daysBuffer = Math.round(curTotLiq / (outflowT0 / 7));
+
+    const kpis = [
+        {
+            title: { uk: "Доступна ліквідність", en: "Available liquidity" },
+            value: curTotLiq,
+            unit: { uk: "млн грн", en: "UAH mln" },
+            trend: {
+                isPositive: deltaTotLiq >= 0,
+                text: {
+                    uk: (deltaTotLiq >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaTotLiq)) + " млн грн",
+                    en: (deltaTotLiq >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaTotLiq)) + " UAH mln"
                 }
             },
-            kpis: kpis,
-            chart: {
-                labels: displayLabels,
-                ownCash: ownCash,
-                ownCashMznn: ownCashMznn,
-                totalLiquidity: totalLiquidity,
-                postImportLiquidity: postImportLiquidity,
-                minThreshold: 2500,
-                periods: periods
+            isGray: false
+        },
+        {
+            title: { uk: "Буфер ліквідності", en: "Liquidity buffer" },
+            value: daysBuffer,
+            unit: { uk: "дні", en: "days" },
+            trend: {
+                isPositive: true,
+                text: { uk: "▲ норматив", en: "▲ target" }
             },
-            periodMap: {
-                "T0": cols.T0?.date_range || "",
-                "T1": cols.T1?.date_range || "",
-                "T2": cols.T2?.date_range || "",
-                "T3": cols.T3?.date_range || ""
+            isGray: false
+        },
+        {
+            title: { uk: "Доступні кредитні лінії", en: "Available credit lines" },
+            value: curCred,
+            unit: { uk: "млн грн", en: "UAH mln" },
+            trend: {
+                isPositive: false,
+                text: { uk: "▼ 0 млн грн", en: "▼ 0 UAH mln" }
             },
-            summary: window.globalData?.summary || {
-                uk: ["Дані успішно консолідовано зі зрізу JSON."],
-                en: ["Data successfully consolidated from JSON snapshot."]
+            isGray: false
+        },
+        {
+            title: { uk: "Доступний постімпорт", en: "Available post-import" },
+            value: curPost,
+            unit: { uk: "млн грн", en: "UAH mln" },
+            trend: {
+                isPositive: true,
+                text: { uk: "▲ 0 млн грн", en: "▲ 0 UAH mln" }
             },
-            mainTable: {
-                headers: [
-                    { uk: "Стаття", en: "Item" },
-                    { uk: "T0", en: "T0" },
-                    { uk: "T1", en: "T1" },
-                    { uk: "T2", en: "T2" },
-                    { uk: "T3", en: "T3" },
-                    { uk: "Δ", en: "Δ" }
-                ],
-                rows: cfRows
-            },
-            workingCapital: window.globalData?.workingCapital || [],
-            fuelInventories: window.globalData?.fuelInventories || [],
-            creditLimits: window.globalData?.creditLimits || []
-        };
+            isGray: false
+        }
+    ];
 
-        // Обов'язкове збереження у глобальну змінну вікна
-        window.globalData = generatedGlobalData;
-        return generatedGlobalData;
-    }
+    // 4. Формування таблиці прогнозу грошових потоків
+    const cfMapping = [
+        { name: "Надходження", target: "Всього надходжень", type: "main" },
+        { name: "Виплати", target: "Видатки", type: "main" },
+        { name: "Обов’язкові платежі (ЗП, податки, енергія)", target: "Обов’язкові платежі", type: "sub" },
+        { name: "Переробка та виробництво", target: "Переробка", type: "sub" },
+        { name: "Закупівля нафтопродуктів", target: "Комерційний оборотний капітал", type: "sub" },
+        { name: "Стратегічні інвестиції", target: "Стратегічні інвестиції", type: "sub" },
+        { name: "Інші виплати", target: "Інші видатки", type: "sub" },
+        { name: "Грошові залишки", target: "Залишки доступні до використання", type: "main" }
+    ];
+
+    const cfWeeks = ["T0", "T1", "T2", "T3"];
+    const cfRows = cfMapping.map(item => {
+        const n = findNode(item.target);
+        const vals = cfWeeks.map(w => {
+            const val = getVal(n, w);
+            return (item.name === "Виплати" || item.type === "sub") ? -Math.abs(val) : val;
+        });
+
+        const vTm1 = getVal(n, "Tm1_fact") || getVal(n, "Tm1_plan");
+        const vT0 = getVal(n, "T0");
+        vals.push(vT0 - vTm1);
+
+        return {
+            title: getBilingualText(item.name),
+            type: item.type,
+            values: vals,
+            highlightNeg: item.name === "Надходження"
+        };
+    });
+
+    const dParts = forecastDate.split("-");
+    const dateFormatted = dParts.length === 3 ? `${dParts[2]}.${dParts[1]}.${dParts[0]}` : forecastDate;
+
+    // 5. Запис у глобальний об'єкт
+    window.globalData = {
+        meta: {
+            uk: {
+                title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateFormatted} · млн грн</span>`,
+                titleChart: "Прогноз ліквідності",
+                titleMainTable: "Прогноз грошових потоків",
+                titleSummary: "Управлінське резюме",
+                titleWC: "Оборотний капітал",
+                titleFuel: "Запаси, тис. т",
+                titleLimits: "Ресурси фінансування, млн грн"
+            },
+            en: {
+                title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${forecastDate} · UAH mln</span>`,
+                titleChart: "Liquidity Forecast",
+                titleMainTable: "Cash Flow Forecast",
+                titleSummary: "Executive Summary",
+                titleWC: "Working Capital",
+                titleFuel: "Reserves, ths t",
+                titleLimits: "Financing resources, UAH mln"
+            }
+        },
+        kpis: kpis,
+        chart: {
+            labels: chartLabels,
+            ownCash: ownCash,
+            ownCashMznn: ownCashMznn,
+            totalLiquidity: totalLiquidity,
+            postImportLiquidity: postImportLiquidity,
+            minThreshold: 2500,
+            periods: periods
+        },
+        periodMap: {
+            "T0": cols.T0?.date_range || "",
+            "T1": cols.T1?.date_range || "",
+            "T2": cols.T2?.date_range || "",
+            "T3": cols.T3?.date_range || ""
+        },
+        summary: window.globalData?.summary || {
+            uk: ["Дані успішно консолідовано зі зрізу JSON."],
+            en: ["Data successfully consolidated from JSON snapshot."]
+        },
+        mainTable: {
+            headers: [
+                { uk: "Стаття", en: "Item" },
+                { uk: "T0", en: "T0" },
+                { uk: "T1", en: "T1" },
+                { uk: "T2", en: "T2" },
+                { uk: "T3", en: "T3" },
+                { uk: "Δ", en: "Δ" }
+            ],
+            rows: cfRows
+        },
+        workingCapital: window.globalData?.workingCapital || [],
+        fuelInventories: window.globalData?.fuelInventories || [],
+        creditLimits: window.globalData?.creditLimits || []
+    };
+
+    return window.globalData;
+}
 
         // Допоміжна функція переведення в млн грн (Round(raw / 1 000 000))
         function getVal(node, key) {

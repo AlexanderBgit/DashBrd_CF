@@ -119,6 +119,15 @@
 </head>
 <body class="bg-slate-100">
 
+    <!-- Банер повідомлень про помилки / статус завантаження -->
+    <div id="statusBanner" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] hidden max-w-xl w-[92%] print-hide">
+        <div id="statusBannerInner" class="flex items-start gap-3 px-4 py-2.5 rounded-xl shadow-2xl border text-sm font-medium">
+            <span id="statusBannerIcon" class="mt-0.5 shrink-0"></span>
+            <span id="statusBannerText" class="flex-1 leading-snug"></span>
+            <button onclick="clearBanner()" class="shrink-0 text-lg leading-none opacity-60 hover:opacity-100 cursor-pointer" title="Закрити">&times;</button>
+        </div>
+    </div>
+
     <!-- ЄДИНА ПАНЕЛЬ КЕРУВАННЯ (без дублювання та накладень) -->
     <div class="fixed top-4 right-6 flex items-center space-x-2 print-hide z-50 bg-white/95 backdrop-blur-md p-1.5 rounded-full shadow-xl border border-slate-200">
         <!-- Інтерактивний вибір дати -->
@@ -226,11 +235,16 @@
         <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center border-2 border-dashed border-slate-300 hover:border-indigo-500 transition-all relative">
             <button onclick="toggleUploadModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
             <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            <h3 class="text-lg font-bold text-slate-800 mb-2">Імпорт файлу Excel</h3>
-            <p class="text-sm text-slate-500 mb-4">Перетягніть .xlsx файл сюди або натисніть кнопку</p>
-            <input type="file" id="excelFile" accept=".xlsx, .json" class="hidden" onchange="handleFile(this.files)">
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Імпорт даних дашборду</h3>
+            <p class="text-sm text-slate-500 mb-4">Перетягніть файл сюди або оберіть джерело: <span class="font-semibold">JSON-зріз</span> (SharePoint snapshots) чи <span class="font-semibold">Excel</span> (.xlsx)</p>
+            <input type="file" id="excelFile" accept=".xlsx" class="hidden" onchange="handleFile(this.files)">
+            <input type="file" id="jsonFile" accept=".json,application/json" class="hidden" onchange="handleFile(this.files)">
             <div class="flex flex-col gap-2.5">
-                <button onclick="document.getElementById('excelFile').click()" class="bg-slate-800 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-slate-700 transition-all cursor-pointer">Вибрати файл з комп'ютера</button>
+                <button onclick="document.getElementById('jsonFile').click()" class="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-emerald-700 transition-all cursor-pointer flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-6 4h4"></path></svg>
+                    Завантажити JSON
+                </button>
+                <button onclick="document.getElementById('excelFile').click()" class="bg-slate-800 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-slate-700 transition-all cursor-pointer">Завантажити Excel (.xlsx)</button>
                 <button onclick="toggleUploadModal(false)" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-semibold text-sm hover:bg-slate-300 transition-all cursor-pointer">Скасувати</button>
             </div>
         </div>
@@ -446,6 +460,83 @@
     let availableDatesWithData = [];
     let calViewDate = new Date(2026, 7, 1); // Серпень 2026
 
+    // ---- Повідомлення користувачу (замість "тихих" console.error) ----
+    let _bannerTimer = null;
+    function showBanner(message, type) {
+        const banner = document.getElementById('statusBanner');
+        const inner = document.getElementById('statusBannerInner');
+        const icon = document.getElementById('statusBannerIcon');
+        const text = document.getElementById('statusBannerText');
+        if (!banner || !inner || !text) return;
+
+        const styles = {
+            error:   { cls: 'bg-red-50 border-red-300 text-red-800',         ico: '⛔' },
+            warn:    { cls: 'bg-amber-50 border-amber-300 text-amber-800',   ico: '⚠️' },
+            info:    { cls: 'bg-slate-50 border-slate-300 text-slate-700',    ico: 'ℹ️' },
+            loading: { cls: 'bg-indigo-50 border-indigo-300 text-indigo-800',ico: '⏳' },
+            success: { cls: 'bg-emerald-50 border-emerald-300 text-emerald-800', ico: '✅' }
+        };
+        const s = styles[type] || styles.info;
+        inner.className = 'flex items-start gap-3 px-4 py-2.5 rounded-xl shadow-2xl border text-sm font-medium ' + s.cls;
+        icon.textContent = s.ico;
+        text.textContent = message;
+        banner.classList.remove('hidden');
+
+        if (_bannerTimer) { clearTimeout(_bannerTimer); _bannerTimer = null; }
+        if (type === 'success' || type === 'info') {
+            _bannerTimer = setTimeout(clearBanner, 4500);
+        }
+    }
+    function showError(message)  { showBanner(message, 'error'); console.error(message); }
+    function showLoading(message){ showBanner(message, 'loading'); }
+    function showInfo(message)   { showBanner(message, 'info'); }
+    function showSuccess(message){ showBanner(message, 'success'); }
+    function clearBanner() {
+        const banner = document.getElementById('statusBanner');
+        if (banner) banner.classList.add('hidden');
+        if (_bannerTimer) { clearTimeout(_bannerTimer); _bannerTimer = null; }
+    }
+
+    // Реєструє дату (YYYY-MM-DD) як таку, що має дані для дашборду
+    function registerAvailableDate(iso) {
+        const clean = extractCleanDate(iso);
+        if (clean && !availableDatesWithData.includes(clean)) {
+            availableDatesWithData.push(clean);
+            availableDatesWithData.sort();
+        }
+        return clean;
+    }
+
+    // Розгортає дерево tree у плоский список вузлів
+    function flattenTree(nodes, acc) {
+        acc = acc || [];
+        if (!Array.isArray(nodes)) return acc;
+        nodes.forEach(n => { acc.push(n); if (n && n.children) flattenTree(n.children, acc); });
+        return acc;
+    }
+
+    // Надійний пошук вузла за точним ім'ям: серед збігів обираємо keep=true
+    // з найбільшою кількістю значень (уникаємо дублікатів назв у дереві).
+    function findSnapshotNode(tree, name) {
+        const target = String(name || '').trim().toLowerCase();
+        if (!target) return null;
+        const all = flattenTree(tree, []);
+        const nVals = n => (n && n.values) ? Object.keys(n.values).length : 0;
+
+        let exact = all.filter(n => String(n.name || '').trim().toLowerCase() === target);
+        if (exact.length) {
+            exact.sort((a, b) => (Number(!!b.keep) - Number(!!a.keep)) || (nVals(b) - nVals(a)));
+            return exact[0];
+        }
+        // М'який (частковий) резерв — теж із пріоритетом keep + наповненості
+        let partial = all.filter(n => String(n.name || '').trim().toLowerCase().includes(target));
+        if (partial.length) {
+            partial.sort((a, b) => (Number(!!b.keep) - Number(!!a.keep)) || (nVals(b) - nVals(a)));
+            return partial[0];
+        }
+        return null;
+    }
+
     // Повна нормалізація будь-якого вхідного значення до YYYY-MM-DD
     function cleanDateKey(val) {
         if (!val) return '';
@@ -607,100 +698,126 @@
         loadMetricsForSelectedDate(dateKey, dotDate);
     }
 
+    // Прямий доступ до SharePoint REST API. Спрацює ЛИШЕ якщо сторінку відкрито
+    // з домену SharePoint (де є авторизаційна cookie). З локального file:// або
+    // стороннього хоста запит блокує CORS/авторизація — тому це РЕЗЕРВНИЙ шлях.
     async function fetchSnapshotFromSharePoint(targetDate) {
         const spSiteUrl = "https://ukrnaftaoffice365.sharepoint.com/sites/CashFlow";
-        
-        // 1. Робимо запит до папки snapshots, щоб знайти файл за датою в імені
         const folderPath = "/sites/CashFlow/Shared Documents/[_cf] CF_working/F13_Dashboard_DB/db/snapshots";
         const filesApiUrl = `${spSiteUrl}/_api/web/GetFolderByServerRelativeUrl('${encodeURIComponent(folderPath)}')/Files?$select=Name,ServerRelativeUrl`;
 
-        try {
-            const listRes = await fetch(filesApiUrl, {
-                headers: { 'Accept': 'application/json;odata=nometadata' }
-            });
-
-            let targetFileRelativeUrl = null;
-
-            if (listRes.ok) {
-                const listData = await listRes.json();
-                const files = listData.value || [];
-                // Шукаємо файл, ім'я якого містить потрібну дату (наприклад, 2026-08-24)
-                const matchedFile = files.find(f => f.Name.includes(targetDate) && f.Name.endsWith('.json'));
-                if (matchedFile) {
-                    targetFileRelativeUrl = matchedFile.ServerRelativeUrl;
-                }
-            }
-
-            // Якщо через пошук не знайшли, пробуємо пряме типове ім'я файлу
-            if (!targetFileRelativeUrl) {
-                targetFileRelativeUrl = `${folderPath}/PRK13W_${targetDate}_planfact_${targetDate}_20260831_081216_Oleksandr.Borovyk.json`;
-            }
-
-            // 2. Завантажуємо сам вміст JSON
-            const fileContentUrl = `${spSiteUrl}/_api/web/GetFileByServerRelativeUrl('${encodeURIComponent(targetFileRelativeUrl)}')/$value`;
-            const contentRes = await fetch(fileContentUrl, {
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (!contentRes.ok) return null;
-            return await contentRes.json();
-
-        } catch (e) {
-            console.warn("Не вдалося завантажити snapshot напряму з SP:", e);
-            return null;
+        // 1. Знаходимо файл за датою в імені
+        const listRes = await fetch(filesApiUrl, {
+            headers: { 'Accept': 'application/json;odata=nometadata' },
+            credentials: 'include'
+        });
+        if (!listRes.ok) {
+            throw new Error(`SharePoint REST недоступний (HTTP ${listRes.status}). Ймовірно CORS або відсутня авторизація — використовуйте потік Power Automate або завантажте файл вручну.`);
         }
+        const listData = await listRes.json();
+        const files = listData.value || [];
+        let targetFileRelativeUrl = null;
+        const matchedFile = files.find(f => f.Name && f.Name.includes(targetDate) && f.Name.toLowerCase().endsWith('.json'));
+        if (matchedFile) targetFileRelativeUrl = matchedFile.ServerRelativeUrl;
+
+        if (!targetFileRelativeUrl) {
+            throw new Error(`У папці snapshots не знайдено JSON-файл на дату ${targetDate}.`);
+        }
+
+        // 2. Завантажуємо вміст файлу
+        const fileContentUrl = `${spSiteUrl}/_api/web/GetFileByServerRelativeUrl('${encodeURIComponent(targetFileRelativeUrl)}')/$value`;
+        const contentRes = await fetch(fileContentUrl, {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'include'
+        });
+        if (!contentRes.ok) {
+            throw new Error(`Не вдалося прочитати файл snapshot (HTTP ${contentRes.status}).`);
+        }
+        return await contentRes.json();
+    }
+
+    // Уніфіковано витягує об'єкт snapshot (із tree) з будь-якої відповіді потоку/файлу
+    function extractSnapshotObject(payload) {
+        if (!payload) return null;
+        // Якщо це рядок JSON
+        if (typeof payload === 'string') {
+            try { payload = JSON.parse(payload); } catch (e) { return null; }
+        }
+        if (typeof payload !== 'object') return null;
+        // Сам snapshot
+        if (payload.tree) return payload;
+        // Поширені обгортки з потоку Power Automate
+        const candidates = [payload.snapshot, payload.snapshotTree, payload.snapshotJson,
+                            payload.fileContent, payload.content, payload.body, payload.value];
+        for (let c of candidates) {
+            if (!c) continue;
+            if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { continue; } }
+            if (c && typeof c === 'object' && c.tree) return c;
+        }
+        return null;
     }
 
     // Головна функція завантаження метрик обраної дати
 
     async function loadMetricsForSelectedDate(isoDate) {
         const btnSP = document.getElementById('btnRefreshSP');
-        if (btnSP) {
-            btnSP.classList.add('is-generating');
-            btnSP.disabled = true;
-        }
+        if (btnSP) { btnSP.classList.add('is-generating'); btnSP.disabled = true; }
 
+        const dot = isoDate.split('-').reverse().join('.');
+        showLoading(`Завантаження даних на ${dot}…`);
+
+        let flowData = null;         // повна відповідь потоку (метрики, резюме, зріз)
+        let snapshot = null;         // об'єкт snapshot із tree
+        const errors = [];
+
+        // --- СПОСІБ 1: потік Power Automate (основний, працює з локального файлу) ---
         try {
-            console.log(`Запит даних на дату: ${isoDate}`);
-
             const response = await fetch(GET_METRICS_FLOW_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    reportDate: isoDate,
-                    reportDateDot: isoDate.split('-').reverse().join('.')
-                })
+                body: JSON.stringify({ reportDate: isoDate, reportDateDot: dot })
             });
+            if (!response.ok) throw new Error(`потік повернув HTTP ${response.status}`);
 
-            if (!response.ok) throw new Error("HTTP " + response.status);
-            const data = await response.json();
-            console.log("Отримані дані з потоку:", data);
+            const raw = await response.text();
+            try { flowData = raw ? JSON.parse(raw) : {}; }
+            catch (e) { throw new Error("потік повернув некоректний JSON"); }
 
-            // 1. Якщо потік повернув розпакований snapshotTree або snapshotJson — будуємо графік
-            const treeSource = data.snapshotTree || data.snapshot || data.snapshotJson;
-            if (treeSource && (treeSource.tree || treeSource.values)) {
-                console.log("Будуємо графік з отриманого зрізу:", treeSource);
-                processSnapshotJson(treeSource);
-            } else {
-                console.warn("Потік повернув метрики, але вміст JSON-зрізу відсутній.");
-            }
+            snapshot = extractSnapshotObject(flowData.snapshotTree || flowData.snapshot || flowData.snapshotJson || flowData);
+        } catch (e) {
+            errors.push("Power Automate: " + e.message);
+        }
 
-            // 2. Наповнюємо бічні таблиці та управлінське резюме
-            applyMetricsToDashboard(data, isoDate);
-
-            // 3. Оновлюємо візуалізацію
-            updateLanguageDOM();
-            buildChart();
-
-        } catch (err) {
-            console.error("Помилка завантаження даних на дату:", err);
-        } finally {
-            if (btnSP) {
-                btnSP.classList.remove('is-generating');
-                btnSP.disabled = false;
+        // --- СПОСІБ 2: прямий SharePoint REST (резерв, лише з домену SP) ---
+        if (!snapshot) {
+            try {
+                const direct = await fetchSnapshotFromSharePoint(isoDate);
+                snapshot = extractSnapshotObject(direct);
+            } catch (e) {
+                errors.push("SharePoint REST: " + e.message);
             }
         }
-}
+
+        try {
+            if (snapshot) {
+                processSnapshotJson(snapshot);          // будує графік, таблицю, плитки, періоди
+                if (flowData) applyMetricsToDashboard(flowData, isoDate); // бічні таблиці + резюме, якщо є
+                updateLanguageDOM();
+                buildChart();
+                document.getElementById('dashboardContent')?.classList.remove('hidden');
+                document.getElementById('uploadZone')?.classList.add('hidden');
+                showSuccess(`Дані на ${dot} завантажено.`);
+            } else {
+                // Даних немає — показуємо зрозумілу помилку, не «падаємо мовчки»
+                const detail = errors.length ? (" Деталі: " + errors.join("; ")) : "";
+                showError(`Не вдалося отримати дані на ${dot}.${detail} Можна завантажити JSON-файл вручну (кнопка «Excel/JSON»).`);
+            }
+        } catch (err) {
+            showError(`Помилка обробки даних на ${dot}: ${err.message}`);
+        } finally {
+            if (btnSP) { btnSP.classList.remove('is-generating'); btnSP.disabled = false; }
+        }
+    }
 
     // Функція рознесення даних по блоках інтерфейсу
     function applyMetricsToDashboard(data, targetDate) {
@@ -877,108 +994,71 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reportDate: "" })
             });
-            if (!res.ok) throw new Error("HTTP " + res.status);
-            const data = await res.json();
-            
-            const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
-            availableDatesWithData = [...new Set(rawList.map(extractCleanDate))].filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d));
+            if (!res.ok) throw new Error("потік повернув HTTP " + res.status);
 
-            console.log("СПИСОК ДАТ ДЛЯ КАЛЕНДАРЯ:", availableDatesWithData);
+            const raw = await res.text();
+            let data;
+            try { data = raw ? JSON.parse(raw) : {}; }
+            catch (e) { throw new Error("потік повернув некоректний JSON зі списком дат"); }
+
+            const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
+            const cleaned = [...new Set(rawList.map(extractCleanDate))]
+                .filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d));
+            // Об'єднуємо з датами, вже завантаженими локально, і сортуємо
+            cleaned.forEach(registerAvailableDate);
 
             if (availableDatesWithData.length > 0) {
-                // Беремо найновішу дату (наприклад, "2026-09-30")
                 const latestDate = [...availableDatesWithData].sort().reverse()[0];
                 const [y, m, d] = latestDate.split('-');
-                
                 calViewDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
                 currentReportDate = latestDate;
-                
                 const lbl = document.getElementById('lblSelectedDate');
                 if (lbl) lbl.innerText = `${d}.${m}.${y}`;
                 syncHeaderDate();
-
-                // Автоматично завантажуємо метрики та резюме для останньої доступної дати
-                loadMetricsForSelectedDate(latestDate);
+                loadMetricsForSelectedDate(latestDate); // авто-завантаження останньої дати
+            } else {
+                showInfo("Список дат у SharePoint порожній. Оберіть дату або завантажте JSON-файл вручну.");
             }
 
             updateCalendarTriggerDot();
             renderCalendar();
         } catch (err) {
-            console.error("Помилка підвантаження дат:", err);
+            // Не «падаємо мовчки»: календар лишається робочим для локально завантажених файлів
+            showBanner(`Не вдалося отримати список дат із SharePoint (${err.message}). Дати в календарі з'являться після завантаження JSON-файлів вручну.`, 'warn');
+            updateCalendarTriggerDot();
+            renderCalendar();
         }
     }
 
     async function refreshSharePointData() {
-        const btn = document.getElementById('btnRefreshSP');
-        if (btn) {
-            btn.classList.add('is-generating');
-            btn.disabled = true;
+        // Перезавантажує зріз поточної обраної дати та оновлює список дат календаря.
+        await loadAvailableDatesFromSPQuiet();
+        if (currentReportDate) {
+            await loadMetricsForSelectedDate(currentReportDate);
+        } else {
+            showInfo("Оберіть дату у календарі або завантажте JSON-файл.");
         }
+    }
 
+    // Тихе оновлення лише списку доступних дат (без авто-завантаження метрик)
+    async function loadAvailableDatesFromSPQuiet() {
         try {
-            const [y, m, d] = currentReportDate.split('-');
-            const dotDate = `${d}.${m}.${y}`; // "26.08.2026"
-
-            const response = await fetch(GET_METRICS_FLOW_URL, {
+            const res = await fetch(GET_METRICS_FLOW_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    reportDate: currentReportDate,
-                    reportDateDot: dotDate
-                })
+                body: JSON.stringify({ reportDate: "" })
             });
-
-            if (!response.ok) throw new Error("HTTP " + response.status);
-            const result = await response.json();
-
-            // Оновлюємо та фарбуємо дати з будь-якого формату
-            if (result.availableDates && Array.isArray(result.availableDates)) {
-                availableDatesWithData = [...new Set(result.availableDates.map(raw => {
-                    if (!raw) return '';
-                    const s = String(raw).trim();
-                    const mDot = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-                    if (mDot) return `${mDot[3]}-${mDot[2].padStart(2, '0')}-${mDot[1].padStart(2, '0')}`;
-                    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
-                    return s;
-                }))].filter(Boolean);
-                
-                updateCalendarTriggerDot();
-                renderCalendar();
-            }
-
-            // Заповнюємо таблиці, якщо прийшли рядки
-            if (result.metrics && Array.isArray(result.metrics) && result.metrics.length > 0 && globalData) {
-                result.metrics.forEach(m => {
-                    const cat = (m.Category || '').trim();
-                    const title = (m.Title || '').trim();
-                    const val = Number(m.Value) || 0;
-                    const lim = Number(m.LimitValue) || 0;
-
-                    if (cat === "Оборотний капітал") {
-                        const row = globalData.workingCapital.find(r => r.title.uk.trim() === title);
-                        if (row) { row.current = val; row.previous = lim; row.delta = val - lim; }
-                    } else if (cat === "Запаси") {
-                        const row = globalData.fuelInventories.find(r => r.title.uk.trim() === title);
-                        if (row) { row.current = val; row.previous = lim; row.delta = val - lim; }
-                    } else if (cat === "Фінансування") {
-                        const row = globalData.creditLimits.find(r => r.title.uk.trim() === title);
-                        if (row) { row.drawn = val; row.limit = lim; row.available = lim - val; }
-                    }
-                });
-
-                // Автоперерахунок підсумків оборотного капіталу
-                recalcOperational();
-                commitOperational();
-                updateLanguageDOM();
-                safeUpdateChart();
-            }
-        } catch (err) {
-            console.error("Помилка синхронізації:", err);
-        } finally {
-            if (btn) {
-                btn.classList.remove('is-generating');
-                btn.disabled = false;
-            }
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const raw = await res.text();
+            const data = raw ? JSON.parse(raw) : {};
+            const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
+            rawList.map(extractCleanDate)
+                   .filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
+                   .forEach(registerAvailableDate);
+            updateCalendarTriggerDot();
+            renderCalendar();
+        } catch (e) {
+            // не критично для кнопки оновлення
         }
     }
 
@@ -1000,7 +1080,7 @@
                 { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: 0, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true },
                 { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: 0, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true }
             ],
-            chart: { labels: ["T0", "T1", "T2", "T3", "M1", "M2", "M3"], ownCash: [0,0,0,0,0,0,0], ownCashMznn: [0,0,0,0,0,0,0], totalLiquidity: [0,0,0,0,0,0,0], postImportLiquidity: [0,0,0,0,0,0,0], minThreshold: 2500, periods: [] },
+            chart: { labels: ["Т-1","Т0","Т1","Т2","Т3","Т4","Т5","Т6","Т7","Т8","Т9","Т10","Т11","Т12"], ownCash: Array(14).fill(0), ownCashMznn: Array(14).fill(null), totalLiquidity: Array(14).fill(0), postImportLiquidity: Array(14).fill(0), minThreshold: 2500, periods: [] },
             periodMap: {},
             summary: {
                 uk: ["Оберіть файл Excel або завантажте дані з SharePoint."],
@@ -1763,21 +1843,30 @@
         if (file.name.toLowerCase().endsWith(".json")) {
             const reader = new FileReader();
             reader.onload = function(e) {
+                let parsedJson;
                 try {
-                    const parsedJson = JSON.parse(e.target.result);
-                    // Присвоюємо глобально та перевіряємо
-                    window.globalData = processSnapshotJson(parsedJson);
+                    parsedJson = JSON.parse(e.target.result);
+                } catch (err) {
+                    showError("Файл не є коректним JSON: " + err.message);
+                    return;
+                }
+                const snap = extractSnapshotObject(parsedJson) || parsedJson;
+                try {
+                    processSnapshotJson(snap); // встановлює globalData + реєструє дату
 
                     document.getElementById("uploadZone")?.classList.add("hidden");
                     document.getElementById("dashboardContent")?.classList.remove("hidden");
 
                     updateLanguageDOM();
                     buildChart();
+
+                    const d = extractCleanDate(snap.meta && (snap.meta.forecast_date || snap.meta.plan_fact_date));
+                    showSuccess(d ? `Завантажено зріз на ${d.split('-').reverse().join('.')}.` : "JSON-зріз завантажено.");
                 } catch (err) {
-                    console.error("Помилка обробки JSON:", err);
-                    alert("Помилка обробки JSON: " + err.message);
+                    showError("Помилка обробки JSON-зрізу: " + err.message);
                 }
             };
+            reader.onerror = function() { showError("Не вдалося прочитати файл."); };
             reader.readAsText(file);
             return;
         }
@@ -2120,143 +2209,139 @@
         }
 
         const tree = snapshot.tree;
-        const cols = snapshot.columns || {};
+        const cols = snapshot.meta && snapshot.columns ? snapshot.columns : (snapshot.columns || {});
         const meta = snapshot.meta || {};
-        const forecastDate = meta.forecast_date || "2026-08-24";
+        const forecastDate = extractCleanDate(meta.forecast_date) || extractCleanDate(meta.plan_fact_date) || currentReportDate || "2026-08-24";
 
-        // 1. Пошук ключових вузлів
-        const rowCash = findNodeByExactOrPartialName(tree, "Залишки доступні до використання") || findNodeByExactOrPartialName(tree, "Доступні залишки");
-        const rowCredit = findNodeByExactOrPartialName(tree, "Доступні кредитні ліміти") || findNodeByExactOrPartialName(tree, "Доступні кредитні лінії");
-        const rowPost = findNodeByExactOrPartialName(tree, "постімпорт") || findNodeByExactOrPartialName(tree, "Доступний ліміт постімпорт");
-        const rowMznn = findNodeByExactOrPartialName(tree, "Залишки з обмеженим доступом") || findNodeByExactOrPartialName(tree, "МЗНН");
-        const rowOutflows = findNodeByExactOrPartialName(tree, "Всього витрат") || findNodeByExactOrPartialName(tree, "Видатки");
+        // Реєструємо дату зрізу як доступну для календаря
+        registerAvailableDate(forecastDate);
 
-        // 2. Періоди для побудови графіку: T0, T1, T2, T3, M1, M2, M3
-        const horizonKeys = ["T0", "T1", "T2", "T3", "M1", "M2", "M3"];
-        const chartLabels = ["T0", "T1", "T2", "T3", "M1", "M2", "M3"];
+        // --- 1. Ключові вузли (надійний пошук за точним ім'ям) ---
+        const nodeCash   = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
+        const nodeCredit = findSnapshotNode(tree, "Доступні кредитні ліміти") || findSnapshotNode(tree, "Доступні кредитні лінії");
+        const nodePost   = findSnapshotNode(tree, "Доступний ліміт постімпорт");
+        const nodeMznn   = findSnapshotNode(tree, "Доступні залишки з врахуванням МЗНН та Страт резерву") || findSnapshotNode(tree, "Залишки з обмеженим доступом");
 
-        const ownCash = [];
-        const totalLiquidity = [];
-        const postImportLiquidity = [];
-        const ownCashMznn = [];
-        const periods = [];
+        // --- 2. Щотижневі періоди графіку: Т-1, Т0 … Т12 (як у dashboard.html) ---
+        // Для Т-1 використовуємо факт, потім прогноз, потім план.
+        const tm1Key = (nodeCash && nodeCash.values && nodeCash.values.Tm1_fact !== undefined) ? "Tm1_fact"
+                     : (nodeCash && nodeCash.values && nodeCash.values.Tm1_forecast !== undefined) ? "Tm1_forecast" : "Tm1_plan";
+        const weekKeys   = [tm1Key, "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+        const chartLabels = ["Т-1", "Т0", "Т1", "Т2", "Т3", "Т4", "Т5", "Т6", "Т7", "Т8", "Т9", "Т10", "Т11", "Т12"];
 
-        const defaultCredit = 2100;
-        const defaultPost = 850;
+        // Діапазон дат для періоду (Т-1 бере діапазон свого варіанта колонки)
+        const periodRange = (k) => {
+            if (cols[k] && cols[k].date_range) return cols[k].date_range;
+            if (k.indexOf("Tm1") === 0) {
+                return (cols.Tm1_fact && cols.Tm1_fact.date_range) || (cols.Tm1_forecast && cols.Tm1_forecast.date_range) || (cols.Tm1_plan && cols.Tm1_plan.date_range) || "";
+            }
+            return "";
+        };
 
-        horizonKeys.forEach(k => {
-            const cash = getMlnValue(rowCash, k);
-            let cred = getMlnValue(rowCredit, k);
-            let post = getMlnValue(rowPost, k);
-            const mznn = getMlnValue(rowMznn, k);
+        const ownCash = [], totalLiquidity = [], postImportLiquidity = [], ownCashMznn = [], periods = [];
 
-            if (cred === 0) cred = defaultCredit;
-            if (post === 0) post = defaultPost;
+        weekKeys.forEach(k => {
+            const cash = getMlnValue(nodeCash, k);
+            const cred = getMlnValue(nodeCredit, k);
+            const post = getMlnValue(nodePost, k);
+            const hasMznn = nodeMznn && nodeMznn.values && nodeMznn.values[k] !== undefined && nodeMznn.values[k] !== null;
 
             ownCash.push(cash);
             totalLiquidity.push(cash + cred);
             postImportLiquidity.push(cash + cred + post);
-            ownCashMznn.push(mznn > 0 ? mznn : Math.round(cash * 0.65));
-
-            const dateRange = (cols[k] && cols[k].date_range) ? cols[k].date_range : "";
-            periods.push(dateRange);
+            ownCashMznn.push(hasMznn ? getMlnValue(nodeMznn, k) : null);
+            periods.push(periodRange(k));
         });
 
-        // 3. Розрахунок KPI карток
-        const curTotLiq = totalLiquidity[0]; // T0
-        const prevCash = getMlnValue(rowCash, "Tm1_fact") || getMlnValue(rowCash, "Tm1_plan");
-        const prevTotLiq = prevCash + defaultCredit;
-        const deltaTotLiq = curTotLiq - (prevTotLiq > 0 ? prevTotLiq : curTotLiq);
+        // Індекси Т-1 та Т0
+        const iTm1 = 0, iT0 = 1;
 
-        const curCred = getMlnValue(rowCredit, "T0") || defaultCredit;
-        const curPost = getMlnValue(rowPost, "T0") || defaultPost;
+        // --- 3. KPI-плитки (з реальних даних Т0, дельта проти Т-1) ---
+        const curTotLiq  = totalLiquidity[iT0];
+        const prevTotLiq = totalLiquidity[iTm1];
+        const dLiq = curTotLiq - prevTotLiq;
 
-        const outflowT0 = Math.abs(getMlnValue(rowOutflows, "T0")) || 1200;
-        const daysBuffer = Math.round(curTotLiq / (outflowT0 / 7));
+        const curCred  = getMlnValue(nodeCredit, "T0");
+        const prevCred = getMlnValue(nodeCredit, tm1Key);
+        const dCred = curCred - prevCred;
+
+        const curPost  = getMlnValue(nodePost, "T0");
+        const prevPost = getMlnValue(nodePost, tm1Key);
+        const dPost = curPost - prevPost;
+
+        // Буфер ліквідності (днів) = доступна ліквідність / середньодобові
+        // обов'язкові + виробничі виплати (обов'язкові + переробка + оборотний капітал).
+        const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
+        const nProcessing = findSnapshotNode(tree, "Переробка");
+        const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
+        const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
+
+        const weeklyCoreOut = (key) => {
+            let s = Math.abs(getMlnValue(nMandatory, key)) + Math.abs(getMlnValue(nProcessing, key)) + Math.abs(getMlnValue(nCommercial, key));
+            if (s === 0) s = Math.abs(getMlnValue(nAllOut, key)); // резерв
+            return s;
+        };
+        const dailyOutT0  = weeklyCoreOut("T0") / 7;
+        const dailyOutTm1 = weeklyCoreOut(tm1Key) / 7;
+        const bufferT0  = dailyOutT0  > 0 ? Math.round(curTotLiq  / dailyOutT0)  : 0;
+        const bufferTm1 = dailyOutTm1 > 0 ? Math.round(prevTotLiq / dailyOutTm1) : 0;
+        const dBuffer = bufferT0 - bufferTm1;
+
+        const trend = (delta, unitUk, unitEn) => {
+            const a = Math.abs(delta);
+            const num = a === 0 ? "0" : formatNum(a);
+            const arrow = delta > 0 ? "▲ +" : (delta < 0 ? "▼ -" : "— ");
+            return {
+                isPositive: delta >= 0,
+                text: { uk: arrow + num + " " + unitUk, en: arrow + num + " " + unitEn }
+            };
+        };
 
         const kpis = [
-            {
-                title: { uk: "Доступна ліквідність", en: "Available liquidity" },
-                value: curTotLiq,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: {
-                    isPositive: deltaTotLiq >= 0,
-                    text: {
-                        uk: (deltaTotLiq >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaTotLiq)) + " млн грн",
-                        en: (deltaTotLiq >= 0 ? "▲ +" : "▼ ") + formatNum(Math.abs(deltaTotLiq)) + " UAH mln"
-                    }
-                },
-                isGray: false
-            },
-            {
-                title: { uk: "Буфер ліквідності", en: "Liquidity buffer" },
-                value: daysBuffer,
-                unit: { uk: "дні", en: "days" },
-                trend: {
-                    isPositive: true,
-                    text: { uk: "▲ норматив", en: "▲ target" }
-                },
-                isGray: false
-            },
-            {
-                title: { uk: "Доступні кредитні лінії", en: "Available credit lines" },
-                value: curCred,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: {
-                    isPositive: false,
-                    text: { uk: "▼ 0 млн грн", en: "▼ 0 UAH mln" }
-                },
-                isGray: false
-            },
-            {
-                title: { uk: "Доступний постімпорт", en: "Available post-import" },
-                value: curPost,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: {
-                    isPositive: true,
-                    text: { uk: "▲ 0 млн грн", en: "▲ 0 UAH mln" }
-                },
-                isGray: false
-            }
+            { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dLiq, "млн грн", "UAH mln"), isGray: false },
+            { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferT0, unit: { uk: "дні", en: "days" }, trend: trend(dBuffer, "дні", "days"), isGray: false },
+            { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dCred, "млн грн", "UAH mln"), isGray: false },
+            { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: curPost, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dPost, "млн грн", "UAH mln"), isGray: false }
         ];
 
-        // 4. Формування таблиці прогнозу грошових потоків
+        // --- 4. Таблиця прогнозу грошових потоків (Т0…Т3 + Δ до Т-1) ---
         const cfMapping = [
             { name: "Надходження", target: "Всього надходжень", type: "main" },
-            { name: "Виплати", target: "Видатки", type: "main" },
+            { name: "Виплати", target: "Всього витрат (1+2+3+4+5)", type: "main" },
             { name: "Обов’язкові платежі (ЗП, податки, енергія)", target: "Обов’язкові платежі", type: "sub" },
             { name: "Переробка та виробництво", target: "Переробка", type: "sub" },
             { name: "Закупівля нафтопродуктів", target: "Комерційний оборотний капітал", type: "sub" },
             { name: "Стратегічні інвестиції", target: "Стратегічні інвестиції", type: "sub" },
             { name: "Інші виплати", target: "Інші видатки", type: "sub" },
-            { name: "Грошові залишки", target: "Залишки доступні до використання", type: "main" }
+            { name: "Чистий грошовий потік", target: "Чистий грошовий потік", type: "total" },
+            { name: "Грошові залишки", target: "Доступні залишки", type: "main" }
         ];
 
         const cfWeeks = ["T0", "T1", "T2", "T3"];
         const cfRows = cfMapping.map(item => {
-            const n = findNodeByExactOrPartialName(tree, item.target);
+            const n = findSnapshotNode(tree, item.target);
             const vals = cfWeeks.map(w => {
                 const val = getMlnValue(n, w);
                 return (item.name === "Виплати" || item.type === "sub") ? -Math.abs(val) : val;
             });
-
-            const vTm1 = getMlnValue(n, "Tm1_fact") || getMlnValue(n, "Tm1_plan");
+            const vTm1 = getMlnValue(n, tm1Key);
             const vT0 = getMlnValue(n, "T0");
-            vals.push(vT0 - vTm1);
-
+            vals.push(vT0 - vTm1); // Δ (Т0 - Т-1)
             return {
                 title: getBilingualText(item.name),
                 type: item.type,
                 values: vals,
-                highlightNeg: item.name === "Надходження"
+                highlightNeg: item.name === "Надходження" || item.name === "Чистий грошовий потік"
             };
         });
 
-        const dParts = forecastDate.split("-");
+        const dParts = String(forecastDate).split("-");
         const dateFormatted = dParts.length === 3 ? `${dParts[2]}.${dParts[1]}.${dParts[0]}` : forecastDate;
 
-        // 5. Запис у глобальний об'єкт
-        window.globalData = {
+        // --- 5. Запис у globalData (і лексичну змінну, і window — синхронно) ---
+        currentReportDate = forecastDate;
+
+        globalData = {
             meta: {
                 uk: {
                     title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateFormatted} · млн грн</span>`,
@@ -2268,7 +2353,7 @@
                     titleLimits: "Ресурси фінансування, млн грн"
                 },
                 en: {
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${forecastDate} · UAH mln</span>`,
+                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateFormatted} · UAH mln</span>`,
                     titleChart: "Liquidity Forecast",
                     titleMainTable: "Cash Flow Forecast",
                     titleSummary: "Executive Summary",
@@ -2288,32 +2373,37 @@
                 periods: periods
             },
             periodMap: {
-                "T0": cols.T0?.date_range || "",
-                "T1": cols.T1?.date_range || "",
-                "T2": cols.T2?.date_range || "",
-                "T3": cols.T3?.date_range || ""
+                "T0": periodRange("T0"), "T1": periodRange("T1"),
+                "T2": periodRange("T2"), "T3": periodRange("T3")
             },
-            summary: window.globalData?.summary || {
-                uk: ["Дані успішно консолідовано зі зрізу JSON."],
-                en: ["Data successfully consolidated from JSON snapshot."]
+            summary: (window.globalData && window.globalData.summary) || {
+                uk: [`Дані на ${dateFormatted} консолідовано зі зрізу JSON.`],
+                en: [`Data as of ${dateFormatted} consolidated from JSON snapshot.`]
             },
             mainTable: {
                 headers: [
                     { uk: "Стаття", en: "Item" },
-                    { uk: "T0", en: "T0" },
-                    { uk: "T1", en: "T1" },
-                    { uk: "T2", en: "T2" },
-                    { uk: "T3", en: "T3" },
+                    { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" },
+                    { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" },
                     { uk: "Δ", en: "Δ" }
                 ],
                 rows: cfRows
             },
-            workingCapital: window.globalData?.workingCapital || [],
-            fuelInventories: window.globalData?.fuelInventories || [],
-            creditLimits: window.globalData?.creditLimits || []
+            workingCapital: (window.globalData && window.globalData.workingCapital) || [],
+            fuelInventories: (window.globalData && window.globalData.fuelInventories) || [],
+            creditLimits: (window.globalData && window.globalData.creditLimits) || []
         };
+        window.globalData = globalData;
 
-        return window.globalData;
+        // Оновлюємо підпис обраної дати в шапці/календарі
+        const lbl = document.getElementById('lblSelectedDate');
+        if (lbl) lbl.innerText = dateFormatted;
+        const [yy, mm] = forecastDate.split('-');
+        if (yy && mm) calViewDate = new Date(parseInt(yy, 10), parseInt(mm, 10) - 1, 1);
+        updateCalendarTriggerDot();
+        renderCalendar();
+
+        return globalData;
     }
 
     async function loadSnapshotFromSharePoint(fileName) {
@@ -2333,18 +2423,18 @@
             if (!response.ok) throw new Error(`HTTP помилка: ${response.status} ${response.statusText}`);
 
             const snapshotJson = await response.json();
-            
-            // Трансформуємо JSON та оновлюємо UI
-            globalData = processSnapshotJson(snapshotJson);
+            const snap = extractSnapshotObject(snapshotJson) || snapshotJson;
+
+            processSnapshotJson(snap); // встановлює globalData
 
             document.getElementById('uploadZone').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
 
             updateLanguageDOM();
             buildChart();
+            showSuccess("Зріз завантажено з SharePoint.");
         } catch (err) {
-            console.error("Не вдалося завантажити snapshot з SharePoint:", err);
-            alert("Помилка завантаження зрізу з SharePoint: " + err.message);
+            showError("Помилка завантаження зрізу з SharePoint: " + err.message);
         }
     }
 

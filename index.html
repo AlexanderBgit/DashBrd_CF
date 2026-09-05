@@ -736,23 +736,60 @@
         return await contentRes.json();
     }
 
-    // Уніфіковано витягує об'єкт snapshot (із tree) з будь-якої відповіді потоку/файлу
-    function extractSnapshotObject(payload) {
-        if (!payload) return null;
-        // Якщо це рядок JSON
+    // Декодує base64 у текст UTF-8 (важливо: у JSON є кирилиця)
+    function b64ToUtf8(b64) {
+        try {
+            const bin = atob(String(b64).replace(/\s/g, ''));
+            const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+            return new TextDecoder('utf-8').decode(bytes);
+        } catch (e) { return null; }
+    }
+
+    // Пробує отримати об'єкт із рядка: спершу як JSON, потім як base64->JSON
+    function tryParseSnapshotString(str) {
+        if (typeof str !== 'string' || !str.trim()) return null;
+        try { const o = JSON.parse(str); if (o && typeof o === 'object') return o; } catch (e) {}
+        const dec = b64ToUtf8(str);
+        if (dec) { try { const o = JSON.parse(dec); if (o && typeof o === 'object') return o; } catch (e) {} }
+        return null;
+    }
+
+    // Уніфіковано витягує об'єкт snapshot (із tree) з БУДЬ-ЯКОЇ форми відповіді:
+    // сам зріз; рядок JSON; base64-рядок; { "$content": base64 } (вивід "Отримати вміст файлу");
+    // будь-які вкладені обгортки (snapshot/body/value/...). Рекурсивно, до 6 рівнів.
+    function extractSnapshotObject(payload, depth) {
+        depth = depth || 0;
+        if (payload == null || depth > 6) return null;
+
         if (typeof payload === 'string') {
-            try { payload = JSON.parse(payload); } catch (e) { return null; }
+            const parsed = tryParseSnapshotString(payload);
+            return parsed ? extractSnapshotObject(parsed, depth + 1) : null;
         }
         if (typeof payload !== 'object') return null;
-        // Сам snapshot
-        if (payload.tree) return payload;
-        // Поширені обгортки з потоку Power Automate
-        const candidates = [payload.snapshot, payload.snapshotTree, payload.snapshotJson,
-                            payload.fileContent, payload.content, payload.body, payload.value];
-        for (let c of candidates) {
-            if (!c) continue;
-            if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { continue; } }
-            if (c && typeof c === 'object' && c.tree) return c;
+
+        // Формат дії SharePoint "Отримати вміст файлу": { "$content": "<base64>", "$content-type": ... }
+        if (payload['$content']) {
+            const dec = b64ToUtf8(payload['$content']);
+            if (dec) {
+                try {
+                    const o = JSON.parse(dec);
+                    const r = extractSnapshotObject(o, depth + 1);
+                    if (r) return r;
+                } catch (e) {}
+            }
+        }
+
+        // Сам зріз
+        if (payload.tree && Array.isArray(payload.tree)) return payload;
+
+        // Відомі обгортки потоку Power Automate
+        const keys = ['snapshot', 'snapshotJson', 'snapshotTree', 'fileContent',
+                      'content', 'body', 'value', 'data', 'result', 'output', 'outputs'];
+        for (const k of keys) {
+            if (payload[k] != null) {
+                const r = extractSnapshotObject(payload[k], depth + 1);
+                if (r) return r;
+            }
         }
         return null;
     }
@@ -777,24 +814,49 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reportDate: isoDate, reportDateDot: dot })
             });
-            if (!response.ok) throw new Error(`потік повернув HTTP ${response.status}`);
 
             const raw = await response.text();
-            try { flowData = raw ? JSON.parse(raw) : {}; }
-            catch (e) { throw new Error("потік повернув некоректний JSON"); }
+            if (!response.ok) {
+                // Тіло 502/500 зазвичай містить реальну причину збою потоку
+                const detail = raw ? (" — " + raw.replace(/\s+/g, ' ').slice(0, 300)) : "";
+                throw new Error(`потік повернув HTTP ${response.status}${detail}`);
+            }
 
-            snapshot = extractSnapshotObject(flowData.snapshotTree || flowData.snapshot || flowData.snapshotJson || flowData);
+            let flow;
+            try { flow = raw ? JSON.parse(raw) : {}; }
+            catch (e) { throw new Error("потік повернув некоректний JSON"); }
+            flowData = flow;
+
+            // Потік міг повернути власне повідомлення про помилку
+            if (flow && flow.error && !(flow.snapshot || flow.snapshotJson || flow.snapshotTree || flow.tree)) {
+                throw new Error(String(flow.error) + (flow.detail ? (" — " + String(flow.detail).slice(0, 200)) : ""));
+            }
+
+            snapshot = extractSnapshotObject(flow.snapshotTree || flow.snapshot || flow.snapshotJson || flow);
+
+            // Потік повернув 200, але зрізу (tree) не знайдено — покажемо форму відповіді
+            if (!snapshot) {
+                const shape = (flow && typeof flow === 'object')
+                    ? ("ключі: [" + Object.keys(flow).join(", ") + "]")
+                    : ("тип: " + typeof flow);
+                throw new Error(`потік повернув 200, але зрізу (tree) не знайдено. Форма відповіді — ${shape}. Перевірте Body дії «Відповідь 2».`);
+            }
         } catch (e) {
             errors.push("Power Automate: " + e.message);
         }
 
-        // --- СПОСІБ 2: прямий SharePoint REST (резерв, лише з домену SP) ---
+        // --- СПОСІБ 2: прямий SharePoint REST (резерв, ЛИШЕ з домену *.sharepoint.com) ---
         if (!snapshot) {
-            try {
-                const direct = await fetchSnapshotFromSharePoint(isoDate);
-                snapshot = extractSnapshotObject(direct);
-            } catch (e) {
-                errors.push("SharePoint REST: " + e.message);
+            const host = (location.hostname || "").toLowerCase();
+            if (host.endsWith("sharepoint.com")) {
+                try {
+                    const direct = await fetchSnapshotFromSharePoint(isoDate);
+                    snapshot = extractSnapshotObject(direct);
+                } catch (e) {
+                    errors.push("SharePoint REST: " + e.message);
+                }
+            } else {
+                errors.push("Прямий доступ до SharePoint неможливий із локального файлу через CORS — дані надходять лише через потік Power Automate.");
             }
         }
 
@@ -810,7 +872,7 @@
             } else {
                 // Даних немає — показуємо зрозумілу помилку, не «падаємо мовчки»
                 const detail = errors.length ? (" Деталі: " + errors.join("; ")) : "";
-                showError(`Не вдалося отримати дані на ${dot}.${detail} Можна завантажити JSON-файл вручну (кнопка «Excel/JSON»).`);
+                showError(`Не вдалося отримати дані на ${dot}.${detail} Відкрийте меню імпорту та скористайтесь кнопкою «Завантажити JSON».`);
             }
         } catch (err) {
             showError(`Помилка обробки даних на ${dot}: ${err.message}`);

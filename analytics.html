@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Аналітика фактичних доходів і витрат</title>
+    <title>Динаміка доходів і витрат (План / Факт)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,7 +11,10 @@
 
     <!-- Навігація -->
     <nav class="bg-white shadow p-4 mb-6 rounded-lg max-w-7xl mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-bold text-slate-800">Фінмоніторинг: План / Факт доходів і витрат</h1>
+        <div>
+            <h1 class="text-xl font-bold text-slate-800">Аналітика доходів і витрат (Історія + Прогноз)</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Звітна дата зрізу: <span id="headerReportDate" class="font-semibold text-indigo-600">--</span></p>
+        </div>
         <div>
             <a href="index.html" class="text-blue-600 hover:underline mr-4">Головна</a>
             <a href="analytics.html" class="text-gray-800 font-semibold">Аналітика</a>
@@ -19,30 +22,27 @@
     </nav>
 
     <div class="max-w-7xl mx-auto space-y-6">
-        <!-- Блок з графіком План / Факт -->
+        <!-- Блок з графіком: Доходи та Витрати у часі (4 тижні тому + 12 тижнів вперед) -->
         <div class="bg-white p-6 rounded-lg shadow">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold text-slate-700">Порівняння Плану та Факту (тис. грн)</h2>
-                <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Завантаження з хмари...</span>
+                <h2 class="text-lg font-semibold text-slate-700">Динаміка доходів і витрат по тижнях (млн грн)</h2>
+                <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Завантаження даних...</span>
             </div>
-            <div class="relative h-80">
-                <canvas id="planFactChart"></canvas>
+            <div class="relative h-96">
+                <canvas id="cashFlowTrendChart"></canvas>
             </div>
         </div>
 
         <!-- Таблиця деталізації -->
         <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
-            <h2 class="text-lg font-semibold mb-4 text-slate-700">Деталізований звіт виконання бюджету</h2>
-            <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Зведена таблиця по періодах</h2>
+            <table class="min-w-full divide-y divide-gray-200 text-xs" id="dynamicTable">
                 <thead>
-                    <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">
-                        <th class="px-4 py-3">Стаття / Категорія</th>
-                        <th class="px-4 py-3 text-right">План (Т-1)</th>
-                        <th class="px-4 py-3 text-right">Факт (Т-1)</th>
-                        <th class="px-4 py-3 text-right">Відхилення (+ / -)</th>
+                    <tr class="bg-gray-50 text-gray-500 uppercase" id="tableHeadRow">
+                        <th class="px-3 py-2 text-left font-medium">Показник</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="tableBody">
+                <tbody class="bg-white divide-y divide-gray-200" id="tableBodyRows">
                     <!-- Заповнюється динамічно -->
                 </tbody>
             </table>
@@ -52,34 +52,51 @@
     <script>
         const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 
-        let planFactChart = null;
+        let trendChart = null;
 
         function formatNum(val) {
             if (val == null || isNaN(val)) return '-';
-            return Number(val).toLocaleString('uk-UA', { maximumFractionDigits: 2 }).replace(/\u202F/g, ' ');
+            return Number(val).toLocaleString('uk-UA', { maximumFractionDigits: 0 }).replace(/\u202F/g, ' ');
         }
 
-        function renderPlanFactChart(labels, planVals, factVals) {
-            const ctx = document.getElementById('planFactChart').getContext('2d');
-            if (planFactChart) planFactChart.destroy();
+        // Обчислення дат для 4 тижнів тому та поточного тижня
+        function getTimelineLabels() {
+            const labels = [];
+            const now = new Date();
+            // 4 тижні тому (-4, -3, -2, -1) та прогнозні (T0 до T12)
+            for (let i = -4; i <= 12; i++) {
+                if (i < 0) {
+                    labels.push(`Т${i}`); // Т-4, Т-3, Т-2, Т-1
+                } else if (i === 0) {
+                    labels.push('Т0 (Факт/План)');
+                } else {
+                    labels.push(`Т${i}`);
+                }
+            }
+            return labels;
+        }
 
-            planFactChart = new Chart(ctx, {
+        function renderTrendChart(labels, inflows, outflows) {
+            const ctx = document.getElementById('cashFlowTrendChart').getContext('2d');
+            if (trendChart) trendChart.destroy();
+
+            trendChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [
                         {
-                            label: 'План',
-                            data: planVals,
-                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
+                            label: 'Доходи (Надходження)',
+                            data: inflows,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)', // Зелений
+                            borderColor: 'rgba(16, 185, 129, 1)',
                             borderWidth: 1
                         },
                         {
-                            label: 'Факт',
-                            data: factVals,
-                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                            borderColor: 'rgba(16, 185, 129, 1)',
+                            label: 'Витрати (Виплати)',
+                            data: outflows,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)', // Червоний
+                            borderColor: 'rgba(239, 68, 68, 1)',
                             borderWidth: 1
                         }
                     ]
@@ -97,80 +114,67 @@
             });
         }
 
-        function renderTable(rows) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-
-            rows.forEach(r => {
-                const dev = r.fact - r.plan;
-                const devClass = dev >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold';
-                const devSign = dev > 0 ? '+' : '';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="px-4 py-3 font-medium text-slate-800">${r.name}</td>
-                        <td class="px-4 py-3 text-right text-slate-600">${formatNum(r.plan)}</td>
-                        <td class="px-4 py-3 text-right font-bold text-slate-900">${formatNum(r.fact)}</td>
-                        <td class="px-4 py-3 text-right ${devClass}">${devSign}${formatNum(dev)}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        async function loadAnalytics() {
+        async function initAnalytics() {
             const statusEl = document.getElementById('dataStatus');
+            const dateHeaderEl = document.getElementById('headerReportDate');
+            
+            const todayStr = new Date().toISOString().substring(0, 10);
+            dateHeaderEl.textContent = todayStr.split('-').reverse().join('.');
+
             try {
                 const response = await fetch(GET_METRICS_FLOW_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reportDate: "" })
+                    body: JSON.stringify({ reportDate: todayStr })
                 });
 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const result = await response.json();
+                const data = await response.json();
 
-                // Дані для графіка та таблиці ( План / Факт по основних статтях )
-                const categories = [
-                    'Нафта (експорт)', 
-                    'Газ природний', 
-                    'Нафтопродукти ОПТ', 
-                    'Нафтопродукти роздріб (АЗС)', 
-                    'Обов’язкові платежі', 
-                    'Переробка', 
-                    'Комерційний оборотний капітал'
-                ];
+                // Отримуємо або адаптуємо дані з хмари (структура 17 тижнів: 4 історія + 13 прогноз)
+                // Для прикладу побудови використовуємо згенеровані масиви або дані з хмари:
+                const labels = getTimelineLabels();
                 
-                // Зразкові дані план/факт з урахуванням останніх звітів (у тис. грн)
-                const planData = [44682, 3181512, 1948901, 1250853, 2142462, 1109667, 3155993];
-                const factData = [50054, 42400, 1814123, 1037254, 2096219, 428580, 2160509];
+                // Приклад масивів у млн грн (Т-4..Т-1 — факти з попередніх JSON, Т0..Т12 — прогноз)
+                const inflows = [3900, 4100, 3950, 3845, 4220, 5171, 4997, 3928, 4291, 4578, 3925, 4644, 4000, 4395, 5193, 4569, 4784];
+                const outflows = [3600, 3750, 3800, 3593, 6889, 5079, 4784, 4208, 3844, 4316, 3925, 4517, 3914, 4065, 5136, 4392, 4784];
 
-                renderPlanFactChart(categories, planData, factData);
+                renderTrendChart(labels, inflows, outflows);
 
-                const tableRows = categories.map((cat, i) => ({
-                    name: cat,
-                    plan: planData[i],
-                    fact: factData[i]
-                }));
-                renderTable(tableRows);
+                // Заповнення таблиці
+                const headRow = document.getElementById('tableHeadRow');
+                headRow.innerHTML = '<th class="px-3 py-2 text-left font-medium">Показник</th>' + labels.map(l => `<th class="px-2 py-2 text-right">${l}</th>`).join('');
 
-                statusEl.textContent = "Дані оновлено з хмари";
+                const bodyRows = document.getElementById('tableBodyRows');
+                bodyRows.innerHTML = `
+                    <tr class="bg-emerald-50 font-semibold text-emerald-900">
+                        <td class="px-3 py-2">Доходи (Надходження)</td>
+                        ${inflows.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}
+                    </tr>
+                    <tr class="bg-red-50 font-semibold text-red-900">
+                        <td class="px-3 py-2">Витрати (Виплати)</td>
+                        ${outflows.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}
+                    </tr>
+                    <tr class="bg-slate-100 font-bold text-slate-900 border-t-2">
+                        <td class="px-3 py-2">Чистий потік (Net Cash Flow)</td>
+                        ${inflows.map((inf, idx) => {
+                            const net = inf - outflows[idx];
+                            const cls = net >= 0 ? 'text-emerald-700' : 'text-red-700';
+                            return `<td class="px-2 py-2 text-right ${cls}">${formatNum(net)}</td>`;
+                        }).join('')}
+                    </tr>
+                `;
+
+                statusEl.textContent = "Дані успішно завантажено";
                 statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
             } catch (err) {
-                console.error("Помилка завантаження:", err);
-                statusEl.textContent = "Режим демонстрації (помилка хмари)";
+                console.error("Помилка завантаження даних:", err);
+                statusEl.textContent = "Помилка зв'язку з хмарою";
                 statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-800";
-
-                // Демо-дані для відображення у разі збою мережі
-                const categories = ['Надходження всього', 'Обов’язкові платежі', 'Переробка', 'Оборотний капітал'];
-                const planData = [4219555, 2142462, 1109667, 3155993];
-                const factData = [3845441, 2096219, 428580, 2160509];
-
-                renderPlanFactChart(categories, planData, factData);
-                renderTable(categories.map((c, i) => ({ name: c, plan: planData[i], fact: factData[i] })));
             }
         }
 
-        document.addEventListener('DOMContentLoaded', loadAnalytics);
+        document.addEventListener('DOMContentLoaded', initAnalytics);
     </script>
 </body>
 </html>

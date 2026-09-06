@@ -87,19 +87,49 @@
     <script>
         let trendChart = null;
 
+        // 17 періодів загалом: 4 тижні історії (Т-4...Т-1), Т0, та 12 тижнів прогнозу (Т1...Т12)
         const labels = ["Т-4", "Т-3", "Т-2", "Т-1", "Т0", "Т1", "Т2", "Т3", "Т4", "Т5", "Т6", "Т7", "Т8", "Т9", "Т10", "Т11", "Т12"];
 
+        // Повна структура даних з урахуванням історії (plan/fact) та майбутнього (forecast) по 17 позиціях масиву
         const rawData = {
             inflows: {
-                "Нафта": { plan: [42, 43, 44, 44], fact: [40, 42, 45, 46], forecast: [2069, 919, 904, 0, 0, 588, 86, 615, 124, 272, 718, 0, 391] },
-                "Газ природній": { plan: [0, 0, 0, 0], fact: [0, 0, 0, 42], forecast: [751, 240, 240, 240, 168, 0, 250, 250, 250, 250, 250, 250, 250] },
-                "Нафтопродукти ОПТ": { plan: [1750, 1780, 1800, 1948], fact: [1700, 1750, 1800, 1814], forecast: [1894, 1801, 1622, 1622, 1622, 1622, 1562, 1562, 1562, 1562, 1571, 1571, 1571] },
-                "Нафтопродукти АОЗ": { plan: [480, 500, 504, 504], fact: [500, 520, 600, 703], forecast: [504, 938, 938, 938, 938, 938, 908, 908, 908, 908, 1502, 1502, 1502] },
-                "Нафтопродукти роздріб АЗС": { plan: [1100, 1150, 1200, 1250], fact: [1000, 1020, 1030, 1037], forecast: [1098, 1098, 1046, 1046, 1046, 1046, 998, 998, 998, 998, 998, 998, 998] }
+                "Нафта": { 
+                    historyPlan: [44, 45, 48, 49], 
+                    historyFact: [40, 42, 45, 46], 
+                    forecast:    [2069, 919, 904, 0, 0, 588, 86, 615, 124, 272, 718, 0, 391] 
+                },
+                "Газ природній": { 
+                    historyPlan: [0, 0, 0, 0], 
+                    historyFact: [0, 0, 0, 42], 
+                    forecast:    [751, 240, 240, 240, 168, 0, 250, 250, 250, 250, 250, 250, 250] 
+                },
+                "Нафтопродукти ОПТ": { 
+                    historyPlan: [1900, 1920, 1930, 1948], 
+                    historyFact: [1700, 1750, 1800, 1814], 
+                    forecast:    [1894, 1801, 1622, 1622, 1622, 1622, 1562, 1562, 1562, 1562, 1571, 1571, 1571] 
+                },
+                "Нафтопродукти АОЗ": { 
+                    historyPlan: [500, 504, 504, 504], 
+                    historyFact: [500, 520, 600, 703], 
+                    forecast:    [504, 938, 938, 938, 938, 938, 908, 908, 908, 908, 1502, 1502, 1502] 
+                },
+                "Нафтопродукти роздріб АЗС": { 
+                    historyPlan: [1200, 1220, 1240, 1250], 
+                    historyFact: [1000, 1020, 1030, 1037], 
+                    forecast:    [1098, 1098, 1046, 1046, 1046, 1046, 998, 998, 998, 998, 998, 998, 998] 
+                }
             },
             outflows: {
-                "Комерційний оборотний капітал": { plan: [2200, 2300, 2500, 3155], fact: [2100, 2200, 2150, 2160], forecast: [5338, 2382, 1308, 3846, 2365, 2840, 2155, 3274, 3737, 1838, 3779, 2572, 3198] },
-                "Обов’язкові платежі": { plan: [1900, 1950, 2000, 2142], fact: [2000, 2050, 2080, 2096], forecast: [174, 1539, 665, 107, 544, 1586, 674, 68, 494, 1625, 796, 84, 1516] }
+                "Комерційний оборотний капітал": { 
+                    historyPlan: [2150, 2200, 2300, 3155], 
+                    historyFact: [2100, 2200, 2150, 2160], 
+                    forecast:    [5338, 2382, 1308, 3846, 2365, 2840, 2155, 3274, 3737, 1838, 3779, 2572, 3198] 
+                },
+                "Обов’язкові платежі": { 
+                    historyPlan: [1900, 1950, 2000, 2142], 
+                    historyFact: [2000, 2050, 2080, 2096], 
+                    forecast:    [174, 1539, 665, 107, 544, 1586, 674, 68, 494, 1625, 796, 84, 1516] 
+                }
             }
         };
 
@@ -108,17 +138,37 @@
             return Number(val).toLocaleString('uk-UA', { maximumFractionDigits: 0 }).replace(/\u202F/g, ' ');
         }
 
-        function sumObjectMetrics(objMap, keysList, subType) {
-            const res = Array(labels.length).fill(0);
+        // Побудова повного масиву з 17 елементів для ПЛАНУ (Історія план + Прогноз)
+        function getFullPlanArray(objMap, keysList) {
+            const res = Array(17).fill(0);
             keysList.forEach(k => {
                 const item = objMap[k];
                 if (!item) return;
-                if (subType === 'history_plan') {
-                    for (let i = 0; i < item.plan.length; i++) res[i] += item.plan[i];
-                } else if (subType === 'history_fact') {
-                    for (let i = 0; i < item.fact.length; i++) res[i] += item.fact[i];
-                } else if (subType === 'forecast') {
-                    for (let i = 0; i < item.forecast.length; i++) res[4 + i] += item.forecast[i];
+                // Перші 4 елементи (Т-4...Т-1) — історія план
+                for (let i = 0; i < 4; i++) {
+                    res[i] += (item.historyPlan[i] || 0);
+                }
+                // Наступні 13 елементів (Т0...Т12) — прогноз
+                for (let i = 0; i < item.forecast.length; i++) {
+                    res[4 + i] += (item.forecast[i] || 0);
+                }
+            });
+            return res;
+        }
+
+        // Побудова повного масиву з 17 елементів для ФАКТУ (Історія факт + Прогноз як доповнення)
+        function getFullFactArray(objMap, keysList) {
+            const res = Array(17).fill(0);
+            keysList.forEach(k => {
+                const item = objMap[k];
+                if (!item) return;
+                // Перші 4 елементи (Т-4...Т-1) — історія факт
+                for (let i = 0; i < 4; i++) {
+                    res[i] += (item.historyFact[i] || 0);
+                }
+                // Наступні 13 елементів (Т0...Т12) — прогноз
+                for (let i = 0; i < item.forecast.length; i++) {
+                    res[4 + i] += (item.forecast[i] || 0);
                 }
             });
             return res;
@@ -151,22 +201,11 @@
             const selInf = getSelectedSubItems('inflow');
             const selOut = getSelectedSubItems('outflow');
 
-            const allInfKeys = Object.keys(rawData.inflows);
-            const allOutKeys = Object.keys(rawData.outflows);
+            const totalInfPlan = getFullPlanArray(rawData.inflows, selInf);
+            const totalInfFact = getFullFactArray(rawData.inflows, selInf);
 
-            const infPlanHist = sumObjectMetrics(rawData.inflows, selInf, 'history_plan');
-            const infPlanFore = sumObjectMetrics(rawData.inflows, selInf, 'forecast');
-            const totalInfPlan = infPlanHist.map((v, idx) => v + infPlanFore[idx]);
-
-            const infFactHist = sumObjectMetrics(rawData.inflows, selInf, 'history_fact');
-            const totalInfFact = infFactHist.map((v, idx) => v + (infPlanFore[idx] || 0));
-
-            const outPlanHist = sumObjectMetrics(rawData.outflows, selOut, 'history_plan');
-            const outPlanFore = sumObjectMetrics(rawData.outflows, selOut, 'forecast');
-            const totalOutPlan = outPlanHist.map((v, idx) => v + outPlanFore[idx]);
-
-            const outFactHist = sumObjectMetrics(rawData.outflows, selOut, 'history_fact');
-            const totalOutFact = outFactHist.map((v, idx) => v + (outPlanFore[idx] || 0));
+            const totalOutPlan = getFullPlanArray(rawData.outflows, selOut);
+            const totalOutFact = getFullFactArray(rawData.outflows, selOut);
 
             updateChart(totalInfPlan, totalInfFact, totalOutPlan, totalOutFact);
             updateTable(selInf, selOut, totalInfPlan, totalInfFact, totalOutPlan, totalOutFact);
@@ -210,9 +249,9 @@
             Object.keys(rawData.inflows).forEach(k => {
                 const isSel = selInf.includes(k);
                 const item = rawData.inflows[k];
-                const fullArr = [...item.fact, ...item.forecast.slice(0, 13)];
+                const fullArr = [...item.historyFact, ...item.forecast.slice(0, 13)];
                 html += `<tr class="${isSel ? 'bg-white' : 'opacity-40'} text-xs">
-                    <td class="px-3 py-1.5 pl-6 text-slate-600">↳ ${k} (факт)</td>
+                    <td class="px-3 py-1.5 pl-6 text-slate-600">↳ ${k} (факт/прогноз)</td>
                     ${fullArr.map(v => `<td class="px-2 py-1.5 text-right text-slate-500">${formatNum(v)}</td>`).join('')}
                 </tr>`;
             });
@@ -225,9 +264,9 @@
             Object.keys(rawData.outflows).forEach(k => {
                 const isSel = selOut.includes(k);
                 const item = rawData.outflows[k];
-                const fullArr = [...item.fact, ...item.forecast.slice(0, 13)];
+                const fullArr = [...item.historyFact, ...item.forecast.slice(0, 13)];
                 html += `<tr class="${isSel ? 'bg-white' : 'opacity-40'} text-xs">
-                    <td class="px-3 py-1.5 pl-6 text-slate-600">↳ ${k} (факт)</td>
+                    <td class="px-3 py-1.5 pl-6 text-slate-600">↳ ${k} (факт/прогноз)</td>
                     ${fullArr.map(v => `<td class="px-2 py-1.5 text-right text-slate-500">${formatNum(v)}</td>`).join('')}
                 </tr>`;
             });

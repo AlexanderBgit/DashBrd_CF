@@ -862,36 +862,50 @@
             }
         }
 
+        // Чи є оперативні дані (метрики/резюме) незалежно від зрізу
+        const hasMetricsPayload = flowData && (
+            (Array.isArray(flowData.metrics) && flowData.metrics.length) ||
+            (flowData.summaryUk && String(flowData.summaryUk).trim()) ||
+            (flowData.summaryEn && String(flowData.summaryEn).trim())
+        );
+
         try {
-            if (snapshot) {
-                processSnapshotJson(snapshot);          // будує графік, таблицю, плитки, періоди
-                if (flowData) applyMetricsToDashboard(flowData, isoDate); // бічні таблиці + резюме, якщо є
+            if (snapshot || hasMetricsPayload) {
+                // Блоки графіка/прогнозу коштів — зі зрізу; якщо зрізу немає, лишаємо порожніми
+                if (snapshot) {
+                    processSnapshotJson(snapshot);
+                } else {
+                    prepareEmptyForecastForDate(isoDate);
+                }
+                // Блоки резюме/оборотний капітал/запаси/фінансування — з метрик (незалежно)
+                if (flowData) applyMetricsToDashboard(flowData, isoDate);
+
                 updateLanguageDOM();
                 buildChart();
                 document.getElementById('dashboardContent')?.classList.remove('hidden');
                 document.getElementById('uploadZone')?.classList.add('hidden');
 
-                // Діагностика: зріз прийшов, але значення порожні
-                const chartEmpty = !globalData.chart.totalLiquidity.some(v => v);
-                const noMetrics = !(flowData && Array.isArray(flowData.metrics) && flowData.metrics.length);
-                if (chartEmpty) {
+                // Повідомлення: що саме показано, а чого бракує на цю дату
+                const missing = [];
+                if (!snapshot) {
+                    missing.push("немає зрізу (графік і прогноз коштів)" + (flowError ? ` — потік: ${flowError}` : ""));
+                } else if (!globalData.chart.totalLiquidity.some(v => v)) {
                     const cashNode = findSnapshotNode(snapshot.tree, "Доступні залишки") || findSnapshotNode(snapshot.tree, "Залишки доступні до використання");
-                    const hasCols = snapshot.columns && Object.keys(snapshot.columns).length;
                     const valKeys = cashNode && cashNode.values ? Object.keys(cashNode.values) : [];
-                    const reason = !cashNode
-                        ? "у зрізі не знайдено вузол «Доступні залишки»"
-                        : (valKeys.length === 0
-                            ? "вузол «Доступні залишки» без значень"
-                            : "значення не читаються; ключі: [" + valKeys.slice(0, 8).join(", ") + "]" + (hasCols ? "" : "; відсутні columns"));
-                    console.warn("SNAPSHOT DIAGNOSTIC:", { treeLen: snapshot.tree.length, hasColumns: !!hasCols, cashNode });
-                    showBanner(`Зріз на ${dot} завантажено, але графік порожній: ${reason}. Спробуйте відкрити цей файл через «Завантажити JSON» для звірки.`, 'warn');
-                } else if (noMetrics) {
-                    showBanner(`Дані на ${dot} завантажено. Але оперативних метрик (оборотний капітал / запаси / фінансування) на цю дату немає — перевірте фільтр дати у потоці або наявність рядків у WeeklyFinancialMetrics.`, 'warn');
-                } else {
+                    missing.push(!cashNode ? "зріз без вузла «Доступні залишки»"
+                        : (valKeys.length === 0 ? "зріз без значень" : "значення зрізу не читаються; ключі: [" + valKeys.slice(0, 8).join(", ") + "]"));
+                }
+                if (!hasMetricsPayload) {
+                    missing.push("немає оперативних метрик (оборотний капітал / запаси / фінансування / резюме)");
+                }
+
+                if (missing.length === 0) {
                     showSuccess(`Дані на ${dot} завантажено.`);
+                } else {
+                    showBanner(`Дані на ${dot} завантажено частково. Бракує: ${missing.join("; ")}. Показано те, що наявне на цю дату.`, 'warn');
                 }
             } else if (flowError) {
-                // Чисте повідомлення від потоку, без зайвого шуму про CORS
+                // Немає ні зрізу, ні метрик — але потік дав бізнес-помилку
                 showError(`Немає даних на ${dot}. Потік повідомив: ${flowError}`);
             } else {
                 // Даних немає — показуємо зрозумілу помилку, не «падаємо мовчки»
@@ -933,6 +947,36 @@
             { title: { uk: "Постімпорт", en: "Post-import" }, limit: 0, drawn: 0, available: 0 },
             { title: { uk: "Всього", en: "Total" }, limit: 0, drawn: 0, available: 0 }
         ];
+    }
+
+    // Готує базовий globalData для дати БЕЗ зрізу: графік і прогноз коштів — порожні
+    // (щоб не показувати стару дату), бічні таблиці лишаються для заповнення метриками.
+    function prepareEmptyForecastForDate(isoDate) {
+        if (!globalData) initEmptyDashboard();
+        currentReportDate = isoDate;
+        const parts = String(isoDate).split('-');
+        if (parts.length === 3) calViewDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+
+        globalData.chart = {
+            labels: ["Т-1","Т0","Т1","Т2","Т3","Т4","Т5","Т6","Т7","Т8","Т9","Т10","Т11","Т12"],
+            ownCash: Array(14).fill(0), ownCashMznn: Array(14).fill(null),
+            totalLiquidity: Array(14).fill(0), postImportLiquidity: Array(14).fill(0),
+            minThreshold: 2500, periods: []
+        };
+        globalData.periodMap = {};
+        globalData.mainTable = {
+            headers: [{ uk: "Стаття", en: "Item" }, { uk: "Т-1", en: "T-1" }, { uk: "Δ", en: "Δ" }, { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" }, { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" }, { uk: "M1", en: "M1" }, { uk: "M2", en: "M2" }, { uk: "M3", en: "M3" }, { uk: "Всього", en: "Total" }],
+            rows: []
+        };
+        globalData.kpis = globalData.kpis.map(k => ({ ...k, value: 0, isGray: true, trend: { isPositive: true, text: { uk: "-", en: "-" } } }));
+
+        // Бічні таблиці зберігаємо/ініціалізуємо шаблоном — їх заповнить applyMetricsToDashboard
+        if (!Array.isArray(globalData.workingCapital) || !globalData.workingCapital.length) globalData.workingCapital = defaultWorkingCapital();
+        if (!Array.isArray(globalData.fuelInventories) || !globalData.fuelInventories.length) globalData.fuelInventories = defaultFuelInventories();
+        if (!Array.isArray(globalData.creditLimits) || !globalData.creditLimits.length) globalData.creditLimits = defaultCreditLimits();
+
+        window.globalData = globalData;
+        syncHeaderDate();
     }
 
     // Функція рознесення даних по блоках інтерфейсу
@@ -1366,8 +1410,7 @@
                 LimitValue: Number(r.previous) || 0,
                 Unit: "млн грн",
                 OrderIndex: order,
-                HasLimit: false,
-                ReportDateKey: currentReportDate
+                HasLimit: false
             });
             order += 10;
         });
@@ -1381,8 +1424,7 @@
                 LimitValue: Number(r.previous) || 0,
                 Unit: r.title.uk.includes("м³") ? "млн м³" : "тис. т",
                 OrderIndex: order,
-                HasLimit: false,
-                ReportDateKey: currentReportDate
+                HasLimit: false
             });
             order += 10;
         });
@@ -1396,8 +1438,7 @@
                 LimitValue: Number(r.limit) || 0,
                 Unit: "млн грн",
                 OrderIndex: order,
-                HasLimit: true,
-                ReportDateKey: currentReportDate
+                HasLimit: true
             });
             order += 10;
         });

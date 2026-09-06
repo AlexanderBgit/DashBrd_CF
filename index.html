@@ -858,34 +858,44 @@
         return { avail: cash + cred, cred: cred, post: post, weeklyExp: extractSnapshotWeeklyExpenses(snap) };
     }
 
+    // Кеш зрізів на сесію: iso-дата → snapshot|null. Історичні тижні не змінюються,
+    // тож повторні відкриття дат і сусідні періоди не тягнуть ті самі файли повторно.
+    const _snapCache = new Map();
+
     // Тихо тягне зріз на дату через потік (для попередніх тижнів). null, якщо немає.
     async function fetchSnapshotForDate(iso) {
+        if (_snapCache.has(iso)) return _snapCache.get(iso);
         try {
             const res = await fetch(GET_METRICS_FLOW_URL, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reportDate: iso, reportDateDot: iso.split('-').reverse().join('.') })
             });
-            if (!res.ok) return null;
+            if (!res.ok) { _snapCache.set(iso, null); return null; }
             const txt = await res.text();
             const json = txt ? JSON.parse(txt) : null;
-            return extractSnapshotObject(json);
-        } catch (e) { return null; }
+            const snap = extractSnapshotObject(json);
+            _snapCache.set(iso, snap);
+            return snap;
+        } catch (e) { _snapCache.set(iso, null); return null; }
     }
 
     // Уточнює плитки: дельти тиждень-до-тижня (проти найближчого попереднього зрізу)
     // + буфер ліквідності ковзним середнім обов'язкових витрат за 4 тижні.
     // Відсутні тижні пропускаються; якщо попередніх немає — лише поточний тиждень.
     async function refineKpisAndBuffer(isoDate, currentSnapshot) {
+        console.time('refineKpisAndBuffer (дельти + буфер)');
         try {
             if (!globalData || !Array.isArray(globalData.kpis)) return;
             const cur = snapshotKpiValues(currentSnapshot);
             if (!cur) return;
+            _snapCache.set(isoDate, currentSnapshot); // поточний зріз — у кеш
 
+            // ПАРАЛЕЛЬНО тягнемо до 3 попередніх тижнів (замість послідовних await)
             const dates = getFourTargetDates(isoDate);
-            const priorSnaps = [];
-            for (let i = 1; i < dates.length; i++) {
-                priorSnaps.push(await fetchSnapshotForDate(dates[i]));
-            }
+            console.time('refine: fetch попередніх тижнів (паралельно)');
+            const priorSnaps = await Promise.all(dates.slice(1).map(fetchSnapshotForDate));
+            console.timeEnd('refine: fetch попередніх тижнів (паралельно)');
+
             const prevSnap = priorSnaps.find(s => s && s.tree);
             const prev = prevSnap ? snapshotKpiValues(prevSnap) : null;
 
@@ -913,6 +923,7 @@
 
             updateLanguageDOM();
         } catch (e) { /* не критично для дашборду */ }
+        finally { console.timeEnd('refineKpisAndBuffer (дельти + буфер)'); }
     }
 
     // Головна функція завантаження метрик обраної дати
@@ -930,6 +941,7 @@
 
         // --- СПОСІБ 1: потік Power Automate (основний, працює з локального файлу) ---
         try {
+            console.time('load: fetch зрізу поточної дати');
             const response = await fetch(GET_METRICS_FLOW_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -937,6 +949,7 @@
             });
 
             const raw = await response.text();
+            console.timeEnd('load: fetch зрізу поточної дати');
             if (!response.ok) {
                 // Тіло 502/500 зазвичай містить реальну причину збою потоку
                 const detail = raw ? (" — " + raw.replace(/\s+/g, ' ').slice(0, 300)) : "";
@@ -1269,6 +1282,7 @@
 
     async function refreshSharePointData() {
         // Перезавантажує зріз поточної обраної дати та оновлює список дат календаря.
+        _snapCache.clear(); // ручне оновлення — скидаємо кеш, щоб підтягнути свіжі дані
         await loadAvailableDatesFromSPQuiet();
         if (currentReportDate) {
             await loadMetricsForSelectedDate(currentReportDate);

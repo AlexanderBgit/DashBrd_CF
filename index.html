@@ -810,14 +810,19 @@
     }
 
     // Від поточної дати беремо 4 щотижневі точки (дата, -7, -14, -21 днів).
+    // Рахуємо за ЛОКАЛЬНИМИ компонентами дати (без toISOString — інакше у поясах
+    // на схід від UTC дата зсувається на день назад, і попередні тижні не знаходяться).
     function getFourTargetDates(isoDate) {
-        const base = new Date(isoDate + 'T00:00:00');
-        if (isNaN(base)) return [isoDate];
+        const parts = String(isoDate).split('-').map(Number);
+        if (parts.length !== 3 || parts.some(isNaN)) return [isoDate];
+        const [y, m, d] = parts;
         const out = [];
         for (let i = 0; i < 4; i++) {
-            const d = new Date(base);
-            d.setDate(d.getDate() - i * 7);
-            out.push(d.toISOString().slice(0, 10));
+            const dt = new Date(y, m - 1, d - i * 7); // локальна арифметика з переносом місяців
+            const yy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            out.push(`${yy}-${mm}-${dd}`);
         }
         return out;
     }

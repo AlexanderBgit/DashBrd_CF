@@ -2452,53 +2452,29 @@
         // Індекси Т-1 та Т0
         const iTm1 = 0, iT0 = 1;
 
-        // --- 3. KPI-плитки (Ковзний розрахунок за 4 тижні з опитуванням SharePoint) ---
+// --- 3. KPI-плитки (Динамічний розрахунок за поточним зрізом) ---
 
-        // 1. Поточна доступна ліквідність на дату звіту (вхідний залишок на початок тижня T0 / tm1Key)
+        // 1. Доступна ліквідність на дату звіту (вхідний залишок Tm1)
         const curCash   = ownCash[iTm1];
         const curCred   = getMlnValue(nodeCredit, tm1Key) || getMlnValue(nodeCredit, "T0");
         const curPost   = getMlnValue(nodePost, tm1Key);
         const curTotLiq = curCash + curCred;
 
-        // 2. Ковзний розрахунок середньодобових витрат за 4 тижні (поточна дата + 3 попередні понеділки)
-        const fourDates = getFourTargetDates(forecastDate);
-        const expensePool = [];
+        // 2. Буфер ліквідності (днів) = Доступна ліквідність / Середньодобові обов'язкові та виробничі витрати з Tm1
+        const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
+        const nProcessing = findSnapshotNode(tree, "Переробка");
+        const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
+        const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
 
-        // Паралельно опитуємо потік Power Automate для всіх 4 дат (якщо файлу немає — повертається null без помилки)
-        const fetchPromises = fourDates.map(async (dt) => {
-            // Пропускаємо поточну дату, оскільки її зріз у нас вже є в параметрі snapshot
-            if (dt === forecastDate) return extractSnapshotWeeklyExpenses(snapshot);
-            try {
-                const dotDt = dt.split('-').reverse().join('.');
-                const res = await fetch(GET_METRICS_FLOW_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reportDate: dt, reportDateDot: dotDt })
-                });
-                if (!res.ok) return null;
-                const txt = await res.text();
-                const json = txt ? JSON.parse(txt) : null;
-                const snapObj = extractSnapshotObject(json);
-                return extractSnapshotWeeklyExpenses(snapObj);
-            } catch (err) {
-                return null;
-            }
-        });
+        let weeklyExp = Math.abs(getMlnValue(nMandatory, tm1Key)) +
+                        Math.abs(getMlnValue(nProcessing, tm1Key)) +
+                        Math.abs(getMlnValue(nCommercial, tm1Key));
+        if (weeklyExp === 0) weeklyExp = Math.abs(getMlnValue(nAllOut, tm1Key));
 
-        // Чекаємо завершення всіх запитів (результати будуть оброблені асинхронно, 
-        // але оскільки processSnapshotJson синхронна, використовуємо кеш або поточний зріз як базовий резерв)
-        // Для миттєвого рендерингу беремо поточні витрати зрізу, а історія підтягнеться при наступних ітераціях.
-        const currentExp = extractSnapshotWeeklyExpenses(snapshot);
-        if (currentExp > 0) expensePool.push(currentExp);
+        const dailyExp = weeklyExp > 0 ? (weeklyExp / 7) : 1;
+        const bufferDays = dailyExp > 0 ? Math.round(curTotLiq / dailyExp) : 0;
 
-        const totalExpSum = expensePool.reduce((acc, val) => acc + val, 0);
-        const totalDaysCount = expensePool.length * 7;
-        const dailyOutT0 = totalDaysCount > 0 ? (totalExpSum / totalDaysCount) : 1;
-
-        // Буфер ліквідності у днях
-        const bufferT0 = dailyOutT0 > 0 ? Math.round(curTotLiq / dailyOutT0) : 0;
-
-        // 3. Динамічний розрахунок дельт (Δ) проти попереднього тижня
+        // 3. Дельти (Δ) з урахуванням відхилень dev_fact у зрізі
         const devKey = (nodeCash && nodeCash.values && nodeCash.values.dev_fact !== undefined) ? "dev_fact" : "dev_forecast";
         
         let dLiq = getMlnValue(nodeCash, devKey) + getMlnValue(nodeCredit, devKey);
@@ -2510,11 +2486,11 @@
         const dCred = getMlnValue(nodeCredit, devKey);
         const dPost = getMlnValue(nodePost, devKey);
 
-        const prevDailyExp = dailyOutT0; // Базова оцінка попереднього дня
-        const prevBuffer = Math.round((curTotLiq - dLiq) / prevDailyExp);
-        const dBuffer = bufferT0 - prevBuffer;
+        // Дельта буфера (зміна днів відносно плану/минулого тижня)
+        const prevBuffer = Math.round((curTotLiq - dLiq) / dailyExp);
+        const dBuffer = bufferDays - prevBuffer;
 
-        // 4. Допоміжна функція форматування динаміки та стрілок
+        // 4. Форматування тренду зі стрілками
         const trend = (delta, unitUk, unitEn) => {
             const a = Math.abs(delta);
             const num = a === 0 ? "0" : formatNum(a);
@@ -2528,7 +2504,7 @@
             };
         };
 
-        // 5. Формування плиток (для постімпорту: якщо 0 — виводимо прочерк '-')
+        // 5. Формування KPI плиток
         const kpis = [
             {
                 title: { uk: "Доступна ліквідність", en: "Available liquidity" },
@@ -2539,7 +2515,7 @@
             },
             {
                 title: { uk: "Буфер ліквідності", en: "Liquidity buffer" },
-                value: bufferT0,
+                value: bufferDays,
                 unit: { uk: "дні", en: "days" },
                 trend: trend(dBuffer, "дні", "days"),
                 isGray: false

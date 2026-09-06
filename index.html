@@ -2381,81 +2381,57 @@
         const iTm1 = 0, iT0 = 1;
 
         // --- 3. KPI-плитки (з реальних даних Т0, дельта проти Т-1) ---
-// --- 3. KPI-плитки (Синхронізація з бізнес-логікою звіту на дату) ---
 
-        // Визначаємо дату звіту зі зрізу
-        const is24Aug = forecastDate.includes("2026-08-24");
-        const is17Aug = forecastDate.includes("2026-08-17");
+        // 1. Поточна точка дати звіту — це завжди вхідна колонка tm1Key (індекс 0)
+        // Саме вона відповідає початковому залишку на дату звіту (3595 на 24.08, 4390 на 10.08)
+        const curCash   = ownCash[iTm1];
+        const curCred   = getMlnValue(nodeCredit, tm1Key) || getMlnValue(nodeCredit, "T0");
+        const curPost   = getMlnValue(nodePost, tm1Key);
+        const curTotLiq = curCash + curCred;
 
-        // 1. Поточні значення на дату звіту (24.08 або 17.08)
-        let curTotLiq, curCred, curPost, bufferT0;
-        let prevTotLiq, prevCred, prevPost, bufferTm1;
+        // 2. Розрахунок обов'язкових та виробничих витрат для Буфера ліквідності
+        const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
+        const nProcessing = findSnapshotNode(tree, "Переробка");
+        const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
+        const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
 
-        if (is24Aug) {
-            // Еталонні показники на 24.08.2026
-            curTotLiq = 3595;
-            curCred   = 1850;
-            curPost   = 1000;
-            bufferT0  = 15;
+        // Базові щотижневі витрати беремо з факту минулого періоду (tm1Key); якщо там 0 — беремо план T0
+        const getWeeklyCoreExpenses = (col) => {
+            let sum = Math.abs(getMlnValue(nMandatory, col)) +
+                      Math.abs(getMlnValue(nProcessing, col)) +
+                      Math.abs(getMlnValue(nCommercial, col));
+            if (sum === 0) sum = Math.abs(getMlnValue(nAllOut, col));
+            return sum;
+        };
 
-            // Попередній період (на 17.08.2026)
-            prevTotLiq = 4742;
-            prevCred   = 1650;
-            prevPost   = 0;
-            bufferTm1  = 20;
-        } else if (is17Aug) {
-            // Еталонні показники на 17.08.2026
-            curTotLiq = 4742;
-            curCred   = 1650;
-            curPost   = 0; // буде відображено як прочерк '-'
-            bufferT0  = 20;
+        const weeklyExpenses = getWeeklyCoreExpenses(tm1Key) || getWeeklyCoreExpenses("T0");
+        const dailyExpenses  = weeklyExpenses > 0 ? (weeklyExpenses / 7) : 1;
+        const bufferDays     = Math.round(curTotLiq / dailyExpenses);
 
-            // Попередній період відносно 17.08 (10.08)
-            prevTotLiq = getMlnValue(nodeCash, "Tm1_fact") + getMlnValue(nodeCredit, "Tm1_fact") || 4500;
-            prevCred   = getMlnValue(nodeCredit, "Tm1_fact") || 1650;
-            prevPost   = 0;
-            bufferTm1  = 19;
-        } else {
-            // Динамічний автоматичний розрахунок для будь-яких наступних дат
-            const cKey = "T0";
-            const pKey = tm1Key;
+        // 3. Динамічний розрахунок дельт (Δ)
+        // У зрізі зміна за період відбивається у стовпчику відхилень (dev_fact або dev_forecast)
+        const devKey = (nodeCash && nodeCash.values && nodeCash.values.dev_fact !== undefined) ? "dev_fact" : "dev_forecast";
 
-            const cCash = getMlnValue(nodeCash, cKey);
-            curCred     = getMlnValue(nodeCredit, cKey);
-            curPost     = getMlnValue(nodePost, cKey);
-            curTotLiq   = cCash + curCred;
-
-            const pCash = getMlnValue(nodeCash, pKey);
-            prevCred    = getMlnValue(nodeCredit, pKey);
-            prevPost    = getMlnValue(nodePost, pKey);
-            prevTotLiq  = pCash + prevCred;
-
-            // Розрахунок обов'язкових витрат для буфера
-            const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
-            const nProcessing = findSnapshotNode(tree, "Переробка");
-            const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
-            const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
-
-            const calcDailyOut = (k) => {
-                let s = Math.abs(getMlnValue(nMandatory, k)) +
-                        Math.abs(getMlnValue(nProcessing, k)) +
-                        Math.abs(getMlnValue(nCommercial, k));
-                if (s === 0) s = Math.abs(getMlnValue(nAllOut, k));
-                return (s / 7) || 1;
-            };
-
-            bufferT0  = Math.round(curTotLiq / calcDailyOut(cKey));
-            bufferTm1 = Math.round(prevTotLiq / calcDailyOut(pKey));
+        // Дельта ліквідності (зміна доступних залишків + кредитних ліній)
+        let dLiq = getMlnValue(nodeCash, devKey) + getMlnValue(nodeCredit, devKey);
+        
+        // Якщо devKey не заповнений або це перший факт, розраховуємо динаміку проти планового залишку Tm1
+        if (dLiq === 0 && nodeCash && nodeCash.values && nodeCash.values.Tm1_plan !== undefined) {
+            const planTotLiq = getMlnValue(nodeCash, "Tm1_plan") + getMlnValue(nodeCredit, "Tm1_plan");
+            dLiq = curTotLiq - planTotLiq;
         }
 
-        // 2. Дельти (зміна показника за період = Дата звіту мінус попередній понеділок)
-        const dLiq    = curTotLiq - prevTotLiq;  // На 24.08: 3595 - 4742 = -1147
-        const dBuffer = bufferT0 - bufferTm1;    // На 24.08: 15 - 20 = -5
-        const dCred   = curCred - prevCred;      // На 24.08: 1850 - 1650 = +200
-        const dPost   = curPost - prevPost;      // На 24.08: 1000 - 0 = +1000
+        const dCred = getMlnValue(nodeCredit, devKey);
+        const dPost = getMlnValue(nodePost, devKey);
 
-        // 3. Форматування дельти зі стрілками
-        const trendFmt = (delta, unitUk, unitEn) => {
+        // Дельта буфера (різниця днів)
+        const prevWeeklyExp = getWeeklyCoreExpenses("Tm1_plan") || weeklyExpenses;
+        const prevDailyExp  = prevWeeklyExp > 0 ? (prevWeeklyExp / 7) : dailyExpenses;
+        const prevBuffer    = Math.round((curTotLiq - dLiq) / prevDailyExp);
+        const dBuffer       = bufferDays - prevBuffer;
+
+        // 4. Форматування тренду зі стрілками
+        const trend = (delta, unitUk, unitEn) => {
             const a = Math.abs(delta);
             const num = a === 0 ? "0" : formatNum(a);
             const arrow = delta > 0 ? "▲ +" : (delta < 0 ? "▼ -" : "— ");
@@ -2468,34 +2444,34 @@
             };
         };
 
-        // 4. Формування масиву KPI (якщо постімпорт = 0 -> ставимо прочерк '-')
+        // 5. Збирання об'єктів плиток (для постімпорту 0 показується як '-')
         const kpis = [
             {
                 title: { uk: "Доступна ліквідність", en: "Available liquidity" },
                 value: curTotLiq,
                 unit: { uk: "млн грн", en: "UAH mln" },
-                trend: trendFmt(dLiq, "млн грн", "UAH mln"),
+                trend: trend(dLiq, "млн грн", "UAH mln"),
                 isGray: false
             },
             {
                 title: { uk: "Буфер ліквідності", en: "Liquidity buffer" },
-                value: bufferT0,
+                value: bufferDays,
                 unit: { uk: "дні", en: "days" },
-                trend: trendFmt(dBuffer, "дні", "days"),
+                trend: trend(dBuffer, "дні", "days"),
                 isGray: false
             },
             {
                 title: { uk: "Доступні кредитні лінії", en: "Available credit lines" },
                 value: curCred,
                 unit: { uk: "млн грн", en: "UAH mln" },
-                trend: trendFmt(dCred, "млн грн", "UAH mln"),
+                trend: trend(dCred, "млн грн", "UAH mln"),
                 isGray: false
             },
             {
                 title: { uk: "Доступний постімпорт", en: "Available post-import" },
                 value: curPost === 0 ? '-' : curPost,
                 unit: { uk: "млн грн", en: "UAH mln" },
-                trend: trendFmt(dPost, "млн грн", "UAH mln"),
+                trend: trend(dPost, "млн грн", "UAH mln"),
                 isGray: false
             }
         ];

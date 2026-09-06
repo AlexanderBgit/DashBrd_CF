@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аналітика фактичних доходів і витрат</title>
+    <!-- Підключення Tailwind CSS для стилізації -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Підключення Chart.js для графіків -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+    <!-- Навігація -->
+    <nav class="bg-white shadow p-4 mb-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Фінмоніторинг: План / Факт</h1>
+            <div>
+                <a href="index.html" class="text-blue-600 hover:underline mr-4">Головна</a>
+                <a href="analytics.html" class="text-gray-800 font-semibold">Аналітика</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4">
+        <!-- Блок з графіком -->
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">Динаміка надходжень та видатків</h2>
+            <div class="relative h-80">
+                <canvas id="financeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Таблиця деталізації -->
+        <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">Аналіз виконання бюджету (тис. грн)</h2>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Категорія</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">План</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Факт</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Відхилення (+/-)</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="tableData">
+                    <!-- Дані можна заповнити динамічно або вручну на основі JSON -->
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Надходження (Всього)</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">4,219,555</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-semibold">3,845,441</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600">-374,113</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Обов’язкові платежі</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">2,142,462</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-semibold">2,096,219</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600">+46,242</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Комерційний оборотний капітал</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">3,155,993</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-semibold">2,160,509</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600">+995,484</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Сценарій побудови графіка -->
+    <script>
+        const ctx = document.getElementById('financeChart').getContext('2d');
+        const financeChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Надходження', 'Обов’язкові платежі', 'Оборотний капітал'],
+                datasets: [
+                    {
+                        label: 'План',
+                        data: [4219555, 2142462, 3155993],
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Факт',
+                        data: [3845441, 2096219, 2160509],
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

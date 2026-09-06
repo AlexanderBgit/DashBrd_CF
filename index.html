@@ -905,12 +905,22 @@
                     showBanner(`Дані на ${dot} завантажено частково. Бракує: ${missing.join("; ")}. Показано те, що наявне на цю дату.`, 'warn');
                 }
             } else if (flowError) {
-                // Немає ні зрізу, ні метрик — але потік дав бізнес-помилку
-                showError(`Немає даних на ${dot}. Потік повідомив: ${flowError}`);
+                // Немає ні зрізу, ні метрик — очищаємо всі блоки й повідомляємо
+                prepareEmptyForecastForDate(isoDate);
+                globalData.summary = { uk: [`На дату ${dot} даних немає.`], en: [`No data for ${dot}.`] };
+                updateLanguageDOM();
+                buildChart();
+                document.getElementById('dashboardContent')?.classList.remove('hidden');
+                showBanner(`На дату ${dot} даних немає. Потік повідомив: ${flowError}`, 'warn');
             } else {
-                // Даних немає — показуємо зрозумілу помилку, не «падаємо мовчки»
+                // Немає ні зрізу, ні метрик, ні бізнес-помилки — очищаємо блоки й показуємо причину
+                prepareEmptyForecastForDate(isoDate);
+                globalData.summary = { uk: [`На дату ${dot} даних немає.`], en: [`No data for ${dot}.`] };
+                updateLanguageDOM();
+                buildChart();
+                document.getElementById('dashboardContent')?.classList.remove('hidden');
                 const detail = errors.length ? (" Деталі: " + errors.join("; ")) : "";
-                showError(`Не вдалося отримати дані на ${dot}.${detail} Відкрийте меню імпорту та скористайтесь кнопкою «Завантажити JSON».`);
+                showError(`На дату ${dot} даних немає (блоки очищено).${detail}`);
             }
         } catch (err) {
             showError(`Помилка обробки даних на ${dot}: ${err.message}`);
@@ -970,10 +980,12 @@
         };
         globalData.kpis = globalData.kpis.map(k => ({ ...k, value: 0, isGray: true, trend: { isPositive: true, text: { uk: "-", en: "-" } } }));
 
-        // Бічні таблиці зберігаємо/ініціалізуємо шаблоном — їх заповнить applyMetricsToDashboard
-        if (!Array.isArray(globalData.workingCapital) || !globalData.workingCapital.length) globalData.workingCapital = defaultWorkingCapital();
-        if (!Array.isArray(globalData.fuelInventories) || !globalData.fuelInventories.length) globalData.fuelInventories = defaultFuelInventories();
-        if (!Array.isArray(globalData.creditLimits) || !globalData.creditLimits.length) globalData.creditLimits = defaultCreditLimits();
+        // Бічні таблиці й резюме походять лише з метрик поточної дати — очищаємо до шаблону,
+        // щоб не «залипали» дані попередньої дати; applyMetricsToDashboard заповнить наявне.
+        globalData.workingCapital = defaultWorkingCapital();
+        globalData.fuelInventories = defaultFuelInventories();
+        globalData.creditLimits = defaultCreditLimits();
+        globalData.summary = { uk: ["—"], en: ["—"] };
 
         window.globalData = globalData;
         syncHeaderDate();
@@ -2509,17 +2521,19 @@
                 periods: periods
             },
             periodMap: cfPeriodMap,
-            summary: (window.globalData && window.globalData.summary) || {
-                uk: [`Дані на ${dateFormatted} консолідовано зі зрізу JSON.`],
-                en: [`Data as of ${dateFormatted} consolidated from JSON snapshot.`]
+            summary: {
+                uk: [`Дані на ${dateFormatted} консолідовано зі зрізу.`],
+                en: [`Data as of ${dateFormatted} consolidated from snapshot.`]
             },
             mainTable: {
                 headers: cfHeaders,
                 rows: cfRows
             },
-            workingCapital: (prevData && Array.isArray(prevData.workingCapital) && prevData.workingCapital.length) ? prevData.workingCapital : defaultWorkingCapital(),
-            fuelInventories: (prevData && Array.isArray(prevData.fuelInventories) && prevData.fuelInventories.length) ? prevData.fuelInventories : defaultFuelInventories(),
-            creditLimits: (prevData && Array.isArray(prevData.creditLimits) && prevData.creditLimits.length) ? prevData.creditLimits : defaultCreditLimits()
+            // Бічні таблиці НЕ переносимо з попередньої дати — вони походять лише з
+            // метрик поточної дати (їх заповнить applyMetricsToDashboard). Тут — чистий шаблон.
+            workingCapital: defaultWorkingCapital(),
+            fuelInventories: defaultFuelInventories(),
+            creditLimits: defaultCreditLimits()
         };
         window.globalData = globalData;
 

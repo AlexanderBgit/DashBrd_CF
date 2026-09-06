@@ -2453,14 +2453,15 @@
         const iTm1 = 0, iT0 = 1;
 
 // --- 3. KPI-плитки (Динамічний розрахунок за поточним зрізом) ---
+// --- 3. KPI-плитки (Швидкий та коректний розрахунок на основі поточного зрізу) ---
 
-        // 1. Доступна ліквідність на дату звіту (вхідний залишок Tm1)
+        // 1. Поточна доступна ліквідність на дату звіту (вхідний залишок Tm1)
         const curCash   = ownCash[iTm1];
         const curCred   = getMlnValue(nodeCredit, tm1Key) || getMlnValue(nodeCredit, "T0");
         const curPost   = getMlnValue(nodePost, tm1Key);
         const curTotLiq = curCash + curCred;
 
-        // 2. Буфер ліквідності (днів) = Доступна ліквідність / Середньодобові обов'язкові та виробничі витрати з Tm1
+        // 2. Буфер ліквідності (днів) = Доступна ліквідність / Середньодобові витрати з Tm1
         const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
         const nProcessing = findSnapshotNode(tree, "Переробка");
         const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
@@ -2486,11 +2487,10 @@
         const dCred = getMlnValue(nodeCredit, devKey);
         const dPost = getMlnValue(nodePost, devKey);
 
-        // Дельта буфера (зміна днів відносно плану/минулого тижня)
         const prevBuffer = Math.round((curTotLiq - dLiq) / dailyExp);
         const dBuffer = bufferDays - prevBuffer;
 
-        // 4. Форматування тренду зі стрілками
+        // 4. Допоміжна функція форматування динаміки та стрілок
         const trend = (delta, unitUk, unitEn) => {
             const a = Math.abs(delta);
             const num = a === 0 ? "0" : formatNum(a);

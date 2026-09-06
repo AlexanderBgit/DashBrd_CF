@@ -794,8 +794,123 @@
         return null;
     }
 
-    // Головна функція завантаження метрик обраної дати
+    // ── Ковзний 4-тижневий буфер + дельти KPI тиждень-до-тижня ────────────
+    // Спільний формат тренду для плиток
+    function kpiTrend(delta, unitUk, unitEn) {
+        const a = Math.abs(delta);
+        const num = a === 0 ? "0" : formatNum(a);
+        const arrow = delta > 0 ? "\u25B2 +" : (delta < 0 ? "\u25BC -" : "\u2014 ");
+        return {
+            isPositive: delta >= 0,
+            text: {
+                uk: delta === 0 ? "\u2014 без змін" : `${arrow}${num} ${unitUk}`,
+                en: delta === 0 ? "\u2014 no change" : `${arrow}${num} ${unitEn}`
+            }
+        };
+    }
 
+    // Від поточної дати беремо 4 щотижневі точки (дата, -7, -14, -21 днів).
+    function getFourTargetDates(isoDate) {
+        const base = new Date(isoDate + 'T00:00:00');
+        if (isNaN(base)) return [isoDate];
+        const out = [];
+        for (let i = 0; i < 4; i++) {
+            const d = new Date(base);
+            d.setDate(d.getDate() - i * 7);
+            out.push(d.toISOString().slice(0, 10));
+        }
+        return out;
+    }
+
+    // Обов'язкові (операційні) витрати тижня з ФАКТУ періоду Т-1 зрізу
+    function extractSnapshotWeeklyExpenses(snap) {
+        const tree = snap && snap.tree;
+        if (!tree) return 0;
+        const nMand = findSnapshotNode(tree, "Обов\u2019язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
+        const nProc = findSnapshotNode(tree, "Переробка");
+        const nComm = findSnapshotNode(tree, "Комерційний оборотний капітал");
+        const nAll  = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
+        const nodeCash = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
+        const k = (nodeCash && nodeCash.values && nodeCash.values.Tm1_fact !== undefined) ? "Tm1_fact"
+                : (nodeCash && nodeCash.values && nodeCash.values.Tm1_forecast !== undefined) ? "Tm1_forecast" : "T0";
+        let sum = Math.abs(getMlnValue(nMand, k)) + Math.abs(getMlnValue(nProc, k)) + Math.abs(getMlnValue(nComm, k));
+        if (sum === 0) sum = Math.abs(getMlnValue(nAll, k));
+        return sum;
+    }
+
+    // Значення плиток (ліквідність/кредит/постімпорт) з ФАКТУ Т-1 зрізу
+    function snapshotKpiValues(snap) {
+        const tree = snap && snap.tree;
+        if (!tree) return null;
+        const nodeCash = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
+        const nodeCredit = findSnapshotNode(tree, "Доступні кредитні ліміти") || findSnapshotNode(tree, "Доступні кредитні лінії");
+        const nodePost = findSnapshotNode(tree, "Доступний ліміт постімпорт");
+        const k = (nodeCash && nodeCash.values && nodeCash.values.Tm1_fact !== undefined) ? "Tm1_fact"
+                : (nodeCash && nodeCash.values && nodeCash.values.Tm1_forecast !== undefined) ? "Tm1_forecast" : "T0";
+        const cash = getMlnValue(nodeCash, k);
+        const cred = getMlnValue(nodeCredit, k) || getMlnValue(nodeCredit, "T0");
+        const post = getMlnValue(nodePost, k) || getMlnValue(nodePost, "T0");
+        return { avail: cash + cred, cred: cred, post: post, weeklyExp: extractSnapshotWeeklyExpenses(snap) };
+    }
+
+    // Тихо тягне зріз на дату через потік (для попередніх тижнів). null, якщо немає.
+    async function fetchSnapshotForDate(iso) {
+        try {
+            const res = await fetch(GET_METRICS_FLOW_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reportDate: iso, reportDateDot: iso.split('-').reverse().join('.') })
+            });
+            if (!res.ok) return null;
+            const txt = await res.text();
+            const json = txt ? JSON.parse(txt) : null;
+            return extractSnapshotObject(json);
+        } catch (e) { return null; }
+    }
+
+    // Уточнює плитки: дельти тиждень-до-тижня (проти найближчого попереднього зрізу)
+    // + буфер ліквідності ковзним середнім обов'язкових витрат за 4 тижні.
+    // Відсутні тижні пропускаються; якщо попередніх немає — лише поточний тиждень.
+    async function refineKpisAndBuffer(isoDate, currentSnapshot) {
+        try {
+            if (!globalData || !Array.isArray(globalData.kpis)) return;
+            const cur = snapshotKpiValues(currentSnapshot);
+            if (!cur) return;
+
+            const dates = getFourTargetDates(isoDate);
+            const priorSnaps = [];
+            for (let i = 1; i < dates.length; i++) {
+                priorSnaps.push(await fetchSnapshotForDate(dates[i]));
+            }
+            const prevSnap = priorSnaps.find(s => s && s.tree);
+            const prev = prevSnap ? snapshotKpiValues(prevSnap) : null;
+
+            const pool = [];
+            if (cur.weeklyExp > 0) pool.push(cur.weeklyExp);
+            priorSnaps.forEach(s => { if (s) { const e = extractSnapshotWeeklyExpenses(s); if (e > 0) pool.push(e); } });
+            const dailyExp = pool.length ? (pool.reduce((a, b) => a + b, 0) / (pool.length * 7)) : 0;
+            const buffer = dailyExp > 0 ? Math.round(cur.avail / dailyExp) : (globalData.kpis[1] ? globalData.kpis[1].value : 0);
+
+            const dLiq  = prev ? (cur.avail - prev.avail) : 0;
+            const dCred = prev ? (cur.cred - prev.cred) : 0;
+            const dPost = prev ? (cur.post - prev.post) : 0;
+            const dBuf  = (prev && dailyExp > 0) ? (buffer - Math.round(prev.avail / dailyExp)) : 0;
+
+            const setKpi = (titleUk, val, delta, unitUk, unitEn) => {
+                const k = globalData.kpis.find(x => x.title && x.title.uk === titleUk);
+                if (!k) return;
+                k.value = (titleUk === "Доступний постімпорт" && (val === 0 || val === '-')) ? '-' : val;
+                k.trend = kpiTrend(delta, unitUk, unitEn);
+            };
+            setKpi("Доступна ліквідність", cur.avail, dLiq, "млн грн", "UAH mln");
+            setKpi("Доступні кредитні лінії", cur.cred, dCred, "млн грн", "UAH mln");
+            setKpi("Доступний постімпорт", cur.post, dPost, "млн грн", "UAH mln");
+            setKpi("Буфер ліквідності", buffer, dBuf, "дні", "days");
+
+            updateLanguageDOM();
+        } catch (e) { /* не критично для дашборду */ }
+    }
+
+    // Головна функція завантаження метрик обраної дати
     async function loadMetricsForSelectedDate(isoDate) {
         const btnSP = document.getElementById('btnRefreshSP');
         if (btnSP) { btnSP.classList.add('is-generating'); btnSP.disabled = true; }
@@ -839,7 +954,7 @@
                     const shape = (flow && typeof flow === 'object')
                         ? ("ключі: [" + Object.keys(flow).join(", ") + "]")
                         : ("тип: " + typeof flow);
-                    throw new Error(`потік повернув 200, але tree не знайдено. Форма відповіді — ${shape}. Перевірте Body дії «Response DashboardData».`);
+                    throw new Error(`потік повернув 200, але зрізу (tree) не знайдено. Форма відповіді — ${shape}. Перевірте Body дії «Відповідь 2».`);
                 }
             }
         } catch (e) {
@@ -858,7 +973,7 @@
                     errors.push("SharePoint REST: " + e.message);
                 }
             } else {
-                errors.push("Не вдалося завантажити дані через потік. Будь ласка, завантажте JSON-файл вручну. Direct SharePoint REST call blocked by CORS (local origin).");
+                errors.push("Прямий доступ до SharePoint неможливий із локального файлу через CORS — дані надходять лише через потік Power Automate.");
             }
         }
 
@@ -874,6 +989,8 @@
                 // Блоки графіка/прогнозу коштів — зі зрізу; якщо зрізу немає, лишаємо порожніми
                 if (snapshot) {
                     processSnapshotJson(snapshot);
+                    // Асинхронно уточнюємо буфер ліквідності за 4 тижні (не блокуючи UI)
+                    refineKpisAndBuffer(isoDate, snapshot);
                 } else {
                     prepareEmptyForecastForDate(isoDate);
                 }
@@ -2326,78 +2443,6 @@
         return Math.round(n / 1000000);
     }
 
-    // 1. Отримуємо масив із 4 дат для ковзного розрахунку
-        const fourDates = getFourTargetDates(isoDate);
-        const expensePool = [];
-
-        // 2. Паралельно опитуємо SharePoint/потік для всіх 4 дат
-        const fetchPromises = fourDates.map(async (dt) => {
-            try {
-                const dotDt = dt.split('-').reverse().join('.');
-                const res = await fetch(GET_METRICS_FLOW_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reportDate: dt, reportDateDot: dotDt })
-                });
-                if (!res.ok) return null;
-                const txt = await res.text();
-                const json = txt ? JSON.parse(txt) : null;
-                const snapObj = extractSnapshotObject(json);
-                return snapObj;
-            } catch (err) {
-                return null; // Пропускаємо тижні, за якими немає файлів, без зупинки потоку
-            }
-        });
-
-        // Чекаємо завершення всіх запитів
-        const results = await Promise.allSettled(fetchPromises);
-
-        // 3. Витягуємо витрати з успішно отриманих зрізів
-        results.forEach(r => {
-            if (r.status === 'fulfilled' && r.value) {
-                const exp = extractSnapshotWeeklyExpenses(r.value);
-                if (exp > 0) expensePool.push(exp);
-            }
-        });
-
-        // 4. Якщо жоден історичний файл не знайшовся, беремо дані з поточного зрізу
-        if (expensePool.length === 0 && snapshot) {
-            const curExp = extractSnapshotWeeklyExpenses(snapshot);
-            if (curExp > 0) expensePool.push(curExp);
-        }
-
-        // 5. Розрахунок середньодобових витрат за наявними тижнями (сума витрат / загальна кількість днів)
-        const totalExpSum = expensePool.reduce((acc, val) => acc + val, 0);
-        const totalDaysCount = expensePool.length * 7;
-        const dailyOutT0 = totalDaysCount > 0 ? (totalExpSum / totalDaysCount) : 1;
-
-        // 6. Фінальний розрахунок буфера ліквідності у днях
-        const bufferT0 = dailyOutT0 > 0 ? Math.round(curTotLiq / dailyOutT0) : 0;
-
-    // Отримання обов'язкових витрат із конкретного об'єкта зрізу
-    function extractSnapshotWeeklyExpenses(snap) {
-        const tree = snap?.tree;
-        if (!tree) return 0;
-
-        const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
-        const nProcessing = findSnapshotNode(tree, "Переробка");
-        const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
-        const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
-
-        const nodeCash = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
-        const kFact = (nodeCash?.values?.Tm1_fact !== undefined) ? "Tm1_fact" : 
-                      (nodeCash?.values?.Tm1_forecast !== undefined ? "Tm1_forecast" : "T0");
-
-        let sum = Math.abs(getMlnValue(nMandatory, kFact)) + 
-                  Math.abs(getMlnValue(nProcessing, kFact)) + 
-                  Math.abs(getMlnValue(nCommercial, kFact));
-
-        if (sum === 0) {
-            sum = Math.abs(getMlnValue(nAllOut, kFact));
-        }
-        return sum;
-    }
-
     // Головна функція трансформації JSON-зрізу в об'єкт globalData дашборду
     function processSnapshotJson(snapshot) {
         if (!snapshot || !snapshot.tree) {
@@ -2452,124 +2497,35 @@
         // Індекси Т-1 та Т0
         const iTm1 = 0, iT0 = 1;
 
-// --- 3. KPI-плитки (Динамічний розрахунок за поточним зрізом) ---
-// --- 3. KPI-плитки (Швидкий та коректний розрахунок на основі поточного зрізу) ---
-
-        // 1. Поточна доступна ліквідність на дату звіту (вхідний залишок Tm1)
+        // --- 3. KPI-плитки (значення = ФАКТ Т-1; дельти тиждень-до-тижня рахує
+        //         асинхронний refineKpisAndBuffer за попереднім зрізом) ---
         const curCash   = ownCash[iTm1];
         const curCred   = getMlnValue(nodeCredit, tm1Key) || getMlnValue(nodeCredit, "T0");
-        const curPost   = getMlnValue(nodePost, tm1Key);
+        const curPost   = getMlnValue(nodePost, tm1Key) || getMlnValue(nodePost, "T0");
         const curTotLiq = curCash + curCred;
 
-        // 2. Буфер ліквідності (днів) = Доступна ліквідність / Середньодобові витрати з Tm1
+        // Обов'язкові (операційні) витрати для буфера
         const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
         const nProcessing = findSnapshotNode(tree, "Переробка");
         const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
         const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
-
-        let weeklyExp = Math.abs(getMlnValue(nMandatory, tm1Key)) +
-                        Math.abs(getMlnValue(nProcessing, tm1Key)) +
-                        Math.abs(getMlnValue(nCommercial, tm1Key));
-        if (weeklyExp === 0) weeklyExp = Math.abs(getMlnValue(nAllOut, tm1Key));
-
-        const dailyExp = weeklyExp > 0 ? (weeklyExp / 7) : 1;
-        const bufferDays = dailyExp > 0 ? Math.round(curTotLiq / dailyExp) : 0;
-
-        // 3. Дельти (Δ) з урахуванням відхилень dev_fact у зрізі
-        const devKey = (nodeCash && nodeCash.values && nodeCash.values.dev_fact !== undefined) ? "dev_fact" : "dev_forecast";
-        
-        let dLiq = getMlnValue(nodeCash, devKey) + getMlnValue(nodeCredit, devKey);
-        if (dLiq === 0 && nodeCash && nodeCash.values && nodeCash.values.Tm1_plan !== undefined) {
-            const planTotLiq = getMlnValue(nodeCash, "Tm1_plan") + getMlnValue(nodeCredit, "Tm1_plan");
-            dLiq = curTotLiq - planTotLiq;
-        }
-
-        const dCred = getMlnValue(nodeCredit, devKey);
-        const dPost = getMlnValue(nodePost, devKey);
-
-        const prevBuffer = Math.round((curTotLiq - dLiq) / dailyExp);
-        const dBuffer = bufferDays - prevBuffer;
-
-        // 4. Допоміжна функція форматування динаміки та стрілок
-        const trend = (delta, unitUk, unitEn) => {
-            const a = Math.abs(delta);
-            const num = a === 0 ? "0" : formatNum(a);
-            const arrow = delta > 0 ? "▲ +" : (delta < 0 ? "▼ -" : "— ");
-            return {
-                isPositive: delta >= 0,
-                text: {
-                    uk: delta === 0 ? "— без змін" : `${arrow}${num} ${unitUk}`,
-                    en: delta === 0 ? "— no change" : `${arrow}${num} ${unitEn}`
-                }
-            };
+        const weeklyCoreOut = (key) => {
+            let s = Math.abs(getMlnValue(nMandatory, key)) + Math.abs(getMlnValue(nProcessing, key)) + Math.abs(getMlnValue(nCommercial, key));
+            if (s === 0) s = Math.abs(getMlnValue(nAllOut, key));
+            return s;
         };
 
-        // 5. Формування KPI плиток
+        // Буфер (днів): ПРОВІЗОРНО за поточним тижнем; уточнюється за 4 тижні асинхронно
+        const curWeeklyExp = weeklyCoreOut(tm1Key) || weeklyCoreOut("T0");
+        const dailyExp = curWeeklyExp > 0 ? curWeeklyExp / 7 : 0;
+        const bufferDays = dailyExp > 0 ? Math.round(curTotLiq / dailyExp) : 0;
+
         const kpis = [
-            {
-                title: { uk: "Доступна ліквідність", en: "Available liquidity" },
-                value: curTotLiq,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: trend(dLiq, "млн грн", "UAH mln"),
-                isGray: false
-            },
-            {
-                title: { uk: "Буфер ліквідності", en: "Liquidity buffer" },
-                value: bufferDays,
-                unit: { uk: "дні", en: "days" },
-                trend: trend(dBuffer, "дні", "days"),
-                isGray: false
-            },
-            {
-                title: { uk: "Доступні кредитні лінії", en: "Available credit lines" },
-                value: curCred,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: trend(dCred, "млн грн", "UAH mln"),
-                isGray: false
-            },
-            {
-                title: { uk: "Доступний постімпорт", en: "Available post-import" },
-                value: curPost === 0 ? '-' : curPost,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: trend(dPost, "млн грн", "UAH mln"),
-                isGray: false
-            }
+            { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false },
+            { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferDays, unit: { uk: "дні", en: "days" }, trend: kpiTrend(0, "дні", "days"), isGray: false },
+            { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false },
+            { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: (curPost === 0 ? '-' : curPost), unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false }
         ];
-
-        // Буфер ліквідності (днів) = доступна ліквідність / середньодобові
-        // обов'язкові + виробничі виплати (обов'язкові + переробка + оборотний капітал).
-        // const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
-        // const nProcessing = findSnapshotNode(tree, "Переробка");
-        // const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
-        // const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
-
-        // const weeklyCoreOut = (key) => {
-        //     let s = Math.abs(getMlnValue(nMandatory, key)) + Math.abs(getMlnValue(nProcessing, key)) + Math.abs(getMlnValue(nCommercial, key));
-        //     if (s === 0) s = Math.abs(getMlnValue(nAllOut, key)); // резерв
-        //     return s;
-        // };
-        // const dailyOutT0  = weeklyCoreOut("T0") / 7;
-        // const dailyOutTm1 = weeklyCoreOut(tm1Key) / 7;
-        // const bufferT0  = dailyOutT0  > 0 ? Math.round(curTotLiq  / dailyOutT0)  : 0;
-        // const bufferTm1 = dailyOutTm1 > 0 ? Math.round(prevTotLiq / dailyOutTm1) : 0;
-        // const dBuffer = bufferT0 - bufferTm1;
-
-        // const trend = (delta, unitUk, unitEn) => {
-        //     const a = Math.abs(delta);
-        //     const num = a === 0 ? "0" : formatNum(a);
-        //     const arrow = delta > 0 ? "▲ +" : (delta < 0 ? "▼ -" : "— ");
-        //     return {
-        //         isPositive: delta >= 0,
-        //         text: { uk: arrow + num + " " + unitUk, en: arrow + num + " " + unitEn }
-        //     };
-        // };
-
-        // const kpis = [
-        //     { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dLiq, "млн грн", "UAH mln"), isGray: false },
-        //     { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferT0, unit: { uk: "дні", en: "days" }, trend: trend(dBuffer, "дні", "days"), isGray: false },
-        //     { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dCred, "млн грн", "UAH mln"), isGray: false },
-        //     { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: curPost, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dPost, "млн грн", "UAH mln"), isGray: false }
-        // ];
 
         // --- 4. Таблиця прогнозу грошових потоків (структура як у dashboard.html:
         //         Стаття | Т-1 | Δ | T0 | T1 | T2 | T3 | M1 | M2 | M3 | Всього) ---

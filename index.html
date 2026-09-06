@@ -839,7 +839,7 @@
                     const shape = (flow && typeof flow === 'object')
                         ? ("ключі: [" + Object.keys(flow).join(", ") + "]")
                         : ("тип: " + typeof flow);
-                    throw new Error(`потік повернув 200, але зрізу (tree) не знайдено. Форма відповіді — ${shape}. Перевірте Body дії «Відповідь 2».`);
+                    throw new Error(`потік повернув 200, але tree не знайдено. Форма відповіді — ${shape}. Перевірте Body дії «Response DashboardData».`);
                 }
             }
         } catch (e) {
@@ -858,7 +858,7 @@
                     errors.push("SharePoint REST: " + e.message);
                 }
             } else {
-                errors.push("Прямий доступ до SharePoint неможливий із локального файлу через CORS — дані надходять лише через потік Power Automate.");
+                errors.push("Не вдалося завантажити дані через потік. Будь ласка, завантажте JSON-файл вручну. Direct SharePoint REST call blocked by CORS (local origin).");
             }
         }
 

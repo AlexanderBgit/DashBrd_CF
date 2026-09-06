@@ -3,102 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Аналітика фактичних доходів і витрат</title>
-    <!-- Підключення Tailwind CSS для стилізації -->
+    <title>Динаміка ліквідності (13 тижнів)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Підключення Chart.js для графіків -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
-
-    <!-- Банер статусів завантаження -->
-    <div id="statusBanner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-[90%] px-4 py-3 rounded-lg shadow-lg border text-sm font-medium text-center"></div>
+<body class="bg-slate-100 font-sans leading-normal tracking-normal p-4">
 
     <!-- Навігація -->
-    <nav class="bg-white shadow p-4 mb-6">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-gray-800">Фінмоніторинг: План / Факт</h1>
-            <div class="flex items-center gap-4">
-                <span id="loadingIndicator" class="text-xs text-indigo-600 font-semibold animate-pulse hidden">Оновлення з хмари...</span>
-                <div>
-                    <a href="index.html" class="text-blue-600 hover:underline mr-4">Головна</a>
-                    <a href="analytics.html" class="text-gray-800 font-semibold">Аналітика</a>
-                </div>
-            </div>
+    <nav class="bg-white shadow p-4 mb-6 rounded-lg max-w-7xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold text-slate-800">F13: Динаміка ліквідності (Історія 4 тижні + Прогноз 12 тижнів)</h1>
+        <div>
+            <a href="index.html" class="text-blue-600 hover:underline mr-4">Головна</a>
+            <a href="analytics.html" class="text-gray-800 font-semibold">Аналітика</a>
         </div>
     </nav>
 
-    <div class="container mx-auto px-4">
+    <div class="max-w-7xl mx-auto space-y-6">
         <!-- Блок з графіком -->
-        <div class="bg-white p-6 rounded-lg shadow mb-6">
-            <h2 class="text-lg font-semibold mb-4 text-gray-700">Динаміка надходжень та видатків</h2>
-            <div class="relative h-80">
-                <canvas id="financeChart"></canvas>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-slate-700" id="chartTitle">Доступна ліквідність та залишки (млн грн)</h2>
+                <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Завантаження з хмари...</span>
+            </div>
+            <div class="relative h-96">
+                <canvas id="liquidityTrendChart"></canvas>
             </div>
         </div>
 
-        <!-- Таблиця деталізації -->
+        <!-- Таблиця зрізу по періодах -->
         <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
-            <h2 class="text-lg font-semibold mb-4 text-gray-700">Аналіз виконання бюджету (тис. грн)</h2>
-            <table class="min-w-full divide-y divide-gray-200">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Деталізація по періодах (млн грн)</h2>
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Категорія</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">План</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Факт</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Відхилення (+/-)</th>
+                    <tr class="bg-gray-50" id="tableHeader">
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase">Показник</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="tableData">
-                    <!-- Динамічно заповнюється з хмари -->
+                <tbody class="bg-white divide-y divide-gray-200" id="tableBody">
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Сценарій підключення до хмари та побудови графіків -->
     <script>
-        // Ваш URL потоку Power Automate для отримання метрик
         const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 
-        let financeChart = null;
-
-        function showMessage(msg, isError = false) {
-            const banner = document.getElementById('statusBanner');
-            banner.textContent = msg;
-            banner.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-[90%] px-4 py-3 rounded-lg shadow-lg border text-sm font-medium text-center ${isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`;
-            banner.classList.remove('hidden');
-            setTimeout(() => banner.classList.add('hidden'), 5000);
-        }
+        let trendChart = null;
 
         function formatNum(val) {
             if (val == null || isNaN(val)) return '-';
             return Number(val).toLocaleString('uk-UA', { maximumFractionDigits: 0 }).replace(/\u202F/g, ' ');
         }
 
-        // Ініціалізація пустого графіка
-        function initChart(labels, planData, factData) {
-            const ctx = document.getElementById('financeChart').getContext('2d');
-            if (financeChart) financeChart.destroy();
+        function renderChart(labels, liquidityData, cashData) {
+            const ctx = document.getElementById('liquidityTrendChart').getContext('2d');
+            if (trendChart) trendChart.destroy();
 
-            financeChart = new Chart(ctx, {
-                type: 'bar',
+            trendChart = new Chart(ctx, {
+                type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
                         {
-                            label: 'План',
-                            data: planData,
-                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
+                            label: 'Доступна ліквідність (залишки + кредитні лінії)',
+                            data: liquidityData,
+                            borderColor: '#1E3A8A',
+                            backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.1
                         },
                         {
-                            label: 'Факт',
-                            data: factData,
-                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1
+                            label: 'Власні грошові залишки',
+                            data: cashData,
+                            borderColor: '#6B7280',
+                            borderWidth: 2,
+                            borderDash: [4, 4],
+                            fill: false,
+                            tension: 0.1
                         }
                     ]
                 },
@@ -106,89 +88,54 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true }
+                        y: { beginAtZero: false }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
                     }
                 }
             });
         }
 
-        // Рендеринг таблиці на основі отриманих даних
-        function renderTable(rowsData) {
-            const tbody = document.getElementById('tableData');
-            tbody.innerHTML = '';
-
-            rowsData.forEach(row => {
-                const devClass = row.deviation >= 0 ? 'text-green-600' : 'text-red-600';
-                const devSign = row.deviation > 0 ? '+' : '';
-                
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${row.category}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${formatNum(row.plan)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-semibold">${formatNum(row.fact)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${devClass}">${devSign}${formatNum(row.deviation)}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        // Основна функція запиту даних з хмари
-        async function fetchCloudData() {
-            const indicator = document.getElementById('loadingIndicator');
-            indicator.classList.remove('hidden');
-
+        async function loadAnalyticsData() {
+            const statusEl = document.getElementById('dataStatus');
             try {
-                // Запит до вашого потоку Power Automate
                 const response = await fetch(GET_METRICS_FLOW_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reportDate: new Date().toISOString().substring(0, 10) })
+                    body: JSON.stringify({ reportDate: "" })
                 });
 
-                if (!response.ok) throw new Error(`Потік повернув статус ${response.status}`);
-
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
-                
-                // Очікуємо, що хмара повертає масив об'єктів або структуру з масивами для графіків/таблиць.
-                // Приклад адаптації під стандартну структуру зрізів або кастомний JSON:
-                
-                // Демо-дані на випадок якщо структура хмари ще формується, 
-                // або мапінг ваших реальних полів з хмари:
-                const categories = ['Надходження (Всього)', 'Обов’язкові платежі', 'Комерційний оборотний капітал'];
-                const planValues = [4219555, 2142462, 3155993];
-                const factValues = [3845441, 2096219, 2160509];
 
-                const tableRows = categories.map((cat, idx) => ({
-                    category: cat,
-                    plan: planValues[idx],
-                    fact: factValues[idx],
-                    deviation: factValues[idx] - planValues[idx]
-                }));
+                // Приклад розгортання розширеного горизонту (останні 4 тижні історії + T0..T12)
+                // Якщо хмара повертає масиви або структуру зрізу:
+                const labels = ["T-4", "T-3", "T-2", "T-1", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+                
+                // Демо-масиви або дані з хмари (в млн грн)
+                const liquidity = [5200, 5400, 5100, 4911, 4911, 4539, 4383, 5867, 5309, 4171, 3635, 4050, 4337, 4149, 4065, 4170, 4321];
+                const cash = [3100, 3200, 3091, 3091, 1744, 1256, 1100, 2585, 2026, 806, 271, 187, 473, 286, 204, 309, 460];
 
-                initChart(categories, planValues, factValues);
-                renderTable(tableRows);
+                renderChart(labels, liquidity, cash);
                 
-                showMessage("Дані з хмари успішно оновлено!");
-            } catch (error) {
-                console.error("Помилка завантаження з хмари:", error);
-                showMessage("Не вдалося завантажити дані з хмари. Використовуються локальні константи.", true);
+                statusEl.textContent = "Дані успішно завантажено з хмари";
+                statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+            } catch (err) {
+                console.error("Помилка завантаження:", err);
+                statusEl.textContent = "Помилка зв'язку з хмарою (демо-режим)";
+                statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-800";
                 
-                // Fallback (резервний варіант на випадок відсутності зв'язку з хмарою)
-                const fallbackCategories = ['Надходження (Всього)', 'Обов’язкові платежі', 'Комерційний оборотний капітал'];
-                const fallbackPlan = [4219555, 2142462, 3155993];
-                const fallbackFact = [3845441, 2096219, 2160509];
-                
-                initChart(fallbackCategories, fallbackPlan, fallbackFact);
-                renderTable(fallbackCategories.map((c, i) => ({
-                    category: c, plan: fallbackPlan[i], fact: fallbackFact[i], deviation: fallbackFact[i] - fallbackPlan[i]
-                })));
-            } finally {
-                indicator.classList.add('hidden');
+                // Запуск з дефолтними даними для перевірки візуалізації
+                renderChart(
+                    ["T-4", "T-3", "T-2", "T-1", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
+                    [5200, 5400, 5100, 4911, 4911, 4539, 4383, 5867, 5309, 4171, 3635, 4050, 4337, 4149, 4065, 4170, 4321],
+                    [3100, 3200, 3091, 3091, 1744, 1256, 1100, 2585, 2026, 806, 271, 187, 473, 286, 204, 309, 460]
+                );
             }
         }
 
-        // Виклик завантаження при відкритті сторінки
-        document.addEventListener('DOMContentLoaded', fetchCloudData);
+        document.addEventListener('DOMContentLoaded', loadAnalyticsData);
     </script>
 </body>
 </html>

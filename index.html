@@ -870,7 +870,26 @@
                 buildChart();
                 document.getElementById('dashboardContent')?.classList.remove('hidden');
                 document.getElementById('uploadZone')?.classList.add('hidden');
-                showSuccess(`Дані на ${dot} завантажено.`);
+
+                // Діагностика: зріз прийшов, але значення порожні
+                const chartEmpty = !globalData.chart.totalLiquidity.some(v => v);
+                const noMetrics = !(flowData && Array.isArray(flowData.metrics) && flowData.metrics.length);
+                if (chartEmpty) {
+                    const cashNode = findSnapshotNode(snapshot.tree, "Доступні залишки") || findSnapshotNode(snapshot.tree, "Залишки доступні до використання");
+                    const hasCols = snapshot.columns && Object.keys(snapshot.columns).length;
+                    const valKeys = cashNode && cashNode.values ? Object.keys(cashNode.values) : [];
+                    const reason = !cashNode
+                        ? "у зрізі не знайдено вузол «Доступні залишки»"
+                        : (valKeys.length === 0
+                            ? "вузол «Доступні залишки» без значень"
+                            : "значення не читаються; ключі: [" + valKeys.slice(0, 8).join(", ") + "]" + (hasCols ? "" : "; відсутні columns"));
+                    console.warn("SNAPSHOT DIAGNOSTIC:", { treeLen: snapshot.tree.length, hasColumns: !!hasCols, cashNode });
+                    showBanner(`Зріз на ${dot} завантажено, але графік порожній: ${reason}. Спробуйте відкрити цей файл через «Завантажити JSON» для звірки.`, 'warn');
+                } else if (noMetrics) {
+                    showBanner(`Дані на ${dot} завантажено. Але оперативних метрик (оборотний капітал / запаси / фінансування) на цю дату немає — перевірте фільтр дати у потоці або наявність рядків у WeeklyFinancialMetrics.`, 'warn');
+                } else {
+                    showSuccess(`Дані на ${dot} завантажено.`);
+                }
             } else if (flowError) {
                 // Чисте повідомлення від потоку, без зайвого шуму про CORS
                 showError(`Немає даних на ${dot}. Потік повідомив: ${flowError}`);
@@ -2237,9 +2256,18 @@
     // Безпечне отримання значення в млн грн (Round(val / 1 000 000))
     function getMlnValue(node, colKey) {
         if (!node || !node.values) return 0;
-        const v = node.values[colKey];
-        if (v === undefined || v === null || isNaN(v)) return 0;
-        return Math.round(Number(v) / 1000000);
+        let v = node.values[colKey];
+        if (v === undefined || v === null || v === '') return 0;
+        if (typeof v === 'string') {
+            // Значення може прийти рядком: "1 744 620 815,34" → 1744620815.34
+            v = v.replace(/[\s\u00A0\u202F\u2009]/g, '').replace(/\u2212/g, '-');
+            // Якщо є і крапка, і кома — кома це роздільник тисяч; інакше кома = десяткова
+            if (v.indexOf('.') >= 0 && v.indexOf(',') >= 0) v = v.replace(/,/g, '');
+            else v = v.replace(',', '.');
+        }
+        const n = Number(v);
+        if (!isFinite(n)) return 0;
+        return Math.round(n / 1000000);
     }
 
     // Головна функція трансформації JSON-зрізу в об'єкт globalData дашборду

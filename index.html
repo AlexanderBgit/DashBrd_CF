@@ -886,6 +886,36 @@
         }
     }
 
+    // Шаблони бічних таблиць за замовчуванням (використовуються, коли для дати
+    // ще немає оперативних метрик — щоб модалка «Внести дані» не була порожньою).
+    function defaultWorkingCapital() {
+        return [
+            { title: { uk: "Дебіторська заборгованість", en: "Accounts receivable" }, current: 0, delta: 0, isSub: false, isTotal: false, isGray: false },
+            { title: { uk: "- НАК Нафтогаз", en: "- NJSC Naftogaz" }, current: 0, delta: 0, isSub: true, isTotal: false, isGray: false },
+            { title: { uk: "- МОУ / АОЗ", en: "- MoD / DPA" }, current: 0, delta: 0, isSub: true, isTotal: false, isGray: false },
+            { title: { uk: "Аванси видані", en: "Advances paid" }, current: 0, delta: 0, isSub: false, isTotal: false, isGray: false },
+            { title: { uk: "Кредиторська заборгованість", en: "Accounts payable" }, current: 0, delta: 0, isSub: false, isTotal: false, isGray: false },
+            { title: { uk: "Аванси отримані", en: "Advances received" }, current: 0, delta: 0, isSub: false, isTotal: false, isGray: false },
+            { title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: 0, delta: 0, isSub: false, isTotal: true, isGray: false }
+        ];
+    }
+    function defaultFuelInventories() {
+        return [
+            { title: { uk: "Бензин", en: "Gasoline" }, current: 0, delta: 0 },
+            { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 0, delta: 0 },
+            { title: { uk: "Газ комерційний (млн м³)", en: "Commercial gas (mln m³)" }, current: 0, delta: 0 },
+            { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 0, delta: 0 },
+            { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 0, delta: 0 }
+        ];
+    }
+    function defaultCreditLimits() {
+        return [
+            { title: { uk: "Кредитні лінії", en: "Credit lines" }, limit: 0, drawn: 0, available: 0 },
+            { title: { uk: "Постімпорт", en: "Post-import" }, limit: 0, drawn: 0, available: 0 },
+            { title: { uk: "Всього", en: "Total" }, limit: 0, drawn: 0, available: 0 }
+        ];
+    }
+
     // Функція рознесення даних по блоках інтерфейсу
     function applyMetricsToDashboard(data, targetDate) {
         if (!globalData) return;
@@ -905,114 +935,57 @@
             globalData.summary.en = [`No executive summary recorded for ${targetDate}.`];
         }
 
-        // 2. Очищення попередніх значень показників
-        ['workingCapital', 'fuelInventories'].forEach(k => {
-            if (Array.isArray(globalData[k])) {
-                globalData[k].forEach(r => {
-                    r.current = 0;
-                    r.previous = 0;
-                    r.delta = 0;
-                });
-            }
-        });
-        if (Array.isArray(globalData.creditLimits)) {
-            globalData.creditLimits.forEach(r => {
-                r.drawn = 0;
-                r.limit = 0;
-                r.available = 0;
-            });
-        }
-
-        // 3. Рознесення отриманих з SharePoint метрик
+        // 2. Динамічна побудова бічних таблиць з метрик WeeklyFinancialMetrics
+        //    (за полем Category, у порядку OrderIndex). Раніше метрики намагались
+        //    "лягти" на фіксований шаблон з іншими назвами рядків — тому фінансування
+        //    та частина рядків не заповнювались. Тепер показуємо саме те, що в списку.
         const metricsList = Array.isArray(data?.metrics) ? data.metrics : [];
+        const num = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+        const byOrder = (a, b) => (num(a.OrderIndex) - num(b.OrderIndex));
+        const catOf = m => String((typeof m.Category === 'object' && m.Category) ? m.Category.Value : (m.Category ?? m.CategoryValue ?? '')).trim().toLowerCase();
+        const isTotalTitle = t => /всього|^\s*total\s*$|чистий оборотн|без запас|\(nwc\)|\bnwc\b/i.test(String(t || ''));
 
-        metricsList.forEach(m => {
-            const rawCat = (typeof m.Category === 'object' && m.Category !== null) ? m.Category.Value : m.Category;
-            const cat = String(rawCat || m.CategoryValue || '').trim().toLowerCase();
-            const title = String(m.Title || '').trim().toLowerCase();
-            const val = parseFloat(m.Value) || 0;
-            const lim = parseFloat(m.LimitValue) || 0;
+        const wcRows = [], fuelRows = [], finRows = [];
+        metricsList.slice().sort(byOrder).forEach(m => {
+            const cat = catOf(m);
+            const titleRaw = String(m.Title || '').trim();
+            if (!titleRaw) return;
+            const val = num(m.Value);
+            const lim = num(m.LimitValue);
+            const isSub = /^[\-\u2013\u2014]/.test(titleRaw);
 
-            // Оборотний капітал
-            if (cat.includes('оборотн') && Array.isArray(globalData.workingCapital)) {
-                const row = globalData.workingCapital.find(r => {
-                    const uk = String(r.title?.uk || r.title || '').trim().toLowerCase();
-                    const en = String(r.title?.en || '').trim().toLowerCase();
-                    return uk === title || en === title || uk.includes(title) || title.includes(uk);
-                });
-                if (row) {
-                    row.current = val;
-                    row.previous = lim;
-                    row.delta = val - lim;
-                }
-            }
-
-            // Запаси
-            if (cat.includes('запас') && Array.isArray(globalData.fuelInventories)) {
-                const row = globalData.fuelInventories.find(r => {
-                    const uk = String(r.title?.uk || r.title || '').trim().toLowerCase();
-                    const en = String(r.title?.en || '').trim().toLowerCase();
-                    return uk === title || en === title || uk.includes(title) || title.includes(uk);
-                });
-                if (row) {
-                    row.current = val;
-                    row.previous = lim;
-                    row.delta = val - lim;
-                }
-            }
-
-            // Ресурси фінансування
-            if ((cat.includes('фінанс') || cat.includes('кредит')) && Array.isArray(globalData.creditLimits)) {
-                const row = globalData.creditLimits.find(r => {
-                    const uk = String(r.title?.uk || r.title || '').trim().toLowerCase();
-                    const en = String(r.title?.en || '').trim().toLowerCase();
-                    return uk === title || en === title;
-                });
-                if (row) {
-                    row.drawn = val;
-                    row.limit = lim;
-                    row.available = lim - val;
-                }
+            if (cat.includes('оборотн')) {
+                wcRows.push({ title: getBilingualText(titleRaw), current: val, previous: lim, delta: val - lim, isSub, isTotal: isTotalTitle(titleRaw), isGray: false });
+            } else if (cat.includes('запас')) {
+                fuelRows.push({ title: getBilingualText(titleRaw), current: val, previous: lim, delta: val - lim });
+            } else if (cat.includes('фінанс') || cat.includes('кредит')) {
+                finRows.push({ title: getBilingualText(titleRaw), limit: lim, drawn: val, available: lim - val, isTotal: isTotalTitle(titleRaw) });
             }
         });
 
-        // 4. Підрахунок підсумків для оборотного капіталу
-        if (Array.isArray(globalData.workingCapital)) {
-            let totalCur = 0, totalDelta = 0;
-            globalData.workingCapital.forEach(r => {
-                if (r.isTotal) return;
-                const s = typeof wcSign === 'function' ? wcSign(r.title?.uk) : 0;
-                if (!r.isSub && s !== 0) {
-                    totalCur += s * r.current;
-                    totalDelta += s * r.delta;
-                }
-            });
-            const totRow = globalData.workingCapital.find(r => r.isTotal);
-            if (totRow) {
-                totRow.current = totalCur;
-                totRow.delta = totalDelta;
+        // Замінюємо таблицю лише якщо для категорії реально прийшли дані;
+        // інакше лишаємо наявний шаблон (щоб можна було ввести дані вручну).
+        if (wcRows.length) {
+            if (!wcRows.some(r => r.isTotal)) {
+                let tc = 0, td = 0;
+                wcRows.forEach(r => { const s = wcSign(r.title.uk); if (!r.isSub && s !== 0) { tc += s * r.current; td += s * r.delta; } });
+                wcRows.push({ title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: tc, previous: 0, delta: td, isSub: false, isTotal: true, isGray: false });
             }
+            globalData.workingCapital = wcRows;
+        }
+        if (fuelRows.length) {
+            globalData.fuelInventories = fuelRows;
+        }
+        if (finRows.length) {
+            if (!finRows.some(r => r.isTotal)) {
+                let tl = 0, tdr = 0;
+                finRows.forEach(r => { tl += r.limit; tdr += r.drawn; });
+                finRows.push({ title: { uk: "Всього", en: "Total" }, limit: tl, drawn: tdr, available: tl - tdr, isTotal: true });
+            }
+            globalData.creditLimits = finRows;
         }
 
-        // 5. Підрахунок підсумків для лімітів фінансування
-        if (Array.isArray(globalData.creditLimits)) {
-            let totLim = 0, totDr = 0;
-            globalData.creditLimits.forEach(r => {
-                const isTot = (r.title?.uk === 'Всього' || r.title?.en === 'Total');
-                if (!isTot) {
-                    totLim += r.limit;
-                    totDr += r.drawn;
-                }
-            });
-            const limTot = globalData.creditLimits.find(r => r.title?.uk === 'Всього' || r.title?.en === 'Total');
-            if (limTot) {
-                limTot.limit = totLim;
-                limTot.drawn = totDr;
-                limTot.available = totLim - totDr;
-            }
-        }
-
-        // 6. Оновлення відображення таблиць та інтерфейсу
+        // 3. Оновлення відображення таблиць та інтерфейсу
         updateLanguageDOM();
     }
 
@@ -2427,6 +2400,9 @@
         const dateFormatted = dParts.length === 3 ? `${dParts[2]}.${dParts[1]}.${dParts[0]}` : forecastDate;
 
         // --- 5. Запис у globalData (і лексичну змінну, і window — синхронно) ---
+        // Зберігаємо наявні бічні таблиці (шаблон із initEmptyDashboard або дані з
+        // попередньої дати), щоб applyMetricsToDashboard мала куди рознести метрики.
+        const prevData = (typeof globalData === 'object' && globalData) ? globalData : (window.globalData || null);
         currentReportDate = forecastDate;
 
         globalData = {
@@ -2469,9 +2445,9 @@
                 headers: cfHeaders,
                 rows: cfRows
             },
-            workingCapital: (window.globalData && window.globalData.workingCapital) || [],
-            fuelInventories: (window.globalData && window.globalData.fuelInventories) || [],
-            creditLimits: (window.globalData && window.globalData.creditLimits) || []
+            workingCapital: (prevData && Array.isArray(prevData.workingCapital) && prevData.workingCapital.length) ? prevData.workingCapital : defaultWorkingCapital(),
+            fuelInventories: (prevData && Array.isArray(prevData.fuelInventories) && prevData.fuelInventories.length) ? prevData.fuelInventories : defaultFuelInventories(),
+            creditLimits: (prevData && Array.isArray(prevData.creditLimits) && prevData.creditLimits.length) ? prevData.creditLimits : defaultCreditLimits()
         };
         window.globalData = globalData;
 

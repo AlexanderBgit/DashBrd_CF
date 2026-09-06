@@ -881,8 +881,11 @@
 
     // Уточнює плитки: дельти тиждень-до-тижня (проти найближчого попереднього зрізу)
     // + буфер ліквідності ковзним середнім обов'язкових витрат за 4 тижні.
-    // Відсутні тижні пропускаються; якщо попередніх немає — лише поточний тиждень.
-    async function refineKpisAndBuffer(isoDate, currentSnapshot) {
+    // Джерело попередніх тижнів (за пріоритетом):
+    //   1) flowResp.priorWeeks       — вже пораховані числа (Варіант A1, найлегший обсяг);
+    //   2) flowResp.priorSnapshots   — повні зрізи попередніх тижнів у ТІЙ САМІЙ відповіді (A2);
+    //   3) окремі паралельні запити  — відкат, якщо потік ще не повертає історію.
+    async function refineKpisAndBuffer(isoDate, currentSnapshot, flowResp) {
         console.time('refineKpisAndBuffer (дельти + буфер)');
         try {
             if (!globalData || !Array.isArray(globalData.kpis)) return;
@@ -890,18 +893,50 @@
             if (!cur) return;
             _snapCache.set(isoDate, currentSnapshot); // поточний зріз — у кеш
 
-            // ПАРАЛЕЛЬНО тягнемо до 3 попередніх тижнів (замість послідовних await)
-            const dates = getFourTargetDates(isoDate);
-            console.time('refine: fetch попередніх тижнів (паралельно)');
-            const priorSnaps = await Promise.all(dates.slice(1).map(fetchSnapshotForDate));
-            console.timeEnd('refine: fetch попередніх тижнів (паралельно)');
+            const numOf = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+            let priorVals = []; // [{ reportDate, avail, cred, post, weeklyExp }]
 
-            const prevSnap = priorSnaps.find(s => s && s.tree);
-            const prev = prevSnap ? snapshotKpiValues(prevSnap) : null;
+            const pw = flowResp && Array.isArray(flowResp.priorWeeks) ? flowResp.priorWeeks : null;
+            const ps = flowResp && Array.isArray(flowResp.priorSnapshots) ? flowResp.priorSnapshots : null;
 
+            if (pw && pw.length) {
+                // A1 — числа вже пораховані потоком
+                priorVals = pw.map(w => ({
+                    reportDate: cleanDateKey(w.reportDate || w.ReportDate),
+                    avail: numOf(w.avail), cred: numOf(w.cred), post: numOf(w.post),
+                    weeklyExp: numOf(w.weeklyExpenses != null ? w.weeklyExpenses : w.weeklyExp)
+                }));
+            } else if (ps && ps.length) {
+                // A2 — повні зрізи попередніх тижнів у цій же відповіді
+                priorVals = ps.map(item => {
+                    const snap = extractSnapshotObject(item && (item.snapshot || item.snapshotTree || item)) || null;
+                    const v = snap ? snapshotKpiValues(snap) : null;
+                    if (!v) return null;
+                    v.reportDate = cleanDateKey(item.reportDate || item.ReportDate || (snap.meta && (snap.meta.forecast_date || snap.meta.plan_fact_date)));
+                    return v;
+                }).filter(Boolean);
+            } else {
+                // Відкат — окремі паралельні запити на попередні тижні
+                const dates = getFourTargetDates(isoDate);
+                console.time('refine: fetch попередніх тижнів (паралельно, відкат)');
+                const snaps = await Promise.all(dates.slice(1).map(fetchSnapshotForDate));
+                console.timeEnd('refine: fetch попередніх тижнів (паралельно, відкат)');
+                priorVals = snaps.map((s, i) => {
+                    if (!s || !s.tree) return null;
+                    const v = snapshotKpiValues(s); if (!v) return null;
+                    v.reportDate = dates[i + 1];
+                    return v;
+                }).filter(Boolean);
+            }
+
+            // Найближчий попередній тиждень (для дельт) — за спаданням дати
+            priorVals.sort((a, b) => String(b.reportDate).localeCompare(String(a.reportDate)));
+            const prev = priorVals.length ? priorVals[0] : null;
+
+            // Пул тижневих обов'язкових витрат: поточний + усі наявні попередні
             const pool = [];
             if (cur.weeklyExp > 0) pool.push(cur.weeklyExp);
-            priorSnaps.forEach(s => { if (s) { const e = extractSnapshotWeeklyExpenses(s); if (e > 0) pool.push(e); } });
+            priorVals.forEach(v => { if (v.weeklyExp > 0) pool.push(v.weeklyExp); });
             const dailyExp = pool.length ? (pool.reduce((a, b) => a + b, 0) / (pool.length * 7)) : 0;
             const buffer = dailyExp > 0 ? Math.round(cur.avail / dailyExp) : (globalData.kpis[1] ? globalData.kpis[1].value : 0);
 
@@ -1008,7 +1043,7 @@
                 if (snapshot) {
                     processSnapshotJson(snapshot);
                     // Асинхронно уточнюємо буфер ліквідності за 4 тижні (не блокуючи UI)
-                    refineKpisAndBuffer(isoDate, snapshot);
+                    refineKpisAndBuffer(isoDate, snapshot, flowData);
                 } else {
                     prepareEmptyForecastForDate(isoDate);
                 }

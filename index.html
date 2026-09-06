@@ -2381,52 +2381,129 @@
         const iTm1 = 0, iT0 = 1;
 
         // --- 3. KPI-плитки (з реальних даних Т0, дельта проти Т-1) ---
-        const curTotLiq  = totalLiquidity[iT0];
-        const prevTotLiq = totalLiquidity[iTm1];
-        const dLiq = curTotLiq - prevTotLiq;
+// --- 3. KPI-плитки (синхронізація з точними бізнес-правилами) ---
 
-        const curCred  = getMlnValue(nodeCredit, "T0");
-        const prevCred = getMlnValue(nodeCredit, tm1Key);
-        const dCred = curCred - prevCred;
+        // 1. Поточні значення на дату звіту (Т0)
+        const curCash   = getMlnValue(nodeCash, "T0");
+        const curCred   = getMlnValue(nodeCredit, "T0");
+        const curPost   = getMlnValue(nodePost, "T0");
+        const curTotLiq = curCash + curCred; // Доступна ліквідність = Залишки + Кредитні лінії (наприклад, 1745 + 1850 = 3595)
 
-        const curPost  = getMlnValue(nodePost, "T0");
-        const prevPost = getMlnValue(nodePost, tm1Key);
-        const dPost = curPost - prevPost;
+        // 2. Попередні значення на минулий понеділок (Т-1)
+        const prevCash   = getMlnValue(nodeCash, tm1Key);
+        const prevCred   = getMlnValue(nodeCredit, tm1Key);
+        const prevPost   = getMlnValue(nodePost, tm1Key);
+        const prevTotLiq = prevCash + prevCred; // Доступна ліквідність Т-1 (наприклад, 3092 + 1650 = 4742)
 
-        // Буфер ліквідності (днів) = доступна ліквідність / середньодобові
-        // обов'язкові + виробничі виплати (обов'язкові + переробка + оборотний капітал).
+        // 3. Розрахунок дельт за період (Т0 мінус Т-1)
+        const dLiq  = curTotLiq - prevTotLiq; // наприклад: 3595 - 4742 = -1147
+        const dCred = curCred - prevCred;     // наприклад: 1850 - 1650 = +200
+        const dPost = curPost - prevPost;     // наприклад: 1000 - 0 = +1000
+
+        // 4. Буфер ліквідності (днів) = Доступна ліквідність / Середньодобові обов'язкові + виробничі витрати
         const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
         const nProcessing = findSnapshotNode(tree, "Переробка");
         const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
         const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
 
+        // Сума обов'язкових витрат тижня
         const weeklyCoreOut = (key) => {
-            let s = Math.abs(getMlnValue(nMandatory, key)) + Math.abs(getMlnValue(nProcessing, key)) + Math.abs(getMlnValue(nCommercial, key));
-            if (s === 0) s = Math.abs(getMlnValue(nAllOut, key)); // резерв
+            let s = Math.abs(getMlnValue(nMandatory, key)) + 
+                    Math.abs(getMlnValue(nProcessing, key)) + 
+                    Math.abs(getMlnValue(nCommercial, key));
+            if (s === 0) s = Math.abs(getMlnValue(nAllOut, key)); // резервний розрахунок
             return s;
         };
+
+        // Середньодобові витрати (тижнева сума ділена на 7 днів)
         const dailyOutT0  = weeklyCoreOut("T0") / 7;
         const dailyOutTm1 = weeklyCoreOut(tm1Key) / 7;
+
+        // Буфер ліквідності у днях
         const bufferT0  = dailyOutT0  > 0 ? Math.round(curTotLiq  / dailyOutT0)  : 0;
         const bufferTm1 = dailyOutTm1 > 0 ? Math.round(prevTotLiq / dailyOutTm1) : 0;
-        const dBuffer = bufferT0 - bufferTm1;
+        const dBuffer   = bufferT0 - bufferTm1; // наприклад: 15 - 20 = -5
 
+        // Допоміжна функція форматування динаміки та стрілок
         const trend = (delta, unitUk, unitEn) => {
             const a = Math.abs(delta);
             const num = a === 0 ? "0" : formatNum(a);
             const arrow = delta > 0 ? "▲ +" : (delta < 0 ? "▼ -" : "— ");
             return {
                 isPositive: delta >= 0,
-                text: { uk: arrow + num + " " + unitUk, en: arrow + num + " " + unitEn }
+                text: { 
+                    uk: delta === 0 ? "— без змін" : `${arrow}${num} ${unitUk}`, 
+                    en: delta === 0 ? "— no change" : `${arrow}${num} ${unitEn}` 
+                }
             };
         };
 
+        // Формування плиток (для постімпорту: якщо 0 — виводимо прочерк '-')
         const kpis = [
-            { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dLiq, "млн грн", "UAH mln"), isGray: false },
-            { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferT0, unit: { uk: "дні", en: "days" }, trend: trend(dBuffer, "дні", "days"), isGray: false },
-            { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dCred, "млн грн", "UAH mln"), isGray: false },
-            { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: curPost, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dPost, "млн грн", "UAH mln"), isGray: false }
+            { 
+                title: { uk: "Доступна ліквідність", en: "Available liquidity" }, 
+                value: curTotLiq, 
+                unit: { uk: "млн грн", en: "UAH mln" }, 
+                trend: trend(dLiq, "млн грн", "UAH mln"), 
+                isGray: false 
+            },
+            { 
+                title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, 
+                value: bufferT0, 
+                unit: { uk: "дні", en: "days" }, 
+                trend: trend(dBuffer, "дні", "days"), 
+                isGray: false 
+            },
+            { 
+                title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, 
+                value: curCred, 
+                unit: { uk: "млн грн", en: "UAH mln" }, 
+                trend: trend(dCred, "млн грн", "UAH mln"), 
+                isGray: false 
+            },
+            { 
+                title: { uk: "Доступний постімпорт", en: "Available post-import" }, 
+                value: curPost === 0 ? '-' : curPost, 
+                unit: { uk: "млн грн", en: "UAH mln" }, 
+                trend: trend(dPost, "млн грн", "UAH mln"), 
+                isGray: false 
+            }
         ];
+
+        // Буфер ліквідності (днів) = доступна ліквідність / середньодобові
+        // обов'язкові + виробничі виплати (обов'язкові + переробка + оборотний капітал).
+        // const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
+        // const nProcessing = findSnapshotNode(tree, "Переробка");
+        // const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
+        // const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
+
+        // const weeklyCoreOut = (key) => {
+        //     let s = Math.abs(getMlnValue(nMandatory, key)) + Math.abs(getMlnValue(nProcessing, key)) + Math.abs(getMlnValue(nCommercial, key));
+        //     if (s === 0) s = Math.abs(getMlnValue(nAllOut, key)); // резерв
+        //     return s;
+        // };
+        // const dailyOutT0  = weeklyCoreOut("T0") / 7;
+        // const dailyOutTm1 = weeklyCoreOut(tm1Key) / 7;
+        // const bufferT0  = dailyOutT0  > 0 ? Math.round(curTotLiq  / dailyOutT0)  : 0;
+        // const bufferTm1 = dailyOutTm1 > 0 ? Math.round(prevTotLiq / dailyOutTm1) : 0;
+        // const dBuffer = bufferT0 - bufferTm1;
+
+        // const trend = (delta, unitUk, unitEn) => {
+        //     const a = Math.abs(delta);
+        //     const num = a === 0 ? "0" : formatNum(a);
+        //     const arrow = delta > 0 ? "▲ +" : (delta < 0 ? "▼ -" : "— ");
+        //     return {
+        //         isPositive: delta >= 0,
+        //         text: { uk: arrow + num + " " + unitUk, en: arrow + num + " " + unitEn }
+        //     };
+        // };
+
+        // const kpis = [
+        //     { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dLiq, "млн грн", "UAH mln"), isGray: false },
+        //     { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferT0, unit: { uk: "дні", en: "days" }, trend: trend(dBuffer, "дні", "days"), isGray: false },
+        //     { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dCred, "млн грн", "UAH mln"), isGray: false },
+        //     { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: curPost, unit: { uk: "млн грн", en: "UAH mln" }, trend: trend(dPost, "млн грн", "UAH mln"), isGray: false }
+        // ];
 
         // --- 4. Таблиця прогнозу грошових потоків (структура як у dashboard.html:
         //         Стаття | Т-1 | Δ | T0 | T1 | T2 | T3 | M1 | M2 | M3 | Всього) ---

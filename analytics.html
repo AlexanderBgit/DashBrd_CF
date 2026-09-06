@@ -23,36 +23,36 @@
 
     <div class="max-w-7xl mx-auto space-y-6">
         
-        <!-- Панель керування та фільтрації статей -->
+        <!-- Панель керування та вибору статей -->
         <div class="bg-white p-4 rounded-lg shadow flex flex-wrap gap-4 items-center justify-between">
             <div class="flex flex-wrap gap-4 items-center">
                 <div class="flex items-center gap-2">
                     <label class="text-xs font-bold text-slate-600 uppercase">Доходи:</label>
-                    <select id="inflowMode" onchange="updateChartAndTable()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-slate-50">
+                    <select id="inflowMode" onchange="onInflowModeChange()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-slate-50">
                         <option value="all">Всі статті (Сума)</option>
                         <option value="custom">Обрані статті</option>
                     </select>
                 </div>
-                <div id="inflowCustomContainer" class="hidden flex items-center gap-1 bg-slate-50 p-1 border rounded text-xs">
-                    <label><input type="checkbox" value="Нафта" checked onchange="updateChartAndTable()"> Нафта</label>
-                    <label><input type="checkbox" value="Газ природній" checked onchange="updateChartAndTable()"> Газ</label>
-                    <label><input type="checkbox" value="Нафтопродукти ОПТ" checked onchange="updateChartAndTable()"> ОПТ</label>
-                    <label><input type="checkbox" value="Нафтопродукти АОЗ" checked onchange="updateChartAndTable()"> АОЗ</label>
-                    <label><input type="checkbox" value="Нафтопродукти роздріб АЗС" checked onchange="updateChartAndTable()"> АЗС</label>
+                <div id="inflowCustomContainer" class="hidden flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 border rounded text-xs">
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафта" checked onchange="updateChartAndTable()"> Нафта</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Газ природній" checked onchange="updateChartAndTable()"> Газ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти ОПТ" checked onchange="updateChartAndTable()"> ОПТ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти АОЗ" checked onchange="updateChartAndTable()"> АОЗ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти роздріб АЗС" checked onchange="updateChartAndTable()"> АЗС</label>
                 </div>
             </div>
 
             <div class="flex flex-wrap gap-4 items-center">
                 <div class="flex items-center gap-2">
                     <label class="text-xs font-bold text-slate-600 uppercase">Видатки:</label>
-                    <select id="outflowMode" onchange="updateChartAndTable()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-slate-50">
+                    <select id="outflowMode" onchange="onOutflowModeChange()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-slate-50">
                         <option value="all">Всі статті (Сума)</option>
                         <option value="custom">Обрані статті</option>
                     </select>
                 </div>
-                <div id="outflowCustomContainer" class="hidden flex items-center gap-1 bg-slate-50 p-1 border rounded text-xs">
-                    <label><input type="checkbox" value="Комерційний оборотний капітал" checked onchange="updateChartAndTable()"> Оборотний капітал</label>
-                    <label><input type="checkbox" value="Обов’язкові платежі" checked onchange="updateChartAndTable()"> Обов'язкові платежі</label>
+                <div id="outflowCustomContainer" class="hidden flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 border rounded text-xs">
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Комерційний оборотний капітал" checked onchange="updateChartAndTable()"> Оборотний капітал</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Обов’язкові платежі" checked onchange="updateChartAndTable()"> Обов'язкові платежі</label>
                 </div>
             </div>
         </div>
@@ -87,10 +87,8 @@
     <script>
         let trendChart = null;
 
-        // Шкала часу: 4 тижні історії (Т-4...Т-1 з планом і фактом), Т0, та 12 тижнів прогнозу
         const labels = ["Т-4", "Т-3", "Т-2", "Т-1", "Т0", "Т1", "Т2", "Т3", "Т4", "Т5", "Т6", "Т7", "Т8", "Т9", "Т10", "Т11", "Т12"];
 
-        // Структура даних: для минулих періодів (перші 4 значення) містить як план, так і факт
         const rawData = {
             inflows: {
                 "Нафта": { plan: [42, 43, 44, 44], fact: [40, 42, 45, 46], forecast: [2069, 919, 904, 0, 0, 588, 86, 615, 124, 272, 718, 0, 391] },
@@ -110,7 +108,6 @@
             return Number(val).toLocaleString('uk-UA', { maximumFractionDigits: 0 }).replace(/\u202F/g, ' ');
         }
 
-        // Об'єднання масивів по елементах
         function sumObjectMetrics(objMap, keysList, subType) {
             const res = Array(labels.length).fill(0);
             keysList.forEach(k => {
@@ -125,6 +122,18 @@
                 }
             });
             return res;
+        }
+
+        function onInflowModeChange() {
+            const mode = document.getElementById('inflowMode').value;
+            document.getElementById('inflowCustomContainer').classList.toggle('hidden', mode === 'all');
+            updateChartAndTable();
+        }
+
+        function onOutflowModeChange() {
+            const mode = document.getElementById('outflowMode').value;
+            document.getElementById('outflowCustomContainer').classList.toggle('hidden', mode === 'all');
+            updateChartAndTable();
         }
 
         function getSelectedSubItems(type) {
@@ -145,16 +154,13 @@
             const allInfKeys = Object.keys(rawData.inflows);
             const allOutKeys = Object.keys(rawData.outflows);
 
-            // Доходи: План (історія + прогноз), Факт (історія + прогноз)
             const infPlanHist = sumObjectMetrics(rawData.inflows, selInf, 'history_plan');
             const infPlanFore = sumObjectMetrics(rawData.inflows, selInf, 'forecast');
             const totalInfPlan = infPlanHist.map((v, idx) => v + infPlanFore[idx]);
 
             const infFactHist = sumObjectMetrics(rawData.inflows, selInf, 'history_fact');
-            // Для майбутнього фактичні значення дорівнюють прогнозу або пусті
             const totalInfFact = infFactHist.map((v, idx) => v + (infPlanFore[idx] || 0));
 
-            // Видатки: План, Факт
             const outPlanHist = sumObjectMetrics(rawData.outflows, selOut, 'history_plan');
             const outPlanFore = sumObjectMetrics(rawData.outflows, selOut, 'forecast');
             const totalOutPlan = outPlanHist.map((v, idx) => v + outPlanFore[idx]);
@@ -196,15 +202,37 @@
 
             let html = '';
 
-            // Доходи План vs Факт
+            // Загальні доходи
             html += `<tr class="bg-blue-50 font-bold text-blue-900"><td class="px-3 py-2">ДОХОДИ (ПЛАН)</td>${infPlan.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
             html += `<tr class="bg-emerald-50 font-bold text-emerald-900"><td class="px-3 py-2">ДОХОДИ (ФАКТ / ПРОГНОЗ)</td>${infFact.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
 
-            // Видатки План vs Факт
-            html += `<tr class="bg-purple-50 font-bold text-purple-900 border-t"><td class="px-3 py-2">ВИДАТКИ (ПЛАН)</td>${outPlan.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
+            // Деталізація по вибраних доходах
+            Object.keys(rawData.inflows).forEach(k => {
+                const isSel = selInf.includes(k);
+                const item = rawData.inflows[k];
+                const fullArr = [...item.fact, ...item.forecast.slice(0, 13)];
+                html += `<tr class="${isSel ? 'bg-white' : 'opacity-40'} text-xs">
+                    <td class="px-3 py-1.5 pl-6 text-slate-600">↳ ${k} (факт)</td>
+                    ${fullArr.map(v => `<td class="px-2 py-1.5 text-right text-slate-500">${formatNum(v)}</td>`).join('')}
+                </tr>`;
+            });
+
+            // Загальні видатки
+            html += `<tr class="bg-purple-50 font-bold text-purple-900 border-t-2"><td class="px-3 py-2">ВИДАТКИ (ПЛАН)</td>${outPlan.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
             html += `<tr class="bg-red-50 font-bold text-red-900"><td class="px-3 py-2">ВИДАТКИ (ФАКТ / ПРОГНОЗ)</td>${outFact.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
 
-            // Чистий потік (Факт - Видатки факту)
+            // Деталізація по вибраних видатках
+            Object.keys(rawData.outflows).forEach(k => {
+                const isSel = selOut.includes(k);
+                const item = rawData.outflows[k];
+                const fullArr = [...item.fact, ...item.forecast.slice(0, 13)];
+                html += `<tr class="${isSel ? 'bg-white' : 'opacity-40'} text-xs">
+                    <td class="px-3 py-1.5 pl-6 text-slate-600">↳ ${k} (факт)</td>
+                    ${fullArr.map(v => `<td class="px-2 py-1.5 text-right text-slate-500">${formatNum(v)}</td>`).join('')}
+                </tr>`;
+            });
+
+            // Чистий грошовий потік
             const netFlow = infFact.map((inf, idx) => inf - outFact[idx]);
             html += `<tr class="bg-slate-200 font-bold text-slate-900 border-t-2">
                 <td class="px-3 py-2">ЧИСТИЙ ПОТІК (Факт)</td>

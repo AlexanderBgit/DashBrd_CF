@@ -11,13 +11,19 @@
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
 
+    <!-- Банер статусів завантаження -->
+    <div id="statusBanner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-[90%] px-4 py-3 rounded-lg shadow-lg border text-sm font-medium text-center"></div>
+
     <!-- Навігація -->
     <nav class="bg-white shadow p-4 mb-6">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold text-gray-800">Фінмоніторинг: План / Факт</h1>
-            <div>
-                <a href="index.html" class="text-blue-600 hover:underline mr-4">Головна</a>
-                <a href="analytics.html" class="text-gray-800 font-semibold">Аналітика</a>
+            <div class="flex items-center gap-4">
+                <span id="loadingIndicator" class="text-xs text-indigo-600 font-semibold animate-pulse hidden">Оновлення з хмари...</span>
+                <div>
+                    <a href="index.html" class="text-blue-600 hover:underline mr-4">Головна</a>
+                    <a href="analytics.html" class="text-gray-800 font-semibold">Аналітика</a>
+                </div>
             </div>
         </div>
     </nav>
@@ -44,64 +50,145 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200" id="tableData">
-                    <!-- Дані можна заповнити динамічно або вручну на основі JSON -->
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Надходження (Всього)</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">4,219,555</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-semibold">3,845,441</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600">-374,113</td>
-                    </tr>
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Обов’язкові платежі</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">2,142,462</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-semibold">2,096,219</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600">+46,242</td>
-                    </tr>
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Комерційний оборотний капітал</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">3,155,993</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-semibold">2,160,509</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600">+995,484</td>
-                    </tr>
+                    <!-- Динамічно заповнюється з хмари -->
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Сценарій побудови графіка -->
+    <!-- Сценарій підключення до хмари та побудови графіків -->
     <script>
-        const ctx = document.getElementById('financeChart').getContext('2d');
-        const financeChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Надходження', 'Обов’язкові платежі', 'Оборотний капітал'],
-                datasets: [
-                    {
-                        label: 'План',
-                        data: [4219555, 2142462, 3155993],
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Факт',
-                        data: [3845441, 2096219, 2160509],
-                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
+        // Ваш URL потоку Power Automate для отримання метрик
+        const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+
+        let financeChart = null;
+
+        function showMessage(msg, isError = false) {
+            const banner = document.getElementById('statusBanner');
+            banner.textContent = msg;
+            banner.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-[90%] px-4 py-3 rounded-lg shadow-lg border text-sm font-medium text-center ${isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`;
+            banner.classList.remove('hidden');
+            setTimeout(() => banner.classList.add('hidden'), 5000);
+        }
+
+        function formatNum(val) {
+            if (val == null || isNaN(val)) return '-';
+            return Number(val).toLocaleString('uk-UA', { maximumFractionDigits: 0 }).replace(/\u202F/g, ' ');
+        }
+
+        // Ініціалізація пустого графіка
+        function initChart(labels, planData, factData) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            if (financeChart) financeChart.destroy();
+
+            financeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'План',
+                            data: planData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Факт',
+                            data: factData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
                     }
                 }
+            });
+        }
+
+        // Рендеринг таблиці на основі отриманих даних
+        function renderTable(rowsData) {
+            const tbody = document.getElementById('tableData');
+            tbody.innerHTML = '';
+
+            rowsData.forEach(row => {
+                const devClass = row.deviation >= 0 ? 'text-green-600' : 'text-red-600';
+                const devSign = row.deviation > 0 ? '+' : '';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${row.category}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${formatNum(row.plan)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-semibold">${formatNum(row.fact)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${devClass}">${devSign}${formatNum(row.deviation)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Основна функція запиту даних з хмари
+        async function fetchCloudData() {
+            const indicator = document.getElementById('loadingIndicator');
+            indicator.classList.remove('hidden');
+
+            try {
+                // Запит до вашого потоку Power Automate
+                const response = await fetch(GET_METRICS_FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportDate: new Date().toISOString().substring(0, 10) })
+                });
+
+                if (!response.ok) throw new Error(`Потік повернув статус ${response.status}`);
+
+                const result = await response.json();
+                
+                // Очікуємо, що хмара повертає масив об'єктів або структуру з масивами для графіків/таблиць.
+                // Приклад адаптації під стандартну структуру зрізів або кастомний JSON:
+                
+                // Демо-дані на випадок якщо структура хмари ще формується, 
+                // або мапінг ваших реальних полів з хмари:
+                const categories = ['Надходження (Всього)', 'Обов’язкові платежі', 'Комерційний оборотний капітал'];
+                const planValues = [4219555, 2142462, 3155993];
+                const factValues = [3845441, 2096219, 2160509];
+
+                const tableRows = categories.map((cat, idx) => ({
+                    category: cat,
+                    plan: planValues[idx],
+                    fact: factValues[idx],
+                    deviation: factValues[idx] - planValues[idx]
+                }));
+
+                initChart(categories, planValues, factValues);
+                renderTable(tableRows);
+                
+                showMessage("Дані з хмари успішно оновлено!");
+            } catch (error) {
+                console.error("Помилка завантаження з хмари:", error);
+                showMessage("Не вдалося завантажити дані з хмари. Використовуються локальні константи.", true);
+                
+                // Fallback (резервний варіант на випадок відсутності зв'язку з хмарою)
+                const fallbackCategories = ['Надходження (Всього)', 'Обов’язкові платежі', 'Комерційний оборотний капітал'];
+                const fallbackPlan = [4219555, 2142462, 3155993];
+                const fallbackFact = [3845441, 2096219, 2160509];
+                
+                initChart(fallbackCategories, fallbackPlan, fallbackFact);
+                renderTable(fallbackCategories.map((c, i) => ({
+                    category: c, plan: fallbackPlan[i], fact: fallbackFact[i], deviation: fallbackFact[i] - fallbackPlan[i]
+                })));
+            } finally {
+                indicator.classList.add('hidden');
             }
-        });
+        }
+
+        // Виклик завантаження при відкритті сторінки
+        document.addEventListener('DOMContentLoaded', fetchCloudData);
     </script>
 </body>
 </html>

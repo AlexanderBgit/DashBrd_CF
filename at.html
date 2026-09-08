@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Executive Cash Flow Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        * { 
+            font-style: normal !important; 
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+        
+        body { 
+            font-family: 'Helvetica', sans-serif; 
+            background-color: #f3f4f6; 
+            padding: 12px; 
+            color: #334155; 
+            line-height: 1.15; 
+            transition: background-color 0.3s;
+        }
+        
+        .executive-container { 
+            width: 1587px; 
+            height: 1122px; 
+            margin: 0 auto; 
+            display: flex; 
+            flex-direction: column; 
+            background-color: #f3f4f6; 
+            padding: 25px 30px 15px 35px; 
+            box-sizing: border-box; 
+            overflow: hidden; 
+            flex-shrink: 0;
+        }
+        
+        body.preview-mode {
+            background-color: #1e293b; 
+            padding: 20px 0; 
+            display: flex; 
+            justify-content: center; 
+            overflow-x: hidden;
+        }
+        
+        body.preview-mode .executive-container {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            transform-origin: top center;
+            transform: scale(var(--preview-scale, 1));
+        }
+
+        @media print {
+            @page { size: A3 landscape; margin: 0 !important; }
+            html, body {
+                width: 1587px !important; height: 1122px !important;
+                margin: 0 !important; padding: 0 !important;
+                background-color: #ffffff !important; overflow: hidden !important;
+            }
+            .executive-container { 
+                position: absolute !important; top: 0 !important; left: 0 !important;
+                width: 1587px !important; height: 1122px !important;
+                padding: 25px 30px 15px 35px !important; box-sizing: border-box !important;
+                margin: 0 !important; transform: scale(0.98) !important; 
+                transform-origin: top left !important; box-shadow: none !important; 
+                border: none !important; page-break-inside: avoid !important; 
+                background-color: #ffffff !important;
+            }
+            .print-hide, .pdf-hide { display: none !important; }
+            .kpi-card, .block-container { background-color: #ffffff !important; }
+            .summary-block { background-color: #e5e7eb !important; } 
+        }
+        
+        body.preview-mode .print-hide { display: none !important; }
+
+        .kpi-card { position: relative; background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .kpi-title { font-size: 11.5pt; font-weight: 600; color: #64748b; margin-bottom: 2px; }
+        .kpi-value { font-size: 38pt; font-weight: 700; color: #0f172a; line-height: 1; } 
+        .unit-label { font-size: 10.5pt; text-transform: lowercase; color: #94a3b8; font-weight: 500; } 
+        
+        .positive-trend { color: #059669; opacity: 0.6; font-weight: 500; font-size: 10.5pt; margin-top: 2px; }
+        .negative-trend { color: #dc2626; opacity: 0.6; font-weight: 500; font-size: 10.5pt; margin-top: 2px; }
+        .gray-trend { color: #64748b !important; opacity: 0.7; font-weight: 500; font-size: 10.5pt; margin-top: 2px; }
+
+        .block-container { background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .block-title { font-size: 13.5pt; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+        
+        .exec-table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+        .exec-table th { font-size: 10.5pt; color: #64748b; font-weight: 600; padding: 2px 5px; border-bottom: 1.5px solid #94a3b8; text-align: right; }
+        .exec-table th:first-child { text-align: left; }
+        .exec-table th .th-period { display: block; font-size: 6.8pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.2px; white-space: nowrap; line-height: 1.15; margin-top: 1px; }
+        .exec-table td { padding: 1.5px 5px; text-align: right; color: #334155; border-bottom: none; white-space: nowrap; }
+        .exec-table td:first-child { text-align: left; font-weight: 500; white-space: nowrap; letter-spacing: -0.3px; }
+        .exec-table tr.sub-row td { font-size: 9.5pt; color: #64748b; padding-top: 0.5px; padding-bottom: 0.5px; }
+        
+        .row-main td { font-weight: 700; color: #0f172a; }
+        .row-total td { font-weight: 700; color: #0f172a; border-top: 1.5px solid #94a3b8 !important; padding-top: 2px; }
+        .exec-table td.neg-bright { color: #dc2626 !important; font-weight: 700 !important; } 
+        .exec-table td.neg-green { color: #059669 !important; font-weight: 700 !important; } 
+        .exec-table td.neg-green-cool { color: #0d9488 !important; font-weight: 700 !important; } 
+        
+        .summary-block { background-color: #e5e7eb; border: 1px solid #d1d5db; box-shadow: 0 2px 4px rgba(0,0,0,0.04); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; height: 100%; }
+        .summary-content { display: flex; flex-grow: 1; flex-direction: column; justify-content: flex-start; gap: 8px; border-collapse: collapse; margin: 0; padding: 0; width: 100%; height: 100%; }
+        .summary-row { display: table-row !important; }
+        .summary-cell { display: table-cell !important; vertical-align: middle; padding: 4px 0; }
+        
+        .summary-block p { font-size: 11pt; font-weight: 500; color: #334155; line-height: 1.0; margin: 0; text-align: left; white-space: normal; word-wrap: break-word; }
+        .summary-block ul { margin: 0; padding: 0; list-style: none; }
+        .summary-block li { margin: 0; padding: 0; text-indent: 0; }
+        .summary-block li span.bullet-text { font-weight: 500; color: #334155; line-height: 1.0; text-align: left; white-space: normal; word-wrap: break-word; }
+
+        @keyframes pulse-fast { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .is-generating { animation: pulse-fast 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; cursor: wait !important; pointer-events: none; }
+        .force-hide { display: none !important; }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <!-- Банер повідомлень про помилки / статус завантаження -->
+    <div id="statusBanner" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] hidden max-w-xl w-[92%] print-hide">
+        <div id="statusBannerInner" class="flex items-start gap-3 px-4 py-2.5 rounded-xl shadow-2xl border text-sm font-medium">
+            <span id="statusBannerIcon" class="mt-0.5 shrink-0"></span>
+            <span id="statusBannerText" class="flex-1 leading-snug"></span>
+            <button onclick="clearBanner()" class="shrink-0 text-lg leading-none opacity-60 hover:opacity-100 cursor-pointer" title="Закрити">&times;</button>
+        </div>
+    </div>
+
+    <!-- ЄДИНА ПАНЕЛЬ КЕРУВАННЯ -->
+    <div class="fixed top-4 right-6 flex items-center space-x-2 print-hide z-50 bg-white/95 backdrop-blur-md p-1.5 rounded-full shadow-xl border border-slate-200">
+        <!-- Інтерактивний вибір дати -->
+        <div class="relative">
+            <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-300">
+                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span id="lblSelectedDate">21.08.2026</span>
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-300" title="Статус даних"></span>
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+
+            <!-- Спливаючий календар -->
+            <div id="calendarDropdown" class="absolute top-11 left-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden origin-top-left z-50">
+                <div class="flex justify-between items-center mb-3">
+                    <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-600 font-bold">&larr;</button>
+                    <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase tracking-wider">Серпень 2026</span>
+                    <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-600 font-bold">&rarr;</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+                    <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
+                </div>
+                <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Є дані в SP</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span> Обрано</span>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="toggleUploadModal(true)" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <span>Excel</span>
+        </button>
+        <button onclick="loadDemoDashboard()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
+            <span>Демо</span>
+        </button>
+        <button onclick="refreshSharePointData()" id="btnRefreshSP" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>SharePoint</span>
+        </button>
+        <button onclick="openOperationalEditor()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
+            <span>Внести дані</span>
+        </button>
+
+        <!-- Меню блоків -->
+        <div class="relative group">
+            <button onclick="toggleBlockMenu()" class="bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-full cursor-pointer" title="Видимість блоків">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            </button>
+            <div id="blockMenu" class="absolute top-10 right-0 bg-white border border-slate-200 rounded-xl shadow-xl p-3 flex flex-col gap-2 w-64 hidden origin-top-right z-50">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">Видимість блоків</h3>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockMainTable', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Прогноз грошових потоків</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockSummary', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Управлінське резюме</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockWC', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Оборотний капітал</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockFuel', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Запаси</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" checked onchange="toggleVisibility('blockLimits', this)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Ресурси фінансування</span>
+                </label>
+                <div class="border-t border-slate-200 my-1"></div>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" id="chk_table_dates" onchange="forceTableRebuild()" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Дати в таблиці</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-sm font-medium">
+                    <input type="checkbox" id="chk_en_comma" onchange="toggleEnNumberFormat()" class="w-4 h-4 text-indigo-600 rounded">
+                    <span>Формат EN (6,889)</span>
+                </label>
+            </div>
+        </div>
+
+        <button onclick="toggleLanguage()" id="langBtn" class="bg-slate-800 text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer">EN</button>
+        <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full cursor-pointer" title="PDF">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        </button>
+        <button onclick="togglePreview()" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full cursor-pointer" title="Прев'ю A3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+        </button>
+        <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-full cursor-pointer" title="Друк">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+        </button>
+    </div>
+
+    <!-- Тулбар режиму попереднього перегляду -->
+    <div id="previewToolbar" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white p-3 rounded-full shadow-2xl flex items-center gap-4 z-50 hidden">
+        <span class="pl-4 font-semibold text-slate-300 text-sm">Режим формату A3</span>
+        <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-500 text-white px-5 py-2 rounded-full font-bold shadow transition-colors cursor-pointer">Завантажити PDF</button>
+        <button onclick="togglePreview()" class="bg-slate-600 hover:bg-slate-500 text-white px-5 py-2 rounded-full font-bold shadow transition-colors cursor-pointer mr-1">Закрити прев'ю</button>
+    </div>
+
+    <!-- Модальне вікно Drag & Drop -->
+    <div id="uploadZone" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 print-hide hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center border-2 border-dashed border-slate-300 hover:border-indigo-500 transition-all relative">
+            <button onclick="toggleUploadModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
+            <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Імпорт даних дашборду</h3>
+            <p class="text-sm text-slate-500 mb-4">Перетягніть файл сюди або оберіть джерело: <span class="font-semibold">JSON-зріз</span> (SharePoint snapshots) чи <span class="font-semibold">Excel</span> (.xlsx)</p>
+            <input type="file" id="excelFile" accept=".xlsx" class="hidden" onchange="handleFile(this.files)">
+            <input type="file" id="jsonFile" accept=".json,application/json" class="hidden" onchange="handleFile(this.files)">
+            <div class="flex flex-col gap-2.5">
+                <button onclick="document.getElementById('jsonFile').click()" class="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-emerald-700 transition-all cursor-pointer flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-6 4h4"></path></svg>
+                    Завантажити JSON
+                </button>
+                <button onclick="document.getElementById('excelFile').click()" class="bg-slate-800 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-slate-700 transition-all cursor-pointer">Завантажити Excel (.xlsx)</button>
+                <button onclick="toggleUploadModal(false)" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-semibold text-sm hover:bg-slate-300 transition-all cursor-pointer">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основний контейнер дашборду (Формат A3) -->
+    <div class="executive-container" id="dashboardContent">
+        <!-- Шапка -->
+        <div class="w-full flex justify-between items-center mb-2.5 pt-1 shrink-0">
+            <div class="flex flex-col items-start text-left">
+                <h1 class="text-slate-800 leading-none" id="dashboardTitle"></h1>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-2.5 items-stretch flex-grow min-h-0">
+            <!-- Ліва частина: KPI, Графік, Таблиця -->
+            <div class="col-span-9 flex flex-col h-full gap-2.5">
+                <div class="grid grid-cols-4 gap-3 shrink-0" id="kpiContainer"></div>
+
+                <div class="block-container flex-grow flex flex-col overflow-hidden relative" id="blockChart">
+                    <div class="flex justify-between items-start mb-1 shrink-0">
+                        <h2 class="block-title" style="margin-bottom: 0;" id="titleChart"></h2>
+                        <div class="print-hide flex space-x-1.5 opacity-60 hover:opacity-100 transition-opacity z-10">
+                            <button onclick="changeChartPadding(-5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X-</button>
+                            <button onclick="changeChartPadding(5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X+</button>
+                        </div>
+                    </div>
+                    <div style="position: relative; flex-grow: 1; width: 100%; min-height: 200px;">
+                        <canvas id="liquidityChart" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+                    </div>
+                </div>
+
+                <div class="block-container shrink-0" id="blockMainTable">
+                    <div class="flex justify-between items-center mb-1">
+                        <h2 class="block-title" id="titleMainTable"></h2>
+                        
+                        <div class="print-hide relative inline-block text-left z-30">
+                            <button onclick="toggleDropdown('outflowHighlightDropdown')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-1 rounded text-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                                📊 Контроль статей виплат <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div id="outflowHighlightDropdown" class="absolute right-0 mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-xl p-2 hidden flex flex-col gap-1">
+                                <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
+                                    <input type="checkbox" id="chk_mandatory" checked onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
+                                    <span class="truncate">Обов’язкові платежі (ЗП, податки, енергія)</span>
+                                </label>
+                                <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
+                                    <input type="checkbox" id="chk_production" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
+                                    <span class="truncate">Переробка та виробництво</span>
+                                </label>
+                                <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
+                                    <input type="checkbox" id="chk_fuel" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
+                                    <span class="truncate">Закупівля нафтопродуктів</span>
+                                </label>
+                                <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
+                                    <input type="checkbox" id="chk_strategic" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
+                                    <span class="truncate">Стратегічні інвестиції</span>
+                                </label>
+                                <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
+                                    <input type="checkbox" id="chk_others" onchange="forceTableRebuild()" class="w-3.5 h-3.5 text-indigo-600 rounded">
+                                    <span class="truncate">Інші виплати</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="exec-table" id="mainForecastTable">
+                        <thead><tr id="mainTableHead"></tr></thead>
+                        <tbody id="mainTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Права частина: Резюме + Оборотний капітал + Запаси + Ліміти -->
+            <div class="col-span-3 flex flex-col justify-between h-full">
+                <div class="summary-block flex-grow mb-2.5 relative" id="blockSummary">
+                    <div class="flex justify-between items-start mb-1">
+                        <h2 class="block-title" style="margin-bottom: 0;" id="titleSummary"></h2>
+                        <div class="print-hide flex items-center space-x-1.5 z-30">
+                            <button onclick="openSummaryEditor()" class="pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1">
+                                ✏️ Редагувати
+                            </button>
+                            <div class="relative inline-block text-left">
+                                <button onclick="toggleDropdown('summarySettingsDropdown')" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-600 p-1.5 rounded shadow-sm transition-colors cursor-pointer" title="Налаштування тексту резюме">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                                </button>
+                                <div id="summarySettingsDropdown" class="absolute right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl p-2 hidden flex flex-col gap-2 w-44 z-40">
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 px-1">Шрифт та відступи</div>
+                                    <div class="flex justify-between items-center px-1">
+                                        <span class="text-xs font-medium text-slate-700">Розмір</span>
+                                        <div class="flex space-x-1">
+                                            <button onclick="changeSummaryFontSize(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold">A-</button>
+                                            <button onclick="changeSummaryFontSize(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold">A+</button>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-between items-center px-1">
+                                        <span class="text-xs font-medium text-slate-700">Відстань</span>
+                                        <div class="flex space-x-1">
+                                            <button onclick="changeSummaryGap(-2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold">↕-</button>
+                                            <button onclick="changeSummaryGap(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold">↕+</button>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-between items-center px-1">
+                                        <span class="text-xs font-medium text-slate-700">Ширина літер</span>
+                                        <div class="flex space-x-1">
+                                            <button onclick="changeLetterSpacing(-0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold" title="Ущільнити шрифт">T-</button>
+                                            <button onclick="changeLetterSpacing(0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold" title="Розрідити шрифт">T+</button>
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-slate-200 my-1 mx-1"></div>
+                                    <label class="flex items-center justify-between px-1 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                                        <span class="text-xs font-medium text-slate-700">Жирні заголовки</span>
+                                        <input type="checkbox" checked id="chk_summary_bold" onchange="toggleSummaryBold()" class="w-3.5 h-3.5 text-indigo-600 rounded">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-content" id="summaryTexts"></div>
+                </div>
+
+                <div class="block-container mb-2.5 shrink-0" id="blockWC">
+                    <div class="flex justify-between items-start mb-1">
+                        <h2 class="block-title" style="margin-bottom: 0;" id="titleWC"></h2>
+                        <div class="print-hide relative z-20">
+                            <button onclick="toggleWcMenu()" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-xs font-bold cursor-pointer">Δ 🎨</button>
+                            <div id="wcMenu" class="absolute top-6 right-0 bg-white border border-slate-200 rounded-lg shadow-xl p-2 flex flex-col gap-1 w-52 hidden text-left font-normal text-xs normal-case z-30"></div>
+                        </div>
+                    </div>
+                    <table class="exec-table" style="table-layout: fixed;" id="tableWC">
+                        <thead><tr><th style="width: 60%;"></th><th style="width: 20%;" id="thWCCurrent"></th><th style="width: 20%;">Δ</th></tr></thead>
+                        <tbody id="mainTableBodyWC"></tbody>
+                    </table>
+                </div>
+
+                <div class="block-container mb-2.5 shrink-0" id="blockFuel">
+                    <h2 class="block-title" id="titleFuel"></h2>
+                    <table class="exec-table" style="table-layout: fixed;" id="tableFuel">
+                        <thead><tr><th style="width: 60%;"></th><th style="width: 20%;" id="thFuelCurrent"></th><th style="width: 20%;">Δ</th></tr></thead>
+                        <tbody id="mainTableBodyFuel"></tbody>
+                    </table>
+                </div>
+
+                <div class="block-container shrink-0" id="blockLimits">
+                    <h2 class="block-title" id="titleLimits"></h2>
+                    <table class="exec-table" id="tableLimits">
+                        <thead><tr id="thLimitsHead"></tr></thead>
+                        <tbody id="mainTableBodyLimits"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальне вікно оперативних даних -->
+    <div id="operationalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
+                <h3 class="text-lg font-bold text-slate-800">Внесення даних на дату: <span id="operationalDateLabel" class="text-indigo-600"></span></h3>
+                <button onclick="closeOperationalEditor()" class="text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
+            </div>
+            <div id="operationalFormBody" class="px-6 py-4 overflow-y-auto space-y-6"></div>
+            <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 shrink-0">
+                <button onclick="closeOperationalEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
+                <button onclick="saveOperationalData()" id="btnSaveOperational" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальне вікно резюме -->
+    <div id="editorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 text-left">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Редагування резюме на дату: <span id="editorDateLabel" class="text-indigo-600"></span></h3>
+                <button onclick="closeSummaryEditor()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Резюме (Українська версія):</label>
+                    <textarea id="editSummaryUk" rows="6" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Summary (English version):</label>
+                    <textarea id="editSummaryEn" rows="5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-5">
+                <button onclick="closeSummaryEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
+                <button onclick="saveSummaryToSharePoint()" id="btnSaveSummary" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2 cursor-pointer">Зберегти в SharePoint</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    Chart.register(ChartDataLabels);
+
+    let currentLang = 'uk';
+    let globalData = null;
+    let myLiquidityChart = null;
+    
+    let currentSummaryFontSize = 11; 
+    let currentSummaryGap = 8; 
+    let currentXPadding = 0;
+    let currentLetterSpacing = 0;
+    let isSummaryHeadersBold = true; 
+    let useCommaFormatEn = false;
+
+    const SAVE_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/34cccd0ca98c4f9680dfef1b5d352f15/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vNKBrpfo-oLGwghHnImsmmMRrTOAB5_tvHHc4ZDRYJs";
+    const SAVE_OPERATIONAL_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/23/workflows/6bcd52afc5434180bac7b54245966d41/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=z1ohBufTQzxYrRyEO_zFsU0lphU-PjjqgPK12lcSX7c";
+    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+
+    let currentReportDate = "2026-08-21";
+    let availableDatesWithData = [];
+    let calViewDate = new Date(2026, 7, 1);
+
+    // Кеш завантажених зрізів на сесію
+    const _snapCache = new Map();
+
+    function getFourTargetDates(baseIsoDate) {
+        const parts = String(baseIsoDate).split('-').map(Number);
+        if (parts.length !== 3 || parts.some(isNaN)) return [baseIsoDate];
+        const [y, m, d] = parts;
+        const out = [];
+        for (let i = 0; i < 4; i++) {
+            const dt = new Date(y, m - 1, d - i * 7);
+            const yy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            out.push(`${yy}-${mm}-${dd}`);
+        }
+        return out;
+    }
+
+    async function fetchSnapshotForDate(iso) {
+        if (_snapCache.has(iso)) return _snapCache.get(iso);
+        try {
+            const res = await fetch(GET_METRICS_FLOW_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reportDate: iso, reportDateDot: iso.split('-').reverse().join('.') })
+            });
+            if (!res.ok) { _snapCache.set(iso, null); return null; }
+            const txt = await res.text();
+            const json = txt ? JSON.parse(txt) : null;
+            const snap = extractSnapshotObject(json);
+            _snapCache.set(iso, snap);
+            return snap;
+        } catch (e) { _snapCache.set(iso, null); return null; }
+    }
+
+    function extractSnapshotWeeklyExpenses(snap) {
+        const tree = snap && snap.tree;
+        if (!tree) return 0;
+        const nodeCash = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
+        const k = (nodeCash && nodeCash.values && nodeCash.values.Tm1_fact !== undefined) ? "Tm1_fact"
+                : (nodeCash && nodeCash.values && nodeCash.values.Tm1_forecast !== undefined) ? "Tm1_forecast" : "T0";
+        const n = (name) => findSnapshotNode(tree, name);
+        const nMand = n("Обов’язкові платежі") || n("Обов'язкові платежі");
+        const nProc = n("Переробка");
+        const nCom = n("Комерційний оборотний капітал");
+        let sum = Math.abs(getMlnValue(nMand, k)) + Math.abs(getMlnValue(nProc, k)) + Math.abs(getMlnValue(nCom, k));
+        if (sum === 0) {
+            const nAll = n("Всього витрат (1+2+3+4+5)") || n("Всього видатків");
+            sum = Math.abs(getMlnValue(nAll, k));
+        }
+        return sum;
+    }
+
+    function snapshotKpiValues(snap) {
+        const tree = snap && snap.tree;
+        if (!tree) return null;
+        const nodeCash = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
+        const nodeCredit = findSnapshotNode(tree, "Доступні кредитні ліміти") || findSnapshotNode(tree, "Доступні кредитні лінії");
+        const nodePost = findSnapshotNode(tree, "Доступний ліміт постімпорт");
+        const k = (nodeCash && nodeCash.values && nodeCash.values.Tm1_fact !== undefined) ? "Tm1_fact"
+                : (nodeCash && nodeCash.values && nodeCash.values.Tm1_forecast !== undefined) ? "Tm1_forecast" : "T0";
+        const cash = getMlnValue(nodeCash, k);
+        const cred = getMlnValue(nodeCredit, k) || getMlnValue(nodeCredit, "T0");
+        const post = getMlnValue(nodePost, k) || getMlnValue(nodePost, "T0");
+        return { avail: cash + cred, cred: cred, post: post, weeklyExp: extractSnapshotWeeklyExpenses(snap) };
+    }
+
+    // Асинхронне фонове опитування 4 зрізів для розрахунку ковзного буфера і дельт
+    async function refineKpisAndBuffer(isoDate, currentSnapshot) {
+        try {
+            if (!globalData || !Array.isArray(globalData.kpis)) return;
+            const cur = snapshotKpiValues(currentSnapshot);
+            if (!cur) return;
+            _snapCache.set(isoDate, currentSnapshot);
+
+            const dates = getFourTargetDates(isoDate);
+            const snaps = await Promise.all(dates.slice(1).map(fetchSnapshotForDate));
+            
+            const priorVals = snaps.map((s, i) => {
+                if (!s || !s.tree) return null;
+                const v = snapshotKpiValues(s);
+                if (!v) return null;
+                v.reportDate = dates[i + 1];
+                return v;
+            }).filter(Boolean);
+
+            priorVals.sort((a, b) => String(b.reportDate).localeCompare(String(a.reportDate)));
+            const prev = priorVals.length ? priorVals[0] : null;
+
+            const pool = [];
+            if (cur.weeklyExp > 0) pool.push(cur.weeklyExp);
+            priorVals.forEach(v => { if (v.weeklyExp > 0) pool.push(v.weeklyExp); });
+
+            const dailyExp = pool.length ? (pool.reduce((a, b) => a + b, 0) / (pool.length * 7)) : 1;
+            const buffer = dailyExp > 0 ? Math.round(cur.avail / dailyExp) : 0;
+
+            const dLiq  = prev ? (cur.avail - prev.avail) : 0;
+            const dCred = prev ? (cur.cred - prev.cred) : 0;
+            const dPost = prev ? (cur.post - prev.post) : 0;
+            
+            let dBuf = 0;
+            if (prev && dailyExp > 0) {
+                const prevExpPool = [];
+                priorVals.forEach(v => { if (v.weeklyExp > 0) prevExpPool.push(v.weeklyExp); });
+                const prevDaily = prevExpPool.length ? (prevExpPool.reduce((a, b) => a + b, 0) / (prevExpPool.length * 7)) : dailyExp;
+                dBuf = buffer - Math.round(prev.avail / prevDaily);
+            }
+
+            const setKpi = (titleUk, val, delta, unitUk, unitEn) => {
+                const k = globalData.kpis.find(x => x.title && x.title.uk === titleUk);
+                if (!k) return;
+                k.value = (titleUk === "Доступний постімпорт" && (val === 0 || val === '-')) ? '-' : val;
+                k.trend = kpiTrend(delta, unitUk, unitEn);
+                if (titleUk === "Буфер ліквідності") k.unit = { uk: daysFormUk(val), en: daysFormEn(val) };
+            };
+
+            setKpi("Доступна ліквідність", cur.avail, dLiq, "млн грн", "UAH mln");
+            setKpi("Доступні кредитні лінії", cur.cred, dCred, "млн грн", "UAH mln");
+            setKpi("Доступний постімпорт", cur.post, dPost, "млн грн", "UAH mln");
+            setKpi("Буфер ліквідності", buffer, dBuf, "дні", "days");
+
+            updateLanguageDOM();
+        } catch (e) {
+            console.error("Помилка ковзного розрахунку KPI:", e);
+        }
+    }
+
+    function daysFormUk(n) {
+        const a = Math.abs(Math.trunc(Number(n) || 0));
+        const m100 = a % 100, m10 = a % 10;
+        if (m100 >= 11 && m100 <= 14) return 'днів';
+        if (m10 === 1) return 'день';
+        if (m10 >= 2 && m10 <= 4) return 'дні';
+        return 'днів';
+    }
+    function daysFormEn(n) {
+        return Math.abs(Math.trunc(Number(n) || 0)) === 1 ? 'day' : 'days';
+    }
+
+    function kpiTrend(delta, unitUk, unitEn) {
+        const a = Math.abs(delta);
+        const num = a === 0 ? "0" : formatNum(a);
+        const arrow = delta > 0 ? "▲ +" : (delta < 0 ? "▼ -" : "— ");
+        const isDays = /^(день|дні|днів)$/.test(unitUk);
+        const uUk = isDays ? daysFormUk(a) : unitUk;
+        const uEn = isDays ? daysFormEn(a) : unitEn;
+        return {
+            isPositive: delta >= 0,
+            text: {
+                uk: delta === 0 ? "— без змін" : `${arrow}${num} ${uUk}`,
+                en: delta === 0 ? "— no change" : `${arrow}${num} ${uEn}`
+            }
+        };
+    }
+
+    let _bannerTimer = null;
+    function showBanner(message, type) {
+        const banner = document.getElementById('statusBanner');
+        const inner = document.getElementById('statusBannerInner');
+        const icon = document.getElementById('statusBannerIcon');
+        const text = document.getElementById('statusBannerText');
+        if (!banner || !inner || !text) return;
+        const styles = {
+            error:   { cls: 'bg-red-50 border-red-300 text-red-800',         ico: '⛔' },
+            warn:    { cls: 'bg-amber-50 border-amber-300 text-amber-800',   ico: '⚠️' },
+            info:    { cls: 'bg-slate-50 border-slate-300 text-slate-700',    ico: 'ℹ️' },
+            loading: { cls: 'bg-indigo-50 border-indigo-300 text-indigo-800',ico: '⏳' },
+            success: { cls: 'bg-emerald-50 border-emerald-300 text-emerald-800', ico: '✅' }
+        };
+        const s = styles[type] || styles.info;
+        inner.className = 'flex items-start gap-3 px-4 py-2.5 rounded-xl shadow-2xl border text-sm font-medium ' + s.cls;
+        icon.textContent = s.ico;
+        text.textContent = message;
+        banner.classList.remove('hidden');
+        if (_bannerTimer) { clearTimeout(_bannerTimer); _bannerTimer = null; }
+        if (type === 'success' || type === 'info') _bannerTimer = setTimeout(clearBanner, 4500);
+    }
+    function showError(message)  { showBanner(message, 'error'); console.error(message); }
+    function showLoading(message){ showBanner(message, 'loading'); }
+    function showInfo(message)   { showBanner(message, 'info'); }
+    function showSuccess(message){ showBanner(message, 'success'); }
+    function clearBanner() {
+        const banner = document.getElementById('statusBanner');
+        if (banner) banner.classList.add('hidden');
+        if (_bannerTimer) { clearTimeout(_bannerTimer); _bannerTimer = null; }
+    }
+
+    function registerAvailableDate(iso) {
+        const clean = extractCleanDate(iso);
+        if (clean && !availableDatesWithData.includes(clean)) {
+            availableDatesWithData.push(clean);
+            availableDatesWithData.sort();
+        }
+        return clean;
+    }
+
+    function cleanDateKey(val) {
+        if (!val) return '';
+        if (typeof val === 'object') {
+            val = val.ReportDate || val.reportDate || val.Value || Object.values(val)[0] || '';
+        }
+        const str = String(val).trim();
+        const dmyMatch = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+        if (dmyMatch) {
+            return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+        }
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+            return str.substring(0, 10);
+        }
+        return str;
+    }
+
+    function toggleUploadModal(show) {
+        const modal = document.getElementById('uploadZone');
+        if (show) modal.classList.remove('hidden');
+        else modal.classList.add('hidden');
+    }
+
+    function toggleCalendarDropdown() {
+        const el = document.getElementById('calendarDropdown');
+        el.classList.toggle('hidden');
+        if (!el.classList.contains('hidden')) renderCalendar();
+    }
+
+    function changeCalendarMonth(delta) {
+        calViewDate.setMonth(calViewDate.getMonth() + delta);
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = calViewDate.getFullYear();
+        const month = calViewDate.getMonth();
+        const monthNamesUk = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+        const monthTitle = document.getElementById('calendarMonthYear');
+        if (monthTitle) monthTitle.innerText = `${monthNamesUk[month]} ${year}`;
+
+        const targetMonthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+        const filledDatesInCurrentMonth = availableDatesWithData.filter(d => d.startsWith(targetMonthPrefix));
+
+        const grid = document.getElementById('calendarDaysGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        let firstDayIndex = new Date(year, month, 1).getDay() - 1;
+        if (firstDayIndex === -1) firstDayIndex = 6;
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        for (let i = 0; i < firstDayIndex; i++) {
+            grid.innerHTML += `<span class="py-1.5 text-transparent select-none">0</span>`;
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dStr = String(day).padStart(2, '0');
+            const dateKey = `${targetMonthPrefix}-${dStr}`;
+            const hasData = filledDatesInCurrentMonth.includes(dateKey);
+            const isSelected = (cleanDateKey(currentReportDate) === dateKey);
+
+            let btnClass = "py-1.5 rounded-lg text-xs font-semibold transition-all relative flex flex-col items-center justify-center cursor-pointer ";
+            if (isSelected) {
+                btnClass += "bg-indigo-600 text-white font-bold shadow-md scale-105 z-10 ";
+            } else if (hasData) {
+                btnClass += "bg-emerald-100 text-emerald-800 font-bold hover:bg-emerald-200 border border-emerald-400 ";
+            } else {
+                btnClass += "text-slate-700 hover:bg-slate-100 ";
+            }
+
+            const dot = hasData 
+                ? `<span class="w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-emerald-600'} absolute bottom-0.5"></span>` 
+                : '';
+
+            grid.innerHTML += `
+                <button type="button" onclick="selectDateFromCalendar('${dateKey}')" class="${btnClass}" title="${hasData ? 'Є збережені дані' : 'Немає даних'}">
+                    <span>${day}</span>
+                    ${dot}
+                </button>
+            `;
+        }
+        updateCalendarTriggerDot();
+    }
+
+    function updateCalendarTriggerDot() {
+        const curClean = cleanDateKey(currentReportDate);
+        const hasData = availableDatesWithData.includes(curClean);
+        const dotEl = document.querySelector('#btnCalendarTrigger span.rounded-full');
+        if (dotEl) {
+            dotEl.className = `w-2.5 h-2.5 rounded-full ${hasData ? 'bg-emerald-500 shadow-sm' : 'bg-slate-300'}`;
+            dotEl.title = hasData ? 'Є дані в SharePoint' : 'Дані відсутні';
+        }
+    }
+
+    function selectDateFromCalendar(dateKey) {
+        currentReportDate = dateKey;
+        const [y, m, d] = dateKey.split('-');
+        const dotDate = `${d}.${m}.${y}`;
+        calViewDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+        
+        const lbl = document.getElementById('lblSelectedDate');
+        if (lbl) lbl.innerText = dotDate;
+        
+        const cal = document.getElementById('calendarDropdown');
+        if (cal) cal.classList.add('hidden');
+        
+        syncHeaderDate();
+        updateCalendarTriggerDot();
+        renderCalendar();
+        loadMetricsForSelectedDate(dateKey);
+    }
+
+    async function loadMetricsForSelectedDate(isoDate) {
+        const btnSP = document.getElementById('btnRefreshSP');
+        if (btnSP) { btnSP.classList.add('is-generating'); btnSP.disabled = true; }
+
+        const dot = isoDate.split('-').reverse().join('.');
+        showLoading(`Завантаження даних на ${dot}…`);
+
+        let flowData = null;
+        let snapshot = null;
+        let flowError = null;
+        const errors = [];
+
+        try {
+            const response = await fetch(GET_METRICS_FLOW_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reportDate: isoDate, reportDateDot: dot })
+            });
+
+            const raw = await response.text();
+            if (!response.ok) {
+                const detail = raw ? (" — " + raw.replace(/\s+/g, ' ').slice(0, 300)) : "";
+                throw new Error(`потік повернув HTTP ${response.status}${detail}`);
+            }
+
+            let flow;
+            try { flow = raw ? JSON.parse(raw) : {}; }
+            catch (e) { throw new Error("потік повернув некоректний JSON"); }
+            flowData = flow;
+
+            snapshot = extractSnapshotObject(flow.snapshotTree || flow.snapshot || flow.snapshotJson || flow);
+
+            if (!snapshot) {
+                if (flow && flow.error) {
+                    flowError = String(flow.error) + (flow.detail ? (" — " + String(flow.detail).replace(/\s+/g, ' ').slice(0, 400)) : "");
+                } else {
+                    const shape = (flow && typeof flow === 'object') ? ("ключі: [" + Object.keys(flow).join(", ") + "]") : ("тип: " + typeof flow);
+                    throw new Error(`потік повернув 200, але зрізу не знайдено. Форма відповіді — ${shape}.`);
+                }
+            }
+        } catch (e) {
+            errors.push("Power Automate: " + e.message);
+        }
+
+        const hasMetricsPayload = flowData && (
+            (Array.isArray(flowData.metrics) && flowData.metrics.length) ||
+            (flowData.summaryUk && String(flowData.summaryUk).trim()) ||
+            (flowData.summaryEn && String(flowData.summaryEn).trim())
+        );
+
+        try {
+            if (snapshot || hasMetricsPayload) {
+                if (snapshot) {
+                    processSnapshotJson(snapshot);
+                    refineKpisAndBuffer(isoDate, snapshot);
+                } else {
+                    prepareEmptyForecastForDate(isoDate);
+                }
+                if (flowData) applyMetricsToDashboard(flowData, isoDate);
+
+                updateLanguageDOM();
+                buildChart();
+                document.getElementById('dashboardContent')?.classList.remove('hidden');
+                document.getElementById('uploadZone')?.classList.add('hidden');
+                showSuccess(`Дані на ${dot} завантажено.`);
+            } else {
+                prepareEmptyForecastForDate(isoDate);
+                showError(`На дату ${dot} даних немає.`);
+            }
+        } catch (err) {
+            showError(`Помилка обробки даних на ${dot}: ${err.message}`);
+        } finally {
+            if (btnSP) { btnSP.classList.remove('is-generating'); btnSP.disabled = false; }
+        }
+    }
+
+    function initEmptyDashboard() {
+        globalData = {
+            meta: {
+                uk: { title: "", titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме", titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн" },
+                en: { title: "", titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary", titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln" }
+            },
+            kpis: [
+                { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: 0, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true },
+                { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: 0, unit: { uk: "дні", en: "days" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true },
+                { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: 0, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true },
+                { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: 0, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true }
+            ],
+            chart: { labels: ["Т-1","Т0","Т1","Т2","Т3","Т4","Т5","Т6","Т7","Т8","Т9","Т10","Т11","Т12"], ownCash: Array(14).fill(0), ownCashMznn: Array(14).fill(null), totalLiquidity: Array(14).fill(0), postImportLiquidity: Array(14).fill(0), minThreshold: 2500, periods: [] },
+            periodMap: {},
+            summary: { uk: ["Оберіть дату в календарі."], en: ["Select a date in the calendar."] },
+            mainTable: { headers: [{ uk: "Стаття", en: "Item" }, { uk: "Т-1", en: "T-1" }, { uk: "Δ", en: "Δ" }, { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" }, { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" }, { uk: "M1", en: "M1" }, { uk: "M2", en: "M2" }, { uk: "M3", en: "M3" }, { uk: "Всього", en: "Total" }], rows: [] },
+            workingCapital: [], fuelInventories: [], creditLimits: []
+        };
+        syncHeaderDate();
+        updateLanguageDOM();
+        buildChart();
+    }
+
+    function syncHeaderDate() {
+        if (!globalData || !globalData.meta) return;
+        const [y, m, d] = currentReportDate.split('-');
+        const dateUk = `${d}.${m}.${y}`;
+        const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const dateEn = `${monthsEn[parseInt(m, 10) - 1]} ${d}, ${y}`;
+
+        globalData.meta.uk.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateUk} · млн грн</span>`;
+        globalData.meta.en.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateEn} · UAH mln</span>`;
+        document.getElementById('dashboardTitle').innerHTML = globalData.meta[currentLang].title;
+    }
+
+    function extractCleanDate(item) {
+        if (!item) return null;
+        let val = (typeof item === 'object') ? (item.ReportDate || item.reportDate || Object.values(item)[0] || '') : item;
+        const str = String(val).trim();
+        if (!str || str === 'null' || str === 'undefined') return null;
+        const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+        const dotParts = str.split('.');
+        if (dotParts.length === 3) {
+            const d = dotParts[0].trim().padStart(2, '0');
+            const m = dotParts[1].trim().padStart(2, '0');
+            const y = dotParts[2].trim().substring(0, 4);
+            if (y.length === 4) return `${y}-${m}-${d}`;
+        }
+        return null;
+    }
+
+    async function loadAvailableDatesFromSP() {
+        try {
+            const res = await fetch(GET_METRICS_FLOW_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reportDate: "" })
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const raw = await res.text();
+            const data = raw ? JSON.parse(raw) : {};
+            const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
+            rawList.map(extractCleanDate).filter(Boolean).forEach(registerAvailableDate);
+
+            if (availableDatesWithData.length > 0) {
+                const latestDate = [...availableDatesWithData].sort().reverse()[0];
+                selectDateFromCalendar(latestDate);
+            } else {
+                showInfo("Список дат у SharePoint порожній.");
+            }
+        } catch (err) {
+            showInfo("Не вдалося завантажити список дат із SharePoint.");
+        }
+    }
+
+    function processSnapshotJson(snapshot) {
+        if (!snapshot || !snapshot.tree) throw new Error("Некоректний формат JSON: відсутній вузол 'tree'");
+        const tree = snapshot.tree;
+        const cols = snapshot.meta && snapshot.columns ? snapshot.columns : (snapshot.columns || {});
+        const meta = snapshot.meta || {};
+        const forecastDate = extractCleanDate(meta.forecast_date) || extractCleanDate(meta.plan_fact_date) || currentReportDate;
+
+        registerAvailableDate(forecastDate);
+
+        const nodeCash = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
+        const nodeCredit = findSnapshotNode(tree, "Доступні кредитні ліміти") || findSnapshotNode(tree, "Доступні кредитні лінії");
+        const nodePost = findSnapshotNode(tree, "Доступний ліміт постімпорт");
+        const nodeMznn = findSnapshotNode(tree, "Доступні залишки з врахуванням МЗНН та Страт резерву") || findSnapshotNode(tree, "Залишки з обмеженим доступом");
+
+        const tm1Key = (nodeCash && nodeCash.values && nodeCash.values.Tm1_fact !== undefined) ? "Tm1_fact"
+                     : (nodeCash && nodeCash.values && nodeCash.values.Tm1_forecast !== undefined) ? "Tm1_forecast" : "T0";
+        const weekKeys = [tm1Key, "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+        const chartLabels = ["Т-1", "Т0", "Т1", "Т2", "Т3", "Т4", "Т5", "Т6", "Т7", "Т8", "Т9", "Т10", "Т11", "Т12"];
+
+        const periodRange = (k) => {
+            if (cols[k] && cols[k].date_range) return cols[k].date_range;
+            if (k.indexOf("Tm1") === 0) {
+                return (cols.Tm1_fact && cols.Tm1_fact.date_range) || (cols.Tm1_forecast && cols.Tm1_forecast.date_range) || "";
+            }
+            return "";
+        };
+
+        const ownCash = [], totalLiquidity = [], postImportLiquidity = [], ownCashMznn = [], periods = [];
+        weekKeys.forEach(k => {
+            const cash = getMlnValue(nodeCash, k);
+            const cred = getMlnValue(nodeCredit, k);
+            const post = getMlnValue(nodePost, k);
+            const hasMznn = nodeMznn && nodeMznn.values && nodeMznn.values[k] !== undefined && nodeMznn.values[k] !== null;
+
+            ownCash.push(cash);
+            totalLiquidity.push(cash + cred);
+            postImportLiquidity.push(cash + cred + post);
+            ownCashMznn.push(hasMznn ? getMlnValue(nodeMznn, k) : null);
+            periods.push(periodRange(k));
+        });
+
+        const iTm1 = 0;
+        const curCash = ownCash[iTm1];
+        const curCred = getMlnValue(nodeCredit, tm1Key) || getMlnValue(nodeCredit, "T0");
+        const curPost = getMlnValue(nodePost, tm1Key) || getMlnValue(nodePost, "T0");
+        const curTotLiq = curCash + curCred;
+
+        const weeklyExp = extractSnapshotWeeklyExpenses(snapshot);
+        const dailyExp = weeklyExp > 0 ? (weeklyExp / 7) : 1;
+        const bufferDays = dailyExp > 0 ? Math.round(curTotLiq / dailyExp) : 0;
+
+        const kpis = [
+            { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false },
+            { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferDays, unit: { uk: daysFormUk(bufferDays), en: daysFormEn(bufferDays) }, trend: kpiTrend(0, "дні", "days"), isGray: false },
+            { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false },
+            { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: (curPost === 0 ? '-' : curPost), unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false }
+        ];
+
+        const tm1DevKey = (tm1Key.indexOf("forecast") >= 0) ? "dev_forecast" : "dev_fact";
+        const cfCols = [tm1Key, tm1DevKey, "T0", "T1", "T2", "T3", "M1", "M2", "M3", "TT0_12"];
+        const cfMapping = [
+            { name: "Надходження", target: "Всього надходжень", type: "main", neg: true },
+            { name: "Виплати", target: "Всього витрат (1+2+3+4+5)", type: "main" },
+            { name: "Обов’язкові платежі (ЗП, податки, енергія)", target: "Обов’язкові платежі", type: "sub" },
+            { name: "Переробка та виробництво", target: "Переробка", type: "sub" },
+            { name: "Закупівля нафтопродуктів", target: "Комерційний оборотний капітал", type: "sub" },
+            { name: "Стратегічні інвестиції", target: "Стратегічні інвестиції", type: "sub" },
+            { name: "Інші виплати", target: "Інші видатки", type: "sub" },
+            { name: "Фінансова діяльність", target: "Фінансова діяльність", type: "semibold" },
+            { name: "Чистий грошовий потік", target: "Чистий грошовий потік", type: "total", neg: true },
+            { name: "Грошові залишки", target: "Доступні залишки", type: "main" },
+            { name: "Доступні кредитні лінії", target: "Доступні кредитні ліміти", type: "sub" },
+            { name: "Доступний постімпорт", target: "Доступний ліміт постімпорт", type: "sub" }
+        ];
+
+        const cfRows = cfMapping.map(item => {
+            const n = findSnapshotNode(tree, item.target);
+            const vals = cfCols.map(k => getMlnValue(n, k));
+            return { title: getBilingualText(item.name), type: item.type, values: vals, highlightNeg: !!item.neg };
+        });
+
+        const cfHeaders = [
+            { uk: "Стаття", en: "Item" }, { uk: "Т-1", en: "T-1" }, { uk: "Δ", en: "Δ" },
+            { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" }, { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" },
+            { uk: "M1", en: "M1" }, { uk: "M2", en: "M2" }, { uk: "M3", en: "M3" }, { uk: "Всього", en: "Total" }
+        ];
+
+        const cfPeriodMap = {
+            "T-1": periodRange(tm1Key), "T0": periodRange("T0"), "T1": periodRange("T1"),
+            "T2": periodRange("T2"), "T3": periodRange("T3"), "M1": (cols.M1 && cols.M1.date_range) || "",
+            "M2": (cols.M2 && cols.M2.date_range) || "", "M3": (cols.M3 && cols.M3.date_range) || "",
+            "ВСЬОГО": (cols.TT0_12 && cols.TT0_12.date_range) || ""
+        };
+
+        const dParts = String(forecastDate).split("-");
+        const dateFormatted = dParts.length === 3 ? `${dParts[2]}.${dParts[1]}.${dParts[0]}` : forecastDate;
+        currentReportDate = forecastDate;
+
+        globalData = {
+            meta: {
+                uk: { title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateFormatted} · млн грн</span>`, titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме", titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн" },
+                en: { title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateFormatted} · UAH mln</span>`, titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary", titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln" }
+            },
+            kpis: kpis,
+            chart: { labels: chartLabels, ownCash: ownCash, ownCashMznn: ownCashMznn, totalLiquidity: totalLiquidity, postImportLiquidity: postImportLiquidity, minThreshold: minThreshold, periods: periods },
+            periodMap: cfPeriodMap,
+            summary: { uk: [`Дані на ${dateFormatted} консолідовано зі зрізу.`], en: [`Data as of ${dateFormatted} consolidated from snapshot.`] },
+            mainTable: { headers: cfHeaders, rows: cfRows },
+            workingCapital: defaultWorkingCapital(),
+            fuelInventories: defaultFuelInventories(),
+            creditLimits: defaultCreditLimits()
+        };
+        window.globalData = globalData;
+
+        const lbl = document.getElementById('lblSelectedDate');
+        if (lbl) lbl.innerText = dateFormatted;
+        const [yy, mm] = forecastDate.split('-');
+        if (yy && mm) calViewDate = new Date(parseInt(yy, 10), parseInt(mm, 10) - 1, 1);
+        updateCalendarTriggerDot();
+        renderCalendar();
+        return globalData;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        initEmptyDashboard();
+        loadAvailableDatesFromSP();
+    });
+</script>
+</body>
+</html>

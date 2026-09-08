@@ -28,7 +28,7 @@
 </head>
 <body class="p-2">
 
-    <!-- Верхня панель керування (додано клас print-hide для повного зникнення у PDF/друці) -->
+    <!-- Верхня панель керування -->
     <nav class="bg-white shadow p-3 mb-4 rounded-lg max-w-[1750px] mx-auto flex justify-between items-center print-hide">
         <div>
             <h1 class="text-lg font-bold text-slate-800">Executive Cash Flow Dashboard — Аналітика</h1>
@@ -39,6 +39,7 @@
             <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Очікування хмари...</span>
             
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+                <!-- Змінено назву кнопки на PDF -->
                 <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1 cursor-pointer shadow-sm" title="Вивантажити у високій чіткості в PDF">
                     <span>PDF</span>
                 </button>
@@ -74,7 +75,7 @@
 
     <div class="executive-container space-y-4" id="dashboardContent">
         
-        <!-- Панель мультиселектів статей (прихована у PDF за допомогою print-hide) -->
+        <!-- Панель мультиселектів статей -->
         <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-center justify-between print-hide">
             <div class="flex flex-wrap gap-4 items-center">
                 <div class="flex items-center gap-2">
@@ -430,16 +431,16 @@
                 </tr>`;
             });
 
-            // 3. Чистий потік всього (скорочено)
+            // 3. Чистий потік всього (скорочено) з кольоровим підсвічуванням
             html += `<tr class="bg-slate-200 font-bold text-slate-900 border-t-2">
                 <td class="px-3 py-2">Чистий потік (Доходи - Видатки)</td>
-                ${netTotal.map(v => `<td class="px-2 py-2 text-right ${v >= 0 ? 'text-emerald-700' : 'text-red-700'}">${formatNum(v)}</td>`).join('')}
+                ${netTotal.map(v => `<td class="px-2 py-2 text-right ${v >= 0 ? 'text-emerald-700 font-bold' : 'text-red-700 font-bold'}">${formatNum(v)}</td>`).join('')}
             </tr>`;
 
-            // 4. Чистий потік (обрані) - (обрані)
+            // 4. Чистий потік (обрані) - (обрані) з кольоровим підсвічуванням
             html += `<tr class="bg-slate-100 font-bold text-slate-800 border-t">
                 <td class="px-3 py-2">ЧП (${shortInfNames}) - (${shortOutNames})</td>
-                ${netCustom.map(v => `<td class="px-2 py-2 text-right ${v >= 0 ? 'text-emerald-700' : 'text-red-700'}">${formatNum(v)}</td>`).join('')}
+                ${netCustom.map(v => `<td class="px-2 py-2 text-right ${v >= 0 ? 'text-emerald-700 font-bold' : 'text-red-700 font-bold'}">${formatNum(v)}</td>`).join('')}
             </tr>`;
 
             document.getElementById('tableBodyRows').innerHTML = html;

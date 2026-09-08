@@ -6,52 +6,51 @@
     <title>Executive Cash Flow Dashboard - Аналітика</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; }
-        .executive-container { max-width: 1587px; margin: 0 auto; background-color: #ffffff; padding: 25px 30px; box-sizing: border-box; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .exec-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
-        .exec-table th { font-size: 9.5pt; color: #64748b; font-weight: 600; padding: 4px 6px; border-bottom: 1.5px solid #94a3b8; text-align: right; background-color: #f8fafc; }
-        .exec-table th:first-child { text-align: left; }
-        .exec-table th .th-period { display: block; font-size: 6.8pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.2px; white-space: nowrap; line-height: 1.15; margin-top: 1px; }
-        .exec-table td { padding: 3px 6px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+        .executive-container { max-width: 1750px; margin: 0 auto; background-color: #ffffff; padding: 20px 20px; box-sizing: border-box; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        
+        /* Зменшені відступи та компактні комірки для вузьких стовпців */
+        .exec-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; table-layout: fixed; }
+        .exec-table th { font-size: 8.5pt; color: #64748b; font-weight: 600; padding: 3px 2px; border-bottom: 1.5px solid #94a3b8; text-align: right; background-color: #f8fafc; overflow: hidden; }
+        .exec-table th:first-child { text-align: left; width: 180px; }
+        .exec-table th .th-period { display: block; font-size: 6pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.3px; white-space: nowrap; line-height: 1.1; margin-top: 1px; }
+        .exec-table td { padding: 2px 2px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.5pt; }
         .exec-table td:first-child { text-align: left; font-weight: 500; white-space: nowrap; }
 
         @media print {
             @page { size: A3 landscape; margin: 0 !important; }
             body { background-color: #ffffff !important; padding: 0 !important; }
             .print-hide, nav { display: none !important; }
-            .executive-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; padding: 10px !important; }
+            .executive-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; padding: 5px !important; }
         }
     </style>
 </head>
-<body class="p-4">
+<body class="p-2">
 
-    <!-- Верхня панель керування та вибору дати і експорту -->
-    <nav class="bg-white shadow p-4 mb-6 rounded-lg max-w-[1587px] mx-auto flex justify-between items-center print-hide">
+    <!-- Верхня панель керування -->
+    <nav class="bg-white shadow p-3 mb-4 rounded-lg max-w-[1750px] mx-auto flex justify-between items-center print-hide">
         <div>
-            <h1 class="text-xl font-bold text-slate-800">Executive Cash Flow Dashboard — Аналітика</h1>
+            <h1 class="text-lg font-bold text-slate-800">Executive Cash Flow Dashboard — Аналітика</h1>
             <p class="text-xs text-slate-500 mt-0.5">Звітна дата зрізу: <span id="headerReportDate" class="font-semibold text-indigo-600">--</span></p>
         </div>
         
         <div class="flex items-center gap-4">
             <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Очікування хмари...</span>
             
-            <!-- Кнопки експорту та друку -->
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
                 <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1 cursor-pointer shadow-sm" title="Вивантажити в PDF">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     <span>PDF</span>
                 </button>
                 <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1 cursor-pointer shadow-sm" title="Друк звіту">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                     <span>Друк</span>
                 </button>
             </div>
 
-            <!-- Інтерактивний вибір дати (Календар) -->
+            <!-- Календар -->
             <div class="relative">
-                <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center gap-2 border border-slate-300 cursor-pointer">
-                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-1 rounded-full font-bold text-xs flex items-center gap-2 border border-slate-300 cursor-pointer">
                     <span id="lblSelectedDate">Обрати дату</span>
                 </button>
                 <div id="calendarDropdown" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
@@ -74,10 +73,10 @@
         </div>
     </nav>
 
-    <div class="executive-container space-y-6" id="dashboardContent">
+    <div class="executive-container space-y-4" id="dashboardContent">
         
-        <!-- Панель мультиселектів статей (недрукована) -->
-        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-center justify-between print-hide">
+        <!-- Мультиселекти -->
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center justify-between print-hide">
             <div class="flex flex-wrap gap-4 items-center">
                 <div class="flex items-center gap-2">
                     <label class="text-xs font-bold text-slate-600 uppercase">Доходи:</label>
@@ -88,10 +87,10 @@
                 </div>
                 <div id="inflowCustomContainer" class="hidden flex flex-wrap items-center gap-3 bg-white p-2 border rounded text-xs">
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафта" checked onchange="updateChartAndTable()"> Нафта</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Газ природній" checked onchange="updateChartAndTable()"> Газ природній</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти ОПТ" checked onchange="updateChartAndTable()"> Нафтопродукти ОПТ</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти АОЗ" checked onchange="updateChartAndTable()"> Нафтопродукти АОЗ</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти роздріб АЗС" checked onchange="updateChartAndTable()"> Нафтопродукти роздріб АЗС</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Газ природній" checked onchange="updateChartAndTable()"> Газ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти ОПТ" checked onchange="updateChartAndTable()"> ОПТ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти АОЗ" checked onchange="updateChartAndTable()"> АОЗ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти роздріб АЗС" checked onchange="updateChartAndTable()"> АЗС</label>
                 </div>
             </div>
 
@@ -104,31 +103,31 @@
                     </select>
                 </div>
                 <div id="outflowCustomContainer" class="hidden flex flex-wrap items-center gap-3 bg-white p-2 border rounded text-xs">
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Комерційний оборотний капітал" checked onchange="updateChartAndTable()"> Комерційний оборотний капітал</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Комерційний оборотний капітал" checked onchange="updateChartAndTable()"> Оборотний капітал</label>
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Обов’язкові платежі" checked onchange="updateChartAndTable()"> Обов’язкові платежі</label>
                 </div>
             </div>
         </div>
 
         <!-- Графіки -->
-        <div class="grid grid-cols-2 gap-6">
-            <div class="bg-white p-4 rounded-lg border border-slate-200">
-                <h3 class="text-center font-bold text-sm text-slate-700 mb-3">ВСЬОГО Доходи та Витрати, млн грн</h3>
-                <div class="relative h-72">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-3 rounded-lg border border-slate-200">
+                <h3 class="text-center font-bold text-xs text-slate-700 mb-2">ВСЬОГО Доходи та Витрати, млн грн</h3>
+                <div class="relative h-64">
                     <canvas id="trendChartOverall"></canvas>
                 </div>
             </div>
-            <div class="bg-white p-4 rounded-lg border border-slate-200">
-                <h3 class="text-center font-bold text-sm text-slate-700 mb-3">Обрані Доходи та Витрати (Деталізація), млн грн</h3>
-                <div class="relative h-72">
+            <div class="bg-white p-3 rounded-lg border border-slate-200">
+                <h3 class="text-center font-bold text-xs text-slate-700 mb-2">Обрані Доходи та Витрати (Деталізація), млн грн</h3>
+                <div class="relative h-64">
                     <canvas id="trendChartCustom"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- ТаблицяСтруктура -->
-        <div class="bg-white p-4 rounded-lg border border-slate-200 overflow-x-auto">
-            <h3 class="font-bold text-sm text-slate-700 mb-2">Таблиця. Структура (Історія з хмари + Прогноз)</h3>
+        <!-- Таблиця -->
+        <div class="bg-white p-3 rounded-lg border border-slate-200 overflow-x-auto">
+            <h3 class="font-bold text-xs text-slate-700 mb-2">Таблиця. Структура (Дати на кінець тижня - неділю)</h3>
             <table class="exec-table" id="structTable">
                 <thead><tr id="tableHeadRow"></tr></thead>
                 <tbody id="tableBodyRows"></tbody>
@@ -184,7 +183,14 @@
             return null;
         }
 
-        // Автоматичне генерування календарних дат для підписів (Т-4 ... Т12)
+        function extractValuesArray(node) {
+            if (!node || !node.values) return Array(17).fill(0);
+            const v = node.values;
+            const keys = ["Tm4_fact", "Tm3_fact", "Tm2_fact", "Tm1_fact", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+            return keys.map(k => Math.round((v[k] || 0) / 1000000));
+        }
+
+        // Генерація дат НА КІНЕЦЬ ТИЖНЯ (на неділю)
         function calculateDateRanges(anchorIsoDate) {
             const parts = String(anchorIsoDate).split('-').map(Number);
             if (parts.length !== 3 || parts.some(isNaN)) return;
@@ -194,28 +200,22 @@
             const formatDateStr = (dateObj) => {
                 const dd = String(dateObj.getDate()).padStart(2, '0');
                 const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const yy = String(dateObj.getFullYear()).slice(-2);
-                return `${dd}.${mm}.${yy}`;
+                return `${dd}.${mm}`;
             };
 
-            // Зміщення для Т-4 ... Т-1 (мінус 4 тижні до якорної дати)
+            // Для Т-4 ... Т-1 (минулі неділі)
             for (let i = 0; i < 4; i++) {
-                // зсув відносно T0 (індекс 4 у масиві labels)
                 const weeksBefore = 4 - i;
-                const start = new Date(anchorDate);
-                start.setDate(anchorDate.getDate() - weeksBefore * 7);
-                const end = new Date(start);
-                end.setDate(start.getDate() + 6);
-                periodRanges[i] = `${formatDateStr(start)}-${formatDateStr(end)}`;
+                const sunday = new Date(anchorDate);
+                sunday.setDate(anchorDate.getDate() - weeksBefore * 7 + 6); // зсув на неділю (+6 днів)
+                periodRanges[i] = formatDateStr(sunday);
             }
 
-            // Зміщення для Т0 ... Т12
+            // Для Т0 ... Т12 (майбутні неділі)
             for (let i = 0; i < 13; i++) {
-                const start = new Date(anchorDate);
-                start.setDate(anchorDate.getDate() + i * 7);
-                const end = new Date(start);
-                end.setDate(start.getDate() + 6);
-                periodRanges[4 + i] = `${formatDateStr(start)}-${formatDateStr(end)}`;
+                const sunday = new Date(anchorDate);
+                sunday.setDate(anchorDate.getDate() + i * 7 + 6); // неділя поточного/майбутнього тижня
+                periodRanges[4 + i] = formatDateStr(sunday);
             }
         }
 
@@ -391,7 +391,7 @@
 
         function renderTable(selInf, selOut, totInf, totOut) {
             const headRow = document.getElementById('tableHeadRow');
-            headRow.innerHTML = '<th class="px-3 py-2 text-left font-medium">Показник / Стаття</th>' + labels.map((l, idx) => `<th class="px-2 py-2 text-right">${l}<span class="th-period">${periodRanges[idx]}</span></th>`).join('');
+            headRow.innerHTML = '<th class="px-3 py-2 text-left font-medium">Показник / Стаття</th>' + labels.map((l, idx) => `<th class="px-1 py-2 text-right">${l}<span class="th-period">${periodRanges[idx]}</span></th>`).join('');
 
             let html = '';
             html += `<tr class="bg-emerald-50 font-bold"><td class="px-3 py-2">Надходження всього</td>${totInf.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
@@ -421,7 +421,6 @@
             document.getElementById('tableBodyRows').innerHTML = html;
         }
 
-        // Експорт в PDF через html2pdf
         function generatePDF() {
             window.scrollTo(0, 0);
             html2pdf().set({

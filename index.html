@@ -820,16 +820,32 @@
     }
 
     // ── Ковзний 4-тижневий буфер + дельти KPI тиждень-до-тижня ────────────
-    // Спільний формат тренду для плиток
+    // Українське відмінювання «день/дні/днів» (1 день, 2-4 дні, 5+ днів; 11-14 → днів)
+    function daysFormUk(n) {
+        const a = Math.abs(Math.trunc(Number(n) || 0));
+        const m100 = a % 100, m10 = a % 10;
+        if (m100 >= 11 && m100 <= 14) return 'днів';
+        if (m10 === 1) return 'день';
+        if (m10 >= 2 && m10 <= 4) return 'дні';
+        return 'днів';
+    }
+    function daysFormEn(n) {
+        return Math.abs(Math.trunc(Number(n) || 0)) === 1 ? 'day' : 'days';
+    }
+
+    // Спільний формат тренду для плиток. Для одиниці «дні» число відмінюється за |delta|.
     function kpiTrend(delta, unitUk, unitEn) {
         const a = Math.abs(delta);
         const num = a === 0 ? "0" : formatNum(a);
         const arrow = delta > 0 ? "\u25B2 +" : (delta < 0 ? "\u25BC -" : "\u2014 ");
+        const isDays = /^(день|дні|днів)$/.test(unitUk);
+        const uUk = isDays ? daysFormUk(a) : unitUk;
+        const uEn = isDays ? daysFormEn(a) : unitEn;
         return {
             isPositive: delta >= 0,
             text: {
-                uk: delta === 0 ? "\u2014 без змін" : `${arrow}${num} ${unitUk}`,
-                en: delta === 0 ? "\u2014 no change" : `${arrow}${num} ${unitEn}`
+                uk: delta === 0 ? "\u2014 без змін" : `${arrow}${num} ${uUk}`,
+                en: delta === 0 ? "\u2014 no change" : `${arrow}${num} ${uEn}`
             }
         };
     }
@@ -993,6 +1009,7 @@
                 if (!k) return;
                 k.value = (titleUk === "Доступний постімпорт" && (val === 0 || val === '-')) ? '-' : val;
                 k.trend = kpiTrend(delta, unitUk, unitEn);
+                if (titleUk === "Буфер ліквідності") k.unit = { uk: daysFormUk(val), en: daysFormEn(val) };
             };
             setKpi("Доступна ліквідність", cur.avail, dLiq, "млн грн", "UAH mln");
             setKpi("Доступні кредитні лінії", cur.cred, dCred, "млн грн", "UAH mln");
@@ -2626,7 +2643,7 @@
 
         const kpis = [
             { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false },
-            { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferDays, unit: { uk: "дні", en: "days" }, trend: kpiTrend(0, "дні", "days"), isGray: false },
+            { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferDays, unit: { uk: daysFormUk(bufferDays), en: daysFormEn(bufferDays) }, trend: kpiTrend(0, "дні", "days"), isGray: false },
             { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false },
             { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: (curPost === 0 ? '-' : curPost), unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false }
         ];

@@ -22,15 +22,16 @@
     <nav class="bg-white shadow p-4 mb-6 rounded-lg max-w-[1587px] mx-auto flex justify-between items-center">
         <div>
             <h1 class="text-xl font-bold text-slate-800">Executive Cash Flow Dashboard — Аналітика</h1>
-            <p class="text-xs text-slate-500 mt-0.5">Звітна дата зрізу: <span id="headerReportDate" class="font-semibold text-indigo-600">24.08.2026</span></p>
+            <p class="text-xs text-slate-500 mt-0.5">Звітна дата зрізу: <span id="headerReportDate" class="font-semibold text-indigo-600">--</span></p>
         </div>
         <div class="flex items-center gap-4">
+            <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Очікування хмари...</span>
+            
             <!-- Інтерактивний вибір дати (Календар) -->
             <div class="relative">
                 <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center gap-2 border border-slate-300 cursor-pointer">
                     <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <span id="lblSelectedDate">24.08.2026</span>
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span id="lblSelectedDate">Обрати дату</span>
                 </button>
                 <div id="calendarDropdown" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
                     <div class="flex justify-between items-center mb-3">
@@ -88,7 +89,7 @@
             </div>
         </div>
 
-        <!-- Графіки відповідно до зразка -->
+        <!-- Графіки -->
         <div class="grid grid-cols-2 gap-6">
             <div class="bg-white p-4 rounded-lg border border-slate-200">
                 <h3 class="text-center font-bold text-sm text-slate-700 mb-3">ВСЬОГО Доходи та Витрати, млн грн</h3>
@@ -106,7 +107,7 @@
 
         <!-- ТаблицяСтруктура -->
         <div class="bg-white p-4 rounded-lg border border-slate-200 overflow-x-auto">
-            <h3 class="font-bold text-sm text-slate-700 mb-2">Таблиця. Структура</h3>
+            <h3 class="font-bold text-sm text-slate-700 mb-2">Таблиця. Структура (Історія з хмари + Прогноз)</h3>
             <table class="exec-table" id="structTable">
                 <thead><tr id="tableHeadRow"></tr></thead>
                 <tbody id="tableBodyRows"></tbody>
@@ -121,20 +122,19 @@
         const labels = ["Т-4", "Т-3", "Т-2", "Т-1", "Т0", "Т1", "Т2", "Т3", "Т4", "Т5", "Т6", "Т7", "Т8", "Т9", "Т10", "Т11", "Т12"];
 
         let currentReportDate = "2026-08-24";
-        let availableDatesWithData = ["2026-08-10", "2026-08-17", "2026-08-24"];
         let calViewDate = new Date(2026, 7, 24);
 
         let activeCloudModel = {
             inflows: {
-                "Нафта": [40, 42, 45, 46, 2069, 919, 904, 0, 0, 588, 86, 615, 124, 272, 718, 0, 391],
-                "Газ природній": [0, 0, 0, 42, 751, 240, 240, 240, 168, 0, 250, 250, 250, 250, 250, 250, 250],
-                "Нафтопродукти ОПТ": [1700, 1750, 1800, 1814, 1894, 1801, 1622, 1622, 1622, 1622, 1562, 1562, 1562, 1562, 1571, 1571, 1571],
-                "Нафтопродукти АОЗ": [500, 520, 600, 703, 504, 938, 938, 938, 938, 938, 908, 908, 908, 908, 1502, 1502, 1502],
-                "Нафтопродукти роздріб АЗС": [1000, 1020, 1030, 1037, 1098, 1098, 1046, 1046, 1046, 1046, 998, 998, 998, 998, 998, 998, 998]
+                "Нафта": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
+                "Газ природній": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
+                "Нафтопродукти ОПТ": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
+                "Нафтопродукти АОЗ": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
+                "Нафтопродукти роздріб АЗС": { history: Array(4).fill(0), forecast: Array(13).fill(0) }
             },
             outflows: {
-                "Комерційний оборотний капітал": [2100, 2200, 2150, 2160, 5338, 2382, 1308, 3846, 2365, 2840, 2155, 3274, 3737, 1838, 3779, 2572, 3198],
-                "Обов’язкові платежі": [2000, 2050, 2080, 2096, 174, 1539, 665, 107, 544, 1586, 674, 68, 494, 1625, 796, 84, 1516]
+                "Комерційний оборотний капітал": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
+                "Обов’язкові платежі": { history: Array(4).fill(0), forecast: Array(13).fill(0) }
             }
         };
 
@@ -162,43 +162,109 @@
             return null;
         }
 
-        function extractValuesArray(node) {
-            if (!node || !node.values) return Array(17).fill(0);
-            const v = node.values;
-            // Порядок колонок: Tm4, Tm3, Tm2, Tm1, T0 ... T12
-            const keys = ["Tm4_fact", "Tm3_fact", "Tm2_fact", "Tm1_fact", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
-            return keys.map(k => Math.round((v[k] || 0) / 1000000));
+        // Розрахунок 4 минулих дат тижнів тому від обраної дати зрізу
+        function getHistoricalDates(isoDate) {
+            const parts = String(isoDate).split('-').map(Number);
+            if (parts.length !== 3 || parts.some(isNaN)) return [isoDate];
+            const [y, m, d] = parts;
+            const out = [];
+            for (let i = 1; i <= 4; i++) { // 4 тижні тому (Т-4, Т-3, Т-2, Т-1)
+                const dt = new Date(y, m - 1, d - i * 7);
+                const yy = dt.getFullYear();
+                const mm = String(dt.getMonth() + 1).padStart(2, '0');
+                const dd = String(dt.getDate()).padStart(2, '0');
+                out.push(`${yy}-${mm}-${dd}`);
+            }
+            return out.reverse(); // Хронологічно: Т-4, Т-3, Т-2, Т-1
         }
 
-        async function loadCloudData(dateStr) {
+        // Паралельне опитування хмари за поточним зрізом та 4 історичними датами
+        async function loadFullAnalyticsModel(selectedDateIso) {
+            const statusEl = document.getElementById('dataStatus');
+            statusEl.textContent = "Завантаження з хмари...";
+            statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800";
+
             try {
-                const res = await fetch(GET_METRICS_FLOW_URL, {
+                const histDates = getHistoricalDates(selectedDateIso);
+
+                // 1. Паралельно запитуємо зрізи для історії (Т-4 ... Т-1)
+                const historySnapshots = await Promise.all(
+                    histDates.map(async (iso) => {
+                        try {
+                            const res = await fetch(GET_METRICS_FLOW_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ reportDate: iso, reportDateDot: iso.split('-').reverse().join('.') })
+                            });
+                            if (!res.ok) return null;
+                            const json = await res.json();
+                            return json.snapshot || json;
+                        } catch (e) { return null; }
+                    })
+                );
+
+                // 2. Завантажуємо основний зріз на обрану дату для прогнозу (Т0 ... Т12)
+                const mainRes = await fetch(GET_METRICS_FLOW_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reportDate: dateStr })
+                    body: JSON.stringify({ reportDate: selectedDateIso, reportDateDot: selectedDateIso.split('-').reverse().join('.') })
                 });
-                if (!res.ok) throw new Error("HTTP " + res.status);
-                const json = await res.json();
-                const snap = json.snapshot || json;
+                if (!mainRes.ok) throw new Error("Не вдалося отримати основний зріз.");
+                const mainJson = await mainRes.json();
+                const mainSnap = mainJson.snapshot || mainJson;
+                const mainTree = mainSnap.tree || [];
 
-                if (snap && snap.tree) {
-                    const tree = snap.tree;
-                    const infNames = Object.keys(activeCloudModel.inflows);
-                    const outNames = Object.keys(activeCloudModel.outflows);
+                const inflowNames = Object.keys(activeCloudModel.inflows);
+                const outflowNames = Object.keys(activeCloudModel.outflows);
+                const forecastCols = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
-                    infNames.forEach(name => {
-                        const n = findNodeInTree(tree, name);
-                        if (n) activeCloudModel.inflows[name] = extractValuesArray(n);
+                // Обробка доходів
+                inflowNames.forEach(name => {
+                    const histArr = historySnapshots.map(snap => {
+                        if (!snap || !snap.tree) return 0;
+                        const n = findNodeInTree(snap.tree, name);
+                        return n && n.values ? Math.round((n.values.Tm1_fact || n.values.Tm1_plan || 0) / 1000000) : 0;
                     });
-                    outNames.forEach(name => {
-                        const n = findNodeInTree(tree, name);
-                        if (n) activeCloudModel.outflows[name] = extractValuesArray(n);
+
+                    const mainNode = findNodeInTree(mainTree, name);
+                    const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((mainNode.values[col] || 0) / 1000000) : 0);
+
+                    activeCloudModel.inflows[name] = { history: histArr, forecast: foreArr };
+                });
+
+                // Обробка видатків
+                outflowNames.forEach(name => {
+                    const histArr = historySnapshots.map(snap => {
+                        if (!snap || !snap.tree) return 0;
+                        const n = findNodeInTree(snap.tree, name);
+                        return n && n.values ? Math.round((n.values.Tm1_fact || n.values.Tm1_plan || 0) / 1000000) : 0;
                     });
-                }
-            } catch (e) {
-                console.warn("Працює у локальному режимі демонстрації даних:", e);
+
+                    const mainNode = findNodeInTree(mainTree, name);
+                    const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((mainNode.values[col] || 0) / 1000000) : 0);
+
+                    activeCloudModel.outflows[name] = { history: histArr, forecast: foreArr };
+                });
+
+                updateChartAndTable();
+                statusEl.textContent = "Дані успішно оновлено з хмари";
+                statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+            } catch (err) {
+                console.error("Помилка хмари:", err);
+                statusEl.textContent = "Помилка зв'язку з хмарою";
+                statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-800";
             }
-            updateChartAndTable();
+        }
+
+        function getFullArray(objMap, keysList) {
+            const res = Array(17).fill(0);
+            keysList.forEach(k => {
+                const item = objMap[k];
+                if (!item) return;
+                for (let i = 0; i < 4; i++) res[i] += (item.history[i] || 0);
+                for (let i = 0; i < item.forecast.length; i++) res[4 + i] += (item.forecast[i] || 0);
+            });
+            return res;
         }
 
         function onInflowModeChange() {
@@ -207,7 +273,6 @@
         }
 
         function onOutflowModeChange() {
-            document.getElementById('outflowMode').value;
             document.getElementById('outflowCustomContainer').classList.toggle('hidden', document.getElementById('outflowMode').value === 'all');
             updateChartAndTable();
         }
@@ -227,17 +292,16 @@
             const selInf = getSelectedKeys('inflow');
             const selOut = getSelectedKeys('outflow');
 
-            const totalInflows = sumArrays(Object.values(activeCloudModel.inflows));
-            const totalOutflows = sumArrays(Object.values(activeCloudModel.outflows));
+            const totalInflows = sumArrays(Object.values(activeCloudModel.inflows).map(x => [...x.history, ...x.forecast]));
+            const totalOutflows = sumArrays(Object.values(activeCloudModel.outflows).map(x => [...x.history, ...x.forecast]));
 
-            const customInflows = sumArrays(selInf.map(k => activeCloudModel.inflows[k]));
-            const customOutflows = sumArrays(selOut.map(k => activeCloudModel.outflows[k]));
+            const customInflows = getFullArray(activeCloudModel.inflows, selInf);
+            const customOutflows = getFullArray(activeCloudModel.outflows, selOut);
 
             renderCharts(totalInflows, totalOutflows, customInflows, customOutflows);
             renderTable(selInf, selOut, totalInflows, totalOutflows);
         }
 
-        // Рендеринг діаграм відповідно до твого зразка (Кольори: Доходи — бірюзовий/зеленуватий, Видатки — помаранчевий)
         function renderCharts(totInf, totOut, custInf, custOut) {
             const opt = {
                 responsive: true, maintainAspectRatio: false,
@@ -264,8 +328,8 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Доходи НП (обр.)', data: custInf, borderColor: '#0f766e', borderWidth: 2, fill: false, tension: 0.1 },
-                        { label: 'Видатки НП (обр.)', data: custOut, borderColor: '#ea580c', borderWidth: 2, fill: false, tension: 0.1 }
+                        { label: 'Доходи (обр.)', data: custInf, borderColor: '#0f766e', borderWidth: 2, fill: false, tension: 0.1 },
+                        { label: 'Видатки (обр.)', data: custOut, borderColor: '#ea580c', borderWidth: 2, fill: false, tension: 0.1 }
                     ]
                 },
                 options: opt
@@ -281,10 +345,11 @@
 
             Object.keys(activeCloudModel.inflows).forEach(k => {
                 const isSel = selInf.includes(k);
-                const arr = activeCloudModel.inflows[k];
+                const item = activeCloudModel.inflows[k];
+                const fullArr = [...item.history, ...item.forecast];
                 html += `<tr class="${isSel ? 'bg-white' : 'opacity-40'} text-xs">
                     <td class="px-3 py-1.5 pl-6">${k}</td>
-                    ${arr.map(v => `<td class="px-2 py-1.5 text-right">${formatNum(v)}</td>`).join('')}
+                    ${fullArr.map(v => `<td class="px-2 py-1.5 text-right">${formatNum(v)}</td>`).join('')}
                 </tr>`;
             });
 
@@ -292,17 +357,18 @@
 
             Object.keys(activeCloudModel.outflows).forEach(k => {
                 const isSel = selOut.includes(k);
-                const arr = activeCloudModel.outflows[k];
+                const item = activeCloudModel.outflows[k];
+                const fullArr = [...item.history, ...item.forecast];
                 html += `<tr class="${isSel ? 'bg-white' : 'opacity-40'} text-xs">
                     <td class="px-3 py-1.5 pl-6">${k}</td>
-                    ${arr.map(v => `<td class="px-2 py-1.5 text-right">${formatNum(v)}</td>`).join('')}
+                    ${fullArr.map(v => `<td class="px-2 py-1.5 text-right">${formatNum(v)}</td>`).join('')}
                 </tr>`;
             });
 
             document.getElementById('tableBodyRows').innerHTML = html;
         }
 
-        // Логіка календаря
+        // Календар
         function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
         function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
         
@@ -329,10 +395,11 @@
 
         function selectDate(iso) {
             currentReportDate = iso;
-            document.getElementById('lblSelectedDate').innerText = iso.split('-').reverse().join('.');
-            document.getElementById('headerReportDate').innerText = iso.split('-').reverse().join('.');
+            const [y, m, d] = iso.split('-');
+            document.getElementById('lblSelectedDate').innerText = `${d}.${m}.${y}`;
+            document.getElementById('headerReportDate').innerText = `${d}.${m}.${y}`;
             document.getElementById('calendarDropdown').classList.add('hidden');
-            loadCloudData(iso);
+            loadFullAnalyticsModel(iso);
         }
 
         document.addEventListener('DOMContentLoaded', () => {

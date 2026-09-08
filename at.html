@@ -6,6 +6,7 @@
     <title>Executive Cash Flow Dashboard - Аналітика</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; }
         .executive-container { max-width: 1587px; margin: 0 auto; background-color: #ffffff; padding: 25px 30px; box-sizing: border-box; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
@@ -14,19 +15,39 @@
         .exec-table th:first-child { text-align: left; }
         .exec-table td { padding: 3px 6px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
         .exec-table td:first-child { text-align: left; font-weight: 500; white-space: nowrap; }
+
+        @media print {
+            @page { size: A3 landscape; margin: 0 !important; }
+            body { background-color: #ffffff !important; padding: 0 !important; }
+            .print-hide, nav { display: none !important; }
+            .executive-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; padding: 10px !important; }
+        }
     </style>
 </head>
 <body class="p-4">
 
-    <!-- Верхня панель керування та вибору дати -->
-    <nav class="bg-white shadow p-4 mb-6 rounded-lg max-w-[1587px] mx-auto flex justify-between items-center">
+    <!-- Верхня панель керування та вибору дати і експорту -->
+    <nav class="bg-white shadow p-4 mb-6 rounded-lg max-w-[1587px] mx-auto flex justify-between items-center print-hide">
         <div>
             <h1 class="text-xl font-bold text-slate-800">Executive Cash Flow Dashboard — Аналітика</h1>
             <p class="text-xs text-slate-500 mt-0.5">Звітна дата зрізу: <span id="headerReportDate" class="font-semibold text-indigo-600">--</span></p>
         </div>
+        
         <div class="flex items-center gap-4">
             <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Очікування хмари...</span>
             
+            <!-- Кнопки експорту та друку (недруковані) -->
+            <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+                <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1 cursor-pointer shadow-sm" title="Вивантажити в PDF">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>PDF</span>
+                </button>
+                <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1 cursor-pointer shadow-sm" title="Друк звіту">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    <span>Друк</span>
+                </button>
+            </div>
+
             <!-- Інтерактивний вибір дати (Календар) -->
             <div class="relative">
                 <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center gap-2 border border-slate-300 cursor-pointer">
@@ -53,10 +74,10 @@
         </div>
     </nav>
 
-    <div class="executive-container space-y-6">
+    <div class="executive-container space-y-6" id="dashboardContent">
         
-        <!-- Панель мультиселектів статей -->
-        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-center justify-between">
+        <!-- Панель мультиселектів статей (недрукована) -->
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-center justify-between print-hide">
             <div class="flex flex-wrap gap-4 items-center">
                 <div class="flex items-center gap-2">
                     <label class="text-xs font-bold text-slate-600 uppercase">Доходи:</label>
@@ -162,23 +183,28 @@
             return null;
         }
 
-        // Розрахунок 4 минулих дат тижнів тому від обраної дати зрізу
+        function extractValuesArray(node) {
+            if (!node || !node.values) return Array(17).fill(0);
+            const v = node.values;
+            const keys = ["Tm4_fact", "Tm3_fact", "Tm2_fact", "Tm1_fact", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+            return keys.map(k => Math.round((v[k] || 0) / 1000000));
+        }
+
         function getHistoricalDates(isoDate) {
             const parts = String(isoDate).split('-').map(Number);
             if (parts.length !== 3 || parts.some(isNaN)) return [isoDate];
             const [y, m, d] = parts;
             const out = [];
-            for (let i = 1; i <= 4; i++) { // 4 тижні тому (Т-4, Т-3, Т-2, Т-1)
+            for (let i = 1; i <= 4; i++) {
                 const dt = new Date(y, m - 1, d - i * 7);
                 const yy = dt.getFullYear();
                 const mm = String(dt.getMonth() + 1).padStart(2, '0');
                 const dd = String(dt.getDate()).padStart(2, '0');
                 out.push(`${yy}-${mm}-${dd}`);
             }
-            return out.reverse(); // Хронологічно: Т-4, Т-3, Т-2, Т-1
+            return out.reverse();
         }
 
-        // Паралельне опитування хмари за поточним зрізом та 4 історичними датами
         async function loadFullAnalyticsModel(selectedDateIso) {
             const statusEl = document.getElementById('dataStatus');
             statusEl.textContent = "Завантаження з хмари...";
@@ -187,7 +213,6 @@
             try {
                 const histDates = getHistoricalDates(selectedDateIso);
 
-                // 1. Паралельно запитуємо зрізи для історії (Т-4 ... Т-1)
                 const historySnapshots = await Promise.all(
                     histDates.map(async (iso) => {
                         try {
@@ -203,7 +228,6 @@
                     })
                 );
 
-                // 2. Завантажуємо основний зріз на обрану дату для прогнозу (Т0 ... Т12)
                 const mainRes = await fetch(GET_METRICS_FLOW_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -218,7 +242,6 @@
                 const outflowNames = Object.keys(activeCloudModel.outflows);
                 const forecastCols = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
-                // Обробка доходів
                 inflowNames.forEach(name => {
                     const histArr = historySnapshots.map(snap => {
                         if (!snap || !snap.tree) return 0;
@@ -232,7 +255,6 @@
                     activeCloudModel.inflows[name] = { history: histArr, forecast: foreArr };
                 });
 
-                // Обробка видатків
                 outflowNames.forEach(name => {
                     const histArr = historySnapshots.map(snap => {
                         if (!snap || !snap.tree) return 0;
@@ -366,6 +388,18 @@
             });
 
             document.getElementById('tableBodyRows').innerHTML = html;
+        }
+
+        // Експорт в PDF
+        function generatePDF() {
+            window.scrollTo(0, 0);
+            html2pdf().set({
+                margin: 0,
+                filename: `Analytics_CashFlow.pdf`,
+                image: { type: 'png', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: true }
+            }).from(document.getElementById('dashboardContent')).save();
         }
 
         // Календар

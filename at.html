@@ -28,7 +28,7 @@
 </head>
 <body class="p-2">
 
-    <!-- Верхня панель керування -->
+    <!-- Верхня панель керування (додано клас print-hide для повного зникнення у PDF/друці) -->
     <nav class="bg-white shadow p-3 mb-4 rounded-lg max-w-[1750px] mx-auto flex justify-between items-center print-hide">
         <div>
             <h1 class="text-lg font-bold text-slate-800">Executive Cash Flow Dashboard — Аналітика</h1>
@@ -87,9 +87,9 @@
                 <div id="inflowCustomContainer" class="hidden flex flex-wrap items-center gap-3 bg-white p-2 border rounded text-xs">
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафта" checked onchange="updateChartAndTable()"> Нафта</label>
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Газ природній" checked onchange="updateChartAndTable()"> Газ</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти ОПТ" checked onchange="updateChartAndTable()"> ОПТ</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти АОЗ" checked onchange="updateChartAndTable()"> АОЗ</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти роздріб АЗС" checked onchange="updateChartAndTable()"> АЗС</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти ОПТ" checked onchange="updateChartAndTable()"> Нафтопродукти ОПТ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти АОЗ" checked onchange="updateChartAndTable()"> Нафтопродукти АОЗ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти роздріб АЗС" checked onchange="updateChartAndTable()"> Нафтопродукти роздріб АЗС</label>
                 </div>
             </div>
 
@@ -430,15 +430,15 @@
                 </tr>`;
             });
 
-            // 3. Чистий потік всього
+            // 3. Чистий потік всього (скорочено)
             html += `<tr class="bg-slate-200 font-bold text-slate-900 border-t-2">
-                <td class="px-3 py-2">Чистий потік всього = доходи всього мінус витрати всього</td>
+                <td class="px-3 py-2">Чистий потік (Доходи - Видатки)</td>
                 ${netTotal.map(v => `<td class="px-2 py-2 text-right ${v >= 0 ? 'text-emerald-700' : 'text-red-700'}">${formatNum(v)}</td>`).join('')}
             </tr>`;
 
-            // 4. Чистий потік обрані
+            // 4. Чистий потік (обрані) - (обрані)
             html += `<tr class="bg-slate-100 font-bold text-slate-800 border-t">
-                <td class="px-3 py-2">Чистий потік (${shortInfNames}) мінус (${shortOutNames})</td>
+                <td class="px-3 py-2">ЧП (${shortInfNames}) - (${shortOutNames})</td>
                 ${netCustom.map(v => `<td class="px-2 py-2 text-right ${v >= 0 ? 'text-emerald-700' : 'text-red-700'}">${formatNum(v)}</td>`).join('')}
             </tr>`;
 

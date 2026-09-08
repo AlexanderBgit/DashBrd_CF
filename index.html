@@ -460,6 +460,31 @@
     let availableDatesWithData = [];
     let calViewDate = new Date(2026, 7, 1); // Серпень 2026
 
+    // Середньодобові обов'язкові витрати за МІСЯЦЬ (грн) — база буфера ліквідності.
+    // Формула (файл «Дані для розрахунку буферу ліквідності»): за тижнями місяця
+    //   Σ(Обов'язкові платежі + Місцеві податки + Заробітна плата + Енергія + Переробка)
+    //   / кількість днів місяця. Значення на кінець періоду.
+    // Нові місяці: додавайте сюди АБО передавайте з потоку
+    //   (flowResp.dailyExpenseBase — число грн на місяць звіту, або
+    //    flowResp.monthlyDailyExpense = { "2026-09": 123456789, ... }).
+    const MONTHLY_DAILY_EXPENSE_UAH = {
+        '2026-04': 206133957.6,
+        '2026-05': 235334777.9,
+        '2026-07': 216820190.7,
+        '2026-08': 270486622.2
+    };
+
+    // Повертає середньодобову базу (у МЛН грн) для місяця дати; null — якщо невідомо.
+    function dailyExpenseBaseMln(isoDate, flowResp) {
+        const ym = String(isoDate || '').slice(0, 7);
+        if (flowResp) {
+            if (typeof flowResp.dailyExpenseBase === 'number' && flowResp.dailyExpenseBase > 0) return flowResp.dailyExpenseBase / 1e6;
+            if (flowResp.monthlyDailyExpense && flowResp.monthlyDailyExpense[ym] != null) return Number(flowResp.monthlyDailyExpense[ym]) / 1e6;
+        }
+        if (MONTHLY_DAILY_EXPENSE_UAH[ym] != null) return MONTHLY_DAILY_EXPENSE_UAH[ym] / 1e6;
+        return null;
+    }
+
     // ---- Повідомлення користувачу (замість "тихих" console.error) ----
     let _bannerTimer = null;
     function showBanner(message, type) {
@@ -827,19 +852,29 @@
         return out;
     }
 
-    // Обов'язкові (операційні) витрати тижня з ФАКТУ періоду Т-1 зрізу
+    // Тижневі обов'язкові витрати з ФАКТУ Т-1 зрізу — композиція як у файлі-джерелі:
+    // Обов’язкові платежі + Місцеві податки + Заробітна плата + Енергія + Переробка.
+    // (Обов’язкові платежі вже містять Місцеві/ЗП/Енергію — подвійний облік відповідає
+    //  формулі бази; використовується лише для ФОЛБЕКУ, коли база місяця невідома.)
     function extractSnapshotWeeklyExpenses(snap) {
         const tree = snap && snap.tree;
         if (!tree) return 0;
-        const nMand = findSnapshotNode(tree, "Обов\u2019язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
-        const nProc = findSnapshotNode(tree, "Переробка");
-        const nComm = findSnapshotNode(tree, "Комерційний оборотний капітал");
-        const nAll  = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
         const nodeCash = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
         const k = (nodeCash && nodeCash.values && nodeCash.values.Tm1_fact !== undefined) ? "Tm1_fact"
                 : (nodeCash && nodeCash.values && nodeCash.values.Tm1_forecast !== undefined) ? "Tm1_forecast" : "T0";
-        let sum = Math.abs(getMlnValue(nMand, k)) + Math.abs(getMlnValue(nProc, k)) + Math.abs(getMlnValue(nComm, k));
-        if (sum === 0) sum = Math.abs(getMlnValue(nAll, k));
+        const n = (name) => findSnapshotNode(tree, name);
+        const nMand = n("Обов’язкові платежі") || n("Обов'язкові платежі");
+        const nLocal = n("Місцеві податки");
+        const nSalary = n("Заробітна плата");
+        const nEnergy = n("Енергія");
+        const nProc = n("Переробка");
+        let sum = Math.abs(getMlnValue(nMand, k)) + Math.abs(getMlnValue(nLocal, k)) +
+                  Math.abs(getMlnValue(nSalary, k)) + Math.abs(getMlnValue(nEnergy, k)) +
+                  Math.abs(getMlnValue(nProc, k));
+        if (sum === 0) {
+            const nAll = n("Всього витрат (1+2+3+4+5)") || n("Всього видатків");
+            sum = Math.abs(getMlnValue(nAll, k));
+        }
         return sum;
     }
 
@@ -933,17 +968,25 @@
             priorVals.sort((a, b) => String(b.reportDate).localeCompare(String(a.reportDate)));
             const prev = priorVals.length ? priorVals[0] : null;
 
-            // Пул тижневих обов'язкових витрат: поточний + усі наявні попередні
+            // Пул тижневих обов'язкових витрат: поточний + усі наявні попередні (для ФОЛБЕКУ)
             const pool = [];
             if (cur.weeklyExp > 0) pool.push(cur.weeklyExp);
             priorVals.forEach(v => { if (v.weeklyExp > 0) pool.push(v.weeklyExp); });
-            const dailyExp = pool.length ? (pool.reduce((a, b) => a + b, 0) / (pool.length * 7)) : 0;
-            const buffer = dailyExp > 0 ? Math.round(cur.avail / dailyExp) : (globalData.kpis[1] ? globalData.kpis[1].value : 0);
+            const fallbackDailyMln = pool.length ? (pool.reduce((a, b) => a + b, 0) / (pool.length * 7)) : 0;
+
+            // Буфер (днів) = Доступна ліквідність / середньодобові витрати МІСЯЦЯ.
+            // База місяця — з конфігу/потоку; якщо місяць невідомий — оцінка з тижнів.
+            const baseCurMln = dailyExpenseBaseMln(isoDate, flowResp) || fallbackDailyMln;
+            const buffer = baseCurMln > 0 ? Math.round(cur.avail / baseCurMln) : (globalData.kpis[1] ? globalData.kpis[1].value : 0);
 
             const dLiq  = prev ? (cur.avail - prev.avail) : 0;
             const dCred = prev ? (cur.cred - prev.cred) : 0;
             const dPost = prev ? (cur.post - prev.post) : 0;
-            const dBuf  = (prev && dailyExp > 0) ? (buffer - Math.round(prev.avail / dailyExp)) : 0;
+            let dBuf = 0;
+            if (prev && baseCurMln > 0) {
+                const basePrevMln = dailyExpenseBaseMln(prev.reportDate, flowResp) || baseCurMln;
+                if (basePrevMln > 0) dBuf = buffer - Math.round(prev.avail / basePrevMln);
+            }
 
             const setKpi = (titleUk, val, delta, unitUk, unitEn) => {
                 const k = globalData.kpis.find(x => x.title && x.title.uk === titleUk);
@@ -2569,10 +2612,17 @@
             return s;
         };
 
-        // Буфер (днів): ПРОВІЗОРНО за поточним тижнем; уточнюється за 4 тижні асинхронно
-        const curWeeklyExp = weeklyCoreOut(tm1Key) || weeklyCoreOut("T0");
-        const dailyExp = curWeeklyExp > 0 ? curWeeklyExp / 7 : 0;
-        const bufferDays = dailyExp > 0 ? Math.round(curTotLiq / dailyExp) : 0;
+        // Буфер (днів): за середньодобовою базою МІСЯЦЯ (конфіг); якщо місяць невідомий —
+        // провізорна оцінка за поточним тижнем. Уточнюється в refineKpisAndBuffer.
+        const baseMln = dailyExpenseBaseMln(forecastDate, null);
+        let bufferDays;
+        if (baseMln && baseMln > 0) {
+            bufferDays = Math.round(curTotLiq / baseMln);
+        } else {
+            const curWeeklyExp = weeklyCoreOut(tm1Key) || weeklyCoreOut("T0");
+            const dailyExp = curWeeklyExp > 0 ? curWeeklyExp / 7 : 0;
+            bufferDays = dailyExp > 0 ? Math.round(curTotLiq / dailyExp) : 0;
+        }
 
         const kpis = [
             { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false },

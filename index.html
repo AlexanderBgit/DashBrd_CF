@@ -1338,49 +1338,80 @@
         return null;
     }
 
+    // Допоміжна функція: отримує найближчий минулий понеділок (включно з сьогодні)
+    function getMostRecentMonday() {
+        const d = new Date();
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+    }
+
+    // Допоміжна функція: застосовує дату в інтерфейсі та запускає завантаження метрик
+    function applyDateSelection(isoDate) {
+        const [y, m, d] = isoDate.split('-');
+        calViewDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+        currentReportDate = isoDate;
+        const lbl = document.getElementById('lblSelectedDate');
+        if (lbl) lbl.innerText = `${d}.${m}.${y}`;
+        syncHeaderDate();
+        loadMetricsForSelectedDate(isoDate); 
+    }
+
     async function loadAvailableDatesFromSP() {
         try {
-            const res = await fetch(GET_METRICS_FLOW_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reportDate: "" })
-            });
-            if (!res.ok) throw new Error("потік повернув HTTP " + res.status);
+            let res;
+            // Механізм ретраю: до 3 спроб з інтервалом 1.5 секунди при помилках 5xx
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                res = await fetch(GET_METRICS_FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportDate: "" })
+                });
+                
+                // Якщо запит успішний або це помилка клієнта (4xx) - виходимо з циклу
+                if (res.ok || res.status < 500) break;
+                
+                // Затримка перед наступною спробою
+                if (attempt < 3) await new Promise(r => setTimeout(r, 1500));
+            }
+
+            if (!res.ok) throw new Error("HTTP " + res.status);
 
             const raw = await res.text();
             let data;
             try { data = raw ? JSON.parse(raw) : {}; }
-            catch (e) { throw new Error("потік повернув некоректний JSON зі списком дат"); }
+            catch (e) { throw new Error("некоректний JSON"); }
 
             const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
             const cleaned = [...new Set(rawList.map(extractCleanDate))]
                 .filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d));
-            // Об'єднуємо з датами, вже завантаженими локально, і сортуємо
+            
             cleaned.forEach(registerAvailableDate);
 
             if (availableDatesWithData.length > 0) {
                 const latestDate = [...availableDatesWithData].sort().reverse()[0];
-                const [y, m, d] = latestDate.split('-');
-                calViewDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
-                currentReportDate = latestDate;
-                const lbl = document.getElementById('lblSelectedDate');
-                if (lbl) lbl.innerText = `${d}.${m}.${y}`;
-                syncHeaderDate();
-                loadMetricsForSelectedDate(latestDate); // авто-завантаження останньої дати
+                applyDateSelection(latestDate);
+                updateCalendarTriggerDot();
+                renderCalendar();
             } else {
-                showInfo("Список дат у SharePoint порожній. Оберіть дату або завантажте JSON-файл вручну.");
+                throw new Error("Список порожній");
             }
 
-            updateCalendarTriggerDot();
-            renderCalendar();
         } catch (err) {
+            // Фолбек на останній понеділок
+            const fallbackDate = getMostRecentMonday();
+            registerAvailableDate(fallbackDate);
+            applyDateSelection(fallbackDate);
+
+            // Це зберігається:
             // Не «падаємо мовчки»: календар лишається робочим для локально завантажених файлів
             showBanner(`Не вдалося отримати список дат із SharePoint (${err.message}). Дати в календарі з'являться після завантаження JSON-файлів вручну.`, 'warn');
             updateCalendarTriggerDot();
             renderCalendar();
         }
     }
-
+    
     async function refreshSharePointData() {
         // Перезавантажує зріз поточної обраної дати та оновлює список дат календаря.
         _snapCache.clear(); // ручне оновлення — скидаємо кеш, щоб підтягнути свіжі дані

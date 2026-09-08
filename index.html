@@ -792,6 +792,12 @@
         }
         if (typeof payload !== 'object') return null;
 
+        // НОВЕ: Якщо зріз обгорнутий у поле "snapshot" (як у новому batch-форматі)
+        if (payload.snapshot) {
+            const r = extractSnapshotObject(payload.snapshot, depth + 1);
+            if (r) return r;
+        }
+
         // Формат дії SharePoint "Отримати вміст файлу": { "$content": "<base64>", "$content-type": ... }
         if (payload['$content']) {
             const dec = b64ToUtf8(payload['$content']);
@@ -804,11 +810,11 @@
             }
         }
 
-        // Сам зріз
+        // Сам зріз (містить масив tree)
         if (payload.tree && Array.isArray(payload.tree)) return payload;
 
         // Відомі обгортки потоку Power Automate
-        const keys = ['snapshot', 'snapshotJson', 'snapshotTree', 'fileContent',
+        const keys = ['snapshotJson', 'snapshotTree', 'fileContent',
                       'content', 'body', 'value', 'data', 'result', 'output', 'outputs'];
         for (const k of keys) {
             if (payload[k] != null) {

@@ -1,82 +1,226 @@
-// --- 3. KPI-плитки (Швидкий та коректний розрахунок на основі поточного зрізу) ---
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Cash Flow Dashboard - Аналітика</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-100 font-sans leading-normal tracking-normal p-4">
 
-        // 1. Поточна доступна ліквідність на дату звіту (вхідний залишок Tm1)
-        const curCash   = ownCash[iTm1];
-        const curCred   = getMlnValue(nodeCredit, tm1Key) || getMlnValue(nodeCredit, "T0");
-        const curPost   = getMlnValue(nodePost, tm1Key);
-        const curTotLiq = curCash + curCred;
+    <!-- Навігація та шапка з датою зрізу -->
+    <nav class="bg-white shadow p-4 mb-6 rounded-lg max-w-7xl mx-auto flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-bold text-slate-800">Executive Cash Flow Dashboard — Аналітика доходів і витрат</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Звітна дата зрізу: <span id="headerReportDate" class="font-semibold text-indigo-600">24.08.2026</span></p>
+        </div>
+        <div>
+            <a href="index.html" class="text-blue-600 hover:underline mr-4">Головна</a>
+            <a href="analytics.html" class="text-gray-800 font-semibold">Аналітика</a>
+        </div>
+    </nav>
 
-        // 2. Буфер ліквідності (днів) = Доступна ліквідність / Середньодобові витрати з Tm1
-        const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
-        const nProcessing = findSnapshotNode(tree, "Переробка");
-        const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
-        const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
-
-        let weeklyExp = Math.abs(getMlnValue(nMandatory, tm1Key)) +
-                        Math.abs(getMlnValue(nProcessing, tm1Key)) +
-                        Math.abs(getMlnValue(nCommercial, tm1Key));
-        if (weeklyExp === 0) weeklyExp = Math.abs(getMlnValue(nAllOut, tm1Key));
-
-        const dailyExp = weeklyExp > 0 ? (weeklyExp / 7) : 1;
-        const bufferDays = dailyExp > 0 ? Math.round(curTotLiq / dailyExp) : 0;
-
-        // 3. Дельти (Δ) з урахуванням відхилень dev_fact у зрізі
-        const devKey = (nodeCash && nodeCash.values && nodeCash.values.dev_fact !== undefined) ? "dev_fact" : "dev_forecast";
+    <div class="max-w-7xl mx-auto space-y-6">
         
-        let dLiq = getMlnValue(nodeCash, devKey) + getMlnValue(nodeCredit, devKey);
-        if (dLiq === 0 && nodeCash && nodeCash.values && nodeCash.values.Tm1_plan !== undefined) {
-            const planTotLiq = getMlnValue(nodeCash, "Tm1_plan") + getMlnValue(nodeCredit, "Tm1_plan");
-            dLiq = curTotLiq - planTotLiq;
-        }
+        <!-- Панель керування та вибору статей (Мультиселекти) -->
+        <div class="bg-white p-4 rounded-lg shadow flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-slate-600 uppercase">Доходи:</label>
+                    <select id="inflowMode" onchange="onInflowModeChange()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-slate-50">
+                        <option value="all">Всі статті (Сума)</option>
+                        <option value="custom">Обрані статті</option>
+                    </select>
+                </div>
+                <div id="inflowCustomContainer" class="hidden flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 border rounded text-xs">
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафта" checked onchange="updateChartAndTable()"> Нафта</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Газ природній" checked onchange="updateChartAndTable()"> Газ природній</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти ОПТ" checked onchange="updateChartAndTable()"> Нафтопродукти ОПТ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти АОЗ" checked onchange="updateChartAndTable()"> Нафтопродукти АОЗ</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти роздріб АЗС" checked onchange="updateChartAndTable()"> Нафтопродукти роздріб АЗС</label>
+                </div>
+            </div>
 
-        const dCred = getMlnValue(nodeCredit, devKey);
-        const dPost = getMlnValue(nodePost, devKey);
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-slate-600 uppercase">Видатки:</label>
+                    <select id="outflowMode" onchange="onOutflowModeChange()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-slate-50">
+                        <option value="all">Всі статті (Сума)</option>
+                        <option value="custom">Обрані статті</option>
+                    </select>
+                </div>
+                <div id="outflowCustomContainer" class="hidden flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 border rounded text-xs">
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Комерційний оборотний капітал" checked onchange="updateChartAndTable()"> Комерційний оборотний капітал</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Обов’язкові платежі" checked onchange="updateChartAndTable()"> Обов’язкові платежі</label>
+                </div>
+            </div>
+        </div>
 
-        const prevBuffer = Math.round((curTotLiq - dLiq) / dailyExp);
-        const dBuffer = bufferDays - prevBuffer;
+        <!-- Блок з графіком (Дві лінії: Доходи і Видатки) -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-slate-700">ВСЬОГО Доходи та Витрати, млн грн (4 тижні тому + 12 тижнів вперед)</h2>
+                <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">Дані готові</span>
+            </div>
+            <div class="relative h-96">
+                <canvas id="cashFlowTrendChart"></canvas>
+            </div>
+        </div>
 
-        // 4. Допоміжна функція форматування динаміки та стрілок
-        const trend = (delta, unitUk, unitEn) => {
-            const a = Math.abs(delta);
-            const num = a === 0 ? "0" : formatNum(a);
-            const arrow = delta > 0 ? "▲ +" : (delta < 0 ? "▼ -" : "— ");
-            return {
-                isPositive: delta >= 0,
-                text: {
-                    uk: delta === 0 ? "— без змін" : `${arrow}${num} ${unitUk}`,
-                    en: delta === 0 ? "— no change" : `${arrow}${num} ${unitEn}`
-                }
-            };
+        <!-- Таблиця деталізації -->
+        <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">ТаблицяСтруктура (План / Факт)</h2>
+            <table class="min-w-full divide-y divide-gray-200 text-xs" id="dynamicTable">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 uppercase" id="tableHeadRow">
+                        <th class="px-3 py-2 text-left font-medium">Показник / Стаття</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="tableBodyRows">
+                    <!-- Заповнюється динамічно -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let trendChart = null;
+
+        // Шкала часу: 4 тижні тому (Т-4...Т-1), поточний (Т0), 12 тижнів прогнозу (Т1...Т12)
+        const labels = ["Т-4", "Т-3", "Т-2", "Т-1", "Т0", "Т1", "Т2", "Т3", "Т4", "Т5", "Т6", "Т7", "Т8", "Т9", "Т10", "Т11", "Т12"];
+
+        const rawData = {
+            inflows: {
+                "Нафта": { history: [40, 42, 45, 46], forecast: [2069, 919, 904, 0, 0, 588, 86, 615, 124, 272, 718, 0, 391] },
+                "Газ природній": { history: [0, 0, 0, 42], forecast: [751, 240, 240, 240, 168, 0, 250, 250, 250, 250, 250, 250, 250] },
+                "Нафтопродукти ОПТ": { history: [1700, 1750, 1800, 1814], forecast: [1894, 1801, 1622, 1622, 1622, 1622, 1562, 1562, 1562, 1562, 1571, 1571, 1571] },
+                "Нафтопродукти АОЗ": { history: [500, 520, 600, 703], forecast: [504, 938, 938, 938, 938, 938, 908, 908, 908, 908, 1502, 1502, 1502] },
+                "Нафтопродукти роздріб АЗС": { history: [1000, 1020, 1030, 1037], forecast: [1098, 1098, 1046, 1046, 1046, 1046, 998, 998, 998, 998, 998, 998, 998] }
+            },
+            outflows: {
+                "Комерційний оборотний капітал": { history: [2100, 2200, 2150, 2160], forecast: [5338, 2382, 1308, 3846, 2365, 2840, 2155, 3274, 3737, 1838, 3779, 2572, 3198] },
+                "Обов’язкові платежі": { history: [2000, 2050, 2080, 2096], forecast: [174, 1539, 665, 107, 544, 1586, 674, 68, 494, 1625, 796, 84, 1516] }
+            }
         };
 
-        // 5. Формування KPI плиток
-        const kpis = [
-            {
-                title: { uk: "Доступна ліквідність", en: "Available liquidity" },
-                value: curTotLiq,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: trend(dLiq, "млн грн", "UAH mln"),
-                isGray: false
-            },
-            {
-                title: { uk: "Буфер ліквідності", en: "Liquidity buffer" },
-                value: bufferDays,
-                unit: { uk: "дні", en: "days" },
-                trend: trend(dBuffer, "дні", "days"),
-                isGray: false
-            },
-            {
-                title: { uk: "Доступні кредитні лінії", en: "Available credit lines" },
-                value: curCred,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: trend(dCred, "млн грн", "UAH mln"),
-                isGray: false
-            },
-            {
-                title: { uk: "Доступний постімпорт", en: "Available post-import" },
-                value: curPost === 0 ? '-' : curPost,
-                unit: { uk: "млн грн", en: "UAH mln" },
-                trend: trend(dPost, "млн грн", "UAH mln"),
-                isGray: false
-            }
-        ];
+        function formatNum(val) {
+            if (val == null || isNaN(val)) return '-';
+            return Number(val).toLocaleString('uk-UA', { maximumFractionDigits: 0 }).replace(/\u202F/g, ' ');
+        }
+
+        function getFullArray(objMap, keysList) {
+            const res = Array(17).fill(0);
+            keysList.forEach(k => {
+                const item = objMap[k];
+                if (!item) return;
+                for (let i = 0; i < 4; i++) res[i] += (item.history[i] || 0);
+                for (let i = 0; i < item.forecast.length; i++) res[4 + i] += (item.forecast[i] || 0);
+            });
+            return res;
+        }
+
+        function onInflowModeChange() {
+            const mode = document.getElementById('inflowMode').value;
+            document.getElementById('inflowCustomContainer').classList.toggle('hidden', mode === 'all');
+            updateChartAndTable();
+        }
+
+        function onOutflowModeChange() {
+            const mode = document.getElementById('outflowMode').value;
+            document.getElementById('outflowCustomContainer').classList.toggle('hidden', mode === 'all');
+            updateChartAndTable();
+        }
+
+        function getSelectedSubItems(type) {
+            const mode = document.getElementById(type + 'Mode').value;
+            const container = document.getElementById(type + 'CustomContainer');
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            let selected = [];
+            checkboxes.forEach(cb => {
+                if (mode === 'all' || cb.checked) selected.push(cb.value);
+            });
+            return selected;
+        }
+
+        function updateChartAndTable() {
+            const selInf = getSelectedSubItems('inflow');
+            const selOut = getSelectedSubItems('outflow');
+
+            const totalInflows = getFullArray(rawData.inflows, selInf);
+            const totalOutflows = getFullArray(rawData.outflows, selOut);
+
+            updateChart(totalInflows, totalOutflows);
+            updateTable(selInf, selOut, totalInflows, totalOutflows);
+        }
+
+        function updateChart(inflows, outflows) {
+            const ctx = document.getElementById('cashFlowTrendChart').getContext('2d');
+            if (trendChart) trendChart.destroy();
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Доходи', data: inflows, borderColor: '#059669', backgroundColor: 'rgba(5, 150, 105, 0.1)', borderWidth: 3, fill: true, tension: 0.1 },
+                        { label: 'Видатки', data: outflows, borderColor: '#DC2626', backgroundColor: 'rgba(220, 38, 38, 0.1)', borderWidth: 3, fill: true, tension: 0.1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+
+        function updateTable(selInf, selOut, totalInflows, totalOutflows) {
+            const headRow = document.getElementById('tableHeadRow');
+            headRow.innerHTML = '<th class="px-3 py-2 text-left font-medium">Показник / Стаття</th>' + labels.map(l => `<th class="px-2 py-2 text-right">${l}</th>`).join('');
+
+            let html = '';
+
+            // Загальні доходи
+            html += `<tr class="bg-emerald-50 font-bold text-emerald-900"><td class="px-3 py-2">Надходження всього (Доходи)</td>${totalInflows.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
+
+            // Деталізація доходів
+            Object.keys(rawData.inflows).forEach(k => {
+                const isSel = selInf.includes(k);
+                const item = rawData.inflows[k];
+                const fullArr = [...item.history, ...item.forecast.slice(0, 13)];
+                html += `<tr class="${isSel ? 'bg-white' : 'opacity-40'} text-xs">
+                    <td class="px-3 py-1.5 pl-6 text-slate-600">↳ ${k}</td>
+                    ${fullArr.map(v => `<td class="px-2 py-1.5 text-right text-slate-500">${formatNum(v)}</td>`).join('')}
+                </tr>`;
+            });
+
+            // Загальні видатки
+            html += `<tr class="bg-red-50 font-bold text-red-900 border-t-2"><td class="px-3 py-2">Видатки всього</td>${totalOutflows.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
+
+            // Деталізація видатків
+            Object.keys(rawData.outflows).forEach(k => {
+                const isSel = selOut.includes(k);
+                const item = rawData.outflows[k];
+                const fullArr = [...item.history, ...item.forecast.slice(0, 13)];
+                html += `<tr class="${isSel ? 'bg-white' : 'opacity-40'} text-xs">
+                    <td class="px-3 py-1.5 pl-6 text-slate-600">↳ ${k}</td>
+                    ${fullArr.map(v => `<td class="px-2 py-1.5 text-right text-slate-500">${formatNum(v)}</td>`).join('')}
+                </tr>`;
+            });
+
+            // Чистий грошовий потік
+            const netFlow = totalInflows.map((inf, idx) => inf - totalOutflows[idx]);
+            html += `<tr class="bg-slate-200 font-bold text-slate-900 border-t-2">
+                <td class="px-3 py-2">Чистий потік (Доходи мінус Видатки)</td>
+                ${netFlow.map(v => `<td class="px-2 py-2 text-right ${v >= 0 ? 'text-emerald-700' : 'text-red-700'}">${formatNum(v)}</td>`).join('')}
+            </tr>`;
+
+            document.getElementById('tableBodyRows').innerHTML = html;
+        }
+
+        document.addEventListener('DOMContentLoaded', updateChartAndTable);
+    </script>
+</body>
+</html>

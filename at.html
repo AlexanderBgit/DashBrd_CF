@@ -6,13 +6,13 @@
     <title>Executive Cash Flow Dashboard - Аналітика</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; }
         .executive-container { max-width: 1587px; margin: 0 auto; background-color: #ffffff; padding: 25px 30px; box-sizing: border-box; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         .exec-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
         .exec-table th { font-size: 9.5pt; color: #64748b; font-weight: 600; padding: 4px 6px; border-bottom: 1.5px solid #94a3b8; text-align: right; background-color: #f8fafc; }
         .exec-table th:first-child { text-align: left; }
+        .exec-table th .th-period { display: block; font-size: 6.8pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.2px; white-space: nowrap; line-height: 1.15; margin-top: 1px; }
         .exec-table td { padding: 3px 6px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
         .exec-table td:first-child { text-align: left; font-weight: 500; white-space: nowrap; }
 
@@ -36,7 +36,7 @@
         <div class="flex items-center gap-4">
             <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Очікування хмари...</span>
             
-            <!-- Кнопки експорту та друку (недруковані) -->
+            <!-- Кнопки експорту та друку -->
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
                 <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1 cursor-pointer shadow-sm" title="Вивантажити в PDF">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -141,6 +141,7 @@
 
         let chartOverall = null, chartCustom = null;
         const labels = ["Т-4", "Т-3", "Т-2", "Т-1", "Т0", "Т1", "Т2", "Т3", "Т4", "Т5", "Т6", "Т7", "Т8", "Т9", "Т10", "Т11", "Т12"];
+        let periodRanges = Array(17).fill("");
 
         let currentReportDate = "2026-08-24";
         let calViewDate = new Date(2026, 7, 24);
@@ -183,11 +184,39 @@
             return null;
         }
 
-        function extractValuesArray(node) {
-            if (!node || !node.values) return Array(17).fill(0);
-            const v = node.values;
-            const keys = ["Tm4_fact", "Tm3_fact", "Tm2_fact", "Tm1_fact", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
-            return keys.map(k => Math.round((v[k] || 0) / 1000000));
+        // Автоматичне генерування календарних дат для підписів (Т-4 ... Т12)
+        function calculateDateRanges(anchorIsoDate) {
+            const parts = String(anchorIsoDate).split('-').map(Number);
+            if (parts.length !== 3 || parts.some(isNaN)) return;
+            const [y, m, d] = parts;
+            const anchorDate = new Date(y, m - 1, d);
+
+            const formatDateStr = (dateObj) => {
+                const dd = String(dateObj.getDate()).padStart(2, '0');
+                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const yy = String(dateObj.getFullYear()).slice(-2);
+                return `${dd}.${mm}.${yy}`;
+            };
+
+            // Зміщення для Т-4 ... Т-1 (мінус 4 тижні до якорної дати)
+            for (let i = 0; i < 4; i++) {
+                // зсув відносно T0 (індекс 4 у масиві labels)
+                const weeksBefore = 4 - i;
+                const start = new Date(anchorDate);
+                start.setDate(anchorDate.getDate() - weeksBefore * 7);
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                periodRanges[i] = `${formatDateStr(start)}-${formatDateStr(end)}`;
+            }
+
+            // Зміщення для Т0 ... Т12
+            for (let i = 0; i < 13; i++) {
+                const start = new Date(anchorDate);
+                start.setDate(anchorDate.getDate() + i * 7);
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                periodRanges[4 + i] = `${formatDateStr(start)}-${formatDateStr(end)}`;
+            }
         }
 
         function getHistoricalDates(isoDate) {
@@ -209,6 +238,8 @@
             const statusEl = document.getElementById('dataStatus');
             statusEl.textContent = "Завантаження з хмари...";
             statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800";
+
+            calculateDateRanges(selectedDateIso);
 
             try {
                 const histDates = getHistoricalDates(selectedDateIso);
@@ -360,7 +391,7 @@
 
         function renderTable(selInf, selOut, totInf, totOut) {
             const headRow = document.getElementById('tableHeadRow');
-            headRow.innerHTML = '<th class="px-3 py-2 text-left font-medium">Показник / Стаття</th>' + labels.map(l => `<th class="px-2 py-2 text-right">${l}</th>`).join('');
+            headRow.innerHTML = '<th class="px-3 py-2 text-left font-medium">Показник / Стаття</th>' + labels.map((l, idx) => `<th class="px-2 py-2 text-right">${l}<span class="th-period">${periodRanges[idx]}</span></th>`).join('');
 
             let html = '';
             html += `<tr class="bg-emerald-50 font-bold"><td class="px-3 py-2">Надходження всього</td>${totInf.map(v => `<td class="px-2 py-2 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
@@ -390,7 +421,7 @@
             document.getElementById('tableBodyRows').innerHTML = html;
         }
 
-        // Експорт в PDF
+        // Експорт в PDF через html2pdf
         function generatePDF() {
             window.scrollTo(0, 0);
             html2pdf().set({

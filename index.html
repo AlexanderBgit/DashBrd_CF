@@ -1356,6 +1356,8 @@
         if (lbl) lbl.innerText = `${d}.${m}.${y}`;
         syncHeaderDate();
         loadMetricsForSelectedDate(isoDate); 
+        updateCalendarTriggerDot();
+        renderCalendar();
     }
 
     async function loadAvailableDatesFromSP() {
@@ -1376,12 +1378,12 @@
                 if (attempt < 3) await new Promise(r => setTimeout(r, 1500));
             }
 
-            if (!res.ok) throw new Error("HTTP " + res.status);
+            if (!res.ok) throw new Error("потік повернув HTTP " + res.status);
 
             const raw = await res.text();
             let data;
             try { data = raw ? JSON.parse(raw) : {}; }
-            catch (e) { throw new Error("некоректний JSON"); }
+            catch (e) { throw new Error("некоректний JSON зі списком дат"); }
 
             const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
             const cleaned = [...new Set(rawList.map(extractCleanDate))]
@@ -1392,26 +1394,20 @@
             if (availableDatesWithData.length > 0) {
                 const latestDate = [...availableDatesWithData].sort().reverse()[0];
                 applyDateSelection(latestDate);
-                updateCalendarTriggerDot();
-                renderCalendar();
             } else {
-                throw new Error("Список порожній");
+                throw new Error("Список дат порожній");
             }
 
         } catch (err) {
-            // Фолбек на останній понеділок
+            // Тихий фолбек на останній понеділок без страшного банера
+            console.warn(`Не вдалося отримати список дат (${err.message}). Автоматично обрано останній понеділок.`);
+            
             const fallbackDate = getMostRecentMonday();
-            registerAvailableDate(fallbackDate);
+            registerAvailableDate(fallbackDate); // Реєструємо цю дату, щоб календар відображав її коректно
             applyDateSelection(fallbackDate);
-
-            // Це зберігається:
-            // Не «падаємо мовчки»: календар лишається робочим для локально завантажених файлів
-            showBanner(`Не вдалося отримати список дат із SharePoint (${err.message}). Дати в календарі з'являться після завантаження JSON-файлів вручну.`, 'warn');
-            updateCalendarTriggerDot();
-            renderCalendar();
         }
     }
-    
+
     async function refreshSharePointData() {
         // Перезавантажує зріз поточної обраної дати та оновлює список дат календаря.
         _snapCache.clear(); // ручне оновлення — скидаємо кеш, щоб підтягнути свіжі дані

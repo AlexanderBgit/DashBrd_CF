@@ -14,17 +14,15 @@
         .exec-table { 
             width: 100% !important; 
             border-collapse: collapse; 
-            font-size: 8pt; 
             table-layout: fixed; 
         }
         .exec-table th, .exec-table td {
-            width: 4.5%; /* Рівномірний розподіл 17 колонок періодів */
             padding: 2px 2px;
+            box-sizing: border-box;
         }
         .exec-table th:first-child, .exec-table td:first-child { 
-            text-align: left; 
-            width: 23.5% !important; /* Фіксована ширина під довгі назви статей */
-            white-space: normal; /* Дозволяє перенос слів, якщо назва статті довга */
+            width: 220px !important; 
+            min-width: 220px !important;
         }
         .exec-table th .th-period { display: block; font-size: 6pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.3px; white-space: nowrap; line-height: 1.1; margin-top: 1px; }
         .exec-table td { padding: 2px 2px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.5pt; }
@@ -468,41 +466,66 @@
             window.scrollTo(0, 0);
             const content = document.getElementById('dashboardContent');
 
-            // Базова робоча ширина макета для рендерингу A3 Landscape (без зовнішніх полів)
-            const TARGET_WIDTH = 1600;
+            // Базові контейнери
+            const chartsContainer = content.querySelector('.grid.grid-cols-2');
+            const chartBoxes = chartsContainer ? chartsContainer.querySelectorAll('.relative.h-64') : [];
 
-            // Зберігаємо вихідні стилі
+            // 1. Отримуємо векторні растри безпосередньо з Chart.js у 100% якості
+            const imgOverallData = chartOverall ? chartOverall.toBase64Image('image/png', 1) : null;
+            const imgCustomData = chartCustom ? chartCustom.toBase64Image('image/png', 1) : null;
+
+            // Створюємо тимчасові статичні <img> замість рендерингу canvas через html2canvas
+            const tempImgOverall = document.createElement('img');
+            tempImgOverall.src = imgOverallData;
+            tempImgOverall.style.cssText = "width: 100%; height: 240px; object-fit: contain; display: block;";
+
+            const tempImgCustom = document.createElement('img');
+            tempImgCustom.src = imgCustomData;
+            tempImgCustom.style.cssText = "width: 100%; height: 240px; object-fit: contain; display: block;";
+
+            const canvas1 = document.getElementById('trendChartOverall');
+            const canvas2 = document.getElementById('trendChartCustom');
+
+            // Ховаємо полотна canvas і підставляємо готові картинки
+            canvas1.style.display = 'none';
+            canvas2.style.display = 'none';
+            canvas1.parentNode.appendChild(tempImgOverall);
+            canvas2.parentNode.appendChild(tempImgCustom);
+
+            // 2. Фіксуємо стилі контейнера та замінюємо Grid на Flex 50/50
             const prevWidth = content.style.width;
             const prevMaxWidth = content.style.maxWidth;
-            const prevMargin = content.style.margin;
+            const prevGridDisplay = chartsContainer ? chartsContainer.style.display : '';
+            const prevGridGap = chartsContainer ? chartsContainer.style.gap : '';
 
-            // Фіксуємо ширину для гарантованого формування 50/50 колонок графіків
-            content.style.width = TARGET_WIDTH + 'px';
-            content.style.maxWidth = TARGET_WIDTH + 'px';
-            content.style.margin = '0 auto';
+            const RENDER_WIDTH = 1580; // оптимальна піксельна ширина під A3 Landscape
+            content.style.width = RENDER_WIDTH + 'px';
+            content.style.maxWidth = RENDER_WIDTH + 'px';
+            
+            if (chartsContainer) {
+                chartsContainer.style.display = 'flex';
+                chartsContainer.style.gap = '16px';
+                Array.from(chartsContainer.children).forEach(child => {
+                    child.style.flex = '1 1 0';
+                    child.style.width = '50%';
+                    child.style.boxSizing = 'border-box';
+                });
+            }
 
-            // Форсуємо синхронний resize для Chart.js перед знімком canvas
-            [chartOverall, chartCustom].forEach(c => {
-                if (c) {
-                    c.options.animation = false;
-                    c.resize();
-                }
-            });
-
-            // Очікуємо завершення циклу перемальовки браузера
-            await new Promise(r => setTimeout(r, 200));
+            // Даємо DOM 1 кадр оновитись
+            await new Promise(r => setTimeout(r, 60));
 
             const opt = {
-                margin: [5, 5, 5, 5],
+                margin: [6, 8, 6, 8],
                 filename: 'Executive_CashFlow_Analytics.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: {
-                    scale: 2, // scale 2 дає високу чіткість без надмірного споживання пам'яті та спотворень
+                    scale: 2,
                     useCORS: true,
                     backgroundColor: '#ffffff',
                     logging: false,
-                    width: TARGET_WIDTH,
-                    windowWidth: TARGET_WIDTH,
+                    width: RENDER_WIDTH,
+                    windowWidth: RENDER_WIDTH,
                     ignoreElements: (el) => el.classList && el.classList.contains('print-hide')
                 },
                 jsPDF: {
@@ -516,15 +539,25 @@
             try {
                 await html2pdf().set(opt).from(content).save();
             } catch (err) {
-                console.error("Помилка генерації PDF:", err);
+                console.error("PDF Export Error:", err);
             } finally {
-                // Повертаємо стилі екрану
+                // 3. Відновлюємо все у вихідний вигляд
+                tempImgOverall.remove();
+                tempImgCustom.remove();
+                canvas1.style.display = 'block';
+                canvas2.style.display = 'block';
+
                 content.style.width = prevWidth;
                 content.style.maxWidth = prevMaxWidth;
-                content.style.margin = prevMargin;
-                [chartOverall, chartCustom].forEach(c => {
-                    if (c) c.resize();
-                });
+
+                if (chartsContainer) {
+                    chartsContainer.style.display = prevGridDisplay;
+                    chartsContainer.style.gap = prevGridGap;
+                    Array.from(chartsContainer.children).forEach(child => {
+                        child.style.flex = '';
+                        child.style.width = '';
+                    });
+                }
             }
         }
 

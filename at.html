@@ -18,6 +18,9 @@
         .exec-table td { padding: 2px 2px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.5pt; }
         .exec-table td:first-child { text-align: left; font-weight: 500; white-space: nowrap; }
 
+        /* Клас для примусового приховування елементів на час генерації PDF */
+        .pdf-hidden { display: none !important; }
+
         @media print {
             @page { size: A3 landscape; margin: 0 !important; }
             body { background-color: #ffffff !important; padding: 0 !important; }
@@ -358,6 +361,7 @@
         function renderCharts(totInf, totOut, custInf, custOut) {
             const opt = {
                 responsive: true, maintainAspectRatio: false,
+                devicePixelRatio: 3, // Підвищена роздільна здатність графіків для чіткого PDF
                 scales: { y: { beginAtZero: true } },
                 plugins: { legend: { position: 'top', labels: { boxWidth: 12 } } }
             };
@@ -401,6 +405,11 @@
             const shortOutNames = selOut.map(k => shortNamesMap[k] || k).join(', ');
             const netCustom = customInflows.map((inf, idx) => inf - customOutflows[idx]);
 
+            // Кольори для чистого потоку (inline-стилі гарантують коректне відображення у PDF)
+            const POS_COLOR = '#047857'; // зелений (emerald-700)
+            const NEG_COLOR = '#b91c1c'; // червоний (red-700)
+            const netCellStyle = (v) => `color: ${v >= 0 ? POS_COLOR : NEG_COLOR}; font-weight: 700;`;
+
             let html = '';
             
             // 1. Доходи всього
@@ -431,16 +440,16 @@
                 </tr>`;
             });
 
-            // 3. Чистий потік всього (скорочено) з кольоровим підсвічуванням
+            // 3. Чистий потік всього — зелений/червоний шрифт залежно від знаку
             html += `<tr class="bg-slate-200 font-bold text-slate-900 border-t-2">
                 <td class="px-3 py-2">Чистий потік (Доходи - Видатки)</td>
-                ${netTotal.map(v => `<td class="px-2 py-2 text-right ${v >= 0 ? 'text-emerald-700 font-bold' : 'text-red-700 font-bold'}">${formatNum(v)}</td>`).join('')}
+                ${netTotal.map(v => `<td class="px-2 py-2 text-right" style="${netCellStyle(v)}">${formatNum(v)}</td>`).join('')}
             </tr>`;
 
-            // 4. Чистий потік (обрані) - (обрані) з кольоровим підсвічуванням
+            // 4. Чистий потік (обрані) — зелений/червоний шрифт залежно від знаку
             html += `<tr class="bg-slate-100 font-bold text-slate-800 border-t">
                 <td class="px-3 py-2">ЧП (${shortInfNames}) - (${shortOutNames})</td>
-                ${netCustom.map(v => `<td class="px-2 py-2 text-right ${v >= 0 ? 'text-emerald-700 font-bold' : 'text-red-700 font-bold'}">${formatNum(v)}</td>`).join('')}
+                ${netCustom.map(v => `<td class="px-2 py-2 text-right" style="${netCellStyle(v)}">${formatNum(v)}</td>`).join('')}
             </tr>`;
 
             document.getElementById('tableBodyRows').innerHTML = html;
@@ -448,13 +457,30 @@
 
         function generatePDF() {
             window.scrollTo(0, 0);
+
+            // 1. Приховуємо панелі вибору статей та інші службові елементи (.print-hide) на час формування PDF
+            const hiddenEls = document.querySelectorAll('#dashboardContent .print-hide');
+            hiddenEls.forEach(el => el.classList.add('pdf-hidden'));
+            const restore = () => hiddenEls.forEach(el => el.classList.remove('pdf-hidden'));
+
+            // 2. Підвищена чіткість: більший scale, letterRendering та фіксована ширина рендеру
             html2pdf().set({
-                margin: 0,
+                margin: [4, 4, 4, 4],
                 filename: `Analytics_CashFlow.pdf`,
-                image: { type: 'png', quality: 0.98 },
-                html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
+                image: { type: 'png', quality: 1 },
+                html2canvas: {
+                    scale: 4,
+                    dpi: 300,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    letterRendering: true,
+                    windowWidth: 1780,
+                    scrollX: 0,
+                    scrollY: 0
+                },
                 jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: true }
-            }).from(document.getElementById('dashboardContent')).save();
+            }).from(document.getElementById('dashboardContent')).save().then(restore).catch(restore);
         }
 
         // Календар

@@ -452,27 +452,47 @@
             document.getElementById('tableBodyRows').innerHTML = html;
         }
 
-        function generatePDF() {
+        async function generatePDF() {
             window.scrollTo(0, 0);
+            const content = document.getElementById('dashboardContent');
 
-            html2pdf().set({
-                margin: [4, 4, 4, 4],
-                filename: `Analytics_CashFlow.pdf`,
-                image: { type: 'png', quality: 1 },
-                html2canvas: {
-                    scale: 4,                 // Підвищена чіткість тексту та таблиці
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    letterRendering: true,
-                    // Приховуємо у PDF усі службові елементи (панель вибору статей тощо).
-                    // ignoreElements надійніший за display:none — html2canvas взагалі не рендерить ці вузли.
-                    ignoreElements: (el) => el.classList && el.classList.contains('print-hide')
-                    // windowWidth навмисно НЕ задаємо: саме він обрізав правий графік.
-                    // Без нього html2canvas визначає повну ширину контенту самостійно.
-                },
-                jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: true }
-            }).from(document.getElementById('dashboardContent')).save();
+            // Детерміновано фіксуємо ширину дашборду для захоплення,
+            // щоб обидва графіки рівномірно вмістились і не наїжджали один на одного.
+            const PDF_WIDTH = 1750;
+            const prev = { width: content.style.width, maxWidth: content.style.maxWidth };
+            content.style.width = PDF_WIDTH + 'px';
+            content.style.maxWidth = PDF_WIDTH + 'px';
+
+            // Перераховуємо розміри графіків під нову ширину колонок (без анімації),
+            // інакше canvas зберігає стару ширину й перекриває сусідній графік.
+            [chartOverall, chartCustom].forEach(c => { if (c) { c.options.animation = false; c.resize(); } });
+
+            // Даємо браузеру перерахувати макет і перемалювати графіки
+            await new Promise(r => setTimeout(r, 350));
+
+            try {
+                await html2pdf().set({
+                    margin: [6, 6, 6, 6],
+                    filename: `Analytics_CashFlow.pdf`,
+                    image: { type: 'png', quality: 1 },
+                    html2canvas: {
+                        scale: 3,                       // Чіткість тексту та таблиці
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        letterRendering: true,
+                        windowWidth: PDF_WIDTH + 60,    // Ширина рендеру збігається з шириною контенту
+                        // Приховуємо у PDF усі службові елементи (панель вибору статей тощо)
+                        ignoreElements: (el) => el.classList && el.classList.contains('print-hide')
+                    },
+                    jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: true }
+                }).from(content).save();
+            } finally {
+                // Повертаємо екранний макет у вихідний стан
+                content.style.width = prev.width;
+                content.style.maxWidth = prev.maxWidth;
+                [chartOverall, chartCustom].forEach(c => { if (c) c.resize(); });
+            }
         }
 
         // Календар

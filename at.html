@@ -11,9 +11,21 @@
         body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; }
         .executive-container { max-width: 1750px; margin: 0 auto; background-color: #ffffff; padding: 20px 20px; box-sizing: border-box; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         
-        .exec-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; table-layout: fixed; }
-        .exec-table th { font-size: 8.5pt; color: #64748b; font-weight: 600; padding: 3px 2px; border-bottom: 1.5px solid #94a3b8; text-align: right; background-color: #f8fafc; overflow: hidden; }
-        .exec-table th:first-child { text-align: left; width: 220px; }
+        .exec-table { 
+            width: 100% !important; 
+            border-collapse: collapse; 
+            font-size: 8pt; 
+            table-layout: fixed; 
+        }
+        .exec-table th, .exec-table td {
+            width: 4.5%; /* Рівномірний розподіл 17 колонок періодів */
+            padding: 2px 2px;
+        }
+        .exec-table th:first-child, .exec-table td:first-child { 
+            text-align: left; 
+            width: 23.5% !important; /* Фіксована ширина під довгі назви статей */
+            white-space: normal; /* Дозволяє перенос слів, якщо назва статті довга */
+        }
         .exec-table th .th-period { display: block; font-size: 6pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.3px; white-space: nowrap; line-height: 1.1; margin-top: 1px; }
         .exec-table td { padding: 2px 2px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.5pt; }
         .exec-table td:first-child { text-align: left; font-weight: 500; white-space: nowrap; }
@@ -456,42 +468,63 @@
             window.scrollTo(0, 0);
             const content = document.getElementById('dashboardContent');
 
-            // Детерміновано фіксуємо ширину дашборду для захоплення,
-            // щоб обидва графіки рівномірно вмістились і не наїжджали один на одного.
-            const PDF_WIDTH = 1750;
-            const prev = { width: content.style.width, maxWidth: content.style.maxWidth };
-            content.style.width = PDF_WIDTH + 'px';
-            content.style.maxWidth = PDF_WIDTH + 'px';
+            // Базова робоча ширина макета для рендерингу A3 Landscape (без зовнішніх полів)
+            const TARGET_WIDTH = 1600;
 
-            // Перераховуємо розміри графіків під нову ширину колонок (без анімації),
-            // інакше canvas зберігає стару ширину й перекриває сусідній графік.
-            [chartOverall, chartCustom].forEach(c => { if (c) { c.options.animation = false; c.resize(); } });
+            // Зберігаємо вихідні стилі
+            const prevWidth = content.style.width;
+            const prevMaxWidth = content.style.maxWidth;
+            const prevMargin = content.style.margin;
 
-            // Даємо браузеру перерахувати макет і перемалювати графіки
-            await new Promise(r => setTimeout(r, 350));
+            // Фіксуємо ширину для гарантованого формування 50/50 колонок графіків
+            content.style.width = TARGET_WIDTH + 'px';
+            content.style.maxWidth = TARGET_WIDTH + 'px';
+            content.style.margin = '0 auto';
+
+            // Форсуємо синхронний resize для Chart.js перед знімком canvas
+            [chartOverall, chartCustom].forEach(c => {
+                if (c) {
+                    c.options.animation = false;
+                    c.resize();
+                }
+            });
+
+            // Очікуємо завершення циклу перемальовки браузера
+            await new Promise(r => setTimeout(r, 200));
+
+            const opt = {
+                margin: [5, 5, 5, 5],
+                filename: 'Executive_CashFlow_Analytics.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2, // scale 2 дає високу чіткість без надмірного споживання пам'яті та спотворень
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    width: TARGET_WIDTH,
+                    windowWidth: TARGET_WIDTH,
+                    ignoreElements: (el) => el.classList && el.classList.contains('print-hide')
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a3',
+                    orientation: 'landscape',
+                    compress: true
+                }
+            };
 
             try {
-                await html2pdf().set({
-                    margin: [6, 6, 6, 6],
-                    filename: `Analytics_CashFlow.pdf`,
-                    image: { type: 'png', quality: 1 },
-                    html2canvas: {
-                        scale: 3,                       // Чіткість тексту та таблиці
-                        useCORS: true,
-                        backgroundColor: '#ffffff',
-                        logging: false,
-                        letterRendering: true,
-                        windowWidth: PDF_WIDTH + 60,    // Ширина рендеру збігається з шириною контенту
-                        // Приховуємо у PDF усі службові елементи (панель вибору статей тощо)
-                        ignoreElements: (el) => el.classList && el.classList.contains('print-hide')
-                    },
-                    jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: true }
-                }).from(content).save();
+                await html2pdf().set(opt).from(content).save();
+            } catch (err) {
+                console.error("Помилка генерації PDF:", err);
             } finally {
-                // Повертаємо екранний макет у вихідний стан
-                content.style.width = prev.width;
-                content.style.maxWidth = prev.maxWidth;
-                [chartOverall, chartCustom].forEach(c => { if (c) c.resize(); });
+                // Повертаємо стилі екрану
+                content.style.width = prevWidth;
+                content.style.maxWidth = prevMaxWidth;
+                content.style.margin = prevMargin;
+                [chartOverall, chartCustom].forEach(c => {
+                    if (c) c.resize();
+                });
             }
         }
 

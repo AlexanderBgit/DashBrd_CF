@@ -215,7 +215,7 @@
     let DATA = null;
     let charts = {};
     let detailKey = null;
-    let collapsed = {}; // Зберігає стан згортання по унікальному key
+    let collapsed = {}; // Зберігає стан згортання (true/false) по унікальному key
     let M = null;
 
     // Стан календаря
@@ -230,7 +230,7 @@
     };
     const FIN_EXCLUDE = [/отримано\s+кредитн/i, /повернення\s+кредиту/i];
 
-    // ---------- утиліти ----------
+    // ---------- Утиліти ----------
     const DAY = 86400000;
     const isoAdd = (iso, days) => new Date(Date.parse(iso + 'T00:00:00Z') + days * DAY).toISOString().slice(0, 10);
     const dmy = iso => iso.split('-').reverse().join('.');
@@ -265,7 +265,7 @@
         el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + cls;
     }
 
-    // ---------- АДАПТЕР ХМАРНИХ ДАНИХ (Дерево -> Плоский масив для Drill-Down) ----------
+    // ---------- АДАПТЕР ХМАРНИХ ДАНИХ (Групування та Drill-Down) ----------
     function extractSnapshot(jsonObj, snapshotDateIso) {
         const snap = jsonObj.snapshot || jsonObj;
         if (!snap || !snap.tree) throw new Error("Не знайдено дерево даних у JSON");
@@ -274,37 +274,126 @@
         const forecastKeys = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
         const labels = forecastKeys.map(k => cols[k] && cols[k].date_range ? cols[k].date_range : k);
 
-        const inflowsBlock = snap.tree.find(n => n.name === "Надходження");
-        const outflowsBlock = snap.tree.find(n => n.name === "Видатки");
-
-        // Рекурсивно перетворюємо дерево у плоский список статей, зв'язуючи їх по унікальному KEY
-        const flattenTree = (nodes, parentKey = null) => {
-            let result = [];
-            if (!nodes) return result;
-
+        let allRaw = [];
+        const flatten = (nodes, type, parentKey = null) => {
             nodes.forEach(node => {
-                const code = node.code || node.no || ""; 
-                const name = (node.name || "").replace(/ СП УКО/g, '').trim(); 
-                const key = node.key || (parentKey + "_" + name); // Використовуємо key з JSON
+                const code = node.code || node.no || "";
+                const name = (node.name || "").trim();
+                const key = type + '_' + (node.key || name + '_' + code);
                 const values = forecastKeys.map(k => (node.values && node.values[k]) ? node.values[k] : 0);
-
-                const item = { code: String(code), name, key, values };
-                if (parentKey) item.parent = String(parentKey);
-
-                if (name) result.push(item);
-
+                
+                allRaw.push({ type, code: String(code), name, key, values, parent: parentKey, isVirtual: false });
+                
                 if (node.children && node.children.length > 0) {
-                    result = result.concat(flattenTree(node.children, key));
+                    flatten(node.children, type, key);
                 }
             });
-            return result;
         };
+
+        const inflowsBlock = snap.tree.find(n => n.name === "Надходження");
+        if (inflowsBlock && inflowsBlock.children) flatten(inflowsBlock.children, 'inflows');
+
+        const outflowsBlock = snap.tree.find(n => n.name === "Видатки");
+        if (outflowsBlock && outflowsBlock.children) flatten(outflowsBlock.children, 'outflows');
+
+        // --- 1. ЯВНІ ГРУПУВАННЯ ---
+        const findN = (type, nameStr, exact=false) => allRaw.find(i => i.type === type && (exact ? i.name === nameStr : i.name.toLowerCase().includes(nameStr.toLowerCase())));
+        
+        // 1.1 Інші комерційні контрагенти
+        const grpComm = findN('inflows', 'Інші комерційні контрагенти', true);
+        if (grpComm) {
+            ['2.1.01.01', 'Мазут', 'СГ комерц', 'СГ СП УКО'].forEach(s => {
+                const child = s === '2.1.01.01' ? allRaw.find(i => i.code === s && i.type === 'inflows') : findN('inflows', s);
+                if (child && child.key !== grpComm.key) child.parent = grpComm.key;
+            });
+        }
+
+        // 1.2 Повернення покриття
+        const grpPov = findN('inflows', 'Повернення покриття', true);
+        const grpPostImp = allRaw.find(i => i.type === 'inflows' && i.name.toLowerCase() === 'постімпорт') || 
+                           allRaw.find(i => i.type === 'inflows' && i.name.toLowerCase().includes('постімпорт') && !i.name.toLowerCase().includes('банк'));
+        if (grpPov) {
+            ['банківські гарантії', 'кредит', 'акредитиви', 'податкові векселі'].forEach(s => {
+                const child = allRaw.find(i => i.type==='inflows' && i.name.toLowerCase().includes(s.toLowerCase()) && !i.name.toLowerCase().includes('постімпорт'));
+                if (child && child.key !== grpPov.key) child.parent = grpPov.key;
+            });
+            if (grpPostImp) {
+                grpPostImp.parent = grpPov.key;
+                ['Укргазбанк', 'Ощадбанк', 'Сенс Банк', 'Укрексімбанк', 'МТБ', 'ПУМБ', 'курсові', 'Приват Банк'].forEach(s => {
+                    const child = allRaw.find(i => i.type==='inflows' && i.name.toLowerCase().includes(s.toLowerCase()) && i.name.toLowerCase().includes('постімпорт') && i.key !== grpPostImp.key);
+                    if (child) child.parent = grpPostImp.key;
+                });
+            }
+        }
+
+        // 1.3 Інші надходження
+        const grpOtherInf = findN('inflows', 'Інші надходження', true);
+        if (grpOtherInf) {
+            const infChildren = ['Відсотки на залишки', 'Повернення коштів за НП', 'Повернення коштів УТН', 'Послуги підготовки нафти та газу', 'Послуги з видобутку нафти і газу', 'Оренда свердловин', 'Послуги з видобутку нафти і газу СП УКО', 'Від спільної діяльності (прибуток)', 'Внутрішні надходження'];
+            infChildren.forEach(s => {
+                let child = findN('inflows', s, true);
+                if (!child) child = findN('inflows', s);
+                if (child && child.key !== grpOtherInf.key) child.parent = grpOtherInf.key;
+            });
+        }
+
+        // --- 2. ГРУПУВАННЯ ПО КОДУ CF (X.X.XX) ---
+        const virtualParents = [];
+        allRaw.forEach(item => {
+            if (!item.code) return;
+            // Шукаємо префікс перших трьох блоків (наприклад, 2.2.04)
+            const m = item.code.match(/^(\d+\.\d+\.\d+)\./);
+            if (m) {
+                const prefix = m[1];
+                const originalParentKey = item.parent;
+                
+                // Перевіряємо чи є вже такий вузол під цим же батьком
+                let pNode = allRaw.find(i => i.code === prefix && i.parent === originalParentKey);
+                if (!pNode) pNode = virtualParents.find(i => i.code === prefix && i.parent === originalParentKey);
+
+                if (!pNode) {
+                    pNode = {
+                        type: item.type,
+                        code: prefix,
+                        name: `Група ${prefix}`,
+                        key: `${item.type}_virt_${prefix}_${originalParentKey}`,
+                        values: Array(13).fill(0),
+                        parent: originalParentKey,
+                        isVirtual: true
+                    };
+                    virtualParents.push(pNode);
+                }
+                item.parent = pNode.key;
+            }
+        });
+        allRaw.push(...virtualParents);
+
+        // --- 3. ПІДРАХУНОК СУМ ДЛЯ ВІРТУАЛЬНИХ ГРУП ---
+        function computeVirtualValues(nodeKey) {
+            const node = allRaw.find(i => i.key === nodeKey);
+            if (!node) return Array(13).fill(0);
+            
+            const children = allRaw.filter(i => i.parent === nodeKey);
+            if (node.isVirtual) {
+                let sums = Array(13).fill(0);
+                children.forEach(child => {
+                    const childVals = child.isVirtual ? computeVirtualValues(child.key) : child.values;
+                    sums = sums.map((v, idx) => v + childVals[idx]);
+                });
+                node.values = sums;
+                return sums;
+            } else {
+                children.forEach(child => { if(child.isVirtual) computeVirtualValues(child.key); });
+                return node.values;
+            }
+        }
+        allRaw.filter(i => !i.parent).forEach(i => computeVirtualValues(i.key));
 
         return {
             start: snapshotDateIso,
-            inflows: inflowsBlock && inflowsBlock.children ? flattenTree(inflowsBlock.children) : [],
+            inflows: allRaw.filter(i => i.type === 'inflows'),
             inflowsLabels: labels,
-            outflows: outflowsBlock && outflowsBlock.children ? flattenTree(outflowsBlock.children) : [],
+            outflows: allRaw.filter(i => i.type === 'outflows'),
             outflowsLabels: labels
         };
     }
@@ -337,11 +426,13 @@
             const snapPrev = extractSnapshot(jsonPrev, prevDateIso);
 
             DATA = { current: snapCur, previous: snapPrev };
-            detailKey = null; collapsed = {};
             
+            // Скидаємо стан і рендеримо
+            detailKey = null; 
+            collapsed = {}; 
             render();
+            
             setStatus(`Дані оновлено (${dmy(curDateIso)} vs ${dmy(prevDateIso)})`, 'bg-emerald-100 text-emerald-800');
-
         } catch (err) {
             console.error(err);
             setStatus('Помилка хмари: ' + err.message, 'bg-red-100 text-red-800');
@@ -394,7 +485,6 @@
                     });
                     a.eff[role] = eff;
                 });
-                // Перевіряємо дітей по KEY
                 a.hasKids = arts.some(c => c.parent && c.parent === a.key);
                 a.byWeek = {
                     cur: weeks.map(w => w.cur != null ? a.eff.cur[w.cur] : null),
@@ -402,7 +492,7 @@
                 };
                 a.onlyIn = !a.raw.cur ? 'prev' : (!a.raw.prev ? 'cur' : null);
                 
-                // Рахуємо глибину для відступів у таблиці
+                // Розрахунок глибини для відступів у Drill-Down
                 let depth = 0;
                 let p = arts.find(x => x.key === a.parent);
                 while(p) { depth++; p = arts.find(x => x.key === p.parent); }
@@ -604,9 +694,12 @@
         });
     }
 
+    // ---------- РЕНДЕР ТАБЛИЦІ (DRILL-DOWN) ----------
     function renderTable() {
         const mode = document.getElementById('tableMode').value;
-        const showKids = document.getElementById('showKids').checked;
+        const showKidsObj = document.getElementById('showKids');
+        const showKids = showKidsObj ? showKidsObj.checked : false; 
+        
         const cw = M.common;
         const idx = cw.map(w => M.weeks.indexOf(w));
         const P = dmy(M.prev.start), C = dmy(M.cur.start);
@@ -641,7 +734,7 @@
         const rowClass = a => {
             const c = [];
             if (a.isTotal) c.push('font-bold');
-            else if (a.depth === 0) c.push('sub');
+            else if (a.depth === 0) c.push('sub font-semibold');
             else c.push('child text-xs');
             if (a.excluded) c.push('excluded');
             c.push('clickable');
@@ -653,17 +746,16 @@
         
         const nameCell = a => {
             let toggle = '';
-            
-            // Якщо стан спеціально не визначено (undefined) - використовуємо глобальний showKids. 
-            const isCol = collapsed[a.key] !== undefined ? collapsed[a.key] : (!showKids && a.depth === 0);
+            // Якщо стан не визначено - згорнуто (true), якщо showKids вимкнено. Всі групи стартують згорнутими.
+            const isCol = collapsed[a.key] !== undefined ? collapsed[a.key] : !showKids;
             
             if (a.hasKids) {
                 toggle = `<span class="toggle-kids" onclick="event.stopPropagation();collapsed['${a.key}']=!${isCol};renderTable()">${isCol ? '▸' : '▾'}</span>`;
             }
             
-            const code = a.code && !a.isTotal ? `<span class="text-slate-400 mr-1">${a.code}</span>` : '';
+            const code = a.code && !a.isTotal && a.code !== "null" ? `<span class="text-slate-400 mr-1">${a.code}</span>` : '';
             const tag = a.onlyIn ? ` <span class="text-[9px] text-amber-600">(лише ${a.onlyIn === 'cur' ? C : P})</span>` : '';
-            const pad = a.depth > 0 ? `padding-left: ${16 + a.depth * 14}px;` : '';
+            const pad = a.depth > 0 ? `padding-left: ${6 + a.depth * 14}px;` : 'padding-left: 6px;';
             
             return `<td style="${bg(a)} ${pad}" title="${a.name}">${toggle}${code}${a.name}${tag}</td>`;
         };
@@ -687,7 +779,7 @@
             }
         };
 
-        // Функція перевірки чи видима стаття (всі батьки розгорнуті)
+        // Функція перевірки чи всі батьки розгорнуті
         const isParentCollapsed = (parentKey) => {
             if (collapsed[parentKey] !== undefined) return collapsed[parentKey];
             return !showKids;
@@ -790,9 +882,14 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        // За умовчанням усі групи згорнуто, тому знімаємо чекбокс розгортання
+        const showKidsCheckbox = document.getElementById('showKids');
+        if (showKidsCheckbox) showKidsCheckbox.checked = false;
+
         // Стартове завантаження даних за 07.09.2026 
         selectDate(currentReportDate);
     });
+    </script>
     </script>
 </body>
 </html>

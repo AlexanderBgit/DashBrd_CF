@@ -24,7 +24,6 @@
             margin: 0;
         }
         
-        /* Точні розміри та структура листа A3 Landscape (1587 x 1122 px) */
         .executive-container { 
             width: 1587px; 
             min-height: 1122px; 
@@ -38,7 +37,6 @@
             gap: 14px;
         }
         
-        /* Таблиця на 100% ширини сторінки з фіксованими колонками */
         .exec-table { 
             width: 100% !important; 
             border-collapse: collapse; 
@@ -115,7 +113,6 @@
 </head>
 <body>
 
-    <!-- Верхня панель керування -->
     <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
         <div>
             <h1 class="text-lg font-bold text-slate-800">Executive Cash Flow Dashboard — Аналітика</h1>
@@ -161,7 +158,6 @@
 
     <div class="executive-container" id="dashboardContent">
         
-        <!-- Заголовок для експорту в PDF .-->
         <div class="flex justify-between items-center border-b border-slate-200 pb-2">
             <div>
                 <h1 class="text-xl font-bold text-slate-800">Executive Cash Flow Dashboard — Аналітика</h1>
@@ -170,7 +166,6 @@
             <div class="text-xs text-slate-400 font-medium">Формат А3 · млн грн</div>
         </div>
 
-        <!-- Панель мультиселектів статей -->
         <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-center justify-between print-hide">
             <div class="flex flex-wrap gap-4 items-center">
                 <div class="flex items-center gap-2">
@@ -182,7 +177,8 @@
                 </div>
                 <div id="inflowCustomContainer" class="hidden flex flex-wrap items-center gap-3 bg-white p-2 border rounded text-xs">
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафта" checked onchange="updateChartAndTable()"> Нафта</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Газ природній" checked onchange="updateChartAndTable()"> Газ</label>
+                    <!-- Виправлено назву "Газ природній" на "Газ природний" -->
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Газ природний" checked onchange="updateChartAndTable()"> Газ</label>
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти ОПТ" checked onchange="updateChartAndTable()"> Нафтопродукти ОПТ</label>
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти АОЗ" checked onchange="updateChartAndTable()"> Нафтопродукти АОЗ</label>
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти роздріб АЗС" checked onchange="updateChartAndTable()"> Нафтопродукти роздріб АЗС</label>
@@ -204,7 +200,6 @@
             </div>
         </div>
 
-        <!-- Графіки: класичний flex 50/50, щоб уникнути багів html2canvas з CSS Grid -->
         <div class="flex gap-4 w-full" id="chartsRow">
             <div class="w-1/2 bg-white p-3 rounded-lg border border-slate-200 flex flex-col">
                 <h3 class="text-center font-bold text-xs text-slate-700 mb-2">ВСЬОГО Доходи та Витрати, млн грн</h3>
@@ -220,7 +215,6 @@
             </div>
         </div>
 
-        <!-- Таблиця -->
         <div class="bg-white p-3 rounded-lg border border-slate-200 w-full overflow-hidden">
             <h3 class="font-bold text-xs text-slate-700 mb-2">Таблиця. Структура (Історія з хмари + Прогноз)</h3>
             <table class="exec-table" id="structTable">
@@ -240,10 +234,11 @@
         let currentReportDate = "2026-08-24";
         let calViewDate = new Date(2026, 7, 24);
 
+        // Виправлено назву "Газ природній" на "Газ природний" згідно JSON
         let activeCloudModel = {
             inflows: {
                 "Нафта": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
-                "Газ природній": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
+                "Газ природний": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
                 "Нафтопродукти ОПТ": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
                 "Нафтопродукти АОЗ": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
                 "Нафтопродукти роздріб АЗС": { history: Array(4).fill(0), forecast: Array(13).fill(0) }
@@ -256,7 +251,7 @@
 
         const shortNamesMap = {
             "Нафта": "НФ",
-            "Газ природній": "ГП",
+            "Газ природний": "ГП", // Виправлено
             "Нафтопродукти ОПТ": "ОПТ",
             "Нафтопродукти АОЗ": "АОЗ",
             "Нафтопродукти роздріб АЗС": "АЗС",
@@ -319,14 +314,28 @@
             if (parts.length !== 3 || parts.some(isNaN)) return [isoDate];
             const [y, m, d] = parts;
             const out = [];
-            for (let i = 1; i <= 4; i++) {
+            // Виправлено: нам потрібні зрізи тільки для T-3, T-2, T-1 дат
+            for (let i = 1; i <= 3; i++) {
                 const dt = new Date(y, m - 1, d - i * 7);
                 const yy = dt.getFullYear();
                 const mm = String(dt.getMonth() + 1).padStart(2, '0');
                 const dd = String(dt.getDate()).padStart(2, '0');
                 out.push(`${yy}-${mm}-${dd}`);
             }
-            return out.reverse();
+            return out.reverse(); 
+        }
+
+        // Функція для безпечного отримання фактичних значень без підміни нуля
+        function getFactValue(node) {
+            if (!node || !node.values) return 0;
+            // Строга перевірка на undefined/null для факту, щоб не губити нулі
+            if (node.values.Tm1_fact !== undefined && node.values.Tm1_fact !== null) {
+                return Math.round(node.values.Tm1_fact / 1000000);
+            }
+            if (node.values.Tm1_plan !== undefined && node.values.Tm1_plan !== null) {
+                return Math.round(node.values.Tm1_plan / 1000000);
+            }
+            return 0;
         }
 
         async function loadFullAnalyticsModel(selectedDateIso) {
@@ -337,6 +346,7 @@
             calculateDateRanges(selectedDateIso);
 
             try {
+                // Витягує 3 попередні дати (T-3, T-2, T-1)
                 const histDates = getHistoricalDates(selectedDateIso);
 
                 const historySnapshots = await Promise.all(
@@ -369,26 +379,36 @@
                 const forecastCols = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
                 inflowNames.forEach(name => {
-                    const histArr = historySnapshots.map(snap => {
+                    const histArrFromSnaps = historySnapshots.map(snap => {
                         if (!snap || !snap.tree) return 0;
                         const n = findNodeInTree(snap.tree, name);
-                        return n && n.values ? Math.round((n.values.Tm1_fact || n.values.Tm1_plan || 0) / 1000000) : 0;
+                        return getFactValue(n);
                     });
 
+                    // Дані для поточного T-1 беремо з основного (теперішнього) зрізу
                     const mainNode = findNodeInTree(mainTree, name);
+                    const mainTm1Fact = getFactValue(mainNode);
+                    
+                    // Об'єднуємо [T-4, T-3, T-2] з [T-1]
+                    const histArr = [...histArrFromSnaps, mainTm1Fact];
+
                     const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((mainNode.values[col] || 0) / 1000000) : 0);
 
                     activeCloudModel.inflows[name] = { history: histArr, forecast: foreArr };
                 });
 
                 outflowNames.forEach(name => {
-                    const histArr = historySnapshots.map(snap => {
+                    const histArrFromSnaps = historySnapshots.map(snap => {
                         if (!snap || !snap.tree) return 0;
                         const n = findNodeInTree(snap.tree, name);
-                        return n && n.values ? Math.round((n.values.Tm1_fact || n.values.Tm1_plan || 0) / 1000000) : 0;
+                        return getFactValue(n);
                     });
 
                     const mainNode = findNodeInTree(mainTree, name);
+                    const mainTm1Fact = getFactValue(mainNode);
+                    
+                    const histArr = [...histArrFromSnaps, mainTm1Fact];
+
                     const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((mainNode.values[col] || 0) / 1000000) : 0);
 
                     activeCloudModel.outflows[name] = { history: histArr, forecast: foreArr };
@@ -508,10 +528,8 @@
 
             let html = '';
             
-            // 1. Доходи всього
             html += `<tr class="bg-emerald-50 font-bold"><td class="px-2 py-1.5">Надходження всього</td>${totInf.map(v => `<td class="px-1 py-1.5 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
 
-            // Деталізація доходів
             Object.keys(activeCloudModel.inflows).forEach(k => {
                 const isSel = selInf.includes(k);
                 const item = activeCloudModel.inflows[k];
@@ -522,10 +540,8 @@
                 </tr>`;
             });
 
-            // 2. Видатки всього
             html += `<tr class="bg-orange-50 font-bold border-t-2 border-slate-300"><td class="px-2 py-1.5">Видатки всього</td>${totOut.map(v => `<td class="px-1 py-1.5 text-right">${formatNum(v)}</td>`).join('')}</tr>`;
 
-            // Деталізація видатків
             Object.keys(activeCloudModel.outflows).forEach(k => {
                 const isSel = selOut.includes(k);
                 const item = activeCloudModel.outflows[k];
@@ -536,13 +552,11 @@
                 </tr>`;
             });
 
-            // 3. Чистий потік всього
             html += `<tr class="bg-slate-200 font-bold text-slate-900 border-t-2 border-slate-400">
                 <td class="px-2 py-1.5">Чистий потік (Доходи - Видатки)</td>
                 ${netTotal.map(v => `<td class="px-1 py-1.5 text-right" style="${netCellStyle(v)}">${formatNum(v)}</td>`).join('')}
             </tr>`;
 
-            // 4. Чистий потік (обрані)
             html += `<tr class="bg-slate-100 font-bold text-slate-800 border-t border-slate-300">
                 <td class="px-2 py-1.5">ЧП (${shortInfNames}) - (${shortOutNames})</td>
                 ${netCustom.map(v => `<td class="px-1 py-1.5 text-right" style="${netCellStyle(v)}">${formatNum(v)}</td>`).join('')}
@@ -551,11 +565,9 @@
             document.getElementById('tableBodyRows').innerHTML = html;
         }
 
-        // Побудова PDF за еталонними налаштуваннями
         function generatePDF() {
             window.scrollTo(0, 0);
             
-            // Підвищуємо роздільну здатність полотна для ультрачіткості графіка
             [chartOverall, chartCustom].forEach(c => {
                 if (c) {
                     c.options.devicePixelRatio = 3;
@@ -575,7 +587,6 @@
                         logging: false,
                         backgroundColor: '#ffffff',
                         onclone: (doc) => {
-                            // Безпечне очищення непотрібних блоків
                             doc.querySelectorAll('.print-hide').forEach(el => el.remove());
                             const cont = doc.getElementById('dashboardContent');
                             if (cont) {
@@ -587,7 +598,6 @@
                     },
                     jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: true }
                 }).from(document.getElementById('dashboardContent')).save().then(() => {
-                    // Відновлюємо нормальний devicePixelRatio екрана
                     [chartOverall, chartCustom].forEach(c => {
                         if (c) {
                             c.options.devicePixelRatio = Math.max(2, window.devicePixelRatio || 1);
@@ -599,7 +609,6 @@
             }));
         }
 
-        // Календар
         function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
         function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
         

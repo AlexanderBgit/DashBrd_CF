@@ -250,15 +250,29 @@
         "Комісія по постімпорту", "Комісія за обслуговування акредитиву"
     ];
 
-    // Словник для розшифровки кодів CF у зрозумілі назви груп
+    // Повний словник для розшифровки кодів CF у зрозумілі назви груп
     const CF_GROUP_NAMES = {
+        // --- Надходження (Операційні, Інвестиційні, Фінансові) ---
+        "2.1.01": "Надходження від реалізації продукції/товарів",
+        "2.1.02": "Надходження від наданих послуг",
+        "2.1.03": "Інші операційні надходження",
+        "2.1.04": "Внутрішні надходження",
+        "1.1.01": "Надходження від інвестиційної діяльності",
+        "3.1.02": "Отримання кредитів",
+        "3.1.04": "Відсотки на залишки",
+        "3.1.06": "Оплата по вимозі (гарантія)",
+        
+        // --- Видатки Операційні ---
         "2.2.01": "Державні податки та збори",
         "2.2.02": "Місцеві податки",
         "2.2.03": "Заробітна плата та нарахування",
         "2.2.04": "Придбання сировини, матеріалів та товарів",
         "2.2.05": "Роботи та послуги (операційні)",
+        "2.2.06": "Витрати на збут",
         "2.2.07": "Інші операційні витрати",
         "2.2.08": "Інші витрати",
+        
+        // --- Видатки Інвестиційні ---
         "1.2.01": "Обладнання виробниче",
         "1.2.02": "Транспортні засоби",
         "1.2.03": "Електрообладнання",
@@ -274,7 +288,8 @@
         "1.2.13": "Будівництво та ремонт (капітальні)",
         "1.2.14": "Охорона праці та безпека",
         "1.2.15": "Корпоративні права",
-        "3.1.02": "Отримання кредитів",
+        
+        // --- Видатки Фінансові ---
         "3.2.01": "Повернення кредитів",
         "3.2.02": "Відсотки за кредитами",
         "3.2.03": "Комісії за кредитами/гарантіями"
@@ -424,7 +439,6 @@
                 if (pNode && pNode.key !== item.key) {
                     item.parent = pNode.key;
                 } else if (!pNode) {
-                    // Використовуємо словник для генерації красивої назви
                     const groupName = CF_GROUP_NAMES[prefix] || `Група ${prefix}`;
                     
                     pNode = {
@@ -829,7 +843,7 @@
         const rowClass = a => {
             const c = [];
             if (a.isTotal) c.push('font-bold');
-            else if (a.depth === 0) c.push('sub');
+            else if (a.depth === 0) c.push('sub font-semibold');
             else c.push('child text-xs');
             if (a.excluded) c.push('excluded');
             c.push('clickable');
@@ -840,7 +854,6 @@
         const bg = a => a.key === '__inf' ? 'background:#ecfdf5;' : a.key === '__out' ? 'background:#fff7ed;' : a.key === '__net' ? 'background:#e2e8f0;' : '';
         
         const nameCell = a => {
-            // Якщо стан не визначено - згорнуто (true), якщо showKids вимкнено.
             const isCol = collapsed[a.key] !== undefined ? collapsed[a.key] : !showKids;
             
             let toggle = `<span class="toggle-placeholder"></span>`; 
@@ -874,10 +887,9 @@
             }
         };
 
-        // Функція перевірки чи всі батьки розгорнуті
         const isParentCollapsed = (parentKey) => {
             if (collapsed[parentKey] !== undefined) return collapsed[parentKey];
-            return !showKids; // За замовчуванням згорнуто
+            return !showKids; 
         };
 
         const isVisible = (a, artsList) => {
@@ -895,7 +907,7 @@
             emit(total);
             arts.forEach(a => {
                 if (a.excluded) return;
-                if (!isVisible(a, arts)) return; // Перевірка видимості рекурсивно по дереву
+                if (!isVisible(a, arts)) return; 
                 if (a.parent && a.isZero) return;
                 emit(a);
             });
@@ -977,7 +989,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Знімаємо чекбокс «Показувати субстатті», щоб усе було згорнуто за замовчуванням
         const showKidsCheckbox = document.getElementById('showKids');
         if (showKidsCheckbox) showKidsCheckbox.checked = false;
 

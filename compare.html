@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <style>
+<style>
         * {
             font-style: normal !important;
             -webkit-print-color-adjust: exact !important;
@@ -75,7 +75,7 @@
         .exec-table tr.clickable:hover td { background-color: #eef2ff; }
         .exec-table tr.selected td:first-child { box-shadow: inset 3px 0 0 #4f46e5; }
         
-        /* Нові кнопки розгортання + / - */
+        /* Кнопки розгортання + / - */
         .toggle-kids { 
             display: inline-flex; align-items: center; justify-content: center;
             width: 16px; height: 16px; font-size: 14px; font-weight: bold; line-height: 1;
@@ -83,7 +83,7 @@
             cursor: pointer; user-select: none; margin-right: 6px; vertical-align: text-bottom;
         }
         .toggle-kids:hover { background-color: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
-        .toggle-placeholder { display: inline-block; width: 22px; } /* Заглушка, якщо немає дітей */
+        .toggle-placeholder { display: inline-block; width: 22px; }
 
         .legend-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; color: #475569; }
         .legend-chip i { width: 14px; height: 9px; border-radius: 2px; display: inline-block; }
@@ -256,7 +256,6 @@
     const dmy = iso => iso.split('-').reverse().join('.');
     const dm = iso => { const [y, m, d] = iso.split('-'); return `${d}.${m}`; };
     
-    // Функція генерації лейблів тижнів
     const weekLabel = (lbl, iso) => {
         const s = String(lbl || '').replace(/\.\d{2,4}$/, '').replace('-', '–');
         return s || `${dm(iso)}–${dm(isoAdd(iso, 6))}`;
@@ -302,17 +301,35 @@
         const labels = forecastKeys.map(k => cols[k] && cols[k].date_range ? cols[k].date_range : k);
 
         let allRaw = [];
-        const flatten = (nodes, type, parentKey = null) => {
+        const flatten = (nodes, type, inheritedParent = null) => {
+            let activeMacroItem = inheritedParent; 
+            
             nodes.forEach(node => {
                 const code = node.code || node.no || "";
                 const name = (node.name || "").replace(/ СП УКО/g, '').trim();
                 const key = type + '_' + (node.key || name + '_' + code);
                 const values = forecastKeys.map(k => (node.values && node.values[k]) ? node.values[k] : 0);
                 
-                allRaw.push({ type, code: String(code), name, key, values, parent: parentKey, isVirtual: false });
+                let myParent = activeMacroItem;
+
+                if (node.kind === "item") {
+                    activeMacroItem = key;
+                    myParent = inheritedParent; 
+                }
+
+                allRaw.push({ 
+                    type, 
+                    code: String(code), 
+                    name, 
+                    key, 
+                    values, 
+                    parent: myParent, 
+                    isVirtual: false,
+                    isRawTotal: node.kind === "total"
+                });
                 
                 if (node.children && node.children.length > 0) {
-                    flatten(node.children, type, key);
+                    flatten(node.children, type, node.kind === "item" ? key : activeMacroItem);
                 }
             });
         };
@@ -354,10 +371,10 @@
         }
 
         // 1.4 Кредитні та лімітні лінії
-        const mapGroup = (parentStr, prefix) => {
+        const mapGroup = (parentStr, prefixStr) => {
             let pNode = allRaw.find(i => i.name.includes(parentStr));
             if (pNode) {
-                allRaw.filter(i => i.code && i.code.startsWith(prefix) && i.key !== pNode.key)
+                allRaw.filter(i => i.name.startsWith(prefixStr) && i.key !== pNode.key)
                       .forEach(i => i.parent = pNode.key);
             }
         };
@@ -375,7 +392,7 @@
                 const prefix = m[1];
                 if (item.code === prefix) return; 
 
-                // Шукаємо або створюємо віртуальну групу У МЕЖАХ ПОТОЧНОГО БАТЬКА (щоб не розривати ієрархію)
+                // Шукаємо або створюємо віртуальну групу У МЕЖАХ ПОТОЧНОГО БАТЬКА
                 let pNode = allRaw.find(i => i.code === prefix && i.parent === item.parent);
                 if (!pNode) pNode = virtualParents.find(i => i.code === prefix && i.parent === item.parent);
 
@@ -386,10 +403,11 @@
                         type: item.type,
                         code: prefix,
                         name: `Група ${prefix}`,
-                        key: `${item.type}_virt_${prefix}_${item.parent}`, // Унікальний ключ у межах батька
+                        key: `${item.type}_virt_${prefix}_${item.parent}`,
                         values: Array(13).fill(0),
                         parent: item.parent,
-                        isVirtual: true
+                        isVirtual: true,
+                        isRawTotal: false
                     };
                     virtualParents.push(pNode);
                     item.parent = pNode.key;
@@ -397,6 +415,10 @@
             }
         });
         allRaw.push(...virtualParents);
+
+        // Прибираємо сирі "total" ноди, які втратили сенс через віртуальне групування
+        // (Наприклад, "Податки", "Державні податки"), якщо вони більше не мають дітей
+        allRaw = allRaw.filter(i => !i.isRawTotal || allRaw.some(child => child.parent === i.key));
 
         // --- 3. ПІДРАХУНОК СУМ ДЛЯ ВІРТУАЛЬНИХ ГРУП ---
         function computeVirtualValues(nodeKey) {
@@ -496,9 +518,8 @@
             put(prev[type], 'prev');
             
             let arts = order.map(k => byKey[k]);
-            arts.forEach((a, i) => a._idx = i); // Зберігаємо початковий індекс
+            arts.forEach((a, i) => a._idx = i); // Зберігаємо початковий порядок для сортування
 
-            // Формуємо eff і перевіряємо чи стаття виключена
             arts.forEach(a => {
                 a.excluded = isExcluded(a.name);
                 a.eff = {};
@@ -519,7 +540,6 @@
                 }
             });
 
-            // Фільтруємо і встановлюємо властивості
             arts.forEach(a => {
                 a.hasKids = arts.some(c => c.parent === a.key);
                 a.byWeek = {
@@ -534,7 +554,7 @@
                 a.depth = depth;
             });
 
-            // Flatten tree to guarantee strict parent-child rendering order
+            // Пересортування дерева, щоб гарантувати правильний порядок відмальовування
             const sortedArts = [];
             const addChildren = (parentKey) => {
                 const kids = arts.filter(a => a.parent === parentKey).sort((a,b) => a._idx - b._idx);
@@ -796,17 +816,16 @@
         const bg = a => a.key === '__inf' ? 'background:#ecfdf5;' : a.key === '__out' ? 'background:#fff7ed;' : a.key === '__net' ? 'background:#e2e8f0;' : '';
         
         const nameCell = a => {
-            // Якщо стан не визначено - згорнуто (true), якщо showKids вимкнено. Всі групи стартують згорнутими.
+            // Якщо стан не визначено - згорнуто (true), якщо showKids вимкнено.
             const isCol = collapsed[a.key] !== undefined ? collapsed[a.key] : !showKids;
             
-            let toggle = `<span class="toggle-placeholder"></span>`; // Заглушка, якщо немає дітей
+            let toggle = `<span class="toggle-placeholder"></span>`; 
             if (a.hasKids) {
                 toggle = `<span class="toggle-kids" onclick="event.stopPropagation();collapsed['${a.key}']=!${isCol};renderTable()" title="${isCol ? 'Розгорнути' : 'Згорнути'}">${isCol ? '+' : '−'}</span>`;
             }
             
             const code = a.code && !a.isTotal && a.code !== "null" ? `<span class="text-slate-400 mr-1">${a.code}</span>` : '';
             const tag = a.onlyIn ? ` <span class="text-[9px] text-amber-600">(лише ${a.onlyIn === 'cur' ? C : P})</span>` : '';
-            // Рівень відступу залежить від глибини ієрархії
             const pad = a.depth > 0 ? `padding-left: ${6 + a.depth * 18}px;` : 'padding-left: 6px;';
             
             return `<td style="${bg(a)} ${pad}" title="${a.name}">${toggle}${code}${a.name}${tag}</td>`;

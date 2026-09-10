@@ -208,7 +208,7 @@
         </div>
     </div>
 
-<script>
+    <script>
     // URL для отримання даних з SharePoint / Power Automate
     const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 
@@ -246,6 +246,13 @@
     const isoAdd = (iso, days) => new Date(Date.parse(iso + 'T00:00:00Z') + days * DAY).toISOString().slice(0, 10);
     const dmy = iso => iso.split('-').reverse().join('.');
     const dm = iso => { const [y, m, d] = iso.split('-'); return `${d}.${m}`; };
+    
+    // ФУНКЦІЯ, ЯКОЇ НЕ ВИСТАЧАЛО:
+    const weekLabel = (lbl, iso) => {
+        const s = String(lbl || '').replace(/\.\d{2,4}$/, '').replace('-', '–');
+        return s || `${dm(iso)}–${dm(isoAdd(iso, 6))}`;
+    };
+
     const mln = v => v / 1e6;
     const sp = s => s.replace(/[\u202F\u00A0]/g, ' ');
     function fmt(v) {
@@ -425,7 +432,7 @@
                 })
             ]);
 
-            if (!resCur.ok || !resPrev.ok) throw new Error("Помилка отримання даних з API[cite: 1]");
+            if (!resCur.ok || !resPrev.ok) throw new Error("Помилка отримання даних з API");
 
             const jsonCur = await resCur.json();
             const jsonPrev = await resPrev.json();
@@ -747,8 +754,7 @@
         
         const nameCell = a => {
             let toggle = '';
-            // Якщо стан спеціально не визначено (undefined) - беремо глобальний стан showKids (який вимкнено). 
-            // Отже, за замовчуванням всі вузли будуть згорнуті (isCol = true).
+            // Якщо стан не визначено - згорнуто (true), якщо showKids вимкнено. Всі групи стартують згорнутими.
             const isCol = collapsed[a.key] !== undefined ? collapsed[a.key] : !showKids;
             
             if (a.hasKids) {
@@ -781,7 +787,7 @@
             }
         };
 
-        // Функція перевірки чи видима стаття (всі батьки розгорнуті)
+        // Функція перевірки чи всі батьки розгорнуті
         const isParentCollapsed = (parentKey) => {
             if (collapsed[parentKey] !== undefined) return collapsed[parentKey];
             return !showKids; // За замовчуванням згорнуто

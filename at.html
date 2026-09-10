@@ -295,17 +295,21 @@
                 return `${dd}.${mm}`;
             };
 
+            // Розрахунок історичних періодів (Т-4 ... Т-1)
             for (let i = 0; i < 4; i++) {
                 const weeksBefore = 4 - i;
-                const sunday = new Date(anchorDate);
-                sunday.setDate(anchorDate.getDate() - weeksBefore * 7 + 6);
-                periodRanges[i] = formatDateStr(sunday);
+                const targetDate = new Date(anchorDate);
+                // Прибрано "+ 6" для фіксації на понеділках
+                targetDate.setDate(anchorDate.getDate() - weeksBefore * 7);
+                periodRanges[i] = formatDateStr(targetDate);
             }
 
+            // Розрахунок поточного і прогнозних періодів (Т0 ... Т12)
             for (let i = 0; i < 13; i++) {
-                const sunday = new Date(anchorDate);
-                sunday.setDate(anchorDate.getDate() + i * 7 + 6);
-                periodRanges[4 + i] = formatDateStr(sunday);
+                const targetDate = new Date(anchorDate);
+                // Прибрано "+ 6" для фіксації на понеділках
+                targetDate.setDate(anchorDate.getDate() + i * 7);
+                periodRanges[4 + i] = formatDateStr(targetDate);
             }
         }
 

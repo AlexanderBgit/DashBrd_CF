@@ -250,6 +250,36 @@
         "Комісія по постімпорту", "Комісія за обслуговування акредитиву"
     ];
 
+    // Словник для розшифровки кодів CF у зрозумілі назви груп
+    const CF_GROUP_NAMES = {
+        "2.2.01": "Державні податки та збори",
+        "2.2.02": "Місцеві податки",
+        "2.2.03": "Заробітна плата та нарахування",
+        "2.2.04": "Придбання сировини, матеріалів та товарів",
+        "2.2.05": "Роботи та послуги (операційні)",
+        "2.2.07": "Інші операційні витрати",
+        "2.2.08": "Інші витрати",
+        "1.2.01": "Обладнання виробниче",
+        "1.2.02": "Транспортні засоби",
+        "1.2.03": "Електрообладнання",
+        "1.2.04": "Інструменти",
+        "1.2.05": "Прилади та системи керування",
+        "1.2.06": "Засоби безпеки та контролю",
+        "1.2.07": "ІТ обладнання та ПЗ",
+        "1.2.08": "Матеріали для будівництва та ремонту",
+        "1.2.09": "Паливо-мастильні матеріали",
+        "1.2.10": "Господарський інвентар та меблі",
+        "1.2.11": "Засоби захисту та медицина",
+        "1.2.12": "Роботи та послуги (капітальні)",
+        "1.2.13": "Будівництво та ремонт (капітальні)",
+        "1.2.14": "Охорона праці та безпека",
+        "1.2.15": "Корпоративні права",
+        "3.1.02": "Отримання кредитів",
+        "3.2.01": "Повернення кредитів",
+        "3.2.02": "Відсотки за кредитами",
+        "3.2.03": "Комісії за кредитами/гарантіями"
+    };
+
     // ---------- Утиліти ----------
     const DAY = 86400000;
     const isoAdd = (iso, days) => new Date(Date.parse(iso + 'T00:00:00Z') + days * DAY).toISOString().slice(0, 10);
@@ -294,7 +324,7 @@
     // ---------- АДАПТЕР ХМАРНИХ ДАНИХ (Групування та Drill-Down) ----------
     function extractSnapshot(jsonObj, snapshotDateIso) {
         const snap = jsonObj.snapshot || jsonObj;
-        if (!snap || !snap.tree) throw new Error("Не знайдено дерево даних у JSON[cite: 1]");
+        if (!snap || !snap.tree) throw new Error("Не знайдено дерево даних у JSON");
 
         const cols = snap.columns || {};
         const forecastKeys = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
@@ -341,14 +371,12 @@
         if (outflowsBlock && outflowsBlock.children) flatten(outflowsBlock.children, 'outflows');
 
         // --- 1. ЯВНІ ГРУПУВАННЯ ЗА ВИМОГАМИ ---
-        // 1.1 Інші комерційні контрагенти
         let pComm = allRaw.find(i => i.name === 'Інші комерційні контрагенти');
         if (pComm) {
             allRaw.filter(i => ['2.1.01.01', 'Мазут', 'СГ комерц', 'СГ СП УКО'].includes(i.code) || ['Мазут', 'СГ комерц', 'СГ СП УКО'].includes(i.name))
                   .forEach(i => i.parent = pComm.key);
         }
 
-        // 1.2 Повернення покриття
         let pPov = allRaw.find(i => i.name === 'Повернення покриття');
         if (pPov) {
             let pPostImp = allRaw.find(i => i.name.toLowerCase() === 'постімпорт' && i.parent === pPov.key) || 
@@ -362,7 +390,6 @@
                   .forEach(i => i.parent = pPov.key);
         }
 
-        // 1.3 Інші надходження
         let pOtherInf = allRaw.find(i => i.name === 'Інші надходження');
         if (pOtherInf) {
             const infNames = ['Відсотки на залишки', 'Повернення коштів за НП', 'Повернення коштів УТН', 'Послуги підготовки нафти та газу', 'Послуги з видобутку нафти і газу', 'Оренда свердловин', 'Послуги з видобутку нафти і газу СП УКО', 'Від спільної діяльності (прибуток)', 'Внутрішні надходження'];
@@ -370,7 +397,6 @@
                   .forEach(i => i.parent = pOtherInf.key);
         }
 
-        // 1.4 Кредитні та лімітні лінії
         const mapGroup = (parentStr, prefixStr) => {
             let pNode = allRaw.find(i => i.name.includes(parentStr));
             if (pNode) {
@@ -392,17 +418,19 @@
                 const prefix = m[1];
                 if (item.code === prefix) return; 
 
-                // Шукаємо або створюємо віртуальну групу У МЕЖАХ ПОТОЧНОГО БАТЬКА
                 let pNode = allRaw.find(i => i.code === prefix && i.parent === item.parent);
                 if (!pNode) pNode = virtualParents.find(i => i.code === prefix && i.parent === item.parent);
 
                 if (pNode && pNode.key !== item.key) {
                     item.parent = pNode.key;
                 } else if (!pNode) {
+                    // Використовуємо словник для генерації красивої назви
+                    const groupName = CF_GROUP_NAMES[prefix] || `Група ${prefix}`;
+                    
                     pNode = {
                         type: item.type,
                         code: prefix,
-                        name: `Група ${prefix}`,
+                        name: groupName,
                         key: `${item.type}_virt_${prefix}_${item.parent}`,
                         values: Array(13).fill(0),
                         parent: item.parent,
@@ -416,8 +444,6 @@
         });
         allRaw.push(...virtualParents);
 
-        // Прибираємо сирі "total" ноди, які втратили сенс через віртуальне групування
-        // (Наприклад, "Податки", "Державні податки"), якщо вони більше не мають дітей
         allRaw = allRaw.filter(i => !i.isRawTotal || allRaw.some(child => child.parent === i.key));
 
         // --- 3. ПІДРАХУНОК СУМ ДЛЯ ВІРТУАЛЬНИХ ГРУП ---
@@ -518,7 +544,7 @@
             put(prev[type], 'prev');
             
             let arts = order.map(k => byKey[k]);
-            arts.forEach((a, i) => a._idx = i); // Зберігаємо початковий порядок для сортування
+            arts.forEach((a, i) => a._idx = i);
 
             arts.forEach(a => {
                 a.excluded = isExcluded(a.name);
@@ -528,7 +554,6 @@
                 });
             });
 
-            // Віднімаємо виключені статті від УСІХ батьків (bubble up)
             arts.filter(a => a.excluded).forEach(exclNode => {
                 let currP = arts.find(x => x.key === exclNode.parent);
                 while(currP) {
@@ -554,7 +579,6 @@
                 a.depth = depth;
             });
 
-            // Пересортування дерева, щоб гарантувати правильний порядок відмальовування
             const sortedArts = [];
             const addChildren = (parentKey) => {
                 const kids = arts.filter(a => a.parent === parentKey).sort((a,b) => a._idx - b._idx);
@@ -805,7 +829,7 @@
         const rowClass = a => {
             const c = [];
             if (a.isTotal) c.push('font-bold');
-            else if (a.depth === 0) c.push('sub font-semibold');
+            else if (a.depth === 0) c.push('sub');
             else c.push('child text-xs');
             if (a.excluded) c.push('excluded');
             c.push('clickable');

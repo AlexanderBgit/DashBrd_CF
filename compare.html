@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Порівняння прогнозів CF — зріз до зрізу</title>
+    <title>Порівняння прогнозів CF — зріз до зрізу (Cloud)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             font-style: normal !important;
@@ -92,16 +91,31 @@
 
     <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
         <div>
-            <h1 class="text-lg font-bold text-slate-800">Порівняння прогнозів CF — зріз до зрізу</h1>
+            <h1 class="text-lg font-bold text-slate-800">Порівняння прогнозів CF — зріз до зрізу (Хмара)</h1>
             <p class="text-xs text-slate-500 mt-0.5">Поточний зріз: <span id="navCurDate" class="font-semibold text-indigo-600">--</span>
                 · попередній: <span id="navPrevDate" class="font-semibold text-slate-700">--</span></p>
         </div>
         <div class="flex items-center gap-4">
             <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
-            <label class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Відкрити новий файл «Аналіз відхилень прогнозів CF…»">
-                Відкрити Excel
-                <input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls" class="hidden" onchange="onFileChosen(event)">
-            </label>
+            
+            <!-- Календар для вибору дати -->
+            <div class="relative">
+                <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm">
+                    <span id="lblSelectedDate">Обрати дату</span>
+                </button>
+                <div id="calendarDropdown" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&larr;</button>
+                        <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase">Вересень 2026</span>
+                        <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&rarr;</button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+                        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
+                    </div>
+                    <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                </div>
+            </div>
+
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
                 <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Вивантажити в PDF">PDF</button>
                 <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Друк звіту">Друк</button>
@@ -147,7 +161,7 @@
             </div>
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input type="checkbox" id="showKids" checked onchange="render()">
-                Показувати субстатті 6.2
+                Показувати субстатті
             </label>
         </div>
 
@@ -195,93 +209,18 @@
     </div>
 
     <script>
-    // ===== Парсер книги "Аналіз відхилень прогнозів CF" =====
-// Читає аркуші "Доходи dd.mm" / "Витрати dd.mm" (аркуші "+-" ігноруються),
-// повертає два зрізи (поточний і попередній) у нормалізованому вигляді.
-function parseForecastWorkbook(XLSX, wb) {
-    const norm = s => String(s == null ? '' : s)
-        .replace(/[\u2019'`ʼ]/g, '’').replace(/\s+/g, ' ').trim();
-    const keyOf = s => norm(s).toLowerCase();
-    const isNum = v => typeof v === 'number' && isFinite(v);
+    // URL для отримання даних з SharePoint / Power Automate
+    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 
-    const snaps = {}; // snapDateKey -> { inflows, outflows, start, labels }
+    let DATA = null;
+    let charts = {};
+    let detailKey = null;
+    let collapsed = {};
+    let M = null;
 
-    wb.SheetNames.forEach(sn => {
-        const m = norm(sn).match(/^(Доходи|Витрати)\s+(\d{1,2})\.(\d{1,2})/i);
-        if (!m || /\+-|\+\/-|±/.test(sn)) return;
-        const type = m[1].toLowerCase().startsWith('д') ? 'inflows' : 'outflows';
-        const ws = wb.Sheets[sn];
-        // обрізаємо «роздуті» діапазони (у файлі є аркуш на 16 тис. колонок)
-        if (ws['!ref']) {
-            const r = XLSX.utils.decode_range(ws['!ref']);
-            r.e.c = Math.min(r.e.c, 30); r.e.r = Math.min(r.e.r, 300);
-            ws['!ref'] = XLSX.utils.encode_range(r);
-        }
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
-
-        // 1) дата початку прогнозу з заголовка
-        let start = null;
-        for (const row of rows.slice(0, 10)) for (const c of row) {
-            const t = norm(c).match(/починаючи з\s*(\d{1,2})\.(\d{1,2})\.(\d{2,4})/i);
-            if (t && !start) {
-                const y = t[3].length === 2 ? 2000 + +t[3] : +t[3];
-                start = new Date(Date.UTC(y, +t[2] - 1, +t[1]));
-            }
-        }
-        // 2) рядок з Т0…Т12
-        let hRow = -1, c0 = -1;
-        for (let r = 0; r < Math.min(rows.length, 20) && hRow < 0; r++) {
-            const row = rows[r] || [];
-            for (let c = 0; c < row.length; c++) {
-                if (/^[ТT]\s*0$/i.test(norm(row[c]))) { hRow = r; c0 = c; break; }
-            }
-        }
-        if (hRow < 0) throw new Error(`Аркуш «${sn}»: не знайдено заголовок Т0`);
-        if (!start) {
-            const yy = new Date().getUTCFullYear();
-            start = new Date(Date.UTC(yy, +m[3] - 1, +m[2]));
-        }
-        const labels = Array.from({ length: 13 }, (_, i) => norm((rows[hRow + 1] || [])[c0 + i]));
-
-        // 3) статті
-        const items = [];
-        for (let r = hRow + 1; r < rows.length; r++) {
-            const row = rows[r] || [];
-            let name = null;
-            for (let c = c0 - 1; c >= 0; c--) {
-                if (typeof row[c] === 'string' && norm(row[c]) && !/^[\d.]+$/.test(norm(row[c]))) { name = norm(row[c]); break; }
-            }
-            if (!name) continue;
-            if (/^всього/i.test(name)) continue;
-            const vals = Array.from({ length: 13 }, (_, i) => row[c0 + i]);
-            const code = row[0] == null ? '' : norm(row[0]);
-            if (!vals.some(isNum) && !code) continue; // заголовки розділів
-            items.push({ code, name, key: keyOf(name), values: vals.map(v => isNum(v) ? v : 0) });
-        }
-        items.forEach(it => {
-            const parts = it.code.split('.').filter(Boolean);
-            if (parts.length >= 3) {
-                const pc = parts.slice(0, -1).join('.');
-                if (items.some(p => p.code === pc)) it.parent = pc;
-            }
-        });
-
-        const sk = start.toISOString().slice(0, 10);
-        snaps[sk] = snaps[sk] || { start: sk };
-        snaps[sk][type] = items;
-        snaps[sk][type + 'Labels'] = labels;
-    });
-
-    const dates = Object.keys(snaps).filter(k => snaps[k].inflows && snaps[k].outflows).sort();
-    if (dates.length < 2) throw new Error('Потрібні аркуші «Доходи» та «Витрати» для двох зрізів');
-    const cur = snaps[dates[dates.length - 1]], prev = snaps[dates[dates.length - 2]];
-    return { current: cur, previous: prev };
-}
-
-
-    // Вбудовані дані: аркуші «Доходи/Витрати 07.09» та «Доходи/Витрати 31.08»
-    // файлу «Аналіз відхилень прогнозів CF 07.09 vs 31.08 (04.09.2026).xlsx».
-    const EMBEDDED_DATA = {"current":{"start":"2026-09-07","inflows":[{"code":"1","name":"Нафта","key":"нафта","values":[567450710.6666667,397099216.5833334,92398578.83333334,635072516.6666667,136943101.83333334,578005437,272812841.6666667,632568005.3333334,272812841.6666667,180414262.83333337,261721434.33333337,43471161.00000001,0]},{"code":"2","name":"Газ природний","key":"газ природний","values":[670000000,0,0,0,250000000,250000000,250000000,250000000,250000000,250000000,250000000,250000000,250000000]},{"code":"3","name":"Нафтопродукти ОПТ","key":"нафтопродукти опт","values":[1673733809.7738984,1813582374.0238984,1773733809.7738984,1761801313.0538666,1972443338.2629952,1972443338.2629952,1972443338.2629952,1972443338.2629952,2031385686.3106723,2031385686.3106723,2031385686.3106723,2031385686.3106723,2031385686.3106723]},{"code":"4","name":"Нафтопродукти АОЗ","key":"нафтопродукти аоз","values":[650731979.3509208,650731979.3509208,650731979.3509208,662364394.3098233,808868608.553917,808868608.553917,808868608.553917,808868608.553917,1070474483.0464398,1070474483.0464398,1070474483.0464398,1070474483.0464398,1070474483.0464398]},{"code":"5","name":"Нафтопродукти роздріб АЗС","key":"нафтопродукти роздріб азс","values":[1112907198.6703901,1112907198.6703901,1112907198.6703901,1112907198.6703901,1011733816.9730818,1011733816.9730818,1011733816.9730818,1011733816.9730818,963556016.1648397,963556016.1648397,963556016.1648397,963556016.1648397,963556016.1648397]},{"code":"6","name":"Непаливні продажі АЗС","key":"непаливні продажі азс","values":[63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000]},{"code":"7","name":"Повернення покриття","key":"повернення покриття","values":[176792160.28003198,47209000,447345560.76100004,288020501.17599344,15934351,205126500,104238550.23500001,175108595.90875,261336347.1938425,264912643.66197538,199548054.303464,430000000,145808220.3452154]},{"code":"8","name":"Інші надходження","key":"інші надходження","values":[0,11641240.61,294907.84,51868928.71000001,49185896.03,113177189.99000001,0,4000000,25000000,0,0,0,29000000]},{"code":"9","name":"Отримано кредитних коштів","key":"отримано кредитних коштів","values":[0,0,0,0,0,0,0,0,0,0,0,0,0]}],"inflowsLabels":["07-13.09.26","14-20.09.26","21-27.09.26","28.09-04.10.26","05-11.10.26","12-18.10.26","19-25.10.26","26.10-01.11.26","02.11-08.11.26","09.11-15.11.26","16.11-22.11.26","23.11-29.11.26","30.11-06.12.26"],"outflows":[{"code":"1","name":"Обов’язкові платежі","key":"обов’язкові платежі","values":[663555016.8474001,107193808.56,543435387.6800001,1583084708.3799999,673738591.74,68770815.96,492904279.54596,1625107088.11,796023465.48,83996901.57000001,1516019411.9199998,1409187381.01,321356315.16]},{"code":"2","name":"Переробка","key":"переробка","values":[130687892.03,134958499.95000002,235441697.23,150058737.57,128411823.924,136632317.234,212163349.184,170105474.794,118786713.564,143850298.454,211159587.894,162291585.69399998,116502824.094]},{"code":"3","name":"Комерційний оборотний капітал","key":"комерційний оборотний капітал","values":[7906092339.778131,3761206115.4526906,2001356094.8231268,1794079717.8921542,1882716872.82,1424070194.8118014,3018380557.504729,2847715545.5853024,2614545441.0135436,2682711897.5639057,3084465547.0896077,1810951958.346225,2769674316.4337673]},{"code":"4","name":"Стратегічні інвестиції","key":"стратегічні інвестиції","values":[94179890.92999999,288166176.70000005,197418840.85,174018084.64000005,91656883.65999998,118849128.91,111548632.09000003,299376564.0200001,113653895.03999999,264611438.6,173537674.41000003,321540172.36,24344925]},{"code":"5","name":"Інші видатки","key":"інші видатки","values":[128231368.61060001,160660947.95999998,232352620.4239999,140591017.542,56200234.37,95474054.02999999,116707918.73,192747618.07999998,53386559.22,132594352.68999998,73782559.98,184954137.33,22666918.5]},{"code":"6.2","name":"Видатки","key":"видатки","values":[804672291.2518387,556647,2055032063.9897888,1292674426.7691576,5168592.0633333335,510450972.37675065,429744854.289089,691296761.4095788,901558862.8539966,842022110.5136268,298306969.21385604,1906350773.2917001,683529650.8373255]},{"code":"6.2.1","name":"Повернення кредиту","key":"повернення кредиту","values":[0,0,0,0,0,0,0,0,0,0,0,0,0],"parent":"6.2"},{"code":"6.2.2","name":"Відсотки за корист. кредитами","key":"відсотки за корист. кредитами","values":[268153.7062387211,0,0,1812734.2853071531,4378569.0633333335,2330727.9254387035,0,1867027.7745787622,1821546.416666667,4887366.59555685,0,0,3688574.191245429],"parent":"6.2"},{"code":"6.2.3","name":"Оплата по постімпорту","key":"оплата по постімпорту","values":[803600728.5455999,0,2007214895.954412,1255337352.0673199,0,507577988.45131195,424909346.869089,688798183.635,898960678.43733,837134743.91807,297748217.21385604,1900848928.8717,679841076.64608],"parent":"6.2"},{"code":"6.2.5","name":"Винагорода лізингодавця","key":"винагорода лізингодавця","values":[803409,556647,5487710.42,0,790023,542256,4835507.42,631550,776638,0,558752,5501844.42,0],"parent":"6.2"},{"code":"6.2.11","name":"Комісія за обслуговування кредитів","key":"комісія за обслуговування кредитів","values":[0,0,0,0,0,0,0,0,0,0,0,0,0],"parent":"6.2"},{"code":"6.2.12","name":"Комісія по постімпорту","key":"комісія по постімпорту","values":[0,0,42329457.61537677,35524340.41653067,0,0,0,0,0,0,0,0,0],"parent":"6.2"},{"code":"6.2.13","name":"Комісія за обслуговування акредитиву","key":"комісія за обслуговування акредитиву","values":[0,0,0,0,0,0,0,0,0,0,0,0,0],"parent":"6.2"}],"outflowsLabels":["07-13.09.26","14-20.09.26","21-27.09.26","28.09-04.10.26","05-11.10.26","12-18.10.26","19-25.10.26","26.10-01.11.26","02.11-08.11.26","09.11-15.11.26","16.11-22.11.26","23.11-29.11.26","30.11-06.12.26"]},"previous":{"start":"2026-08-31","inflows":[{"code":"1","name":"Нафта","key":"нафта","values":[920407915.0000001,866963432.0833334,86942322.00000001,0,589096844.3333334,86906770.94444442,615362493.2888887,124752547.28888886,272561081.11111104,718935704.1111109,0,391862406.7777777,86987045.41666667]},{"code":"2","name":"Газ природний","key":"газ природний","values":[150300000,670000000,0,0,0,250000000,250000000,250000000,250000000,250000000,250000000,250000000,250000000]},{"code":"3","name":"Нафтопродукти ОПТ","key":"нафтопродукти опт","values":[2027864823.6664727,1711614543.690565,1773733809.7738984,1773733809.7738984,1799125898.6085255,2051243141.7625399,2013362407.8458734,2013362407.8458734,2013362407.8458734,2060155714.0288115,2022274980.112145,2022274980.112145,2022274980.112145]},{"code":"4","name":"Нафтопродукти АОЗ","key":"нафтопродукти аоз","values":[621505215.6712129,650731979.3509208,650731979.3509208,650731979.3509208,662364394.3098233,747794318.4229946,747794318.4229946,747794318.4229946,747794318.4229946,1502834022.0058672,1502834022.0058672,1502834022.0058672,1502834022.0058672]},{"code":"5","name":"Нафтопродукти роздріб АЗС","key":"нафтопродукти роздріб азс","values":[1093788102.6864371,1112907198.6703901,1112907198.6703901,1112907198.6703901,1112907198.6703901,1001616478.8033509,1001616478.8033509,1001616478.8033509,1001616478.8033509,951535654.8631834,951535654.8631834,951535654.8631834,951535654.8631834]},{"code":"6","name":"Непаливні продажі АЗС","key":"непаливні продажі азс","values":[63616690.36437865,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000,63000000]},{"code":"7","name":"Повернення покриття","key":"повернення покриття","values":[230962939,176931689.45478398,0,447666599.082,261825481.1674508,0,126955500,86000000,329934379.8452652,57068923.113985,176931689.45478398,0,200000000]},{"code":"8","name":"Інші надходження","key":"інші надходження","values":[29938173.18,0,11641240.61,294907.84,51868928.71000001,49185896.03,113177189.99000001,0,4000000,25000000,0,0,0]},{"code":"9","name":"Отримано кредитних коштів","key":"отримано кредитних коштів","values":[310899000,0,0,860899000,453977800,0,0,0,1250000000,0,0,200000000,300000000]}],"inflowsLabels":["31.08-06.09.26","07-13.09.26","14-20.09.26","21-27.09.26","28.09-04.10.26","05-11.10.26","12-18.10.26","19-25.10.26","26.10-01.11.26","02.11-08.11.26","09.11-15.11.26","16.11-22.11.26","23.11-29.11.26"],"outflows":[{"code":"1","name":"Обов’язкові платежі","key":"обов’язкові платежі","values":[1538655376.3600001,664775832.6274,106675672.53,543369156.28,1586679693.99,673791591.74,67922815.96,492683216.79596,1625857683.31,795412371.24,83846901.57000001,1515984856.7399998,1407677739.85]},{"code":"2","name":"Переробка","key":"переробка","values":[460474000,125389200,135305761.65,235864063.63,129984263.89,147354889.47,127347493.14,214160525.07,151944001.61,120783889.47,151511364,213156763.8,144130112.51]},{"code":"3","name":"Комерційний оборотний капітал","key":"комерційний оборотний капітал","values":[4201184949.5888305,3346705746.2729664,2669773929.8081822,2693604546.0646186,1933078669.1073873,2078361700,3203024262.9103923,3234639702.5067053,2511083250.1455603,3424134430.658045,2973940437.387584,3593749460,2791746600]},{"code":"4","name":"Стратегічні інвестиції","key":"стратегічні інвестиції","values":[106858032.94000003,149065090.23000002,242600637.15999994,176200154.42,207153156.25000003,86393119.41,135945033.31,113520123.82000002,298888142.5800001,111710598.64999998,257864944.84000003,119071497.96999998,214606365.84000003]},{"code":"5","name":"Інші видатки","key":"інші видатки","values":[95394235.57999998,121613686.97999999,170450168.432,235926167.60399994,146049608.10200006,56340319.919999994,99379006.25999999,113158997.1,195517313.95,51183519.50999999,100318510.32000002,69150812.41000001,104718090.35]},{"code":"6.2","name":"Видатки","key":"видатки","values":[1514541225.975283,805050585.2567941,880188.0227814582,2056649620.061383,1292681183.3747437,750790023,1008520838.786144,430080204.286618,1393349849.04166,679052330.45594,1504234952.0672,558752,1005501844.42]},{"code":"6.2.1","name":"Повернення кредиту","key":"повернення кредиту","values":[500446631,0,0,0,0,750000000,500000000,0,0,450000000,700000000,0,0],"parent":"6.2"},{"code":"6.2.2","name":"Відсотки за корист. кредитами","key":"відсотки за корист. кредитами","values":[1966710.0854274253,12224.189594092002,323541.0227814583,0,0,0,0,0,0,0,0,0,0],"parent":"6.2"},{"code":"6.2.3","name":"Оплата по постімпорту","key":"оплата по постімпорту","values":[989024723.1139998,804234952.0672,0,2008799044.468344,1256328098.40184,0,507978582.78614396,425244696.866618,1392718299.04166,228275692.45594,804234952.0672,0,1000000000],"parent":"6.2"},{"code":"6.2.5","name":"Винагорода лізингодавця","key":"винагорода лізингодавця","values":[0,803409,556647,5487710.42,0,790023,542256,4835507.42,631550,776638,0,558752,5501844.42],"parent":"6.2"},{"code":"6.2.11","name":"Комісія за обслуговування кредитів","key":"комісія за обслуговування кредитів","values":[0,0,0,0,0,0,0,0,0,0,0,0,0],"parent":"6.2"},{"code":"6.2.12","name":"Комісія по постімпорту","key":"комісія по постімпорту","values":[23103161.775855884,0,0,42362865.173039,36353084.97290379,0,0,0,0,0,0,0,0],"parent":"6.2"},{"code":"6.2.13","name":"Комісія за обслуговування акредитиву","key":"комісія за обслуговування акредитиву","values":[0,0,0,0,0,0,0,0,0,0,0,0,0],"parent":"6.2"}],"outflowsLabels":["31.08-06.09.26","07-13.09.26","14-20.09.26","21-27.09.26","28.09-04.10.26","05-11.10.26","12-18.10.26","19-25.10.26","26.10-01.11.26","02.11-08.11.26","09.11-15.11.26","16.11-22.11.26","23.11-29.11.26"]}};
+    // Стан календаря
+    let currentReportDate = "2026-09-07"; // Початкова дата
+    let calViewDate = new Date(2026, 8, 7); // Вересень 2026
 
     const COLORS = {
         inflow: '#0f766e', inflowPrev: '#99cfc9',
@@ -290,12 +229,6 @@ function parseForecastWorkbook(XLSX, wb) {
         prevGrey: '#cbd5e1', detail: '#4f46e5', detailPrev: '#c7d2fe'
     };
     const FIN_EXCLUDE = [/отримано\s+кредитн/i, /повернення\s+кредиту/i];
-
-    let DATA = EMBEDDED_DATA;
-    let charts = {};
-    let detailKey = null;
-    let collapsed = {};
-    let M = null; // поточна модель
 
     // ---------- утиліти ----------
     const DAY = 86400000;
@@ -321,20 +254,112 @@ function parseForecastWorkbook(XLSX, wb) {
         if (Math.abs(p) < 0.05) return '0%';
         return (p > 0 ? '+' : '−') + sp(Math.abs(p).toLocaleString('uk-UA', { minimumFractionDigits: 1, maximumFractionDigits: 1 })) + '%';
     }
+    const sumArr = a => a.reduce((s, v) => s + (v || 0), 0);
+    const goodColor = (d, kind) => {
+        if (Math.abs(mln(d)) < 0.5) return '#64748b';
+        return (kind === 'outflow' ? d < 0 : d > 0) ? COLORS.pos : COLORS.neg;
+    };
+    function setStatus(text, cls) {
+        const el = document.getElementById('dataStatus');
+        el.textContent = text;
+        el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + cls;
+    }
+
+    // ---------- АДАПТЕР ХМАРНИХ ДАНИХ (JSON -> Snapshots) ----------
+    function extractSnapshot(jsonObj, snapshotDateIso) {
+        const snap = jsonObj.snapshot || jsonObj;
+        if (!snap || !snap.tree) throw new Error("Не знайдено дерево даних у JSON");
+
+        const cols = snap.columns || {};
+        const forecastKeys = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+        const labels = forecastKeys.map(k => cols[k] && cols[k].date_range ? cols[k].date_range : k);
+
+        const inflowsBlock = snap.tree.find(n => n.name === "Надходження");
+        const outflowsBlock = snap.tree.find(n => n.name === "Видатки");
+
+        // Рекурсивно перетворюємо дерево у плоский список статей
+        const flattenTree = (nodes, parentCode = null) => {
+            let result = [];
+            if (!nodes) return result;
+
+            nodes.forEach(node => {
+                // Визначаємо код або генеруємо його, якщо відсутній
+                const code = node.code || node.no || ""; 
+                const name = (node.name || "").replace(/ СП УКО/g, '').trim(); 
+                const key = name.toLowerCase();
+                const values = forecastKeys.map(k => (node.values && node.values[k]) ? node.values[k] : 0);
+
+                const item = { code: String(code), name, key, values };
+                if (parentCode) item.parent = String(parentCode);
+
+                // Додаємо поточну статтю (якщо це не порожній технічний вузол)
+                if (name) result.push(item);
+
+                if (node.children && node.children.length > 0) {
+                    result = result.concat(flattenTree(node.children, item.code));
+                }
+            });
+            return result;
+        };
+
+        return {
+            start: snapshotDateIso,
+            inflows: inflowsBlock && inflowsBlock.children ? flattenTree(inflowsBlock.children) : [],
+            inflowsLabels: labels,
+            outflows: outflowsBlock && outflowsBlock.children ? flattenTree(outflowsBlock.children) : [],
+            outflowsLabels: labels
+        };
+    }
+
+    // Головна функція завантаження двох зрізів
+    async function loadCompareDataFromCloud(curDateIso) {
+        setStatus('Завантаження з хмари...', 'bg-indigo-100 text-indigo-800');
+        
+        // Вираховуємо попередню дату (мінус 7 днів)
+        const d = new Date(curDateIso);
+        d.setDate(d.getDate() - 7);
+        const prevDateIso = d.toISOString().slice(0, 10);
+
+        try {
+            const [resCur, resPrev] = await Promise.all([
+                fetch(GET_METRICS_FLOW_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportDate: curDateIso, reportDateDot: curDateIso.split('-').reverse().join('.') })
+                }),
+                fetch(GET_METRICS_FLOW_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportDate: prevDateIso, reportDateDot: prevDateIso.split('-').reverse().join('.') })
+                })
+            ]);
+
+            if (!resCur.ok || !resPrev.ok) throw new Error("Помилка отримання даних з API");
+
+            const jsonCur = await resCur.json();
+            const jsonPrev = await resPrev.json();
+
+            const snapCur = extractSnapshot(jsonCur, curDateIso);
+            const snapPrev = extractSnapshot(jsonPrev, prevDateIso);
+
+            DATA = { current: snapCur, previous: snapPrev };
+            detailKey = null; collapsed = {};
+            
+            render();
+            setStatus(`Дані оновлено (${dmy(curDateIso)} vs ${dmy(prevDateIso)})`, 'bg-emerald-100 text-emerald-800');
+
+        } catch (err) {
+            console.error(err);
+            setStatus('Помилка хмари: ' + err.message, 'bg-red-100 text-red-800');
+        }
+    }
+
+    // ---------- модель ----------
     const weekLabel = (lbl, iso) => {
         const s = String(lbl || '').replace(/\.\d{2,4}$/, '').replace('-', '–');
         return s || `${dm(iso)}–${dm(isoAdd(iso, 6))}`;
     };
-    const sumArr = a => a.reduce((s, v) => s + (v || 0), 0);
-    // «добре/погано» для відхилення: для видатків зростання — погано
-    const goodColor = (d, kind) => {
-        if (Math.abs(mln(d)) < 0.5) return '#64748b';
-        const good = kind === 'outflow' ? d < 0 : d > 0;
-        return good ? COLORS.pos : COLORS.neg;
-    };
 
-    // ---------- модель ----------
     function buildModel(data, excludeFin) {
+        if(!data) return null;
         const cur = data.current, prev = data.previous;
         const weekMap = {};
         const addWeeks = (snap, role) => {
@@ -366,7 +391,6 @@ function parseForecastWorkbook(XLSX, wb) {
                 ['cur', 'prev'].forEach(role => {
                     const raw = a.raw[role] || Array(13).fill(0);
                     let eff = a.excluded ? Array(13).fill(0) : raw.slice();
-                    // батьківська стаття: вираховуємо виключені дочірні
                     arts.filter(c => c.parent && c.parent === a.code && isExcluded(c.name)).forEach(c => {
                         const cr = c.raw[role] || Array(13).fill(0);
                         eff = eff.map((v, i) => v - cr[i]);
@@ -374,7 +398,6 @@ function parseForecastWorkbook(XLSX, wb) {
                     a.eff[role] = eff;
                 });
                 a.hasKids = arts.some(c => c.parent && c.parent === a.code);
-                // ряди по тижнях (null, якщо тижня немає у зрізі)
                 a.byWeek = {
                     cur: weeks.map(w => w.cur != null ? a.eff.cur[w.cur] : null),
                     prev: weeks.map(w => w.prev != null ? a.eff.prev[w.prev] : null)
@@ -415,11 +438,12 @@ function parseForecastWorkbook(XLSX, wb) {
 
     // ---------- рендер ----------
     function render() {
+        if(!DATA) return;
         const excludeFin = document.getElementById('excludeFin').checked;
         M = buildModel(DATA, excludeFin);
         if (!detailKey || !M.all.some(a => a.key === detailKey && !a.excluded)) {
             const cand = [...M.inflows, ...M.outflows].filter(a => !a.hasKids && !a.excluded);
-            detailKey = cand.sort((a, b) => Math.abs(b.sumDelta) - Math.abs(a.sumDelta))[0].key;
+            detailKey = cand.length ? cand.sort((a, b) => Math.abs(b.sumDelta) - Math.abs(a.sumDelta))[0].key : '__net';
         }
         renderHeader(); renderSummary(); renderMainCharts(); renderDrivers(); fillDetailSelect(); renderDetail(); renderTable();
     }
@@ -509,15 +533,11 @@ function parseForecastWorkbook(XLSX, wb) {
         });
     }
 
-    function driverItems() {
-        // листові статті: верхній рівень без дітей + дочірні
-        return [...M.inflows, ...M.outflows]
+    function renderDrivers() {
+        const items = [...M.inflows, ...M.outflows]
             .filter(a => !a.hasKids && !a.excluded && Math.abs(mln(a.sumDelta)) >= 0.5)
             .sort((a, b) => b.impact - a.impact);
-    }
-
-    function renderDrivers() {
-        const items = driverItems();
+            
         mk('chDrivers', {
             type: 'bar',
             data: {
@@ -599,7 +619,6 @@ function parseForecastWorkbook(XLSX, wb) {
         if (mode !== 'cur' && mode !== 'prev') head += `<th class="col-pct">Δ, %<span class="th-period">до ${dm(M.prev.start)}</span></th>`;
         document.getElementById('tableHeadRow').innerHTML = head;
 
-        // масштаб підсвічування — окремо для деталізованих статей
         const maxAbs = Math.max(1, ...[...M.inflows, ...M.outflows].filter(a => !a.hasKids).flatMap(a => idx.map(i => Math.abs(a.delta[i] || 0))));
         const heat = (d, kind) => {
             if (d == null || Math.abs(mln(d)) < 0.5) return '';
@@ -669,37 +688,43 @@ function parseForecastWorkbook(XLSX, wb) {
         document.getElementById('tableNote').textContent =
             `Відхилення = поточний зріз (${C}) − попередній (${P}) для одного й того самого календарного тижня. Під датою тижня: номер тижня в поточному · попередньому зрізі. ` +
             `Для видатків зростання позначено червоним, бо воно зменшує чистий потік. Σ і Δ% — за ${cw.length} спільних тижнів.` +
-            (hidden.length ? ` Нульові в обох зрізах субстатті не показано: ${hidden.join(', ')}.` : '') +
+            (hidden.length ? ` Нульові в обох зрізах субстатті не показано.` : '') +
             (excl.length ? ` Виключено фільтром: ${excl.join(', ')}.` : '') +
             ' Клік по рядку — деталізація статті на графіку.';
     }
 
-    // ---------- завантаження файлу ----------
-    function setStatus(text, cls) {
-        const el = document.getElementById('dataStatus');
-        el.textContent = text;
-        el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + cls;
+    // ---------- КАЛЕНДАР ----------
+    function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
+    function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
+    
+    function renderCalendar() {
+        const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
+        const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+        document.getElementById('calendarMonthYear').innerText = `${monthNames[m]} ${y}`;
+        
+        const grid = document.getElementById('calendarDaysGrid');
+        grid.innerHTML = '';
+        let firstDay = new Date(y, m, 1).getDay() - 1; if (firstDay === -1) firstDay = 6;
+        const daysCount = new Date(y, m + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) grid.innerHTML += `<span></span>`;
+        for (let day = 1; day <= daysCount; day++) {
+            const dStr = String(day).padStart(2, '0');
+            const mStr = String(m + 1).padStart(2, '0');
+            const dateKey = `${y}-${mStr}-${dStr}`;
+            const isSel = currentReportDate === dateKey;
+
+            grid.innerHTML += `<button onclick="selectDate('${dateKey}')" class="py-1 rounded text-xs font-semibold ${isSel ? 'bg-indigo-600 text-white' : 'hover:bg-slate-100'}">${day}</button>`;
+        }
     }
-    function onFileChosen(ev) {
-        const file = ev.target.files[0];
-        if (!file) return;
-        if (typeof XLSX === 'undefined') { setStatus('Бібліотека Excel не завантажилась — перевірте доступ до cdnjs', 'bg-red-100 text-red-800'); return; }
-        setStatus('Читання файлу…', 'bg-indigo-100 text-indigo-800');
-        const reader = new FileReader();
-        reader.onload = e => {
-            try {
-                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-                DATA = parseForecastWorkbook(XLSX, wb);
-                detailKey = null; collapsed = {};
-                render();
-                setStatus('Дані з файлу: ' + file.name, 'bg-emerald-100 text-emerald-800');
-            } catch (err) {
-                console.error(err);
-                setStatus('Файл не розпізнано: ' + err.message, 'bg-red-100 text-red-800');
-            }
-            ev.target.value = '';
-        };
-        reader.readAsArrayBuffer(file);
+
+    function selectDate(iso) {
+        currentReportDate = iso;
+        const [y, m, d] = iso.split('-');
+        document.getElementById('lblSelectedDate').innerText = `${d}.${m}.${y}`;
+        document.getElementById('calendarDropdown').classList.add('hidden');
+        
+        loadCompareDataFromCloud(iso);
     }
 
     // ---------- PDF ----------
@@ -729,13 +754,8 @@ function parseForecastWorkbook(XLSX, wb) {
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        try {
-            render();
-            setStatus('Вбудовані дані: зрізи ' + dmy(DATA.current.start) + ' і ' + dmy(DATA.previous.start), 'bg-emerald-100 text-emerald-800');
-        } catch (err) {
-            console.error(err);
-            setStatus('Помилка побудови: ' + err.message, 'bg-red-100 text-red-800');
-        }
+        // Стартове завантаження даних за 07.09.2026 
+        selectDate(currentReportDate);
     });
     </script>
 </body>

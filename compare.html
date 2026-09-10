@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
+<style>
         * {
             font-style: normal !important;
             -webkit-print-color-adjust: exact !important;
@@ -64,8 +64,8 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.5pt; font-variant-numeric: tabular-nums;
         }
         .exec-table td:first-child { text-align: left; font-weight: 500; padding-left: 6px; }
-        .exec-table tr.sub td:first-child { padding-left: 26px; color: #475569; }
-        .exec-table tr.child td:first-child { padding-left: 42px; color: #64748b; font-size: 8pt; }
+        .exec-table tr.sub td:first-child { font-weight: 600; color: #475569; }
+        .exec-table tr.child td:first-child { color: #64748b; font-size: 8pt; }
         .exec-table tr.child td { font-size: 8pt; }
         .exec-table tr.snap-row td { border-bottom-color: #f1f5f9; }
         .exec-table tr.snap-row td:first-child { color: #94a3b8; font-size: 7.5pt; padding-left: 42px; }
@@ -73,7 +73,16 @@
         .exec-table tr.clickable { cursor: pointer; }
         .exec-table tr.clickable:hover td { background-color: #eef2ff; }
         .exec-table tr.selected td:first-child { box-shadow: inset 3px 0 0 #4f46e5; }
-        .toggle-kids { display: inline-block; width: 14px; font-size: 9px; color: #64748b; cursor: pointer; user-select: none; }
+        
+        /* Нові кнопки розгортання + / - */
+        .toggle-kids { 
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; font-size: 14px; font-weight: bold; line-height: 1;
+            color: #3b82f6; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 3px;
+            cursor: pointer; user-select: none; margin-right: 6px; vertical-align: text-bottom;
+        }
+        .toggle-kids:hover { background-color: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+        .toggle-placeholder { display: inline-block; width: 22px; } /* Заглушка, якщо немає дітей */
 
         .legend-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; color: #475569; }
         .legend-chip i { width: 14px; height: 9px; border-radius: 2px; display: inline-block; }
@@ -98,7 +107,6 @@
         <div class="flex items-center gap-4">
             <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
             
-            <!-- Календар для вибору дати -->
             <div class="relative">
                 <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm">
                     <span id="lblSelectedDate">Обрати дату</span>
@@ -160,7 +168,7 @@
                 <select id="detailSelect" onchange="onDetailChange(this.value)" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white w-[300px]"></select>
             </div>
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                <input type="checkbox" id="showKids" checked onchange="render()">
+                <input type="checkbox" id="showKids" onchange="render()">
                 Показувати субстатті
             </label>
         </div>
@@ -247,7 +255,7 @@
     const dmy = iso => iso.split('-').reverse().join('.');
     const dm = iso => { const [y, m, d] = iso.split('-'); return `${d}.${m}`; };
     
-    // ФУНКЦІЯ, ЯКОЇ НЕ ВИСТАЧАЛО:
+    // Функція генерації лейблів тижнів
     const weekLabel = (lbl, iso) => {
         const s = String(lbl || '').replace(/\.\d{2,4}$/, '').replace('-', '–');
         return s || `${dm(iso)}–${dm(isoAdd(iso, 6))}`;
@@ -286,7 +294,7 @@
     // ---------- АДАПТЕР ХМАРНИХ ДАНИХ (Групування та Drill-Down) ----------
     function extractSnapshot(jsonObj, snapshotDateIso) {
         const snap = jsonObj.snapshot || jsonObj;
-        if (!snap || !snap.tree) throw new Error("Не знайдено дерево даних у JSON");
+        if (!snap || !snap.tree) throw new Error("Не знайдено дерево даних у JSON[cite: 1]");
 
         const cols = snap.columns || {};
         const forecastKeys = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
@@ -364,10 +372,11 @@
             const m = item.code.match(/^(\d+\.\d+\.\d+)(?:\.|$)/);
             if (m) {
                 const prefix = m[1];
-                if (item.code === prefix) return; // Якщо це сам батько — пропускаємо
+                if (item.code === prefix) return; 
 
-                let pNode = allRaw.find(i => i.code === prefix);
-                if (!pNode) pNode = virtualParents.find(i => i.code === prefix);
+                // Шукаємо або створюємо віртуальну групу У МЕЖАХ ПОТОЧНОГО БАТЬКА (щоб не розривати ієрархію)
+                let pNode = allRaw.find(i => i.code === prefix && i.parent === item.parent);
+                if (!pNode) pNode = virtualParents.find(i => i.code === prefix && i.parent === item.parent);
 
                 if (pNode && pNode.key !== item.key) {
                     item.parent = pNode.key;
@@ -376,7 +385,7 @@
                         type: item.type,
                         code: prefix,
                         name: `Група ${prefix}`,
-                        key: `${item.type}_virt_${prefix}`,
+                        key: `${item.type}_virt_${prefix}_${item.parent}`, // Унікальний ключ у межах батька
                         values: Array(13).fill(0),
                         parent: item.parent,
                         isVirtual: true
@@ -476,25 +485,42 @@
         const buildType = type => {
             const order = [], byKey = {};
             const put = (items, role) => items.forEach(it => {
-                if (!byKey[it.key]) { byKey[it.key] = { key: it.key, name: it.name, code: it.code, parent: it.parent, type, raw: {} }; order.push(it.key); }
+                if (!byKey[it.key]) { 
+                    byKey[it.key] = { ...it, type, raw: {} }; 
+                    order.push(it.key); 
+                }
                 byKey[it.key].raw[role] = it.values;
             });
-            put(cur[type], 'cur'); put(prev[type], 'prev');
+            put(cur[type], 'cur'); 
+            put(prev[type], 'prev');
             
-            const arts = order.map(k => byKey[k]);
+            let arts = order.map(k => byKey[k]);
+            arts.forEach((a, i) => a._idx = i); // Зберігаємо початковий індекс
+
+            // Формуємо eff і перевіряємо чи стаття виключена
             arts.forEach(a => {
                 a.excluded = isExcluded(a.name);
                 a.eff = {};
                 ['cur', 'prev'].forEach(role => {
-                    const raw = a.raw[role] || Array(13).fill(0);
-                    let eff = a.excluded ? Array(13).fill(0) : raw.slice();
-                    arts.filter(c => c.parent && c.parent === a.key && isExcluded(c.name)).forEach(c => {
-                        const cr = c.raw[role] || Array(13).fill(0);
-                        eff = eff.map((v, i) => v - cr[i]);
-                    });
-                    a.eff[role] = eff;
+                    a.eff[role] = (a.raw[role] || Array(13).fill(0)).slice();
                 });
-                a.hasKids = arts.some(c => c.parent && c.parent === a.key);
+            });
+
+            // Віднімаємо виключені статті від УСІХ батьків (bubble up)
+            arts.filter(a => a.excluded).forEach(exclNode => {
+                let currP = arts.find(x => x.key === exclNode.parent);
+                while(currP) {
+                    ['cur', 'prev'].forEach(role => {
+                        const cr = exclNode.raw[role] || Array(13).fill(0);
+                        currP.eff[role] = currP.eff[role].map((v, i) => v - cr[i]);
+                    });
+                    currP = arts.find(x => x.key === currP.parent);
+                }
+            });
+
+            // Фільтруємо і встановлюємо властивості
+            arts.forEach(a => {
+                a.hasKids = arts.some(c => c.parent === a.key);
                 a.byWeek = {
                     cur: weeks.map(w => w.cur != null ? a.eff.cur[w.cur] : null),
                     prev: weeks.map(w => w.prev != null ? a.eff.prev[w.prev] : null)
@@ -506,7 +532,23 @@
                 while(p) { depth++; p = arts.find(x => x.key === p.parent); }
                 a.depth = depth;
             });
-            return arts;
+
+            // Flatten tree to guarantee strict parent-child rendering order
+            const sortedArts = [];
+            const addChildren = (parentKey) => {
+                const kids = arts.filter(a => a.parent === parentKey).sort((a,b) => a._idx - b._idx);
+                kids.forEach(k => {
+                    sortedArts.push(k);
+                    addChildren(k.key);
+                });
+            };
+            const roots = arts.filter(a => !a.parent).sort((a,b) => a._idx - b._idx);
+            roots.forEach(r => {
+                sortedArts.push(r);
+                addChildren(r.key);
+            });
+            
+            return sortedArts;
         };
         
         const inflows = buildType('inflows'), outflows = buildType('outflows');
@@ -753,17 +795,18 @@
         const bg = a => a.key === '__inf' ? 'background:#ecfdf5;' : a.key === '__out' ? 'background:#fff7ed;' : a.key === '__net' ? 'background:#e2e8f0;' : '';
         
         const nameCell = a => {
-            let toggle = '';
             // Якщо стан не визначено - згорнуто (true), якщо showKids вимкнено. Всі групи стартують згорнутими.
             const isCol = collapsed[a.key] !== undefined ? collapsed[a.key] : !showKids;
             
+            let toggle = `<span class="toggle-placeholder"></span>`; // Заглушка, якщо немає дітей
             if (a.hasKids) {
-                toggle = `<span class="toggle-kids" onclick="event.stopPropagation();collapsed['${a.key}']=!${isCol};renderTable()">${isCol ? '▸' : '▾'}</span>`;
+                toggle = `<span class="toggle-kids" onclick="event.stopPropagation();collapsed['${a.key}']=!${isCol};renderTable()" title="${isCol ? 'Розгорнути' : 'Згорнути'}">${isCol ? '+' : '−'}</span>`;
             }
             
             const code = a.code && !a.isTotal && a.code !== "null" ? `<span class="text-slate-400 mr-1">${a.code}</span>` : '';
             const tag = a.onlyIn ? ` <span class="text-[9px] text-amber-600">(лише ${a.onlyIn === 'cur' ? C : P})</span>` : '';
-            const pad = a.depth > 0 ? `padding-left: ${6 + a.depth * 14}px;` : 'padding-left: 6px;';
+            // Рівень відступу залежить від глибини ієрархії
+            const pad = a.depth > 0 ? `padding-left: ${6 + a.depth * 18}px;` : 'padding-left: 6px;';
             
             return `<td style="${bg(a)} ${pad}" title="${a.name}">${toggle}${code}${a.name}${tag}</td>`;
         };

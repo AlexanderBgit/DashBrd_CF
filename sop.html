@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дані для непрямого Cash Flow (Кінці місяців)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        * {
+            font-style: normal !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Helvetica', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            padding: 16px;
+        }
+        .report-card {
+            width: 100%;
+            max-width: 1580px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+            padding: 24px 28px;
+        }
+        .cf-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.5pt;
+        }
+        .cf-table th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 700;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .cf-table th:first-child {
+            text-align: left;
+            width: 32%;
+        }
+        .cf-table td {
+            padding: 7px 10px;
+            border: 1px solid #e2e8f0;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .cf-table td:first-child {
+            text-align: left;
+            white-space: normal;
+        }
+        .row-group {
+            background-color: #f8fafc;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .row-sub {
+            color: #475569;
+            padding-left: 24px !important;
+        }
+        .tag-fact {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: #e2e8f0;
+            color: #334155;
+            border-radius: 4px;
+            font-size: 7.5pt;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+        .tag-fcst {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: #e0e7ff;
+            color: #3730a3;
+            border-radius: 4px;
+            font-size: 7.5pt;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+        @media print {
+            body { padding: 0; background: #fff; }
+            .print-hide { display: none !important; }
+            .report-card { box-shadow: none; border-radius: 0; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Навігаційна панель -->
+    <header class="max-w-[1580px] mx-auto bg-white shadow-sm p-4 mb-4 rounded-xl flex justify-between items-center print-hide border border-slate-200">
+        <div>
+            <h1 class="text-lg font-bold text-slate-800">Показники для непрямого Cash Flow на кінець місяця</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Базовий зріз моделі: <span id="lblCurReportDate" class="font-semibold text-indigo-600">--</span></p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="dataStatus" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-100 text-amber-800">Підключення до джерела…</span>
+            
+            <div class="flex items-center gap-2 border-l pl-3 border-slate-200">
+                <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">Excel (.xlsx)</button>
+                <button onclick="exportToPDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">PDF</button>
+                <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">Друк</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основний контейнер звіту -->
+    <main class="report-card" id="reportContainer">
+        <div class="flex justify-between items-start border-b border-slate-200 pb-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900">Зріз ключових статей на кінець місяця (Балансові та кумулятивні дані)</h2>
+                <p class="text-xs text-slate-500 mt-1">Охоплює 2 періоди фактичних даних на кінець місяця та прогнозні точки зрізів на горизонті 13 тижнів.</p>
+            </div>
+            <div class="text-right">
+                <span class="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded">млн грн</span>
+                <p class="text-[11px] text-slate-400 mt-1">Цільове призначення: Непрямий CF суміжних підрозділів</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="cf-table" id="targetTable">
+                <thead>
+                    <tr id="tableHeaderRow">
+                        <th>Показник / Стаття</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="10" class="text-center py-6 text-slate-400">Формування даних...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <section class="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200 text-[11px] text-slate-500">
+            <span class="font-bold text-slate-700">Методологічні примітки:</span>
+            <ul class="list-disc pl-5 mt-1 space-y-0.5">
+                <li><b>Залишки коштів</b> виводяться як моментальні показники (Stock) станом на конкретну дату кінця місяця/зрізу.</li>
+                <li><b>CAPEX, Залучення боргу, Дивіденди/обслуговування боргу, Податок на прибуток</b> відображають кумулятивні грошові потоки (Flow) за відповідний місяць або накопичений прогноз до обраного зрізу.</li>
+            </ul>
+        </section>
+    </main>
+
+    <script>
+        const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+
+        let currentReportDate = "2026-09-07"; // Базова дата зрізу (понеділок)
+        let REPORT_DATA = null;
+
+        const mln = v => (v == null || isNaN(v)) ? 0 : v / 1e6;
+        const fmt = v => {
+            if (v == null || isNaN(v)) return "–";
+            const val = Math.round(mln(v));
+            return (val < 0 ? "−" : "") + Math.abs(val).toLocaleString("uk-UA");
+        };
+
+        const dmy = iso => iso.split('-').reverse().join('.');
+        const DAY = 86400000;
+        const isoAdd = (iso, days) => new Date(Date.parse(iso + 'T00:00:00Z') + days * DAY).toISOString().slice(0, 10);
+
+        function setStatus(text, cls) {
+            const el = document.getElementById('dataStatus');
+            el.textContent = text;
+            el.className = 'text-xs font-semibold px-3 py-1.5 rounded-full ' + cls;
+        }
+
+        // Знаходження точок зрізу на кінець місяця
+        function calculatePeriods(baseMondayIso) {
+            const baseDate = new Date(baseMondayIso + "T00:00:00Z");
+            const y = baseDate.getUTCFullYear();
+            const m = baseDate.getUTCMonth(); // 0-based
+
+            // 2 періоди назад (фактичні дані кінця місяця)
+            const mFact2Date = new Date(Date.UTC(y, m - 1, 0)); // кінець M-2
+            const mFact1Date = new Date(Date.UTC(y, m, 0));     // кінець M-1
+
+            const periods = [
+                {
+                    id: "fact_m2",
+                    label: mFact2Date.toISOString().slice(0, 10),
+                    title: `Факт (${mFact2Date.toLocaleDateString('uk-UA', { month: 'short', year: 'numeric' })})`,
+                    type: "fact",
+                    colKey: "Tm2_fact"
+                },
+                {
+                    id: "fact_m1",
+                    label: mFact1Date.toISOString().slice(0, 10),
+                    title: `Факт (${mFact1Date.toLocaleDateString('uk-UA', { month: 'short', year: 'numeric' })})`,
+                    type: "fact",
+                    colKey: "Tm1_fact"
+                }
+            ];
+
+            // Наявний горизонт прогнозу: тижні T0..T12 з пошуком дат кінців місяця або найближчих понеділків
+            for (let i = 0; i < 13; i++) {
+                const weekMonIso = isoAdd(baseMondayIso, i * 7);
+                const weekSunIso = isoAdd(weekMonIso, 6);
+                const wMon = new Date(weekMonIso + "T00:00:00Z");
+                const wSun = new Date(weekSunIso + "T00:00:00Z");
+
+                // Перевірка чи потрапляє кінець місяця у цей тижневий інтервал
+                if (wMon.getUTCMonth() !== wSun.getUTCMonth() || i === 12) {
+                    const eomDate = new Date(Date.UTC(wMon.getUTCFullYear(), wMon.getUTCMonth() + 1, 0));
+                    periods.push({
+                        id: `fcst_t${i}`,
+                        label: eomDate.toISOString().slice(0, 10),
+                        title: `Кінець ${eomDate.toLocaleDateString('uk-UA', { month: 'short' })} (Т${i})`,
+                        type: "forecast",
+                        colKey: `T${i}`,
+                        forecastWeekIndex: i
+                    });
+                }
+            }
+
+            return periods;
+        }
+
+        async function loadData() {
+            setStatus('Завантаження даних…', 'bg-indigo-100 text-indigo-800');
+            document.getElementById('lblCurReportDate').textContent = dmy(currentReportDate);
+
+            try {
+                const res = await fetch(GET_METRICS_FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportDate: currentReportDate, reportDateDot: dmy(currentReportDate) })
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const snapshot = data.snapshot || data;
+                
+                renderPage(snapshot);
+                setStatus('Дані сформовано', 'bg-emerald-100 text-emerald-800');
+            } catch (err) {
+                console.error(err);
+                setStatus('Помилка отримання даних: ' + err.message, 'bg-red-100 text-red-800');
+            }
+        }
+
+        function extractTreeRow(tree, matcher) {
+            let found = null;
+            function dfs(nodes) {
+                if (!nodes || found) return;
+                for (let n of nodes) {
+                    if (matcher(n)) { found = n; return; }
+                    if (n.children && n.children.length) dfs(n.children);
+                }
+            }
+            dfs(tree);
+            return found;
+        }
+
+        function renderPage(snapshot) {
+            const periods = calculatePeriods(currentReportDate);
+            const tree = snapshot.tree || [];
+
+            // Визначення необхідних статей за вашим фінансовим деревом
+            const rowCapex = extractTreeRow(tree, n => n.name && (n.name.includes("Стратегічні інвестиції") || n.name.includes("CAPEX")));
+            const rowDebtInflow = extractTreeRow(tree, n => (n.no === "6.1.1" || (n.name && n.name.includes("Отримано кредитних коштів"))));
+            const rowDebtService = extractTreeRow(tree, n => (n.no === "6.2" || (n.name && n.name.includes("Видатки") && n.name.includes("фінансові"))));
+            
+            const rowCashTotal = extractTreeRow(tree, n => n.name && n.name.includes("Залишки на початок періоду всього"));
+            const rowCashAvailable = extractTreeRow(tree, n => n.name && n.name.includes("Залишки доступні до використання"));
+            const rowCashRestricted = extractTreeRow(tree, n => n.name && n.name.includes("Залишки з обмеженим доступом"));
+            
+            const rowProfitTax = extractTreeRow(tree, n => (n.code === "2.2.01.06" || (n.name && n.name.includes("Податок на прибуток"))));
+
+            // Побудова колонок
+            let theadHtml = `<th>Показник / Стаття</th>`;
+            periods.forEach(p => {
+                theadHtml += `<th>
+                    ${p.title}
+                    <span class="block text-[8pt] font-normal text-slate-500">${dmy(p.label)}</span>
+                    <span class="${p.type === 'fact' ? 'tag-fact' : 'tag-fcst'}">${p.type === 'fact' ? 'Факт' : 'Прогноз'}</span>
+                </th>`;
+            });
+            document.getElementById('tableHeaderRow').innerHTML = theadHtml;
+
+            // Збірка рядків
+            const rowsConfig = [
+                { title: "CAPEX (Капітальні інвестиції)", node: rowCapex, isGroup: false },
+                { title: "Залучення боргу", node: rowDebtInflow, isGroup: false },
+                { title: "Дивіденди / обслуговування боргу", node: rowDebtService, isGroup: false },
+                { title: "Залишки коштів всього", node: rowCashTotal, isGroup: true },
+                { title: "в т.ч. доступні залишки коштів", node: rowCashAvailable, isSub: true },
+                { title: "в т.ч. залишки коштів з обмеженим використанням", node: rowCashRestricted, isSub: true },
+                { title: "Податок на прибуток", node: rowProfitTax, isGroup: false }
+            ];
+
+            let tbodyHtml = "";
+            rowsConfig.forEach(cfg => {
+                const trClass = cfg.isGroup ? "row-group" : (cfg.isSub ? "row-sub" : "");
+                tbodyHtml += `<tr class="${trClass}">`;
+                tbodyHtml += `<td class="${cfg.isSub ? 'pl-6 font-normal text-slate-600' : 'font-semibold'}">${cfg.title}</td>`;
+
+                periods.forEach(p => {
+                    let val = 0;
+                    if (cfg.node && cfg.node.values) {
+                        val = cfg.node.values[p.colKey] || 0;
+                    }
+                    tbodyHtml += `<td>${fmt(val)}</td>`;
+                });
+
+                tbodyHtml += `</tr>`;
+            });
+
+            document.getElementById('tableBody').innerHTML = tbodyHtml;
+        }
+
+        // Експорт в Excel (.xlsx)
+        function exportToExcel() {
+            const table = document.getElementById("targetTable");
+            const wb = XLSX.utils.table_to_book(table, { sheet: "CF_Indirect_MonthEnd" });
+            XLSX.writeFile(wb, `Indirect_CF_MonthEnd_${currentReportDate}.xlsx`);
+        }
+
+        // Експорт в PDF
+        function exportToPDF() {
+            const el = document.getElementById('reportContainer');
+            html2pdf().set({
+                margin: 8,
+                filename: `Indirect_CF_MonthEnd_${currentReportDate}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            }).from(el).save();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

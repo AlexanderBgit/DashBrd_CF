@@ -209,18 +209,18 @@
     </div>
 
     <script>
-    // URL для отримання даних з SharePoint / Power Automate
+// URL для отримання даних з SharePoint / Power Automate
     const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 
     let DATA = null;
     let charts = {};
     let detailKey = null;
-    let collapsed = {};
+    let collapsed = {}; // Зберігає стан згортання по унікальному key
     let M = null;
 
     // Стан календаря
-    let currentReportDate = "2026-09-07"; // Початкова дата
-    let calViewDate = new Date(2026, 8, 7); // Вересень 2026
+    let currentReportDate = "2026-09-07"; 
+    let calViewDate = new Date(2026, 8, 7); 
 
     const COLORS = {
         inflow: '#0f766e', inflowPrev: '#99cfc9',
@@ -265,7 +265,7 @@
         el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + cls;
     }
 
-    // ---------- АДАПТЕР ХМАРНИХ ДАНИХ (JSON -> Snapshots) ----------
+    // ---------- АДАПТЕР ХМАРНИХ ДАНИХ (Дерево -> Плоский масив для Drill-Down) ----------
     function extractSnapshot(jsonObj, snapshotDateIso) {
         const snap = jsonObj.snapshot || jsonObj;
         if (!snap || !snap.tree) throw new Error("Не знайдено дерево даних у JSON");
@@ -277,26 +277,24 @@
         const inflowsBlock = snap.tree.find(n => n.name === "Надходження");
         const outflowsBlock = snap.tree.find(n => n.name === "Видатки");
 
-        // Рекурсивно перетворюємо дерево у плоский список статей
-        const flattenTree = (nodes, parentCode = null) => {
+        // Рекурсивно перетворюємо дерево у плоский список статей, зв'язуючи їх по унікальному KEY
+        const flattenTree = (nodes, parentKey = null) => {
             let result = [];
             if (!nodes) return result;
 
             nodes.forEach(node => {
-                // Визначаємо код або генеруємо його, якщо відсутній
                 const code = node.code || node.no || ""; 
                 const name = (node.name || "").replace(/ СП УКО/g, '').trim(); 
-                const key = name.toLowerCase();
+                const key = node.key || (parentKey + "_" + name); // Використовуємо key з JSON
                 const values = forecastKeys.map(k => (node.values && node.values[k]) ? node.values[k] : 0);
 
                 const item = { code: String(code), name, key, values };
-                if (parentCode) item.parent = String(parentCode);
+                if (parentKey) item.parent = String(parentKey);
 
-                // Додаємо поточну статтю (якщо це не порожній технічний вузол)
                 if (name) result.push(item);
 
                 if (node.children && node.children.length > 0) {
-                    result = result.concat(flattenTree(node.children, item.code));
+                    result = result.concat(flattenTree(node.children, key));
                 }
             });
             return result;
@@ -311,11 +309,9 @@
         };
     }
 
-    // Головна функція завантаження двох зрізів
     async function loadCompareDataFromCloud(curDateIso) {
         setStatus('Завантаження з хмари...', 'bg-indigo-100 text-indigo-800');
         
-        // Вираховуємо попередню дату (мінус 7 днів)
         const d = new Date(curDateIso);
         d.setDate(d.getDate() - 7);
         const prevDateIso = d.toISOString().slice(0, 10);
@@ -384,6 +380,7 @@
                 byKey[it.key].raw[role] = it.values;
             });
             put(cur[type], 'cur'); put(prev[type], 'prev');
+            
             const arts = order.map(k => byKey[k]);
             arts.forEach(a => {
                 a.excluded = isExcluded(a.name);
@@ -391,21 +388,29 @@
                 ['cur', 'prev'].forEach(role => {
                     const raw = a.raw[role] || Array(13).fill(0);
                     let eff = a.excluded ? Array(13).fill(0) : raw.slice();
-                    arts.filter(c => c.parent && c.parent === a.code && isExcluded(c.name)).forEach(c => {
+                    arts.filter(c => c.parent && c.parent === a.key && isExcluded(c.name)).forEach(c => {
                         const cr = c.raw[role] || Array(13).fill(0);
                         eff = eff.map((v, i) => v - cr[i]);
                     });
                     a.eff[role] = eff;
                 });
-                a.hasKids = arts.some(c => c.parent && c.parent === a.code);
+                // Перевіряємо дітей по KEY
+                a.hasKids = arts.some(c => c.parent && c.parent === a.key);
                 a.byWeek = {
                     cur: weeks.map(w => w.cur != null ? a.eff.cur[w.cur] : null),
                     prev: weeks.map(w => w.prev != null ? a.eff.prev[w.prev] : null)
                 };
                 a.onlyIn = !a.raw.cur ? 'prev' : (!a.raw.prev ? 'cur' : null);
+                
+                // Рахуємо глибину для відступів у таблиці
+                let depth = 0;
+                let p = arts.find(x => x.key === a.parent);
+                while(p) { depth++; p = arts.find(x => x.key === p.parent); }
+                a.depth = depth;
             });
             return arts;
         };
+        
         const inflows = buildType('inflows'), outflows = buildType('outflows');
 
         const totalOf = (arts, key, type) => {
@@ -566,7 +571,7 @@
 
     function fillDetailSelect() {
         const sel = document.getElementById('detailSelect');
-        const opt = a => a.excluded ? '' : `<option value="${a.key}" ${a.key === detailKey ? 'selected' : ''}>${a.parent ? '   ' : ''}${a.code ? a.code + '. ' : ''}${a.name}${a.excluded ? ' (виключено)' : ''}</option>`;
+        const opt = a => a.excluded ? '' : `<option value="${a.key}" ${a.key === detailKey ? 'selected' : ''}>${a.depth > 0 ? '   '.repeat(a.depth) : ''}${a.code ? a.code + '. ' : ''}${a.name}${a.excluded ? ' (виключено)' : ''}</option>`;
         sel.innerHTML =
             `<optgroup label="Підсумки">${[M.tInf, M.tOut, M.tNet].map(opt).join('')}</optgroup>` +
             `<optgroup label="Надходження">${M.inflows.map(opt).join('')}</optgroup>` +
@@ -636,19 +641,31 @@
         const rowClass = a => {
             const c = [];
             if (a.isTotal) c.push('font-bold');
-            else if (a.parent) c.push('child'); else c.push('sub');
+            else if (a.depth === 0) c.push('sub');
+            else c.push('child text-xs');
             if (a.excluded) c.push('excluded');
             c.push('clickable');
             if (a.key === detailKey) c.push('selected');
             return c.join(' ');
         };
+        
         const bg = a => a.key === '__inf' ? 'background:#ecfdf5;' : a.key === '__out' ? 'background:#fff7ed;' : a.key === '__net' ? 'background:#e2e8f0;' : '';
+        
         const nameCell = a => {
             let toggle = '';
-            if (a.hasKids) toggle = `<span class="toggle-kids" onclick="event.stopPropagation();collapsed['${a.code}']=!collapsed['${a.code}'];renderTable()">${collapsed[a.code] || !showKids ? '▸' : '▾'}</span>`;
+            
+            // Якщо стан спеціально не визначено (undefined) - використовуємо глобальний showKids. 
+            const isCol = collapsed[a.key] !== undefined ? collapsed[a.key] : (!showKids && a.depth === 0);
+            
+            if (a.hasKids) {
+                toggle = `<span class="toggle-kids" onclick="event.stopPropagation();collapsed['${a.key}']=!${isCol};renderTable()">${isCol ? '▸' : '▾'}</span>`;
+            }
+            
             const code = a.code && !a.isTotal ? `<span class="text-slate-400 mr-1">${a.code}</span>` : '';
             const tag = a.onlyIn ? ` <span class="text-[9px] text-amber-600">(лише ${a.onlyIn === 'cur' ? C : P})</span>` : '';
-            return `<td style="${bg(a)}" title="${a.name}">${toggle}${code}${a.name}${tag}</td>`;
+            const pad = a.depth > 0 ? `padding-left: ${16 + a.depth * 14}px;` : '';
+            
+            return `<td style="${bg(a)} ${pad}" title="${a.name}">${toggle}${code}${a.name}${tag}</td>`;
         };
 
         let html = '';
@@ -669,15 +686,34 @@
                 html += `<tr class="snap-row"><td>зріз ${C}</td>${valCells(a, 'cur', true)}</tr>`;
             }
         };
+
+        // Функція перевірки чи видима стаття (всі батьки розгорнуті)
+        const isParentCollapsed = (parentKey) => {
+            if (collapsed[parentKey] !== undefined) return collapsed[parentKey];
+            return !showKids;
+        };
+
+        const isVisible = (a, artsList) => {
+            if (!a.parent) return true;
+            let curr = a;
+            while (curr.parent) {
+                if (isParentCollapsed(curr.parent)) return false;
+                curr = artsList.find(x => x.key === curr.parent);
+                if (!curr) break;
+            }
+            return true;
+        };
+
         const emitGroup = (total, arts) => {
             emit(total);
             arts.forEach(a => {
                 if (a.excluded) return;
-                if (a.parent && (!showKids || collapsed[a.parent])) return;
+                if (!isVisible(a, arts)) return; // Перевірка видимості рекурсивно по дереву
                 if (a.parent && a.isZero) return;
                 emit(a);
             });
         };
+        
         emitGroup(M.tInf, M.inflows);
         emitGroup(M.tOut, M.outflows);
         emit(M.tNet);

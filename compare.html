@@ -208,8 +208,8 @@
         </div>
     </div>
 
-    <script>
-// URL для отримання даних з SharePoint / Power Automate
+<script>
+    // URL для отримання даних з SharePoint / Power Automate
     const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 
     let DATA = null;
@@ -229,6 +229,17 @@
         prevGrey: '#cbd5e1', detail: '#4f46e5', detailPrev: '#c7d2fe'
     };
     const FIN_EXCLUDE = [/отримано\s+кредитн/i, /повернення\s+кредиту/i];
+
+    // Список статей для графіку Drivers
+    const DRIVERS_LIST = [
+        "Нафта", "Газ природний", "Нафтопродукти ОПТ", "Нафтопродукти АОЗ", 
+        "Нафтопродукти роздріб АЗС", "Непаливні продажі АЗС", "Повернення покриття", 
+        "Інші надходження", "Отримано кредитних коштів", "Обов’язкові платежі", 
+        "Переробка", "Комерційний оборотний капітал", "Стратегічні інвестиції", 
+        "Інші видатки", "Видатки", "Повернення кредиту", "Відсотки за корист. кредитами", 
+        "Оплата по постімпорту", "Винагорода лізингодавця", "Комісія за обслуговування кредитів", 
+        "Комісія по постімпорту", "Комісія за обслуговування акредитиву"
+    ];
 
     // ---------- Утиліти ----------
     const DAY = 86400000;
@@ -278,7 +289,7 @@
         const flatten = (nodes, type, parentKey = null) => {
             nodes.forEach(node => {
                 const code = node.code || node.no || "";
-                const name = (node.name || "").trim();
+                const name = (node.name || "").replace(/ СП УКО/g, '').trim();
                 const key = type + '_' + (node.key || name + '_' + code);
                 const values = forecastKeys.map(k => (node.values && node.values[k]) ? node.values[k] : 0);
                 
@@ -296,74 +307,76 @@
         const outflowsBlock = snap.tree.find(n => n.name === "Видатки");
         if (outflowsBlock && outflowsBlock.children) flatten(outflowsBlock.children, 'outflows');
 
-        // --- 1. ЯВНІ ГРУПУВАННЯ ---
-        const findN = (type, nameStr, exact=false) => allRaw.find(i => i.type === type && (exact ? i.name === nameStr : i.name.toLowerCase().includes(nameStr.toLowerCase())));
-        
+        // --- 1. ЯВНІ ГРУПУВАННЯ ЗА ВИМОГАМИ ---
         // 1.1 Інші комерційні контрагенти
-        const grpComm = findN('inflows', 'Інші комерційні контрагенти', true);
-        if (grpComm) {
-            ['2.1.01.01', 'Мазут', 'СГ комерц', 'СГ СП УКО'].forEach(s => {
-                const child = s === '2.1.01.01' ? allRaw.find(i => i.code === s && i.type === 'inflows') : findN('inflows', s);
-                if (child && child.key !== grpComm.key) child.parent = grpComm.key;
-            });
+        let pComm = allRaw.find(i => i.name === 'Інші комерційні контрагенти');
+        if (pComm) {
+            allRaw.filter(i => ['2.1.01.01', 'Мазут', 'СГ комерц', 'СГ СП УКО'].includes(i.code) || ['Мазут', 'СГ комерц', 'СГ СП УКО'].includes(i.name))
+                  .forEach(i => i.parent = pComm.key);
         }
 
         // 1.2 Повернення покриття
-        const grpPov = findN('inflows', 'Повернення покриття', true);
-        const grpPostImp = allRaw.find(i => i.type === 'inflows' && i.name.toLowerCase() === 'постімпорт') || 
-                           allRaw.find(i => i.type === 'inflows' && i.name.toLowerCase().includes('постімпорт') && !i.name.toLowerCase().includes('банк'));
-        if (grpPov) {
-            ['банківські гарантії', 'кредит', 'акредитиви', 'податкові векселі'].forEach(s => {
-                const child = allRaw.find(i => i.type==='inflows' && i.name.toLowerCase().includes(s.toLowerCase()) && !i.name.toLowerCase().includes('постімпорт'));
-                if (child && child.key !== grpPov.key) child.parent = grpPov.key;
-            });
-            if (grpPostImp) {
-                grpPostImp.parent = grpPov.key;
-                ['Укргазбанк', 'Ощадбанк', 'Сенс Банк', 'Укрексімбанк', 'МТБ', 'ПУМБ', 'курсові', 'Приват Банк'].forEach(s => {
-                    const child = allRaw.find(i => i.type==='inflows' && i.name.toLowerCase().includes(s.toLowerCase()) && i.name.toLowerCase().includes('постімпорт') && i.key !== grpPostImp.key);
-                    if (child) child.parent = grpPostImp.key;
-                });
+        let pPov = allRaw.find(i => i.name === 'Повернення покриття');
+        if (pPov) {
+            let pPostImp = allRaw.find(i => i.name.toLowerCase() === 'постімпорт' && i.parent === pPov.key) || 
+                           allRaw.find(i => i.name.toLowerCase() === 'постімпорт' && i.type === 'inflows');
+            if (pPostImp) {
+                pPostImp.parent = pPov.key;
+                allRaw.filter(i => i.type === 'inflows' && i.code && i.code.includes('Повернення покриття постімпорт') && i.key !== pPostImp.key)
+                      .forEach(i => i.parent = pPostImp.key);
             }
+            allRaw.filter(i => i.type === 'inflows' && i.code && i.code.startsWith('Повернення покриття') && !i.code.includes('постімпорт') && i.key !== pPov.key)
+                  .forEach(i => i.parent = pPov.key);
         }
 
         // 1.3 Інші надходження
-        const grpOtherInf = findN('inflows', 'Інші надходження', true);
-        if (grpOtherInf) {
-            const infChildren = ['Відсотки на залишки', 'Повернення коштів за НП', 'Повернення коштів УТН', 'Послуги підготовки нафти та газу', 'Послуги з видобутку нафти і газу', 'Оренда свердловин', 'Послуги з видобутку нафти і газу СП УКО', 'Від спільної діяльності (прибуток)', 'Внутрішні надходження'];
-            infChildren.forEach(s => {
-                let child = findN('inflows', s, true);
-                if (!child) child = findN('inflows', s);
-                if (child && child.key !== grpOtherInf.key) child.parent = grpOtherInf.key;
-            });
+        let pOtherInf = allRaw.find(i => i.name === 'Інші надходження');
+        if (pOtherInf) {
+            const infNames = ['Відсотки на залишки', 'Повернення коштів за НП', 'Повернення коштів УТН', 'Послуги підготовки нафти та газу', 'Послуги з видобутку нафти і газу', 'Оренда свердловин', 'Послуги з видобутку нафти і газу СП УКО', 'Від спільної діяльності (прибуток)', 'Внутрішні надходження'];
+            allRaw.filter(i => i.type === 'inflows' && infNames.includes(i.name) && i.key !== pOtherInf.key)
+                  .forEach(i => i.parent = pOtherInf.key);
         }
+
+        // 1.4 Кредитні та лімітні лінії
+        const mapGroup = (parentStr, prefix) => {
+            let pNode = allRaw.find(i => i.name.includes(parentStr));
+            if (pNode) {
+                allRaw.filter(i => i.code && i.code.startsWith(prefix) && i.key !== pNode.key)
+                      .forEach(i => i.parent = pNode.key);
+            }
+        };
+        mapGroup('Доступні кредитні ліміти', 'Доступний кредитний ліміт ');
+        mapGroup('Заборгованність по кредитн', 'Заборгованість кредити ');
+        mapGroup('Доступний ліміт постімпорт', 'Доступний ліміт постімпорт ');
+        mapGroup('Заборгованність по постімпорт', 'Заборгованість постімпорт ');
 
         // --- 2. ГРУПУВАННЯ ПО КОДУ CF (X.X.XX) ---
         const virtualParents = [];
         allRaw.forEach(item => {
-            if (!item.code) return;
-            // Шукаємо префікс перших трьох блоків (наприклад, 2.2.04)
-            const m = item.code.match(/^(\d+\.\d+\.\d+)\./);
+            if (!item.code || item.code === "null") return;
+            const m = item.code.match(/^(\d+\.\d+\.\d+)(?:\.|$)/);
             if (m) {
                 const prefix = m[1];
-                const originalParentKey = item.parent;
-                
-                // Перевіряємо чи є вже такий вузол під цим же батьком
-                let pNode = allRaw.find(i => i.code === prefix && i.parent === originalParentKey);
-                if (!pNode) pNode = virtualParents.find(i => i.code === prefix && i.parent === originalParentKey);
+                if (item.code === prefix) return; // Якщо це сам батько — пропускаємо
 
-                if (!pNode) {
+                let pNode = allRaw.find(i => i.code === prefix);
+                if (!pNode) pNode = virtualParents.find(i => i.code === prefix);
+
+                if (pNode && pNode.key !== item.key) {
+                    item.parent = pNode.key;
+                } else if (!pNode) {
                     pNode = {
                         type: item.type,
                         code: prefix,
                         name: `Група ${prefix}`,
-                        key: `${item.type}_virt_${prefix}_${originalParentKey}`,
+                        key: `${item.type}_virt_${prefix}`,
                         values: Array(13).fill(0),
-                        parent: originalParentKey,
+                        parent: item.parent,
                         isVirtual: true
                     };
                     virtualParents.push(pNode);
+                    item.parent = pNode.key;
                 }
-                item.parent = pNode.key;
             }
         });
         allRaw.push(...virtualParents);
@@ -372,22 +385,18 @@
         function computeVirtualValues(nodeKey) {
             const node = allRaw.find(i => i.key === nodeKey);
             if (!node) return Array(13).fill(0);
-            
+            if (!node.isVirtual) return node.values;
+
             const children = allRaw.filter(i => i.parent === nodeKey);
-            if (node.isVirtual) {
-                let sums = Array(13).fill(0);
-                children.forEach(child => {
-                    const childVals = child.isVirtual ? computeVirtualValues(child.key) : child.values;
-                    sums = sums.map((v, idx) => v + childVals[idx]);
-                });
-                node.values = sums;
-                return sums;
-            } else {
-                children.forEach(child => { if(child.isVirtual) computeVirtualValues(child.key); });
-                return node.values;
-            }
+            let sums = Array(13).fill(0);
+            children.forEach(child => {
+                const childVals = computeVirtualValues(child.key);
+                sums = sums.map((v, idx) => v + childVals[idx]);
+            });
+            node.values = sums;
+            return sums;
         }
-        allRaw.filter(i => !i.parent).forEach(i => computeVirtualValues(i.key));
+        virtualParents.forEach(vp => computeVirtualValues(vp.key));
 
         return {
             start: snapshotDateIso,
@@ -400,7 +409,6 @@
 
     async function loadCompareDataFromCloud(curDateIso) {
         setStatus('Завантаження з хмари...', 'bg-indigo-100 text-indigo-800');
-        
         const d = new Date(curDateIso);
         d.setDate(d.getDate() - 7);
         const prevDateIso = d.toISOString().slice(0, 10);
@@ -417,17 +425,16 @@
                 })
             ]);
 
-            if (!resCur.ok || !resPrev.ok) throw new Error("Помилка отримання даних з API");
+            if (!resCur.ok || !resPrev.ok) throw new Error("Помилка отримання даних з API[cite: 1]");
 
             const jsonCur = await resCur.json();
             const jsonPrev = await resPrev.json();
 
-            const snapCur = extractSnapshot(jsonCur, curDateIso);
-            const snapPrev = extractSnapshot(jsonPrev, prevDateIso);
-
-            DATA = { current: snapCur, previous: snapPrev };
+            DATA = { 
+                current: extractSnapshot(jsonCur, curDateIso), 
+                previous: extractSnapshot(jsonPrev, prevDateIso) 
+            };
             
-            // Скидаємо стан і рендеримо
             detailKey = null; 
             collapsed = {}; 
             render();
@@ -440,11 +447,6 @@
     }
 
     // ---------- модель ----------
-    const weekLabel = (lbl, iso) => {
-        const s = String(lbl || '').replace(/\.\d{2,4}$/, '').replace('-', '–');
-        return s || `${dm(iso)}–${dm(isoAdd(iso, 6))}`;
-    };
-
     function buildModel(data, excludeFin) {
         if(!data) return null;
         const cur = data.current, prev = data.previous;
@@ -492,7 +494,6 @@
                 };
                 a.onlyIn = !a.raw.cur ? 'prev' : (!a.raw.prev ? 'cur' : null);
                 
-                // Розрахунок глибини для відступів у Drill-Down
                 let depth = 0;
                 let p = arts.find(x => x.key === a.parent);
                 while(p) { depth++; p = arts.find(x => x.key === p.parent); }
@@ -630,7 +631,7 @@
 
     function renderDrivers() {
         const items = [...M.inflows, ...M.outflows]
-            .filter(a => !a.hasKids && !a.excluded && Math.abs(mln(a.sumDelta)) >= 0.5)
+            .filter(a => !a.excluded && Math.abs(mln(a.sumDelta)) >= 0.5 && DRIVERS_LIST.includes(a.name.trim()))
             .sort((a, b) => b.impact - a.impact);
             
         mk('chDrivers', {
@@ -661,7 +662,7 @@
 
     function fillDetailSelect() {
         const sel = document.getElementById('detailSelect');
-        const opt = a => a.excluded ? '' : `<option value="${a.key}" ${a.key === detailKey ? 'selected' : ''}>${a.depth > 0 ? '   '.repeat(a.depth) : ''}${a.code ? a.code + '. ' : ''}${a.name}${a.excluded ? ' (виключено)' : ''}</option>`;
+        const opt = a => a.excluded ? '' : `<option value="${a.key}" ${a.key === detailKey ? 'selected' : ''}>${a.depth > 0 ? '   '.repeat(a.depth) : ''}${a.code && a.code !== "null" ? a.code + '. ' : ''}${a.name}${a.excluded ? ' (виключено)' : ''}</option>`;
         sel.innerHTML =
             `<optgroup label="Підсумки">${[M.tInf, M.tOut, M.tNet].map(opt).join('')}</optgroup>` +
             `<optgroup label="Надходження">${M.inflows.map(opt).join('')}</optgroup>` +
@@ -746,7 +747,8 @@
         
         const nameCell = a => {
             let toggle = '';
-            // Якщо стан не визначено - згорнуто (true), якщо showKids вимкнено. Всі групи стартують згорнутими.
+            // Якщо стан спеціально не визначено (undefined) - беремо глобальний стан showKids (який вимкнено). 
+            // Отже, за замовчуванням всі вузли будуть згорнуті (isCol = true).
             const isCol = collapsed[a.key] !== undefined ? collapsed[a.key] : !showKids;
             
             if (a.hasKids) {
@@ -779,10 +781,10 @@
             }
         };
 
-        // Функція перевірки чи всі батьки розгорнуті
+        // Функція перевірки чи видима стаття (всі батьки розгорнуті)
         const isParentCollapsed = (parentKey) => {
             if (collapsed[parentKey] !== undefined) return collapsed[parentKey];
-            return !showKids;
+            return !showKids; // За замовчуванням згорнуто
         };
 
         const isVisible = (a, artsList) => {
@@ -882,14 +884,13 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // За умовчанням усі групи згорнуто, тому знімаємо чекбокс розгортання
+        // Знімаємо чекбокс «Показувати субстатті», щоб усе було згорнуто за замовчуванням
         const showKidsCheckbox = document.getElementById('showKids');
         if (showKidsCheckbox) showKidsCheckbox.checked = false;
 
         // Стартове завантаження даних за 07.09.2026 
         selectDate(currentReportDate);
     });
-    </script>
     </script>
 </body>
 </html>

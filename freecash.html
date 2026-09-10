@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вільні кошти для поточних оплат — 5 тижнів (Cloud)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+    * { font-style: normal !important; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: 'Helvetica', sans-serif; background: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
+    .executive-container { width: 1587px; margin: 0 auto; background: #fff; padding: 24px 30px 20px; border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,.1); display: flex; flex-direction: column; gap: 14px; }
+    .card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+    .card h3 { font-size: 12px; font-weight: 700; color: #334155; text-align: center; }
+    .card .sub { font-size: 10px; color: #94a3b8; text-align: center; margin-bottom: 4px; }
+    .ctl label { font-size: 11px; color: #475569; display: flex; flex-direction: column; gap: 2px; }
+    .ctl input[type=number], .ctl select { border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 12px; background: #fff; }
+    .ctl input[type=number] { width: 92px; text-align: right; }
+    .wk { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; cursor: pointer; border-top-width: 4px; }
+    .wk:hover { background: #f8fafc; }
+    .wk.sel { box-shadow: 0 0 0 2px #6366f1; }
+    .wk .d { font-size: 11px; font-weight: 700; color: #334155; }
+    .wk .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+    .wk .s { font-size: 10.5px; color: #64748b; font-variant-numeric: tabular-nums; }
+    .t5 { width: 100%; border-collapse: collapse; font-size: 9.5pt; font-variant-numeric: tabular-nums; }
+    .t5 th { color: #475569; font-weight: 600; padding: 5px 8px; border-bottom: 1.5px solid #94a3b8; text-align: right; background: #f8fafc; }
+    .t5 th:first-child, .t5 td:first-child { text-align: left; }
+    .t5 th .p { display: block; font-size: 8pt; font-weight: 500; color: #94a3b8; }
+    .t5 td { padding: 4px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap; }
+    .t5 tr.b td { font-weight: 700; color: #0f172a; }
+    .t5 tr.s td { color: #64748b; font-size: 8.5pt; }
+    .t5 tr.s td:first-child { padding-left: 22px; }
+    .t5 tr.sep td { border-top: 1.5px solid #cbd5e1; }
+    .t5 tr.key td { background: #ecfdf5; }
+    .t5 td.selc { background: #eef2ff; }
+    @media print { @page { size: A3 landscape; margin: 8mm; } body { background: #fff; padding: 0; } .print-hide { display: none !important; } .executive-container { box-shadow: none; } }
+</style>
+</head>
+<body>
+<nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
+    <div>
+        <h1 class="text-lg font-bold text-slate-800">Вільні кошти для поточних оплат — 5 тижнів (Хмара)</h1>
+        <p class="text-xs text-slate-500 mt-0.5">Зріз прогнозу: <span id="navDate" class="font-semibold text-indigo-600">--</span></p>
+    </div>
+    <div class="flex items-center gap-4">
+        <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
+        <div class="relative" id="calWrap">
+            <button onclick="toggleCalendar()" id="btnCalendar" aria-haspopup="dialog" aria-expanded="false"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">
+                <span id="lblWeek">Обрати тиждень</span>
+            </button>
+            <div id="calendarDropdown" role="dialog" aria-label="Вибір тижня"
+                class="absolute top-10 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-80 hidden z-50">
+                <div class="flex justify-between items-center mb-3">
+                    <button onclick="changeCalMonth(-1)" class="px-2 py-1 hover:bg-slate-100 rounded-lg font-bold" aria-label="Попередній місяць">&larr;</button>
+                    <span id="calMonthYear" class="font-bold text-xs text-slate-800"></span>
+                    <button onclick="changeCalMonth(1)" class="px-2 py-1 hover:bg-slate-100 rounded-lg font-bold" aria-label="Наступний місяць">&rarr;</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+                    <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
+                </div>
+                <div id="calDays" class="grid grid-cols-7 gap-y-1 text-center text-xs"></div>
+                <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-100">
+                    <span class="text-[10px] text-slate-400">Клік по будь-якому дню обирає його тиждень</span>
+                    <button onclick="selectDate(todayIso())" class="text-[11px] font-semibold text-indigo-600 hover:underline">Поточний тиждень</button>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+            <button onclick="exportXlsx()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Excel</button>
+            <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк</button>
+        </div>
+        <div class="text-xs font-semibold">
+            <a href="index.html" class="text-blue-600 hover:underline mr-3">Головна</a>
+            <a href="liquidity.html" class="text-blue-600 hover:underline mr-3">Достатність ліквідності</a>
+            <a href="freecash.html" class="text-gray-800">Вільні кошти 5 тиж.</a>
+        </div>
+    </div>
+</nav>
+
+<div class="executive-container" id="dashboardContent">
+    <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+        <div>
+            <h1 class="text-xl font-bold text-slate-800">Скільки коштів лишається на поточні оплати після обов'язкових</h1>
+            <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Оберіть тиждень, щоб сформувати прогноз.</p>
+        </div>
+        <div class="text-right text-[10.5px] text-slate-500">млн грн<br><span id="hdrMode">--</span></div>
+    </div>
+
+    <div class="ctl bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-end print-hide">
+        <label>Склад обов'язкових витрат
+            <select id="mode" onchange="render()">
+                <option value="net">Обов'язкові платежі + Переробка (без дублювання)</option>
+                <option value="buffer">Точно як у формулі бази буфера</option>
+            </select></label>
+        <label>Незнижуваний залишок, млн<input type="number" id="reserve" value="0" step="100" oninput="render()"></label>
+        <label class="!flex-row items-center gap-2 cursor-pointer pb-1"><input type="checkbox" id="incDebt" checked onchange="render()"> Обслуговування боргу — обов'язкове</label>
+        <label class="!flex-row items-center gap-2 cursor-pointer pb-1"><input type="checkbox" id="incIn" checked onchange="render()"> Враховувати надходження тижня</label>
+        <label class="!flex-row items-center gap-2 cursor-pointer pb-1"><input type="checkbox" id="incCredit" onchange="render()"> Показати резерв кредитних лімітів</label>
+    </div>
+
+    <div class="grid grid-cols-5 gap-3" id="weekCards"></div>
+
+    <div class="grid grid-cols-[1.4fr_1fr] gap-3">
+        <div class="card">
+            <h3>Вільні кошти проти запланованих поточних оплат</h3>
+            <p class="sub">вільні кошти = залишок на початок + надходження + залучення − обов'язкові витрати − обслуговування боргу − незнижуваний залишок</p>
+            <div class="relative h-[330px]"><canvas id="chFree"></canvas></div>
+        </div>
+        <div class="card">
+            <h3 id="wfTitle">Розрахунок вільних коштів</h3>
+            <p class="sub">клік по тижню — розрахунок для нього</p>
+            <div class="relative h-[330px]"><canvas id="chWf"></canvas></div>
+        </div>
+    </div>
+
+    <div class="card"><table class="t5" id="tbl"></table>
+        <p class="text-[10px] text-slate-500 mt-2 leading-relaxed" id="note"></p></div>
+</div>
+
+<script>
+// =====================================================================
+// СПІЛЬНЕ ЯДРО (liquidity.html, freecash.html) — узгоджено з index.html
+// =====================================================================
+const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+const FORECAST_KEYS = ["T0","T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
+const MONTHS = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
+const MIN_LIQUIDITY_MLN = 2500;   // як minThreshold у index.html
+
+// Середньодобові обов'язкові витрати за місяць, грн (копія з index.html — оновлюйте разом).
+// Формула бази: Σ за тижнями місяця (Обов'язкові платежі + Місцеві податки + Заробітна плата
+// + Енергія + Переробка) / кількість днів місяця.
+const MONTHLY_DAILY_EXPENSE_UAH = {
+    '2026-04': 206133957.6,
+    '2026-05': 235334777.9,
+    '2026-07': 216820190.7,
+    '2026-08': 270486622.2
+};
+
+// Назви рядків зрізу — ті самі, що шукає index.html
+const NAMES = {
+    cash:      ["Доступні залишки", "Залишки доступні до використання"],
+    credit:    ["Доступні кредитні ліміти", "Доступні кредитні лінії"],
+    post:      ["Доступний ліміт постімпорт"],
+    inflow:    ["Всього надходжень"],
+    outflow:   ["Всього витрат (1+2+3+4+5)", "Всього видатків"],
+    mandatory: ["Обов’язкові платежі", "Обов'язкові платежі"],
+    local:     ["Місцеві податки"],
+    salary:    ["Заробітна плата"],
+    energy:    ["Енергія"],
+    proc:      ["Переробка"]
+};
+
+// ---------- дати ----------
+const DAY = 86400000;
+const isoAdd = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * DAY).toISOString().slice(0, 10);
+const dow = iso => new Date(iso + 'T00:00:00Z').getUTCDay();
+const toMonday = iso => isoAdd(iso, -((dow(iso) + 6) % 7));
+const dmy = iso => iso ? iso.split('-').reverse().join('.') : '--';
+const dm = iso => { const [, m, d] = iso.split('-'); return `${d}.${m}`; };
+const ym = (y, m) => { const d = new Date(Date.UTC(y, m, 1)); return { y: d.getUTCFullYear(), m: d.getUTCMonth() }; };
+const lastDay = a => new Date(Date.UTC(a.y, a.m + 1, 0)).toISOString().slice(0, 10);
+function normDate(s) {
+    if (!s) return null;
+    s = String(s).trim();
+    let m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/); if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    m = s.match(/^(\d{4}-\d{2}-\d{2})/); return m ? m[1] : null;
+}
+const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim();
+
+// ---------- JSON ----------
+function unwrap(obj, depth = 0) {
+    if (obj == null || depth > 6) return null;
+    if (typeof obj === 'string') { try { return unwrap(JSON.parse(obj), depth + 1); } catch { return null; } }
+    if (Array.isArray(obj)) { for (const x of obj) { const r = unwrap(x, depth + 1); if (r) return r; } return null; }
+    if (Array.isArray(obj.tree)) return obj;
+    if (typeof obj['$content'] === 'string') {
+        try {
+            const bytes = Uint8Array.from(atob(obj['$content']), c => c.charCodeAt(0));
+            const r = unwrap(new TextDecoder('utf-8').decode(bytes), depth + 1); if (r) return r;
+        } catch { /* далі */ }
+    }
+    for (const k of ['snapshot', 'snapshotTree', 'snapshotJson', 'body', 'data', 'content', 'value', 'result']) {
+        if (obj[k] != null) { const r = unwrap(obj[k], depth + 1); if (r) return r; }
+    }
+    return null;
+}
+async function fetchSnapshot(iso) {
+    const res = await fetch(GET_METRICS_FLOW_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
+    });
+    const txt = await res.text();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!txt.trim()) throw new Error('порожня відповідь');
+    const snap = unwrap(JSON.parse(txt));
+    if (!snap) throw new Error('у відповіді немає дерева tree');
+    return snap;
+}
+
+function flatTree(nodes, acc = []) { (nodes || []).forEach(n => { acc.push(n); if (n.children) flatTree(n.children, acc); }); return acc; }
+// точний збіг назви; серед дублів — keep=true, потім більше значень (як findSnapshotNode в index.html)
+function findNode(all, names) {
+    const nVals = n => Object.keys(n.values || {}).length;
+    for (const nm of names) {
+        const t = nm.trim().toLowerCase();
+        const hits = all.filter(n => cleanName(n.name).toLowerCase() === t);
+        if (hits.length) return hits.sort((a, b) => (Number(!!b.keep) - Number(!!a.keep)) || (nVals(b) - nVals(a)))[0];
+    }
+    return null;
+}
+function val(node, key) {
+    if (!node || !node.values) return 0;
+    let v = node.values[key];
+    if (v == null || v === '') return 0;
+    if (typeof v === 'string') {
+        v = v.replace(/[\s\u00A0\u202F\u2009]/g, '').replace(/\u2212/g, '-');
+        v = (v.includes('.') && v.includes(',')) ? v.replace(/,/g, '') : v.replace(',', '.');
+    }
+    const n = Number(v);
+    return isFinite(n) ? n : 0;
+}
+
+// ---------- модель зрізу ----------
+function buildModel(snap, iso) {
+    const all = flatTree(snap.tree);
+    const N = {};
+    Object.keys(NAMES).forEach(k => N[k] = findNode(all, NAMES[k]));
+    const outB = snap.tree.find(n => cleanName(n.name) === 'Видатки' && n.children);
+    const rows = outB ? outB.children : [];
+    const noOf = r => String(r.no ?? '').trim();
+    N.debtIn = rows.find(r => r.kind === 'item' && noOf(r) === '6.1.1') || findNode(all, ['Отримано кредитних коштів']);
+    N.debtSvc = rows.find(r => r.kind === 'item' && noOf(r) === '6.2') || null;
+    N.principal = rows.find(r => r.kind === 'item' && /^6\.2\.\d+$/.test(noOf(r)) && /повернення\s+кредит|погашення\s+кредит/iu.test(r.name || '')) || null;
+
+    const cv = N.cash && N.cash.values ? N.cash.values : {};
+    const tm1 = cv.Tm1_fact !== undefined ? 'Tm1_fact' : (cv.Tm1_forecast !== undefined ? 'Tm1_forecast' : 'Tm1_plan');
+    const start = normDate(snap.meta && (snap.meta.forecast_date || snap.meta.plan_fact_date)) || iso;
+    const cols = snap.columns || {};
+    const A = n => Math.abs(n);
+
+    const weeks = FORECAST_KEYS.map((k, i) => {
+        const pk = i ? FORECAST_KEYS[i - 1] : tm1;
+        const mon = isoAdd(start, 7 * i);
+        const principal = A(val(N.principal, k)), debtSvc = A(val(N.debtSvc, k));
+        return {
+            i, key: k, mon, sun: isoAdd(mon, 6),
+            label: `${dm(mon)}–${dm(isoAdd(mon, 6))}`,
+            open: val(N.cash, pk), close: val(N.cash, k),
+            credit: val(N.credit, k), post: val(N.post, k),
+            inflow: A(val(N.inflow, k)), outTotal: A(val(N.outflow, k)),
+            mCore: A(val(N.mandatory, k)), mLocal: A(val(N.local, k)), mSalary: A(val(N.salary, k)),
+            mEnergy: A(val(N.energy, k)), mProc: A(val(N.proc, k)),
+            debtIn: A(val(N.debtIn, k)), debtSvc, principal, interest: Math.max(0, debtSvc - principal)
+        };
+    });
+    const w0 = { credit: val(N.credit, tm1), cash: val(N.cash, tm1), post: val(N.post, tm1) };
+    const missing = ['cash', 'credit', 'inflow', 'outflow', 'mandatory', 'proc'].filter(k => !N[k]).map(k => NAMES[k][0])
+        .concat(N.debtSvc ? [] : ['6.2 Фінансові видатки']).concat(N.debtIn ? [] : ['6.1.1 Отримано кредитних коштів']);
+    return { start, tm1, N, weeks, w0, cols, missing };
+}
+
+// Обов'язкові витрати тижня.
+//  'net'    — Обов'язкові платежі + Переробка (без подвійного обліку: Місцеві податки, ЗП,
+//             Енергія вже входять в Обов'язкові платежі);
+//  'buffer' — точно як у формулі бази буфера (з дублюванням, як у файлі-джерелі).
+const mandatoryOf = (w, mode) => mode === 'buffer' ? w.mCore + w.mLocal + w.mSalary + w.mEnergy + w.mProc : w.mCore + w.mProc;
+
+// Середньодобова база буфера для тижня (грн): ручне значення → конфіг місяця → оцінка з прогнозу
+function dailyBase(w, M, overrideMln) {
+    if (overrideMln > 0) return { v: overrideMln * 1e6, src: 'вручну' };
+    const key = isoAdd(w.mon, 3).slice(0, 7);             // місяць за четвергом тижня
+    if (MONTHLY_DAILY_EXPENSE_UAH[key] != null) return { v: MONTHLY_DAILY_EXPENSE_UAH[key], src: `база ${key}` };
+    const same = M.weeks.filter(x => isoAdd(x.mon, 3).slice(0, 7) === key);
+    const avg = same.reduce((s, x) => s + mandatoryOf(x, 'buffer'), 0) / Math.max(1, same.length) / 7;
+    return { v: avg, src: `оцінка з прогнозу ${key}` };
+}
+
+// ---------- формат ----------
+const mlnR = v => v == null || !isFinite(v) ? null : Math.round(v / 1e6);
+function fmt(v, signed) {
+    const r = mlnR(v);
+    if (r == null) return '–';
+    if (r === 0) return '0';
+    return (r < 0 ? '−' : (signed ? '+' : '')) + Math.abs(r).toLocaleString('uk-UA').replace(/[\u202F\u00A0]/g, ' ');
+}
+const daysForm = n => { const a = Math.abs(Math.trunc(n)), m100 = a % 100, m10 = a % 10;
+    return (m100 >= 11 && m100 <= 14) ? 'днів' : m10 === 1 ? 'день' : (m10 >= 2 && m10 <= 4) ? 'дні' : 'днів'; };
+function setStatus(text, cls) {
+    const el = document.getElementById('dataStatus');
+    el.textContent = text; el.title = text;
+    el.className = 'text-xs font-medium px-2.5 py-1 rounded-full max-w-[460px] truncate ' + cls;
+}
+const numIn = id => { const v = parseFloat(String(document.getElementById(id).value).replace(',', '.')); return isFinite(v) ? v : 0; };
+
+// підписи значень над стовпчиками / точками (без плагіна datalabels)
+const valueLabels = {
+    id: 'valueLabels',
+    afterDatasetsDraw(chart, a, opts) {
+        if (!opts || !opts.sets) return;
+        const { ctx } = chart;
+        ctx.save(); ctx.font = '600 10px Helvetica'; ctx.textAlign = 'center';
+        opts.sets.forEach(di => {
+            const meta = chart.getDatasetMeta(di);
+            if (meta.hidden) return;
+            meta.data.forEach((el, i) => {
+                const v = chart.data.datasets[di].data[i];
+                if (v == null) return;
+                ctx.fillStyle = opts.color ? opts.color(di, i, v) : '#334155';
+                const txt = opts.fmt ? opts.fmt(v, di, i) : Math.round(v).toLocaleString('uk-UA');
+                const y = Array.isArray(v) ? Math.min(el.y, el.base) - 5 : (v >= 0 ? el.y - 5 : el.y + 12);
+                ctx.fillText(txt, el.x, y);
+            });
+        });
+        ctx.restore();
+    }
+};
+
+
+const HORIZON = 5;
+let M = null, R = null, charts = {}, loadToken = 0, selIdx = 0;
+
+async function loadReport(anyIso) {
+    if (!anyIso) return;
+    const token = ++loadToken, D = toMonday(anyIso);
+    selectedMonday = D;
+    document.getElementById('lblWeek').textContent = `Тиждень ${dm(D)}–${dmy(isoAdd(D, 6))}`;
+    setStatus(`Завантаження зрізу ${dmy(D)}…`, 'bg-indigo-100 text-indigo-800');
+    try {
+        const snap = await fetchSnapshot(D);
+        if (token !== loadToken) return;
+        const m = buildModel(snap, D);
+        if (m.start !== D) { setStatus(`Flow повернув зріз ${dmy(m.start)} замість ${dmy(D)}`, 'bg-red-100 text-red-800'); return; }
+        M = m; selIdx = 0; render();
+        setStatus(M.missing.length ? 'Увага: не знайдено ' + M.missing.join(', ') : `Зріз ${dmy(D)} завантажено`,
+                  M.missing.length ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
+    } catch (e) { if (token === loadToken) setStatus(`Зріз ${dmy(D)} не завантажено: ${e.message}`, 'bg-red-100 text-red-800'); }
+}
+
+// ---------- розрахунок ----------
+// Каскад: залишок на кінець тижня = на початок + надходження + залучення − обов'язкові − борг
+//         − поточні оплати + інші потоки поза статтями (так базовий варіант збігається з залишками зрізу).
+function compute() {
+    const mode = document.getElementById('mode').value, reserve = numIn('reserve') * 1e6;
+    const incDebt = document.getElementById('incDebt').checked, incIn = document.getElementById('incIn').checked;
+    let open = M.w0.cash, prevCredit = M.w0.credit;
+    const rows = M.weeks.slice(0, HORIZON).map(w => {
+        const mandNet = mandatoryOf(w, 'net');
+        const mand = mandatoryOf(w, mode);
+        const inflow = incIn ? w.inflow : 0;
+        const debt = incDebt ? w.debtSvc : 0;
+        const planned = Math.max(0, w.outTotal - mandNet) + (incDebt ? 0 : w.debtSvc) - (mode === 'buffer' ? (mand - mandNet) : 0);
+        const resid = (w.close - w.open) - (w.inflow - w.outTotal + w.debtIn - w.debtSvc);
+        const free = open + inflow + w.debtIn - mand - debt - reserve;
+        const surplus = free - Math.max(0, planned);
+        const coverage = planned > 0 ? free / planned : null;
+        const b = dailyBase(w, M, 0);
+        const bufStart = b.v > 0 ? (open + prevCredit) / b.v : null;
+        const close = open + inflow + w.debtIn - mand - debt - planned + resid;
+        const state = free <= 0 ? 'red' : surplus < 0 ? 'amber' : 'green';
+        const r = { w, open, inflow, debtIn: w.debtIn, mand, mandNet, debt, reserve, free, planned: Math.max(0, planned), surplus, coverage,
+                    resid, close, credit: w.credit, prevCredit, bufStart, base: b, state };
+        open = close; prevCredit = w.credit;
+        return r;
+    });
+    return { rows, mode, reserve, incDebt, incIn };
+}
+
+const COL = { green: '#059669', amber: '#d97706', red: '#dc2626' };
+const STATE_TXT = { green: 'вистачає на всі поточні оплати', amber: 'вистачає лише на частину', red: 'вільних коштів немає' };
+
+function mk(id, cfg) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id).getContext('2d'), cfg); }
+const baseOpts = () => ({ responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+    scales: { y: { ticks: { font: { size: 9.5 }, callback: v => v.toLocaleString('uk-UA') }, grid: { color: '#eef2f7' } },
+              x: { ticks: { font: { size: 10 } }, grid: { display: false } } },
+    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } },
+               tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.raw == null ? '–' : (Array.isArray(c.raw) ? Math.round(c.raw[1] - c.raw[0]) : c.raw).toLocaleString('uk-UA')}` } } } });
+
+function selectWeek(i) { selIdx = i; render(); }
+
+function render() {
+    if (!M) return;
+    R = compute();
+    const rows = R.rows, m = v => mlnR(v);
+    const showCredit = document.getElementById('incCredit').checked;
+    document.getElementById('navDate').textContent = dmy(M.start);
+    document.getElementById('hdrSub').textContent =
+        `Зріз ${dmy(M.start)}: залишок на початок — факт на ${dmy(isoAdd(M.start, -1))} (${fmt(M.w0.cash)} млн), тижні ${rows[0].w.label} … ${rows[HORIZON - 1].w.label}.`;
+    document.getElementById('hdrMode').textContent = (R.mode === 'net' ? "обов'язкові: платежі + переробка" : "обов'язкові: як у базі буфера") +
+        (R.incDebt ? ' + борг' : '') + (R.reserve ? `, резерв ${fmt(R.reserve)}` : '') + (R.incIn ? '' : ', без надходжень');
+
+    // --- картки тижнів ---
+    document.getElementById('weekCards').innerHTML = rows.map((r, i) => `
+        <div class="wk ${i === selIdx ? 'sel' : ''}" style="border-top-color:${COL[r.state]}" onclick="selectWeek(${i})" tabindex="0"
+             onkeydown="if(event.key==='Enter')selectWeek(${i})">
+            <div class="d">${r.w.key.replace('T', 'Т')} · ${r.w.label}</div>
+            <div class="v" style="color:${COL[r.state]}">${fmt(r.free)} <span class="text-xs font-medium text-slate-400">млн вільних</span></div>
+            <div class="s">поточні оплати за планом ${fmt(r.planned)}; ${r.surplus >= 0 ? 'запас' : 'нестача'} ${fmt(Math.abs(r.surplus))}</div>
+            <div class="s">${r.coverage == null ? '' : `покриття ${Math.round(r.coverage * 100)}% · `}${STATE_TXT[r.state]}</div>
+            <div class="s">буфер на початок: ${r.bufStart == null ? '–' : Math.round(r.bufStart) + ' ' + daysForm(Math.round(r.bufStart))}</div>
+        </div>`).join('');
+
+    // --- основний графік ---
+    const labels = rows.map(r => [r.w.key.replace('T', 'Т'), r.w.label]);
+    const ds = [
+        { type: 'line', label: "Обов'язкові витрати + борг (зарезервовано)", data: rows.map(r => m(r.mand + r.debt)), borderColor: '#c2410c', backgroundColor: '#c2410c',
+          borderDash: [6, 4], borderWidth: 2, pointRadius: 3, order: 0, stack: 'l' },
+        { label: 'Вільні кошти для поточних оплат', data: rows.map(r => m(r.free)), backgroundColor: rows.map(r => COL[r.state]), borderRadius: 3, stack: 'a', order: 1 }
+    ];
+    if (showCredit) ds.push({ label: 'Резерв: доступні кредитні ліміти', data: rows.map(r => m(r.prevCredit)), backgroundColor: 'rgba(99,102,241,0.25)', borderColor: '#6366f1', borderWidth: 1, borderRadius: 3, stack: 'a', order: 1 });
+    ds.push({ label: 'Заплановані поточні оплати', data: rows.map(r => m(r.planned)), backgroundColor: '#94a3b8', borderRadius: 3, stack: 'b', order: 1 });
+    const o = baseOpts(); o.scales.x.stacked = true; o.scales.y.stacked = true;
+    o.onClick = (e, els) => { if (els.length) selectWeek(els[0].index); };
+    o.plugins.valueLabels = { sets: [1, ds.length - 1], fmt: v => v.toLocaleString('uk-UA'), color: (di, i) => di === 1 ? COL[rows[i].state] : '#475569' };
+    mk('chFree', { type: 'bar', plugins: [valueLabels], data: { labels, datasets: ds }, options: o });
+
+    // --- водоспад обраного тижня ---
+    const r = rows[selIdx];
+    const steps = [['Залишок на початок', r.open, 'base'], ['Надходження', r.inflow, 'up'], ['Залучення кредитів', r.debtIn, 'up'],
+                   ["Обов'язкові витрати", -r.mand, 'down'], ['Обслуговування боргу', -r.debt, 'down'], ['Незнижуваний залишок', -r.reserve, 'down'],
+                   ['Вільні кошти', r.free, 'total'], ['Поточні оплати за планом', -r.planned, 'down'], ['Після всіх оплат', r.surplus, 'total']]
+        .filter(s => s[2] === 'base' || s[2] === 'total' || Math.abs(s[1]) >= 5e5);
+    let run = 0;
+    const bars = steps.map(([lbl, v, t]) => {
+        if (t === 'base' || t === 'total') { run = v; return [0, m(v)]; }
+        const a = run; run += v; return [m(a), m(run)];
+    });
+    document.getElementById('wfTitle').textContent = `Розрахунок вільних коштів: ${r.w.key.replace('T', 'Т')} · ${r.w.label}`;
+    const ow = baseOpts(); ow.plugins.legend = { display: false }; ow.interaction = { mode: 'nearest', intersect: true };
+    ow.plugins.valueLabels = { sets: [0], fmt: (v, di, i) => { const s = steps[i]; return (s[2] === 'down' ? '−' : s[2] === 'up' ? '+' : '') + Math.abs(m(s[1])).toLocaleString('uk-UA'); } };
+    mk('chWf', { type: 'bar', plugins: [valueLabels], data: { labels: steps.map(s => s[0]), datasets: [{
+        label: 'млн грн', data: bars, borderRadius: 2,
+        backgroundColor: steps.map(s => s[2] === 'base' ? '#475569' : s[2] === 'up' ? '#0f766e' : s[2] === 'down' ? '#f97316' : (s[1] >= 0 ? '#059669' : '#dc2626'))
+    }] }, options: Object.assign(ow, { scales: { x: { ticks: { font: { size: 9 }, maxRotation: 40, minRotation: 40 }, grid: { display: false } },
+                                                  y: { ticks: { font: { size: 9.5 }, callback: v => v.toLocaleString('uk-UA') }, grid: { color: '#eef2f7' } } } }) });
+
+    renderTable();
+}
+
+function tableSpec() {
+    const buf = R.mode === 'buffer';
+    return [
+        ['Залишок на початок тижня', r => r.open, ''],
+        ['Надходження тижня', r => r.inflow, ''],
+        ['Залучення кредитів', r => r.debtIn, ''],
+        ["Обов'язкові витрати", r => -r.mand, 'b sep'],
+        ["Обов'язкові платежі", r => -r.w.mCore, 's'],
+        ['в т.ч. місцеві податки', r => -r.w.mLocal, 's'],
+        ['в т.ч. заробітна плата', r => -r.w.mSalary, 's'],
+        ['в т.ч. енергія', r => -r.w.mEnergy, 's'],
+        ['Переробка', r => -r.w.mProc, 's'],
+        ...(buf ? [['дублювання з формули бази буфера', r => -(r.mand - r.mandNet), 's']] : []),
+        ['Обслуговування боргу', r => -r.debt, 'b'],
+        ['в т.ч. повернення тіла кредитів', r => R.incDebt ? -r.w.principal : 0, 's'],
+        ['в т.ч. відсотки та комісії', r => R.incDebt ? -r.w.interest : 0, 's'],
+        ['Незнижуваний залишок', r => -r.reserve, ''],
+        ['Вільні кошти для поточних оплат', r => r.free, 'b key sep'],
+        ['Заплановані поточні оплати', r => -r.planned, ''],
+        ['Запас / нестача після всіх оплат', r => r.surplus, 'b'],
+        ['Інші потоки поза статтями', r => r.resid, 's'],
+        ['Залишок на кінець тижня', r => r.close, 'sep'],
+        ['Доступні кредитні ліміти (резерв)', r => r.credit, 's']
+    ];
+}
+
+function renderTable() {
+    const rows = R.rows;
+    let h = `<thead><tr><th>Показник</th>${rows.map((r, i) => `<th class="${i === selIdx ? 'selc' : ''}">${r.w.key.replace('T', 'Т')}<span class="p">${r.w.label}</span></th>`).join('')}<th>Разом 5 тиж.</th></tr></thead><tbody>`;
+    tableSpec().forEach(([lbl, f, cls]) => {
+        const vals = rows.map(f);
+        const stock = /залишок|вільні|запас|ліміти/i.test(lbl);
+        const tot = stock ? null : vals.reduce((s, v) => s + v, 0);
+        const neg = v => (lbl.startsWith('Вільні') || lbl.startsWith('Запас')) && v < 0;
+        h += `<tr class="${cls}"><td>${lbl}</td>${vals.map((v, i) => `<td class="${i === selIdx ? 'selc' : ''}" style="${neg(v) ? 'color:#b91c1c' : ''}">${fmt(v, lbl.startsWith('Запас'))}</td>`).join('')}` +
+             `<td class="font-semibold">${tot == null ? '' : fmt(tot)}</td></tr>`;
+    });
+    h += `<tr class="sep"><td>Покриття поточних оплат вільними коштами</td>${rows.map((r, i) => `<td class="${i === selIdx ? 'selc' : ''}" style="color:${COL[r.state]};font-weight:700">${r.coverage == null ? '–' : Math.round(r.coverage * 100) + '%'}</td>`).join('')}<td></td></tr>`;
+    h += `<tr><td>Буфер ліквідності на початок тижня, днів</td>${rows.map((r, i) => `<td class="${i === selIdx ? 'selc' : ''}">${r.bufStart == null ? '–' : Math.round(r.bufStart)}</td>`).join('')}<td class="text-slate-400 text-[8pt]">${[...new Set(rows.map(r => r.base.src))].join('; ')}</td></tr>`;
+    document.getElementById('tbl').innerHTML = h + '</tbody>';
+
+    document.getElementById('note').textContent =
+        `Вільні кошти — сума, яку можна спрямувати на поточні (необов'язкові) оплати тижня після резервування обов'язкових витрат з бази буфера ліквідності. ` +
+        `Обов'язкові: ${R.mode === 'net' ? "Обов'язкові платежі (уже містять місцеві податки, ЗП, енергію) + Переробка" : 'точно як у формулі бази буфера: Обов’язкові платежі + Місцеві податки + ЗП + Енергія + Переробка — з подвійним обліком, як у файлі-джерелі, тобто консервативно'}` +
+        `${R.incDebt ? '; обслуговування боргу (стаття 6.2) також резервується першочергово' : '; обслуговування боргу віднесено до поточних оплат'}. ` +
+        `Заплановані поточні оплати — решта видатків зрізу (статті 1–5 без обов'язкових). Залишок на кінець тижня переходить на початок наступного, тому без змін налаштувань він збігається з доступними залишками зрізу. ` +
+        `Кредитні ліміти показано окремо як резерв і у вільні кошти не включено.`;
+}
+
+function exportXlsx() {
+    if (!M || !window.XLSX) { setStatus('Excel недоступний: бібліотека не завантажилась', 'bg-red-100 text-red-800'); return; }
+    const rows = R.rows;
+    const aoa = [[`Вільні кошти для поточних оплат, млн грн; зріз ${dmy(M.start)}; ${document.getElementById('hdrMode').textContent}`], [],
+        ['Показник', ...rows.map(r => `${r.w.key} ${r.w.label}`)],
+        ...tableSpec().map(([lbl, f]) => [lbl, ...rows.map(r => mlnR(f(r)))]),
+        ['Покриття поточних оплат, %', ...rows.map(r => r.coverage == null ? null : Math.round(r.coverage * 100))],
+        ['Буфер на початок тижня, днів', ...rows.map(r => r.bufStart == null ? null : Math.round(r.bufStart))]];
+    const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 44 }, ...rows.map(() => ({ wch: 16 }))];
+    XLSX.utils.book_append_sheet(wb, ws, 'Вільні кошти');
+    XLSX.writeFile(wb, `Вільні_кошти_5тиж_${dmy(M.start)}.xlsx`);
+}
+
+// ---------- КАЛЕНДАР (українською, тиждень пн–нд) ----------
+let selectedMonday = null;
+let calView = { y: new Date().getFullYear(), m: new Date().getMonth() };
+const todayIso = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+
+function toggleCalendar(force) {
+    const dd = document.getElementById('calendarDropdown');
+    const open = force !== undefined ? force : dd.classList.contains('hidden');
+    dd.classList.toggle('hidden', !open);
+    document.getElementById('btnCalendar').setAttribute('aria-expanded', String(open));
+    if (open) {
+        if (selectedMonday) { const [y, m] = selectedMonday.split('-').map(Number); calView = { y, m: m - 1 }; }
+        renderCalendar();
+    }
+}
+function changeCalMonth(d) { calView = ym(calView.y, calView.m + d); renderCalendar(); }
+
+function renderCalendar() {
+    document.getElementById('calMonthYear').textContent = `${MONTHS[calView.m]} ${calView.y}`;
+    const first = `${calView.y}-${String(calView.m + 1).padStart(2, '0')}-01`;
+    const gridStart = toMonday(first);
+    const last = lastDay(calView);
+    const gridEnd = isoAdd(toMonday(last), 6);
+    const today = todayIso(), curMon = toMonday(today);
+    let html = '';
+    for (let d = gridStart; d <= gridEnd; d = isoAdd(d, 1)) {
+        const mon = toMonday(d);
+        const inMonth = d.slice(0, 7) === first.slice(0, 7);
+        const sel = mon === selectedMonday;
+        const col = (dow(d) + 6) % 7;                           // 0 = пн … 6 = нд
+        const round = col === 0 ? 'rounded-l-lg' : col === 6 ? 'rounded-r-lg' : '';
+        const cls = sel ? `bg-indigo-600 text-white ${round}`
+                  : `${inMonth ? 'text-slate-700' : 'text-slate-300'} hover:bg-indigo-50 ${d === today ? 'ring-1 ring-inset ring-indigo-400 rounded-lg' : ''}`;
+        const future = mon > curMon ? ' title="Зріз за цей тиждень ще може бути відсутній"' : '';
+        html += `<button onclick="selectDate('${d}')" data-mon="${mon}" onmouseenter="hoverWeek('${mon}')" onmouseleave="hoverWeek(null)"
+                   class="py-1.5 text-xs font-semibold ${cls}"${future}>${Number(d.slice(8))}</button>`;
+    }
+    document.getElementById('calDays').innerHTML = html;
+}
+// підсвічує весь тиждень під курсором
+function hoverWeek(mon) {
+    document.querySelectorAll('#calDays button').forEach(b => {
+        if (b.dataset.mon === selectedMonday) return;
+        b.classList.toggle('bg-indigo-50', !!mon && b.dataset.mon === mon);
+    });
+}
+function selectDate(iso) {
+    toggleCalendar(false);
+    loadReport(iso);
+}
+document.addEventListener('click', e => {
+    if (!document.getElementById('calWrap').contains(e.target)) toggleCalendar(false);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleCalendar(false); });
+
+document.addEventListener('DOMContentLoaded', () => loadReport(todayIso()));
+
+</script>
+</body>
+</html>

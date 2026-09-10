@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прогноз достатності ліквідності (Cloud)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+    * { font-style: normal !important; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: 'Helvetica', sans-serif; background: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
+    .executive-container { width: 1587px; margin: 0 auto; background: #fff; padding: 24px 30px 20px; border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,.1); display: flex; flex-direction: column; gap: 14px; }
+    .card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+    .card h3 { font-size: 12px; font-weight: 700; color: #334155; text-align: center; }
+    .card .sub { font-size: 10px; color: #94a3b8; text-align: center; margin-bottom: 4px; }
+    .kpi { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; }
+    .kpi .t { font-size: 11px; font-weight: 600; color: #64748b; }
+    .kpi .v { font-size: 26px; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums; line-height: 1.15; }
+    .kpi .v small { font-size: 12px; font-weight: 500; color: #94a3b8; }
+    .kpi .s { font-size: 10.5px; color: #64748b; font-variant-numeric: tabular-nums; }
+    .ctl label { font-size: 11px; color: #475569; display: flex; flex-direction: column; gap: 2px; }
+    .ctl input[type=number] { width: 92px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 12px; text-align: right; }
+    .t13 { width: 100%; border-collapse: collapse; font-size: 8.5pt; font-variant-numeric: tabular-nums; table-layout: fixed; }
+    .t13 th { color: #475569; font-weight: 600; padding: 4px 3px; border-bottom: 1.5px solid #94a3b8; text-align: right; background: #f8fafc; }
+    .t13 th:first-child { width: 17%; text-align: left; padding-left: 6px; }
+    .t13 th .p { display: block; font-size: 7pt; font-weight: 500; color: #94a3b8; }
+    .t13 td { padding: 3px 3px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap; overflow: hidden; }
+    .t13 td:first-child { text-align: left; padding-left: 6px; }
+    .t13 tr.b td { font-weight: 700; color: #0f172a; }
+    .t13 tr.s td { color: #64748b; font-size: 8pt; }
+    .t13 tr.s td:first-child { padding-left: 20px; }
+    .t13 tr.sep td { border-top: 1.5px solid #cbd5e1; }
+    .t13 td.c0 { background: #f1f5f9; }
+    .st { display: inline-block; padding: 1px 5px; border-radius: 8px; font-size: 7.5pt; font-weight: 700; }
+    .st-ok { background: #d1fae5; color: #065f46; } .st-warn { background: #fef3c7; color: #92400e; }
+    .st-low { background: #fee2e2; color: #991b1b; } .st-gap { background: #7f1d1d; color: #fff; }
+    @media print { @page { size: A3 landscape; margin: 8mm; } body { background: #fff; padding: 0; } .print-hide { display: none !important; } .executive-container { box-shadow: none; } }
+</style>
+</head>
+<body>
+<nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
+    <div>
+        <h1 class="text-lg font-bold text-slate-800">Прогноз достатності ліквідності (Хмара)</h1>
+        <p class="text-xs text-slate-500 mt-0.5">Зріз прогнозу: <span id="navDate" class="font-semibold text-indigo-600">--</span></p>
+    </div>
+    <div class="flex items-center gap-4">
+        <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
+        <div class="relative" id="calWrap">
+            <button onclick="toggleCalendar()" id="btnCalendar" aria-haspopup="dialog" aria-expanded="false"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">
+                <span id="lblWeek">Обрати тиждень</span>
+            </button>
+            <div id="calendarDropdown" role="dialog" aria-label="Вибір тижня"
+                class="absolute top-10 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-80 hidden z-50">
+                <div class="flex justify-between items-center mb-3">
+                    <button onclick="changeCalMonth(-1)" class="px-2 py-1 hover:bg-slate-100 rounded-lg font-bold" aria-label="Попередній місяць">&larr;</button>
+                    <span id="calMonthYear" class="font-bold text-xs text-slate-800"></span>
+                    <button onclick="changeCalMonth(1)" class="px-2 py-1 hover:bg-slate-100 rounded-lg font-bold" aria-label="Наступний місяць">&rarr;</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+                    <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
+                </div>
+                <div id="calDays" class="grid grid-cols-7 gap-y-1 text-center text-xs"></div>
+                <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-100">
+                    <span class="text-[10px] text-slate-400">Клік по будь-якому дню обирає його тиждень</span>
+                    <button onclick="selectDate(todayIso())" class="text-[11px] font-semibold text-indigo-600 hover:underline">Поточний тиждень</button>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+            <button onclick="exportXlsx()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Excel</button>
+            <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк</button>
+        </div>
+        <div class="text-xs font-semibold">
+            <a href="index.html" class="text-blue-600 hover:underline mr-3">Головна</a>
+            <a href="liquidity.html" class="text-gray-800 mr-3">Достатність ліквідності</a>
+            <a href="freecash.html" class="text-blue-600 hover:underline">Вільні кошти 5 тиж.</a>
+        </div>
+    </div>
+</nav>
+
+<div class="executive-container" id="dashboardContent">
+    <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+        <div>
+            <h1 class="text-xl font-bold text-slate-800">Чи вистачить ліквідності на горизонті 13 тижнів</h1>
+            <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Оберіть тиждень, щоб сформувати прогноз.</p>
+        </div>
+        <div class="text-right text-[10.5px] text-slate-500">млн грн<br><span id="hdrScen">базовий сценарій</span></div>
+    </div>
+
+    <div class="ctl bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-end print-hide">
+        <label>Мінімальний рівень ліквідності, млн<input type="number" id="thr" value="2500" step="100" oninput="render()"></label>
+        <label>Цільовий буфер, днів<input type="number" id="target" value="30" step="1" oninput="render()"></label>
+        <label>База буфера, млн/день<input type="number" id="baseOv" placeholder="з конфігу" step="1" oninput="render()"></label>
+        <div class="border-l border-slate-300 pl-6 flex gap-6 items-end">
+            <span class="text-xs font-bold text-slate-600 self-center">Стрес-сценарій:</span>
+            <label>Недоотримання надходжень, %<input type="number" id="inHair" value="0" step="5" min="0" max="100" oninput="render()"></label>
+            <label>Зростання обов'язкових витрат, %<input type="number" id="mandUp" value="0" step="5" min="0" oninput="render()"></label>
+            <label>Скорочення кредитних ліміт, %<input type="number" id="crHair" value="0" step="10" min="0" max="100" oninput="render()"></label>
+            <label class="!flex-row items-center gap-2 cursor-pointer pb-1"><input type="checkbox" id="noBorrow" onchange="render()"> Без нових залучень кредитів</label>
+            <button onclick="resetScen()" class="text-xs text-indigo-600 font-semibold hover:underline pb-1">Скинути</button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-4 gap-3" id="kpis"></div>
+
+    <div class="card bg-slate-50" id="verdict"></div>
+
+    <div class="grid grid-cols-[1.35fr_1fr] gap-3">
+        <div class="card">
+            <h3>Доступна ліквідність проти мінімального рівня</h3>
+            <p class="sub">доступні залишки + доступні кредитні ліміти, на кінець тижня</p>
+            <div class="relative h-[300px]"><canvas id="chLiq"></canvas></div>
+        </div>
+        <div class="card">
+            <h3>Буфер ліквідності, днів</h3>
+            <p class="sub">доступна ліквідність / середньодобові обов'язкові витрати місяця</p>
+            <div class="relative h-[300px]"><canvas id="chBuf"></canvas></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Що рухає залишки: потоки тижня</h3>
+        <p class="sub">надходження і залучення — вгору, обов'язкові та інші видатки й обслуговування боргу — вниз; лінія — зміна залишків</p>
+        <div class="relative h-[280px]"><canvas id="chFlow"></canvas></div>
+    </div>
+
+    <div class="card overflow-x-auto"><table class="t13" id="tbl"></table>
+        <p class="text-[10px] text-slate-500 mt-2 leading-relaxed" id="note"></p></div>
+</div>
+
+<script>
+// =====================================================================
+// СПІЛЬНЕ ЯДРО (liquidity.html, freecash.html) — узгоджено з index.html
+// =====================================================================
+const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+const FORECAST_KEYS = ["T0","T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
+const MONTHS = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
+const MIN_LIQUIDITY_MLN = 2500;   // як minThreshold у index.html
+
+// Середньодобові обов'язкові витрати за місяць, грн (копія з index.html — оновлюйте разом).
+// Формула бази: Σ за тижнями місяця (Обов'язкові платежі + Місцеві податки + Заробітна плата
+// + Енергія + Переробка) / кількість днів місяця.
+const MONTHLY_DAILY_EXPENSE_UAH = {
+    '2026-04': 206133957.6,
+    '2026-05': 235334777.9,
+    '2026-07': 216820190.7,
+    '2026-08': 270486622.2
+};
+
+// Назви рядків зрізу — ті самі, що шукає index.html
+const NAMES = {
+    cash:      ["Доступні залишки", "Залишки доступні до використання"],
+    credit:    ["Доступні кредитні ліміти", "Доступні кредитні лінії"],
+    post:      ["Доступний ліміт постімпорт"],
+    inflow:    ["Всього надходжень"],
+    outflow:   ["Всього витрат (1+2+3+4+5)", "Всього видатків"],
+    mandatory: ["Обов’язкові платежі", "Обов'язкові платежі"],
+    local:     ["Місцеві податки"],
+    salary:    ["Заробітна плата"],
+    energy:    ["Енергія"],
+    proc:      ["Переробка"]
+};
+
+// ---------- дати ----------
+const DAY = 86400000;
+const isoAdd = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * DAY).toISOString().slice(0, 10);
+const dow = iso => new Date(iso + 'T00:00:00Z').getUTCDay();
+const toMonday = iso => isoAdd(iso, -((dow(iso) + 6) % 7));
+const dmy = iso => iso ? iso.split('-').reverse().join('.') : '--';
+const dm = iso => { const [, m, d] = iso.split('-'); return `${d}.${m}`; };
+const ym = (y, m) => { const d = new Date(Date.UTC(y, m, 1)); return { y: d.getUTCFullYear(), m: d.getUTCMonth() }; };
+const lastDay = a => new Date(Date.UTC(a.y, a.m + 1, 0)).toISOString().slice(0, 10);
+function normDate(s) {
+    if (!s) return null;
+    s = String(s).trim();
+    let m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/); if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    m = s.match(/^(\d{4}-\d{2}-\d{2})/); return m ? m[1] : null;
+}
+const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim();
+
+// ---------- JSON ----------
+function unwrap(obj, depth = 0) {
+    if (obj == null || depth > 6) return null;
+    if (typeof obj === 'string') { try { return unwrap(JSON.parse(obj), depth + 1); } catch { return null; } }
+    if (Array.isArray(obj)) { for (const x of obj) { const r = unwrap(x, depth + 1); if (r) return r; } return null; }
+    if (Array.isArray(obj.tree)) return obj;
+    if (typeof obj['$content'] === 'string') {
+        try {
+            const bytes = Uint8Array.from(atob(obj['$content']), c => c.charCodeAt(0));
+            const r = unwrap(new TextDecoder('utf-8').decode(bytes), depth + 1); if (r) return r;
+        } catch { /* далі */ }
+    }
+    for (const k of ['snapshot', 'snapshotTree', 'snapshotJson', 'body', 'data', 'content', 'value', 'result']) {
+        if (obj[k] != null) { const r = unwrap(obj[k], depth + 1); if (r) return r; }
+    }
+    return null;
+}
+async function fetchSnapshot(iso) {
+    const res = await fetch(GET_METRICS_FLOW_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
+    });
+    const txt = await res.text();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!txt.trim()) throw new Error('порожня відповідь');
+    const snap = unwrap(JSON.parse(txt));
+    if (!snap) throw new Error('у відповіді немає дерева tree');
+    return snap;
+}
+
+function flatTree(nodes, acc = []) { (nodes || []).forEach(n => { acc.push(n); if (n.children) flatTree(n.children, acc); }); return acc; }
+// точний збіг назви; серед дублів — keep=true, потім більше значень (як findSnapshotNode в index.html)
+function findNode(all, names) {
+    const nVals = n => Object.keys(n.values || {}).length;
+    for (const nm of names) {
+        const t = nm.trim().toLowerCase();
+        const hits = all.filter(n => cleanName(n.name).toLowerCase() === t);
+        if (hits.length) return hits.sort((a, b) => (Number(!!b.keep) - Number(!!a.keep)) || (nVals(b) - nVals(a)))[0];
+    }
+    return null;
+}
+function val(node, key) {
+    if (!node || !node.values) return 0;
+    let v = node.values[key];
+    if (v == null || v === '') return 0;
+    if (typeof v === 'string') {
+        v = v.replace(/[\s\u00A0\u202F\u2009]/g, '').replace(/\u2212/g, '-');
+        v = (v.includes('.') && v.includes(',')) ? v.replace(/,/g, '') : v.replace(',', '.');
+    }
+    const n = Number(v);
+    return isFinite(n) ? n : 0;
+}
+
+// ---------- модель зрізу ----------
+function buildModel(snap, iso) {
+    const all = flatTree(snap.tree);
+    const N = {};
+    Object.keys(NAMES).forEach(k => N[k] = findNode(all, NAMES[k]));
+    const outB = snap.tree.find(n => cleanName(n.name) === 'Видатки' && n.children);
+    const rows = outB ? outB.children : [];
+    const noOf = r => String(r.no ?? '').trim();
+    N.debtIn = rows.find(r => r.kind === 'item' && noOf(r) === '6.1.1') || findNode(all, ['Отримано кредитних коштів']);
+    N.debtSvc = rows.find(r => r.kind === 'item' && noOf(r) === '6.2') || null;
+    N.principal = rows.find(r => r.kind === 'item' && /^6\.2\.\d+$/.test(noOf(r)) && /повернення\s+кредит|погашення\s+кредит/iu.test(r.name || '')) || null;
+
+    const cv = N.cash && N.cash.values ? N.cash.values : {};
+    const tm1 = cv.Tm1_fact !== undefined ? 'Tm1_fact' : (cv.Tm1_forecast !== undefined ? 'Tm1_forecast' : 'Tm1_plan');
+    const start = normDate(snap.meta && (snap.meta.forecast_date || snap.meta.plan_fact_date)) || iso;
+    const cols = snap.columns || {};
+    const A = n => Math.abs(n);
+
+    const weeks = FORECAST_KEYS.map((k, i) => {
+        const pk = i ? FORECAST_KEYS[i - 1] : tm1;
+        const mon = isoAdd(start, 7 * i);
+        const principal = A(val(N.principal, k)), debtSvc = A(val(N.debtSvc, k));
+        return {
+            i, key: k, mon, sun: isoAdd(mon, 6),
+            label: `${dm(mon)}–${dm(isoAdd(mon, 6))}`,
+            open: val(N.cash, pk), close: val(N.cash, k),
+            credit: val(N.credit, k), post: val(N.post, k),
+            inflow: A(val(N.inflow, k)), outTotal: A(val(N.outflow, k)),
+            mCore: A(val(N.mandatory, k)), mLocal: A(val(N.local, k)), mSalary: A(val(N.salary, k)),
+            mEnergy: A(val(N.energy, k)), mProc: A(val(N.proc, k)),
+            debtIn: A(val(N.debtIn, k)), debtSvc, principal, interest: Math.max(0, debtSvc - principal)
+        };
+    });
+    const w0 = { credit: val(N.credit, tm1), cash: val(N.cash, tm1), post: val(N.post, tm1) };
+    const missing = ['cash', 'credit', 'inflow', 'outflow', 'mandatory', 'proc'].filter(k => !N[k]).map(k => NAMES[k][0])
+        .concat(N.debtSvc ? [] : ['6.2 Фінансові видатки']).concat(N.debtIn ? [] : ['6.1.1 Отримано кредитних коштів']);
+    return { start, tm1, N, weeks, w0, cols, missing };
+}
+
+// Обов'язкові витрати тижня.
+//  'net'    — Обов'язкові платежі + Переробка (без подвійного обліку: Місцеві податки, ЗП,
+//             Енергія вже входять в Обов'язкові платежі);
+//  'buffer' — точно як у формулі бази буфера (з дублюванням, як у файлі-джерелі).
+const mandatoryOf = (w, mode) => mode === 'buffer' ? w.mCore + w.mLocal + w.mSalary + w.mEnergy + w.mProc : w.mCore + w.mProc;
+
+// Середньодобова база буфера для тижня (грн): ручне значення → конфіг місяця → оцінка з прогнозу
+function dailyBase(w, M, overrideMln) {
+    if (overrideMln > 0) return { v: overrideMln * 1e6, src: 'вручну' };
+    const key = isoAdd(w.mon, 3).slice(0, 7);             // місяць за четвергом тижня
+    if (MONTHLY_DAILY_EXPENSE_UAH[key] != null) return { v: MONTHLY_DAILY_EXPENSE_UAH[key], src: `база ${key}` };
+    const same = M.weeks.filter(x => isoAdd(x.mon, 3).slice(0, 7) === key);
+    const avg = same.reduce((s, x) => s + mandatoryOf(x, 'buffer'), 0) / Math.max(1, same.length) / 7;
+    return { v: avg, src: `оцінка з прогнозу ${key}` };
+}
+
+// ---------- формат ----------
+const mlnR = v => v == null || !isFinite(v) ? null : Math.round(v / 1e6);
+function fmt(v, signed) {
+    const r = mlnR(v);
+    if (r == null) return '–';
+    if (r === 0) return '0';
+    return (r < 0 ? '−' : (signed ? '+' : '')) + Math.abs(r).toLocaleString('uk-UA').replace(/[\u202F\u00A0]/g, ' ');
+}
+const daysForm = n => { const a = Math.abs(Math.trunc(n)), m100 = a % 100, m10 = a % 10;
+    return (m100 >= 11 && m100 <= 14) ? 'днів' : m10 === 1 ? 'день' : (m10 >= 2 && m10 <= 4) ? 'дні' : 'днів'; };
+function setStatus(text, cls) {
+    const el = document.getElementById('dataStatus');
+    el.textContent = text; el.title = text;
+    el.className = 'text-xs font-medium px-2.5 py-1 rounded-full max-w-[460px] truncate ' + cls;
+}
+const numIn = id => { const v = parseFloat(String(document.getElementById(id).value).replace(',', '.')); return isFinite(v) ? v : 0; };
+
+// підписи значень над стовпчиками / точками (без плагіна datalabels)
+const valueLabels = {
+    id: 'valueLabels',
+    afterDatasetsDraw(chart, a, opts) {
+        if (!opts || !opts.sets) return;
+        const { ctx } = chart;
+        ctx.save(); ctx.font = '600 10px Helvetica'; ctx.textAlign = 'center';
+        opts.sets.forEach(di => {
+            const meta = chart.getDatasetMeta(di);
+            if (meta.hidden) return;
+            meta.data.forEach((el, i) => {
+                const v = chart.data.datasets[di].data[i];
+                if (v == null) return;
+                ctx.fillStyle = opts.color ? opts.color(di, i, v) : '#334155';
+                const txt = opts.fmt ? opts.fmt(v, di, i) : Math.round(v).toLocaleString('uk-UA');
+                const y = Array.isArray(v) ? Math.min(el.y, el.base) - 5 : (v >= 0 ? el.y - 5 : el.y + 12);
+                ctx.fillText(txt, el.x, y);
+            });
+        });
+        ctx.restore();
+    }
+};
+
+
+let M = null, R = null, charts = {}, loadToken = 0;
+
+async function loadReport(anyIso) {
+    if (!anyIso) return;
+    const token = ++loadToken, D = toMonday(anyIso);
+    selectedMonday = D;
+    document.getElementById('lblWeek').textContent = `Тиждень ${dm(D)}–${dmy(isoAdd(D, 6))}`;
+    setStatus(`Завантаження зрізу ${dmy(D)}…`, 'bg-indigo-100 text-indigo-800');
+    try {
+        const snap = await fetchSnapshot(D);
+        if (token !== loadToken) return;
+        const m = buildModel(snap, D);
+        if (m.start !== D) { setStatus(`Flow повернув зріз ${dmy(m.start)} замість ${dmy(D)}`, 'bg-red-100 text-red-800'); return; }
+        M = m; render();
+        setStatus(M.missing.length ? 'Увага: не знайдено ' + M.missing.join(', ') : `Зріз ${dmy(D)} завантажено`,
+                  M.missing.length ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
+    } catch (e) { if (token === loadToken) setStatus(`Зріз ${dmy(D)} не завантажено: ${e.message}`, 'bg-red-100 text-red-800'); }
+}
+
+function resetScen() { ['inHair', 'mandUp', 'crHair'].forEach(id => document.getElementById(id).value = 0); document.getElementById('noBorrow').checked = false; render(); }
+
+// ---------- розрахунок ----------
+function compute() {
+    const hair = Math.min(100, Math.max(0, numIn('inHair'))) / 100, mUp = Math.max(0, numIn('mandUp')) / 100;
+    const crHair = Math.min(100, Math.max(0, numIn('crHair'))) / 100, noBorrow = document.getElementById('noBorrow').checked;
+    const thr = numIn('thr') * 1e6, target = numIn('target'), baseOv = numIn('baseOv');
+    const scen = hair > 0 || mUp > 0 || crHair > 0 || noBorrow;
+    let cum = 0, cumBorrow = 0, prevCash = M.w0.cash;
+    const rows = M.weeks.map(w => {
+        const mand = mandatoryOf(w, 'net');
+        const other = Math.max(0, w.outTotal - mand);
+        const resid = (w.close - w.open) - (w.inflow - w.outTotal + w.debtIn - w.debtSvc);   // потоки поза статтями
+        const inS = w.inflow * (1 - hair), mandS = mand * (1 + mUp), borrowS = noBorrow ? 0 : w.debtIn;
+        cum += (inS - w.inflow) - (mandS - mand) + (borrowS - w.debtIn);
+        if (noBorrow) cumBorrow += w.debtIn;
+        const cash = w.close + cum;
+        const credit = (w.credit + cumBorrow) * (1 - crHair);
+        const avail = cash + credit, baseAvail = w.close + w.credit;
+        const b = dailyBase(w, M, baseOv);
+        const buf = b.v > 0 ? avail / b.v : null;
+        const status = cash < 0 ? 'gap' : avail < thr ? 'low' : (buf != null && buf < target) ? 'warn' : 'ok';
+        const r = { w, open: prevCash, inS, mandS, other, debtSvc: w.debtSvc, principal: w.principal, interest: w.interest,
+                    borrowS, resid, cash, credit, avail, baseAvail, thr, headroom: avail - thr, buf, base: b, status,
+                    cashGap: Math.max(0, -cash), liqGap: Math.max(0, thr - avail) };
+        prevCash = cash;
+        return r;
+    });
+    const b0 = dailyBase(M.weeks[0], M, baseOv);
+    const avail0 = M.w0.cash + M.w0.credit * (1 - crHair);
+    return { rows, thr, target, scen, avail0, buf0: b0.v > 0 ? avail0 / b0.v : null, hair, mUp, crHair, noBorrow };
+}
+
+const ST = { ok: ['st-ok', 'достатньо'], warn: ['st-warn', 'буфер < цілі'], low: ['st-low', 'нижче мінімуму'], gap: ['st-gap', 'касовий розрив'] };
+
+// ---------- рендер ----------
+function mk(id, cfg) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id).getContext('2d'), cfg); }
+const baseOpts = () => ({ responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+    scales: { y: { ticks: { font: { size: 9.5 }, callback: v => v.toLocaleString('uk-UA') }, grid: { color: '#eef2f7' } },
+              x: { ticks: { font: { size: 9 } }, grid: { display: false } } },
+    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } },
+               tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.raw == null ? '–' : (Array.isArray(c.raw) ? c.raw[1] - c.raw[0] : c.raw).toLocaleString('uk-UA')}` } } } });
+
+function render() {
+    if (!M) return;
+    R = compute();
+    const rows = R.rows, labels = rows.map(r => r.w.label);
+    document.getElementById('navDate').textContent = dmy(M.start);
+    document.getElementById('hdrSub').textContent = `Зріз ${dmy(M.start)}: факт залишків на ${dmy(isoAdd(M.start, -1))}, прогноз ${dmy(M.start)}–${dmy(rows[12].w.sun)}.`;
+    document.getElementById('hdrScen').textContent = R.scen
+        ? `стрес: надходження −${Math.round(R.hair * 100)}%, обов'язкові +${Math.round(R.mUp * 100)}%, ліміти −${Math.round(R.crHair * 100)}%${R.noBorrow ? ', без залучень' : ''}`
+        : 'базовий сценарій';
+
+    // --- KPI ---
+    const minR = rows.reduce((a, r) => r.avail < a.avail ? r : a, rows[0]);
+    const minB = rows.filter(r => r.buf != null).reduce((a, r) => (a == null || r.buf < a.buf) ? r : a, null);
+    const debt13 = rows.reduce((s, r) => s + r.debtSvc, 0), pr13 = rows.reduce((s, r) => s + r.principal, 0);
+    const bad = rows.filter(r => r.status === 'low' || r.status === 'gap');
+    const kpi = (t, v, unit, s, color) => `<div class="kpi"><div class="t">${t}</div><div class="v" style="${color ? 'color:' + color : ''}">${v} <small>${unit}</small></div><div class="s">${s}</div></div>`;
+    document.getElementById('kpis').innerHTML =
+        kpi('Доступна ліквідність зараз', fmt(R.avail0), 'млн грн', `на ${dmy(isoAdd(M.start, -1))}: залишки ${fmt(M.w0.cash)} + ліміти ${fmt(R.avail0 - M.w0.cash)}`) +
+        kpi('Мінімум на горизонті', fmt(minR.avail), 'млн грн', `тиждень ${minR.w.label}; запас над мінімумом ${fmt(minR.headroom, true)}`, minR.avail < R.thr ? '#b91c1c' : '') +
+        kpi('Мінімальний буфер', minB ? Math.round(minB.buf) : '–', minB ? daysForm(Math.round(minB.buf)) : '', minB ? `тиждень ${minB.w.label}; ціль ${R.target} ${daysForm(R.target)}; зараз ${R.buf0 == null ? '–' : Math.round(R.buf0)}` : 'немає бази буфера',
+            minB && minB.buf < R.target ? '#b45309' : '') +
+        kpi('Обслуговування боргу, 13 тиж.', fmt(debt13), 'млн грн', `тіло ${fmt(pr13)}, відсотки ${fmt(debt13 - pr13)}; покриття ліквідністю ${debt13 ? (R.avail0 / debt13).toFixed(1).replace('.', ',') + '×' : '–'}`);
+
+    // --- висновок ---
+    const gaps = rows.filter(r => r.status === 'gap'), lows = rows.filter(r => r.status === 'low'), warns = rows.filter(r => r.status === 'warn');
+    const wl = arr => arr.map(r => r.w.label).join(', ');
+    const lines = [];
+    if (!bad.length && !warns.length) lines.push(`<b class="text-emerald-700">Ліквідності достатньо на всьому горизонті.</b> Доступна ліквідність не опускається нижче ${fmt(minR.avail)} млн грн (${minR.w.label}), що на ${fmt(minR.headroom)} млн вище мінімального рівня.`);
+    if (gaps.length) {
+        const worst = gaps.reduce((a, r) => r.cashGap > a.cashGap ? r : a);
+        lines.push(`<b class="text-red-800">Касовий розрив:</b> ${wl(gaps)}. Найбільший — ${fmt(worst.cashGap)} млн грн (${worst.w.label}); ` +
+            (worst.credit >= worst.cashGap ? `доступних кредитних лімітів (${fmt(worst.credit)} млн) вистачає, щоб його покрити.` : `кредитних лімітів (${fmt(worst.credit)} млн) не вистачає — потрібне додаткове фінансування або перенесення платежів.`));
+    }
+    if (lows.length) {
+        const worst = lows.reduce((a, r) => r.liqGap > a.liqGap ? r : a);
+        lines.push(`<b class="text-red-700">Нижче мінімального рівня:</b> ${wl(lows)}. Найбільший дефіцит до мінімуму — ${fmt(worst.liqGap)} млн грн (${worst.w.label}).`);
+    }
+    if (warns.length) lines.push(`<b class="text-amber-700">Буфер нижче цілі ${R.target} ${daysForm(R.target)}:</b> ${wl(warns)} — ліквідність вище мінімуму, але запас днів менший за цільовий.`);
+    const big = rows.reduce((a, r) => r.debtSvc > a.debtSvc ? r : a, rows[0]);
+    if (big.debtSvc > 0) lines.push(`Найбільше обслуговування боргу — ${fmt(big.debtSvc)} млн грн у тиждень ${big.w.label} (тіло ${fmt(big.principal)}, відсотки ${fmt(big.interest)}).`);
+    document.getElementById('verdict').innerHTML = `<div class="text-sm leading-relaxed space-y-1">${lines.map(l => `<p>${l}</p>`).join('')}</div>`;
+
+    // --- графіки ---
+    const m = v => mlnR(v);
+    const liqDs = [
+        { label: 'Доступна ліквідність', data: rows.map(r => m(r.avail)), borderColor: '#1e3a8a', backgroundColor: '#1e3a8a', borderWidth: 3, pointRadius: 3, order: 1,
+          pointBackgroundColor: rows.map(r => r.avail < R.thr ? '#dc2626' : '#1e3a8a') },
+        { label: 'Доступні залишки', data: rows.map(r => m(r.cash)), borderColor: '#6b7280', backgroundColor: '#6b7280', borderWidth: 1.8, pointRadius: 2, order: 2 },
+        { label: 'Мінімальний рівень', data: rows.map(() => m(R.thr)), borderColor: '#991b1b', borderWidth: 2, pointRadius: 0, fill: 'origin', backgroundColor: 'rgba(254,226,226,0.45)', order: 4 }
+    ];
+    if (R.scen) liqDs.splice(1, 0, { label: 'Доступна ліквідність — базовий сценарій', data: rows.map(r => m(r.baseAvail)), borderColor: '#93c5fd', borderDash: [6, 4], borderWidth: 2, pointRadius: 0, order: 3 });
+    const o1 = baseOpts(); o1.plugins.valueLabels = { sets: [0], fmt: v => v.toLocaleString('uk-UA'), color: (d, i) => rows[i].avail < R.thr ? '#b91c1c' : '#1e3a8a' };
+    o1.scales.y.beginAtZero = true;
+    mk('chLiq', { type: 'line', plugins: [valueLabels], data: { labels, datasets: liqDs }, options: o1 });
+
+    const o2 = baseOpts(); o2.plugins.valueLabels = { sets: [1], fmt: v => Math.round(v) };
+    o2.scales.y.beginAtZero = true;
+    mk('chBuf', { type: 'bar', plugins: [valueLabels], data: { labels, datasets: [
+        { type: 'line', label: `Ціль ${R.target} ${daysForm(R.target)}`, data: rows.map(() => R.target), borderColor: '#b45309', borderDash: [6, 4], borderWidth: 2, pointRadius: 0, order: 0 },
+        { label: 'Буфер, днів', data: rows.map(r => r.buf == null ? null : Math.round(r.buf * 10) / 10), order: 1, borderRadius: 2,
+          backgroundColor: rows.map(r => r.status === 'ok' ? '#10b981' : r.status === 'warn' ? '#f59e0b' : '#ef4444') }
+    ] }, options: o2 });
+
+    const o3 = baseOpts(); o3.scales.x.stacked = true; o3.scales.y.stacked = true;
+    const anyResid = rows.some(r => Math.abs(r.resid) >= 5e5);
+    const flowDs = [
+        { type: 'line', label: 'Зміна залишків', data: rows.map(r => m(r.cash - r.open)), borderColor: '#0f172a', backgroundColor: '#0f172a', borderWidth: 2, pointRadius: 3, order: 0, stack: 'line' },
+        { label: 'Надходження', data: rows.map(r => m(r.inS)), backgroundColor: '#0f766e', stack: 's', order: 1 },
+        { label: 'Залучення кредитів', data: rows.map(r => m(r.borrowS)), backgroundColor: '#5eead4', stack: 's', order: 1 },
+        { label: "Обов'язкові витрати", data: rows.map(r => -m(r.mandS)), backgroundColor: '#c2410c', stack: 's', order: 1 },
+        { label: 'Інші операційні та інвестиційні видатки', data: rows.map(r => -m(r.other)), backgroundColor: '#fdba74', stack: 's', order: 1 },
+        { label: 'Обслуговування боргу', data: rows.map(r => -m(r.debtSvc)), backgroundColor: '#7c3aed', stack: 's', order: 1 }
+    ];
+    if (anyResid) flowDs.push({ label: 'Інші потоки поза статтями', data: rows.map(r => m(r.resid)), backgroundColor: '#cbd5e1', stack: 's', order: 1 });
+    mk('chFlow', { type: 'bar', data: { labels, datasets: flowDs }, options: o3 });
+
+    renderTable();
+}
+
+function tableRows() {
+    return [
+        ['Залишки на початок тижня', r => r.open, ''],
+        ['Надходження', r => r.inS, ''],
+        ['Залучення кредитів', r => r.borrowS, ''],
+        ["Обов'язкові витрати", r => -r.mandS, ''],
+        ['Інші операційні та інвестиційні видатки', r => -r.other, ''],
+        ['Обслуговування боргу', r => -r.debtSvc, ''],
+        ['в т.ч. повернення тіла кредитів', r => -r.principal, 's'],
+        ['в т.ч. відсотки та комісії', r => -r.interest, 's'],
+        ['Інші потоки поза статтями', r => r.resid, 's'],
+        ['Доступні залишки на кінець тижня', r => r.cash, 'b sep'],
+        ['Доступні кредитні ліміти', r => r.credit, ''],
+        ['Доступна ліквідність', r => r.avail, 'b'],
+        ['Запас над мінімальним рівнем', r => r.headroom, ''],
+        ['Буфер ліквідності, днів', r => r.buf, 'b', 'days'],
+        ['База буфера, млн грн/день', r => r.base.v, 's']
+    ];
+}
+
+function renderTable() {
+    const rows = R.rows;
+    let h = `<thead><tr><th>Показник</th><th class="c0">факт<span class="p">${dm(isoAdd(M.start, -7))}–${dm(isoAdd(M.start, -1))}</span></th>` +
+        rows.map(r => `<th>${r.w.key.replace('T', 'Т')}<span class="p">${r.w.label}</span></th>`).join('') + '</tr></thead><tbody>';
+    const fact = { 'Доступні залишки на кінець тижня': M.w0.cash, 'Доступні кредитні ліміти': M.w0.credit * (1 - R.crHair), 'Доступна ліквідність': R.avail0,
+                   'Запас над мінімальним рівнем': R.avail0 - R.thr, 'Буфер ліквідності, днів': R.buf0 };
+    tableRows().forEach(([lbl, f, cls, kind]) => {
+        const fv = fact[lbl];
+        const cell = v => kind === 'days' ? (v == null ? '–' : Math.round(v)) : fmt(v, lbl.startsWith('Запас'));
+        h += `<tr class="${cls}"><td>${lbl}</td><td class="c0">${fv === undefined ? '' : cell(fv)}</td>` +
+             rows.map(r => { const v = f(r); const red = (lbl.startsWith('Запас') && v < 0) || (lbl.startsWith('Доступні залишки') && v < 0);
+                 return `<td style="${red ? 'color:#b91c1c;font-weight:700' : ''}">${cell(v)}</td>`; }).join('') + '</tr>';
+    });
+    h += `<tr class="sep"><td class="font-semibold">Стан</td><td class="c0"></td>${rows.map(r => `<td><span class="st ${ST[r.status][0]}">${ST[r.status][1]}</span></td>`).join('')}</tr>`;
+    document.getElementById('tbl').innerHTML = h + '</tbody>';
+
+    const srcs = [...new Set(rows.map(r => r.base.src))].join('; ');
+    document.getElementById('note').textContent =
+        `Доступна ліквідність = доступні залишки + доступні кредитні ліміти (як на головній сторінці). Мінімальний рівень ${fmt(R.thr)} млн грн. ` +
+        `Буфер = доступна ліквідність / середньодобові обов'язкові витрати місяця (${srcs}); для місяців без затвердженої бази — оцінка з прогнозу за формулою бази. ` +
+        `Обов'язкові витрати в потоках = Обов'язкові платежі + Переробка (Місцеві податки, ЗП та Енергія вже входять в Обов'язкові платежі, тому окремо не додаються). ` +
+        `Обслуговування боргу — стаття 6.2 (тіло кредитів — підстаття «Повернення кредиту»). Стрес-сценарій змінює потоки і накопичувально переносить різницю на залишки наступних тижнів; ` +
+        `без нових залучень невибрані суми лишаються в доступних кредитних лімітах. «Інші потоки поза статтями» — різниця між зміною залишків у зрізі та потоками статей (курсові, розміщення, ліміти тощо).`;
+}
+
+function exportXlsx() {
+    if (!M || !window.XLSX) { setStatus('Excel недоступний: бібліотека не завантажилась', 'bg-red-100 text-red-800'); return; }
+    const rows = R.rows;
+    const aoa = [[`Прогноз достатності ліквідності, млн грн; зріз ${dmy(M.start)}; ${document.getElementById('hdrScen').textContent}`], [],
+        ['Показник', ...rows.map(r => `${r.w.key} ${r.w.label}`)],
+        ...tableRows().map(([lbl, f, , kind]) => [lbl, ...rows.map(r => { const v = f(r); return v == null ? null : kind === 'days' ? Math.round(v * 10) / 10 : mlnR(v); })]),
+        ['Стан', ...rows.map(r => ST[r.status][1])]];
+    const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 44 }, ...rows.map(() => ({ wch: 14 }))];
+    XLSX.utils.book_append_sheet(wb, ws, 'Достатність');
+    XLSX.writeFile(wb, `Достатність_ліквідності_${dmy(M.start)}.xlsx`);
+}
+
+// ---------- КАЛЕНДАР (українською, тиждень пн–нд) ----------
+let selectedMonday = null;
+let calView = { y: new Date().getFullYear(), m: new Date().getMonth() };
+const todayIso = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+
+function toggleCalendar(force) {
+    const dd = document.getElementById('calendarDropdown');
+    const open = force !== undefined ? force : dd.classList.contains('hidden');
+    dd.classList.toggle('hidden', !open);
+    document.getElementById('btnCalendar').setAttribute('aria-expanded', String(open));
+    if (open) {
+        if (selectedMonday) { const [y, m] = selectedMonday.split('-').map(Number); calView = { y, m: m - 1 }; }
+        renderCalendar();
+    }
+}
+function changeCalMonth(d) { calView = ym(calView.y, calView.m + d); renderCalendar(); }
+
+function renderCalendar() {
+    document.getElementById('calMonthYear').textContent = `${MONTHS[calView.m]} ${calView.y}`;
+    const first = `${calView.y}-${String(calView.m + 1).padStart(2, '0')}-01`;
+    const gridStart = toMonday(first);
+    const last = lastDay(calView);
+    const gridEnd = isoAdd(toMonday(last), 6);
+    const today = todayIso(), curMon = toMonday(today);
+    let html = '';
+    for (let d = gridStart; d <= gridEnd; d = isoAdd(d, 1)) {
+        const mon = toMonday(d);
+        const inMonth = d.slice(0, 7) === first.slice(0, 7);
+        const sel = mon === selectedMonday;
+        const col = (dow(d) + 6) % 7;                           // 0 = пн … 6 = нд
+        const round = col === 0 ? 'rounded-l-lg' : col === 6 ? 'rounded-r-lg' : '';
+        const cls = sel ? `bg-indigo-600 text-white ${round}`
+                  : `${inMonth ? 'text-slate-700' : 'text-slate-300'} hover:bg-indigo-50 ${d === today ? 'ring-1 ring-inset ring-indigo-400 rounded-lg' : ''}`;
+        const future = mon > curMon ? ' title="Зріз за цей тиждень ще може бути відсутній"' : '';
+        html += `<button onclick="selectDate('${d}')" data-mon="${mon}" onmouseenter="hoverWeek('${mon}')" onmouseleave="hoverWeek(null)"
+                   class="py-1.5 text-xs font-semibold ${cls}"${future}>${Number(d.slice(8))}</button>`;
+    }
+    document.getElementById('calDays').innerHTML = html;
+}
+// підсвічує весь тиждень під курсором
+function hoverWeek(mon) {
+    document.querySelectorAll('#calDays button').forEach(b => {
+        if (b.dataset.mon === selectedMonday) return;
+        b.classList.toggle('bg-indigo-50', !!mon && b.dataset.mon === mon);
+    });
+}
+function selectDate(iso) {
+    toggleCalendar(false);
+    loadReport(iso);
+}
+document.addEventListener('click', e => {
+    if (!document.getElementById('calWrap').contains(e.target)) toggleCalendar(false);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleCalendar(false); });
+
+document.addEventListener('DOMContentLoaded', () => loadReport(todayIso()));
+
+</script>
+</body>
+</html>

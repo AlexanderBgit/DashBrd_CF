@@ -285,10 +285,7 @@
         <!-- Шапка -->
         <div class="w-full flex justify-between items-center mb-2.5 pt-1 shrink-0">
             <div class="flex flex-col items-start text-left">
-                <div class="flex items-baseline gap-4">
-                    <h1 class="text-slate-800 leading-none" id="dashboardTitle"></h1>
-                    <span id="compareCaption" style="font-family: Helvetica, sans-serif; font-size: 11pt; color: #94a3b8; font-weight: 500;"></span>
-                </div>
+                <h1 class="text-slate-800 leading-none" id="dashboardTitle"></h1>
             </div>
         </div>
 
@@ -3393,10 +3390,6 @@
         if (thWC) thWC.innerText = lang === 'uk' ? 'Поточний' : 'Current';
         const thFuel = document.getElementById('thFuelCurrent');
         if (thFuel) thFuel.innerText = lang === 'uk' ? 'Поточні' : 'Current';
-        // Заголовок Δ з датою порівняння
-        const cmpUsed = compareInfo && compareInfo.state === 'ok' ? (compareInfo.metricsDate || compareInfo.snapDate) : null;
-        const deltaTh = cmpUsed ? `Δ<span class="th-period">${lang === 'uk' ? 'з' : 'vs'} ${DT.dm(cmpUsed)}</span>` : 'Δ';
-        ['thWCDelta', 'thFuelDelta'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = deltaTh; });
         renderCompareUi();
 
         document.getElementById('kpiContainer').innerHTML = globalData.kpis.map((kpi, idx) => `

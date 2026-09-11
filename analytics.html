@@ -274,7 +274,8 @@
             const target = targetName.trim().toLowerCase();
             for (const node of nodes) {
                 const name = (node.name || "").trim().toLowerCase();
-                if (name === target || name.includes(target)) return node;
+                // Тільки точний збіг назви статті
+                if (name === target) return node;
                 if (node.children && node.children.length > 0) {
                     const found = findNodeInTree(node.children, targetName);
                     if (found) return found;
@@ -382,42 +383,52 @@
                 const outflowNames = Object.keys(activeCloudModel.outflows);
                 const forecastCols = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
+                // Отримуємо окремі гілки верхнього рівня з mainTree
+                const mainInflowBlock = findNodeInTree(mainTree, "Надходження");
+                const mainOutflowBlock = findNodeInTree(mainTree, "Видатки");
+                const mainInflowNodes = mainInflowBlock && mainInflowBlock.children ? mainInflowBlock.children : mainTree;
+                const mainOutflowNodes = mainOutflowBlock && mainOutflowBlock.children ? mainOutflowBlock.children : mainTree;
+
+                // 1. Обробка доходів (пошук тільки всередині Надходжень)
                 inflowNames.forEach(name => {
                     const histArrFromSnaps = historySnapshots.map(snap => {
                         if (!snap || !snap.tree) return 0;
-                        const n = findNodeInTree(snap.tree, name);
+                        const snapInflowBlock = findNodeInTree(snap.tree, "Надходження");
+                        const snapNodes = snapInflowBlock && snapInflowBlock.children ? snapInflowBlock.children : snap.tree;
+                        const n = findNodeInTree(snapNodes, name);
                         return getFactValue(n);
                     });
 
-                    // Дані для поточного T-1 беремо з основного (теперішнього) зрізу
-                    const mainNode = findNodeInTree(mainTree, name);
+                    // Шукаємо виключно у гілці Надходжень поточного зрізу
+                    const mainNode = findNodeInTree(mainInflowNodes, name);
                     const mainTm1Fact = getFactValue(mainNode);
                     
-                    // Об'єднуємо [T-4, T-3, T-2] з [T-1]
                     const histArr = [...histArrFromSnaps, mainTm1Fact];
-
                     const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((mainNode.values[col] || 0) / 1000000) : 0);
 
                     activeCloudModel.inflows[name] = { history: histArr, forecast: foreArr };
                 });
 
+                // 2. Обробка видатків (пошук тільки всередині Видатків)
                 outflowNames.forEach(name => {
                     const histArrFromSnaps = historySnapshots.map(snap => {
                         if (!snap || !snap.tree) return 0;
-                        const n = findNodeInTree(snap.tree, name);
+                        const snapOutflowBlock = findNodeInTree(snap.tree, "Видатки");
+                        const snapNodes = snapOutflowBlock && snapOutflowBlock.children ? snapOutflowBlock.children : snap.tree;
+                        const n = findNodeInTree(snapNodes, name);
                         return getFactValue(n);
                     });
 
-                    const mainNode = findNodeInTree(mainTree, name);
+                    // Шукаємо виключно у гілці Видатків поточного зрізу
+                    const mainNode = findNodeInTree(mainOutflowNodes, name);
                     const mainTm1Fact = getFactValue(mainNode);
                     
                     const histArr = [...histArrFromSnaps, mainTm1Fact];
-
                     const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((mainNode.values[col] || 0) / 1000000) : 0);
 
                     activeCloudModel.outflows[name] = { history: histArr, forecast: foreArr };
                 });
-
+                
                 updateChartAndTable();
                 statusEl.textContent = "Дані успішно оновлено з хмари";
                 statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";

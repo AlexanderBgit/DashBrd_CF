@@ -130,6 +130,12 @@
 
     <!-- ЄДИНА ПАНЕЛЬ КЕРУВАННЯ (без дублювання та накладень) -->
     <div class="fixed top-4 right-6 flex items-center space-x-2 print-hide z-50 bg-white/95 backdrop-blur-md p-1.5 rounded-full shadow-xl border border-slate-200">
+        <!-- Навігація на інші сторінки -->
+        <div class="flex items-center gap-0.5 pr-1.5 mr-0.5 border-r border-slate-200">
+            <a href="https://cashflow-ukrnafta.unft.workers.dev/compare" class="text-indigo-700 hover:bg-indigo-50 px-2.5 py-1.5 rounded-full font-semibold text-xs" title="Порівняння прогнозів">Порівняння</a>
+            <a href="https://cashflow-ukrnafta.unft.workers.dev/analytics" class="text-indigo-700 hover:bg-indigo-50 px-2.5 py-1.5 rounded-full font-semibold text-xs" title="Аналітика">Аналітика</a>
+        </div>
+
         <!-- Інтерактивний вибір дати -->
         <div class="relative">
             <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-300">
@@ -154,6 +160,19 @@
                     <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Є дані в SP</span>
                     <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span> Обрано</span>
                 </div>
+            </div>
+        </div>
+
+        <!-- Дата порівняння для дельт плиток і блоків -->
+        <div class="relative">
+            <button onclick="toggleCompareMenu()" id="btnCompareTrigger" class="bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-amber-300" title="Дата, з якою порівнюються дельти плиток, оборотного капіталу та запасів">
+                <span>Δ</span><span id="lblCompareDate">—</span>
+                <svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="compareMenu" class="absolute top-11 left-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-3 w-80 hidden origin-top-left z-50">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Дельта порівняння</h3>
+                <div id="compareMenuBody" class="flex flex-col gap-1"></div>
+                <div class="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 leading-snug px-1" id="compareMenuNote"></div>
             </div>
         </div>
 
@@ -211,6 +230,17 @@
             </div>
         </div>
 
+        <!-- Підписи ліній графіка: сторона та відступ для кожної лінії -->
+        <div class="relative">
+            <button onclick="toggleChartLabelMenu()" class="bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-full cursor-pointer" title="Підписи ліній: сторона та відступ">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+            </button>
+            <div id="chartLabelMenu" class="absolute top-10 right-0 bg-white border border-slate-200 rounded-xl shadow-xl p-3 w-80 hidden origin-top-right z-50">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1" id="lblChartLabelTitle">Підписи ліній</h3>
+                <div id="chartLabelMenuBody"></div>
+            </div>
+        </div>
+
         <button onclick="toggleLanguage()" id="langBtn" class="bg-slate-800 text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer">EN</button>
         <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full cursor-pointer" title="PDF">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -255,7 +285,10 @@
         <!-- Шапка -->
         <div class="w-full flex justify-between items-center mb-2.5 pt-1 shrink-0">
             <div class="flex flex-col items-start text-left">
-                <h1 class="text-slate-800 leading-none" id="dashboardTitle"></h1>
+                <div class="flex items-baseline gap-4">
+                    <h1 class="text-slate-800 leading-none" id="dashboardTitle"></h1>
+                    <span id="compareCaption" style="font-family: Helvetica, sans-serif; font-size: 11pt; color: #94a3b8; font-weight: 500;"></span>
+                </div>
             </div>
         </div>
 
@@ -270,6 +303,8 @@
                         <div class="print-hide flex space-x-1.5 opacity-60 hover:opacity-100 transition-opacity z-10">
                             <button onclick="changeChartPadding(-5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X-</button>
                             <button onclick="changeChartPadding(5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X+</button>
+                            <button onclick="changeStackGap(-2)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Щільніше підписи (менший спільний відступ)">⇕-</button>
+                            <button onclick="changeStackGap(2)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Розрідити підписи (більший спільний відступ)">⇕+</button>
                         </div>
                     </div>
                     <div style="position: relative; flex-grow: 1; width: 100%; min-height: 200px;">
@@ -317,7 +352,7 @@
             </div>
 
             <!-- Права частина: Резюме + Оборотний капітал + Запаси + Ліміти -->
-            <div class="col-span-3 flex flex-col justify-between h-full">
+            <div class="col-span-3 flex flex-col justify-between h-full min-h-0" id="rightColumn">
                 <div class="summary-block flex-grow mb-2.5 relative" id="blockSummary">
                     <div class="flex justify-between items-start mb-1">
                         <h2 class="block-title" style="margin-bottom: 0;" id="titleSummary"></h2>
@@ -357,6 +392,12 @@
                                         <span class="text-xs font-medium text-slate-700">Жирні заголовки</span>
                                         <input type="checkbox" checked id="chk_summary_bold" onchange="toggleSummaryBold()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     </label>
+                                    <label class="flex items-center justify-between px-1 cursor-pointer hover:bg-slate-50 p-1 rounded" title="При завантаженні даних шрифт, відступи й ущільнення підбираються так, щоб усі блоки вмістились на сторінці A3">
+                                        <span class="text-xs font-medium text-slate-700">Автопідбір під сторінку</span>
+                                        <input type="checkbox" checked id="chk_summary_autofit" onchange="toggleSummaryAutoFit()" class="w-3.5 h-3.5 text-indigo-600 rounded">
+                                    </label>
+                                    <button onclick="autoFitSummary(true)" class="mx-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs font-semibold">Підібрати зараз</button>
+                                    <div id="summaryFitInfo" class="px-1 text-[10px] text-slate-400"></div>
                                 </div>
                             </div>
                         </div>
@@ -373,7 +414,7 @@
                         </div>
                     </div>
                     <table class="exec-table" style="table-layout: fixed;" id="tableWC">
-                        <thead><tr><th style="width: 60%;"></th><th style="width: 20%;" id="thWCCurrent"></th><th style="width: 20%;">Δ</th></tr></thead>
+                        <thead><tr><th style="width: 60%;"></th><th style="width: 20%;" id="thWCCurrent"></th><th style="width: 20%;" id="thWCDelta">Δ</th></tr></thead>
                         <tbody id="mainTableBodyWC"></tbody>
                     </table>
                 </div>
@@ -381,7 +422,7 @@
                 <div class="block-container mb-2.5 shrink-0" id="blockFuel">
                     <h2 class="block-title" id="titleFuel"></h2>
                     <table class="exec-table" style="table-layout: fixed;" id="tableFuel">
-                        <thead><tr><th style="width: 60%;"></th><th style="width: 20%;" id="thFuelCurrent"></th><th style="width: 20%;">Δ</th></tr></thead>
+                        <thead><tr><th style="width: 60%;"></th><th style="width: 20%;" id="thFuelCurrent"></th><th style="width: 20%;" id="thFuelDelta">Δ</th></tr></thead>
                         <tbody id="mainTableBodyFuel"></tbody>
                     </table>
                 </div>
@@ -449,6 +490,63 @@
     let currentLetterSpacing = 0;
     let isSummaryHeadersBold = true; 
     let useCommaFormatEn = false;
+
+    // ---- Підписи ліній графіка (перенесено з dashboard.html) ----
+    let currentLabelSpread = 0;    // спільний додатковий відступ для ВСІХ підписів (кнопки ⇕±), px
+    let currentStackGap = 20;      // поріг розсування підписів однієї сторони, px
+    // Сторона (top/bottom) і власний відступ підпису ОКРЕМО для кожної лінії
+    let lineLabelConfig = {
+        totalLiquidity:      { align: 'top',    offset: 8 },
+        ownCash:             { align: 'bottom', offset: 8 },
+        ownCashMznn:         { align: 'top',    offset: 6 },
+        postImportLiquidity: { align: 'bottom', offset: 6 }
+    };
+    // Порядок у панелі + пріоритет (менший = важливіший: не ховається і не зсувається)
+    const LINE_META = [
+        { key: 'totalLiquidity',      prio: 1, label: { uk: 'Доступна ліквідність',       en: 'Available liquidity' } },
+        { key: 'ownCash',             prio: 2, label: { uk: 'Грошові залишки',             en: 'Cash balances' } },
+        { key: 'ownCashMznn',         prio: 3, label: { uk: 'МЗНН та Страт. резерв',       en: 'Own cash (MOS/Strat)' } },
+        { key: 'postImportLiquidity', prio: 4, label: { uk: 'Ліквідність з постімпортом',  en: 'Liquidity with post-import' } }
+    ];
+    const getPrio = (key) => { const m = LINE_META.find(x => x.key === key); return m ? m.prio : 99; };
+
+    // ---- Дата порівняння дельт ----
+    let compareMode = 'week';          // week | month | mtd | custom
+    let compareCustomDate = null;      // YYYY-MM-DD для режиму custom
+    let compareInfo = null;            // { target, snapDate, metricsDate, state }
+    let _cmpToken = 0;
+    let _pendingLoadNote = '';         // пояснення, чому відкрито не поточний тиждень
+
+    // ---- Автопідбір резюме ----
+    let summaryAutoFit = true;
+    let _summaryFitSig = '';
+    let _summaryFitRaf = 0;
+
+    // ---- Дати: чиста ISO-арифметика в UTC (як у trends.html) — без зсуву на добу
+    //      у поясах на схід від UTC ----
+    const DT = (() => {
+        const DAY = 86400000;
+        const add = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * DAY).toISOString().slice(0, 10);
+        const between = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / DAY);
+        const dow = iso => new Date(iso + 'T00:00:00Z').getUTCDay();              // 0 = нд
+        const toMonday = iso => add(iso, -((dow(iso) + 6) % 7));
+        const ym = (y, m) => { const d = new Date(Date.UTC(y, m, 1)); return { y: d.getUTCFullYear(), m: d.getUTCMonth() }; };
+        const nextYm = a => ym(a.y, a.m + 1), prevYm = a => ym(a.y, a.m - 1);
+        const lastDay = a => new Date(Date.UTC(a.y, a.m + 1, 0)).toISOString().slice(0, 10);
+        // Неділя, найближча до останнього дня місяця (межа «місяця» у trends)
+        const monthEndPoint = a => { const last = lastDay(a), d = dow(last), ps = add(last, -d); return d <= 3 ? ps : add(ps, 7); };
+        const monthOfSunday = sun => {
+            const [y, m] = sun.split('-').map(Number);
+            let a = { y, m: m - 1 };
+            if (sun > monthEndPoint(a)) a = nextYm(a);
+            else if (sun <= monthEndPoint(prevYm(a))) a = prevYm(a);
+            return a;
+        };
+        const dmy = iso => iso ? iso.split('-').reverse().join('.') : '—';
+        const dm = iso => { if (!iso) return '—'; const [, m, d] = iso.split('-'); return `${d}.${m}`; };
+        const isIso = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+        return { add, between, dow, toMonday, ym, nextYm, prevYm, lastDay, monthEndPoint, monthOfSunday, dmy, dm, isIso };
+    })();
 
     const SAVE_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/34cccd0ca98c4f9680dfef1b5d352f15/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vNKBrpfo-oLGwghHnImsmmMRrTOAB5_tvHHc4ZDRYJs";
     const SAVE_OPERATIONAL_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/23/workflows/6bcd52afc5434180bac7b54245966d41/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=z1ohBufTQzxYrRyEO_zFsU0lphU-PjjqgPK12lcSX7c";
@@ -839,6 +937,9 @@
         return Math.abs(Math.trunc(Number(n) || 0)) === 1 ? 'day' : 'days';
     }
 
+    // Тимчасовий тренд, поки розраховується дельта проти дати порівняння
+    function trendPending() { return { isPositive: true, text: { uk: "Δ …", en: "Δ …" } }; }
+
     // Спільний формат тренду для плиток. Для одиниці «дні» число відмінюється за |delta|.
     function kpiTrend(delta, unitUk, unitEn) {
         const a = Math.abs(delta);
@@ -915,117 +1016,354 @@
         return { avail: cash + cred, cred: cred, post: post, weeklyExp: extractSnapshotWeeklyExpenses(snap) };
     }
 
-    // Кеш зрізів на сесію: iso-дата → snapshot|null. Історичні тижні не змінюються,
-    // тож повторні відкриття дат і сусідні періоди не тягнуть ті самі файли повторно.
-    const _snapCache = new Map();
+    // ── Кеш відповідей потоку на сесію: iso → { iso, flow, snap, snapDate, dateOk } ──
+    // Історичні тижні не змінюються, тож порівняння, буфер і пошук останнього
+    // заповненого тижня не тягнуть ті самі файли повторно. Кнопка SharePoint скидає кеш.
+    const _flowCache = new Map();
 
-    // Тихо тягне зріз на дату через потік (для попередніх тижнів). null, якщо немає.
-    async function fetchSnapshotForDate(iso) {
-        if (_snapCache.has(iso)) return _snapCache.get(iso);
+    function makeFlowEntry(iso, flow) {
+        const snap = extractSnapshotObject(flow && (flow.snapshotTree || flow.snapshot || flow.snapshotJson || flow));
+        const snapDate = (snap && snap.meta) ? extractCleanDate(snap.meta.forecast_date || snap.meta.plan_fact_date) : null;
+        // Як у trends: зріз, чия дата не збігається із запитаною, для порівнянь не використовуємо
+        // (інакше потік, що повертає «найближчий» файл, дасть нульову дельту без попередження).
+        return { iso, flow, snap, snapDate, dateOk: !!snap && (!snapDate || snapDate === iso) };
+    }
+
+    const _flowInflight = new Map();       // один запит на дату, навіть якщо його просять паралельно
+    function fetchFlowForDate(iso) {
+        if (_flowCache.has(iso)) return Promise.resolve(_flowCache.get(iso));
+        if (_flowInflight.has(iso)) return _flowInflight.get(iso);
+        const p = _fetchFlowForDate(iso).finally(() => _flowInflight.delete(iso));
+        _flowInflight.set(iso, p);
+        return p;
+    }
+    async function _fetchFlowForDate(iso) {
+        let entry;
         try {
             const res = await fetch(GET_METRICS_FLOW_URL, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reportDate: iso, reportDateDot: iso.split('-').reverse().join('.') })
+                body: JSON.stringify({ reportDate: iso, reportDateDot: DT.dmy(iso) })
             });
-            if (!res.ok) { _snapCache.set(iso, null); return null; }
+            if (!res.ok) return { iso, error: 'HTTP ' + res.status };      // помилки не кешуємо
             const txt = await res.text();
-            const json = txt ? JSON.parse(txt) : null;
-            const snap = extractSnapshotObject(json);
-            _snapCache.set(iso, snap);
-            return snap;
-        } catch (e) { _snapCache.set(iso, null); return null; }
+            let flow = {};
+            if (txt && txt.trim()) { try { flow = JSON.parse(txt); } catch (e) { return { iso, error: 'некоректний JSON' }; } }
+            entry = makeFlowEntry(iso, flow);
+        } catch (e) { return { iso, error: e.message }; }
+        _flowCache.set(iso, entry);
+        return entry;
     }
 
-    // Уточнює плитки: дельти тиждень-до-тижня (проти найближчого попереднього зрізу)
-    // + буфер ліквідності ковзним середнім обов'язкових витрат за 4 тижні.
-    // Джерело попередніх тижнів (за пріоритетом):
-    //   1) flowResp.priorWeeks       — вже пораховані числа (Варіант A1, найлегший обсяг);
-    //   2) flowResp.priorSnapshots   — повні зрізи попередніх тижнів у ТІЙ САМІЙ відповіді (A2);
-    //   3) окремі паралельні запити  — відкат, якщо потік ще не повертає історію.
+    // Зріз на дату (лише якщо дата зрізу збігається із запитаною). null, якщо немає.
+    async function fetchSnapshotForDate(iso) {
+        const e = await fetchFlowForDate(iso);
+        return (e && !e.error && e.dateOk) ? e.snap : null;
+    }
+
+    // Чи заповнений зріз: є ФАКТ Т-1 по «Доступні залишки» (саме з нього беруться плитки).
+    function isSnapshotFilled(snap) {
+        if (!snap || !Array.isArray(snap.tree)) return false;
+        const n = findSnapshotNode(snap.tree, "Доступні залишки") || findSnapshotNode(snap.tree, "Залишки доступні до використання");
+        if (!n || !n.values) return false;
+        let v = n.values.Tm1_fact;
+        if (typeof v !== 'number') v = parseFloat(String(v == null ? '' : v).replace(/[\s\u00A0]/g, '').replace(',', '.'));
+        return isFinite(v) && Math.abs(v) >= 1;
+    }
+
+    // Попередні тижні для ФОЛБЕКУ буфера (коли середньодобова база місяця невідома)
+    // та як готові значення для порівняння. Джерела (за пріоритетом):
+    //   1) flowResp.priorWeeks     — вже пораховані числа (A1);
+    //   2) flowResp.priorSnapshots — повні зрізи в тій самій відповіді (A2);
+    //   3) окремі паралельні запити — лише якщо fetchIfMissing.
+    async function collectPriorVals(isoDate, flowResp, fetchIfMissing) {
+        const numOf = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+        const pw = flowResp && Array.isArray(flowResp.priorWeeks) ? flowResp.priorWeeks : null;
+        const ps = flowResp && Array.isArray(flowResp.priorSnapshots) ? flowResp.priorSnapshots : null;
+        if (pw && pw.length) {
+            return pw.map(w => ({
+                reportDate: cleanDateKey(w.reportDate || w.ReportDate),
+                avail: numOf(w.avail), cred: numOf(w.cred), post: numOf(w.post),
+                weeklyExp: numOf(w.weeklyExpenses != null ? w.weeklyExpenses : w.weeklyExp)
+            }));
+        }
+        if (ps && ps.length) {
+            return ps.map(item => {
+                const snap = extractSnapshotObject(item && (item.snapshot || item.snapshotTree || item)) || null;
+                const v = snap ? snapshotKpiValues(snap) : null;
+                if (!v) return null;
+                v.reportDate = cleanDateKey(item.reportDate || item.ReportDate || (snap.meta && (snap.meta.forecast_date || snap.meta.plan_fact_date)));
+                return v;
+            }).filter(Boolean);
+        }
+        if (!fetchIfMissing) return [];
+        const dates = [1, 2, 3].map(i => DT.add(isoDate, -7 * i));
+        const snaps = await Promise.all(dates.map(fetchSnapshotForDate));
+        return snaps.map((sn, i) => {
+            if (!sn) return null;
+            const v = snapshotKpiValues(sn); if (!v) return null;
+            v.reportDate = dates[i];
+            return v;
+        }).filter(Boolean);
+    }
+
+    // Уточнює ЗНАЧЕННЯ плиток і буфер ліквідності. Дельти рахує applyComparison()
+    // проти обраної дати порівняння (за замовчуванням — попередній понеділок).
     async function refineKpisAndBuffer(isoDate, currentSnapshot, flowResp) {
-        console.time('refineKpisAndBuffer (дельти + буфер)');
+        const gd = globalData;                        // захист від гонки при швидкій зміні дати
         try {
-            if (!globalData || !Array.isArray(globalData.kpis)) return;
+            if (!gd || !Array.isArray(gd.kpis)) return;
             const cur = snapshotKpiValues(currentSnapshot);
             if (!cur) return;
-            _snapCache.set(isoDate, currentSnapshot); // поточний зріз — у кеш
+            _flowCache.set(isoDate, _flowCache.get(isoDate) || { iso: isoDate, flow: flowResp, snap: currentSnapshot, snapDate: isoDate, dateOk: true });
 
-            const numOf = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
-            let priorVals = []; // [{ reportDate, avail, cred, post, weeklyExp }]
-
-            const pw = flowResp && Array.isArray(flowResp.priorWeeks) ? flowResp.priorWeeks : null;
-            const ps = flowResp && Array.isArray(flowResp.priorSnapshots) ? flowResp.priorSnapshots : null;
-
-            if (pw && pw.length) {
-                // A1 — числа вже пораховані потоком
-                priorVals = pw.map(w => ({
-                    reportDate: cleanDateKey(w.reportDate || w.ReportDate),
-                    avail: numOf(w.avail), cred: numOf(w.cred), post: numOf(w.post),
-                    weeklyExp: numOf(w.weeklyExpenses != null ? w.weeklyExpenses : w.weeklyExp)
-                }));
-            } else if (ps && ps.length) {
-                // A2 — повні зрізи попередніх тижнів у цій же відповіді
-                priorVals = ps.map(item => {
-                    const snap = extractSnapshotObject(item && (item.snapshot || item.snapshotTree || item)) || null;
-                    const v = snap ? snapshotKpiValues(snap) : null;
-                    if (!v) return null;
-                    v.reportDate = cleanDateKey(item.reportDate || item.ReportDate || (snap.meta && (snap.meta.forecast_date || snap.meta.plan_fact_date)));
-                    return v;
-                }).filter(Boolean);
-            } else {
-                // Відкат — окремі паралельні запити на попередні тижні
-                const dates = getFourTargetDates(isoDate);
-                console.time('refine: fetch попередніх тижнів (паралельно, відкат)');
-                const snaps = await Promise.all(dates.slice(1).map(fetchSnapshotForDate));
-                console.timeEnd('refine: fetch попередніх тижнів (паралельно, відкат)');
-                priorVals = snaps.map((s, i) => {
-                    if (!s || !s.tree) return null;
-                    const v = snapshotKpiValues(s); if (!v) return null;
-                    v.reportDate = dates[i + 1];
-                    return v;
-                }).filter(Boolean);
+            let baseCurMln = dailyExpenseBaseMln(isoDate, flowResp);
+            // Попередні тижні тягнемо лише коли база місяця невідома (фолбек буфера)
+            const priorVals = await collectPriorVals(isoDate, flowResp, !(baseCurMln > 0));
+            if (gd !== globalData) return;
+            if (!(baseCurMln > 0)) {
+                const pool = [];
+                if (cur.weeklyExp > 0) pool.push(cur.weeklyExp);
+                priorVals.forEach(v => { if (v.weeklyExp > 0) pool.push(v.weeklyExp); });
+                baseCurMln = pool.length ? (pool.reduce((a, b) => a + b, 0) / (pool.length * 7)) : 0;
             }
+            const buffer = baseCurMln > 0 ? Math.round(cur.avail / baseCurMln) : (gd.kpis[1] ? gd.kpis[1].value : 0);
 
-            // Найближчий попередній тиждень (для дельт) — за спаданням дати
-            priorVals.sort((a, b) => String(b.reportDate).localeCompare(String(a.reportDate)));
-            const prev = priorVals.length ? priorVals[0] : null;
+            gd.kpiBase = { iso: isoDate, avail: cur.avail, cred: cur.cred, post: cur.post, buffer, baseMln: baseCurMln, flowResp, priorVals };
 
-            // Пул тижневих обов'язкових витрат: поточний + усі наявні попередні (для ФОЛБЕКУ)
-            const pool = [];
-            if (cur.weeklyExp > 0) pool.push(cur.weeklyExp);
-            priorVals.forEach(v => { if (v.weeklyExp > 0) pool.push(v.weeklyExp); });
-            const fallbackDailyMln = pool.length ? (pool.reduce((a, b) => a + b, 0) / (pool.length * 7)) : 0;
-
-            // Буфер (днів) = Доступна ліквідність / середньодобові витрати МІСЯЦЯ.
-            // База місяця — з конфігу/потоку; якщо місяць невідомий — оцінка з тижнів.
-            const baseCurMln = dailyExpenseBaseMln(isoDate, flowResp) || fallbackDailyMln;
-            const buffer = baseCurMln > 0 ? Math.round(cur.avail / baseCurMln) : (globalData.kpis[1] ? globalData.kpis[1].value : 0);
-
-            const dLiq  = prev ? (cur.avail - prev.avail) : 0;
-            const dCred = prev ? (cur.cred - prev.cred) : 0;
-            const dPost = prev ? (cur.post - prev.post) : 0;
-            let dBuf = 0;
-            if (prev && baseCurMln > 0) {
-                const basePrevMln = dailyExpenseBaseMln(prev.reportDate, flowResp) || baseCurMln;
-                if (basePrevMln > 0) dBuf = buffer - Math.round(prev.avail / basePrevMln);
-            }
-
-            const setKpi = (titleUk, val, delta, unitUk, unitEn) => {
-                const k = globalData.kpis.find(x => x.title && x.title.uk === titleUk);
+            const setVal = (titleUk, val) => {
+                const k = gd.kpis.find(x => x.title && x.title.uk === titleUk);
                 if (!k) return;
                 k.value = (titleUk === "Доступний постімпорт" && (val === 0 || val === '-')) ? '-' : val;
-                k.trend = kpiTrend(delta, unitUk, unitEn);
                 if (titleUk === "Буфер ліквідності") k.unit = { uk: daysFormUk(val), en: daysFormEn(val) };
             };
-            setKpi("Доступна ліквідність", cur.avail, dLiq, "млн грн", "UAH mln");
-            setKpi("Доступні кредитні лінії", cur.cred, dCred, "млн грн", "UAH mln");
-            setKpi("Доступний постімпорт", cur.post, dPost, "млн грн", "UAH mln");
-            setKpi("Буфер ліквідності", buffer, dBuf, "дні", "days");
-
+            setVal("Доступна ліквідність", cur.avail);
+            setVal("Доступні кредитні лінії", cur.cred);
+            setVal("Доступний постімпорт", cur.post);
+            setVal("Буфер ліквідності", buffer);
             updateLanguageDOM();
-        } catch (e) { /* не критично для дашборду */ }
-        finally { console.timeEnd('refineKpisAndBuffer (дельти + буфер)'); }
+        } catch (e) { console.warn('refineKpisAndBuffer:', e); }
     }
+
+    // ═════════════════════ ДАТА ПОРІВНЯННЯ ДЕЛЬТ ═════════════════════
+    const COMPARE_MODES = [
+        { key: 'week',   uk: 'Тиждень',            en: 'Week',          hintUk: '−7 днів: попередній понеділок', hintEn: '−7 days: previous Monday' },
+        { key: 'month',  uk: 'Місяць',             en: 'Month',         hintUk: '−1 календарний місяць, найближчий понеділок', hintEn: '−1 calendar month, nearest Monday' },
+        { key: 'mtd',    uk: 'З початку місяця',   en: 'Month-to-date', hintUk: 'перший зріз місяця за календарем trends (місяць = тижні до неділі, найближчої до кінця місяця)', hintEn: 'first snapshot of the month (trends calendar)' },
+        { key: 'custom', uk: 'Власна дата',        en: 'Custom date',   hintUk: 'будь-яка дата раніше за дату звіту', hintEn: 'any date before the report date' }
+    ];
+
+    // Цільова дата порівняння для дати звіту та режиму
+    function compareTargetFor(iso, mode) {
+        if (!DT.isIso(iso)) return null;
+        if (mode === 'custom') return DT.isIso(compareCustomDate) ? compareCustomDate : DT.add(iso, -7);
+        if (mode === 'month') {
+            const [y, m, d] = iso.split('-').map(Number);
+            const p = DT.ym(y, m - 2);                                   // попередній місяць
+            const dd = Math.min(d, Number(DT.lastDay(p).slice(8)));
+            const t = `${p.y}-${String(p.m + 1).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+            const mon = DT.toMonday(t);
+            return DT.between(mon, t) <= 3 ? mon : DT.add(mon, 7);       // найближчий понеділок
+        }
+        if (mode === 'mtd') {
+            // Місяць звіту визначається за неділею факту Т-1 (як у trends.buildCalendar);
+            // зріз «початку місяця» — понеділок після межі попереднього місяця.
+            const m = DT.monthOfSunday(DT.add(DT.toMonday(iso), -1));
+            let start = DT.add(DT.monthEndPoint(DT.prevYm(m)), 1);
+            if (start >= iso) start = DT.add(DT.monthEndPoint(DT.prevYm(DT.prevYm(m))), 1);
+            return start;
+        }
+        return DT.add(iso, -7);                                          // week (за замовчуванням)
+    }
+
+    // Зріз і метрики на дату порівняння. Якщо на цільову дату немає даних — найближча
+    // наявна дата у межах 6 днів ДО неї (з календаря доступних дат).
+    async function loadCompareData(target, reportIso) {
+        const cands = [target].concat(
+            availableDatesWithData.filter(d => d < target && d > DT.add(target, -7) && d !== reportIso).sort().reverse());
+        let snapEntry = null, metricsEntry = null, errors = [];
+        for (const d of cands) {
+            const e = await fetchFlowForDate(d);
+            if (e.error) { errors.push(`${DT.dmy(d)}: ${e.error}`); continue; }
+            if (!snapEntry && e.snap && e.dateOk) snapEntry = e;
+            if (!metricsEntry && Array.isArray(e.flow && e.flow.metrics) && e.flow.metrics.length) metricsEntry = e;
+            if (snapEntry && metricsEntry) break;
+        }
+        return { snapEntry, metricsEntry, errors };
+    }
+
+    const normMetricTitle = t => String(t || '').toLowerCase().replace(/[’'`ʼ]/g, "'")
+        .replace(/^[\s\-\u2013\u2014•]+/, '').replace(/\s+/g, ' ').trim();
+    const metricGroup = m => {
+        const c = String((typeof m.Category === 'object' && m.Category) ? m.Category.Value : (m.Category ?? m.CategoryValue ?? '')).toLowerCase();
+        if (c.includes('оборотн')) return 'wc';
+        if (c.includes('запас')) return 'fuel';
+        if (c.includes('фінанс') || c.includes('кредит')) return 'fin';
+        return '';
+    };
+    function metricsIndex(flow) {
+        const map = new Map();
+        (Array.isArray(flow && flow.metrics) ? flow.metrics : []).forEach(m => {
+            const g = metricGroup(m), t = normMetricTitle(m.Title);
+            const v = parseFloat(m.Value);
+            if (g && t && isFinite(v) && !map.has(g + '|' + t)) map.set(g + '|' + t, v);
+        });
+        return map;
+    }
+
+    // Головна: перераховує дельти плиток, оборотного капіталу й запасів проти дати порівняння
+    async function applyComparison() {
+        const gd = globalData;
+        if (!gd || !gd._fromFlow || !DT.isIso(currentReportDate)) { renderCompareUi(); return; }
+        const token = ++_cmpToken;
+        const iso = currentReportDate;
+        const target = compareTargetFor(iso, compareMode);
+        if (!target || target >= iso) {
+            compareInfo = { target, state: 'invalid' };
+            renderCompareUi(); updateLanguageDOM();
+            showBanner(`Дата порівняння ${DT.dmy(target)} має бути раніше за дату звіту ${DT.dmy(iso)}.`, 'warn');
+            return;
+        }
+        compareInfo = { target, state: 'loading' };
+        renderCompareUi();
+
+        const base = gd.kpiBase || null;
+        // Готові числа з потоку (priorWeeks) — без додаткового запиту
+        const ready = base && Array.isArray(base.priorVals) ? base.priorVals.find(v => v.reportDate === target) : null;
+        const { snapEntry, metricsEntry, errors } = await loadCompareData(target, iso);
+        if (token !== _cmpToken || gd !== globalData) return;
+
+        // --- Плитки ---
+        const prev = ready || (snapEntry ? Object.assign(snapshotKpiValues(snapEntry.snap) || {}, { reportDate: snapEntry.iso }) : null);
+        const snapDate = ready ? target : (snapEntry ? snapEntry.iso : null);
+        if (base) {
+            const setTrend = (titleUk, delta, uUk, uEn) => {
+                const k = gd.kpis.find(x => x.title && x.title.uk === titleUk);
+                if (!k) return;
+                if (delta === null) {
+                    k.trend = { isPositive: true, text: { uk: `— немає зрізу на ${DT.dm(target)}`, en: `— no snapshot for ${DT.dm(target)}` } };
+                    k.trendNA = true;
+                } else { k.trend = kpiTrend(delta, uUk, uEn); k.trendNA = false; }
+            };
+            if (prev && typeof prev.avail === 'number') {
+                const basePrev = dailyExpenseBaseMln(snapDate, base.flowResp) || base.baseMln;
+                const prevBuf = basePrev > 0 ? Math.round(prev.avail / basePrev) : null;
+                setTrend("Доступна ліквідність", base.avail - prev.avail, "млн грн", "UAH mln");
+                setTrend("Доступні кредитні лінії", base.cred - (prev.cred || 0), "млн грн", "UAH mln");
+                setTrend("Доступний постімпорт", base.post - (prev.post || 0), "млн грн", "UAH mln");
+                setTrend("Буфер ліквідності", prevBuf === null ? null : base.buffer - prevBuf, "дні", "days");
+            } else {
+                ["Доступна ліквідність", "Доступні кредитні лінії", "Доступний постімпорт", "Буфер ліквідності"].forEach(t => setTrend(t, null));
+            }
+        }
+
+        // --- Оборотний капітал і запаси: поточне − значення на дату порівняння ---
+        const idx = metricsEntry ? metricsIndex(metricsEntry.flow) : new Map();
+        const manualOk = compareMode === 'week';    // ручне «Попереднє» з форми = минулий тиждень
+        let missingRows = 0;
+        const applyRows = (rows, group) => rows.forEach(r => {
+            if (r.isTotal && r._computedTotal) return;
+            const v = idx.get(group + '|' + normMetricTitle(r.title.uk));
+            if (v !== undefined) { r.cmp = v; r.delta = r.current - v; r.deltaSrc = 'cmp'; }
+            else if (manualOk && r.previous !== undefined) { r.cmp = r.previous; r.delta = r.current - r.previous; r.deltaSrc = 'manual'; }
+            else if (r.previous !== undefined || metricsEntry) { r.cmp = null; r.delta = null; r.deltaSrc = 'na'; missingRows++; }
+        });
+        applyRows(gd.workingCapital || [], 'wc');
+        applyRows(gd.fuelInventories || [], 'fuel');
+        // Розрахунковий підсумок ОК (без запасів) — із дельт складових
+        const tot = (gd.workingCapital || []).find(r => r.isTotal && r._computedTotal);
+        if (tot) {
+            let td = 0, ok = true;
+            gd.workingCapital.forEach(r => {
+                const sg = wcSign(r.title.uk);
+                if (r.isTotal || r.isSub || sg === 0) return;
+                if (typeof r.delta !== 'number') ok = false; else td += sg * r.delta;
+            });
+            tot.delta = ok ? td : null;
+        }
+
+        compareInfo = { target, snapDate, metricsDate: metricsEntry ? metricsEntry.iso : null,
+                        state: (snapDate || metricsEntry) ? 'ok' : 'none', missingRows, errors };
+        renderCompareUi();
+        updateLanguageDOM();
+        if (compareInfo.state === 'none') {
+            showBanner(`На дату порівняння ${DT.dmy(target)} (±6 днів раніше) даних немає — дельти не розраховано.`, 'warn');
+        }
+    }
+
+    function setCompareMode(mode) {
+        compareMode = mode;
+        if (mode === 'custom') {
+            const inp = document.getElementById('cmpCustomDate');
+            if (inp && DT.isIso(inp.value)) compareCustomDate = inp.value;
+            if (!DT.isIso(compareCustomDate)) compareCustomDate = compareTargetFor(currentReportDate, 'week');
+        }
+        applyComparison();
+    }
+    function setCompareCustomDate(v) {
+        if (!DT.isIso(v)) return;
+        compareCustomDate = v; compareMode = 'custom';
+        applyComparison();
+    }
+    function toggleCompareMenu() {
+        const el = document.getElementById('compareMenu');
+        el.classList.toggle('hidden');
+        if (!el.classList.contains('hidden')) renderCompareUi();
+    }
+
+    // Підпис у шапці, на кнопці та вміст меню порівняння
+    function compareCaptionText(lang) {
+        const ci = (globalData && globalData._fromFlow) ? compareInfo : null;   // Excel/демо — без порівняння
+        if (!ci || !ci.target) return '';
+        const mode = COMPARE_MODES.find(m => m.key === compareMode) || COMPARE_MODES[0];
+        if (ci.state === 'loading') return lang === 'uk' ? `Δ — розрахунок до ${DT.dmy(ci.target)}…` : `Δ — calculating vs ${DT.dmy(ci.target)}…`;
+        if (ci.state === 'invalid' || ci.state === 'none') return lang === 'uk' ? `Δ — немає даних на ${DT.dmy(ci.target)}` : `Δ — no data for ${DT.dmy(ci.target)}`;
+        const used = ci.snapDate || ci.metricsDate;
+        const near = used && used !== ci.target ? (lang === 'uk' ? ` (найближчий зріз до ${DT.dm(ci.target)})` : ` (nearest to ${DT.dm(ci.target)})`) : '';
+        return lang === 'uk' ? `· Δ — зміна з ${DT.dmy(used)}${near} · ${mode.uk.toLowerCase()}`
+                             : `· Δ — change since ${DT.dmy(used)}${near} · ${mode.en.toLowerCase()}`;
+    }
+
+    function renderCompareUi() {
+        const lang = currentLang;
+        const cap = document.getElementById('compareCaption');
+        if (cap) cap.textContent = compareCaptionText(lang);
+        const lbl = document.getElementById('lblCompareDate');
+        if (lbl) {
+            const ci = (globalData && globalData._fromFlow) ? compareInfo : null;
+            const used = ci && (ci.snapDate || ci.metricsDate);
+            lbl.textContent = !ci ? '—' : (ci.state === 'loading' ? '…' : (used ? `з ${DT.dm(used)}` : `${DT.dm(ci.target)} н/д`));
+        }
+        const body = document.getElementById('compareMenuBody');
+        if (!body) return;
+        const iso = currentReportDate;
+        body.innerHTML = COMPARE_MODES.map(m => {
+            const t = DT.isIso(iso) ? compareTargetFor(iso, m.key) : null;
+            const on = compareMode === m.key;
+            const dateCtl = m.key === 'custom'
+                ? `<input type="date" id="cmpCustomDate" value="${DT.isIso(compareCustomDate) ? compareCustomDate : (t || '')}" max="${DT.isIso(iso) ? DT.add(iso, -1) : ''}"
+                          onclick="event.stopPropagation()" onchange="setCompareCustomDate(this.value)"
+                          class="border border-slate-300 rounded px-1.5 py-0.5 text-xs">`
+                : `<span class="text-xs font-semibold tabular-nums ${on ? 'text-amber-800' : 'text-slate-500'}">${t ? DT.dmy(t) : '—'}</span>`;
+            return `<label class="flex items-center justify-between gap-2 p-1.5 rounded cursor-pointer ${on ? 'bg-amber-50 border border-amber-200' : 'hover:bg-slate-50 border border-transparent'}" title="${m['hint' + (lang === 'uk' ? 'Uk' : 'En')]}">
+                        <span class="flex items-center gap-2">
+                            <input type="radio" name="cmpMode" ${on ? 'checked' : ''} onchange="setCompareMode('${m.key}')" class="w-3.5 h-3.5">
+                            <span class="text-xs font-medium text-slate-700">${m[lang]}</span>
+                        </span>${dateCtl}
+                    </label>`;
+        }).join('');
+        const note = document.getElementById('compareMenuNote');
+        if (note) {
+            const ci = compareInfo;
+            let t = lang === 'uk'
+                ? 'Дельти плиток — проти ФАКТУ Т-1 зрізу на дату порівняння; оборотний капітал і запаси — проти значень, внесених на ту дату.'
+                : 'Tile deltas use the T-1 FACT of the comparison snapshot; working capital and inventories use values recorded on that date.';
+            if (ci && ci.state === 'ok' && ci.missingRows) t += lang === 'uk' ? ` Без даних на дату порівняння рядків: ${ci.missingRows}.` : ` Rows without comparison data: ${ci.missingRows}.`;
+            if (ci && ci.metricsDate && ci.snapDate && ci.metricsDate !== ci.snapDate) t += lang === 'uk' ? ` Метрики блоків — на ${DT.dmy(ci.metricsDate)}.` : ` Block metrics as of ${DT.dmy(ci.metricsDate)}.`;
+            note.textContent = t;
+        }
+    }
+
+    function consumeLoadNote() { const n = _pendingLoadNote; _pendingLoadNote = ''; return n ? ' ' + n : ''; }
 
     // Головна функція завантаження метрик обраної дати
     async function loadMetricsForSelectedDate(isoDate) {
@@ -1042,24 +1380,28 @@
 
         // --- СПОСІБ 1: потік Power Automate (основний, працює з локального файлу) ---
         try {
-            console.time('load: fetch зрізу поточної дати');
-            const response = await fetch(GET_METRICS_FLOW_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reportDate: isoDate, reportDateDot: dot })
-            });
-
-            const raw = await response.text();
-            console.timeEnd('load: fetch зрізу поточної дати');
-            if (!response.ok) {
-                // Тіло 502/500 зазвичай містить реальну причину збою потоку
-                const detail = raw ? (" — " + raw.replace(/\s+/g, ' ').slice(0, 300)) : "";
-                throw new Error(`потік повернув HTTP ${response.status}${detail}`);
-            }
-
             let flow;
-            try { flow = raw ? JSON.parse(raw) : {}; }
-            catch (e) { throw new Error("потік повернув некоректний JSON"); }
+            const cached = _flowCache.get(isoDate);
+            if (cached && cached.flow) {
+                flow = cached.flow;                       // вже отримано (пошук останнього тижня / порівняння)
+            } else {
+                const response = await fetch(GET_METRICS_FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportDate: isoDate, reportDateDot: dot })
+                });
+
+                const raw = await response.text();
+                if (!response.ok) {
+                    // Тіло 502/500 зазвичай містить реальну причину збою потоку
+                    const detail = raw ? (" — " + raw.replace(/\s+/g, ' ').slice(0, 300)) : "";
+                    throw new Error(`потік повернув HTTP ${response.status}${detail}`);
+                }
+
+                try { flow = raw ? JSON.parse(raw) : {}; }
+                catch (e) { throw new Error("потік повернув некоректний JSON"); }
+                _flowCache.set(isoDate, makeFlowEntry(isoDate, flow));
+            }
             flowData = flow;
 
             snapshot = extractSnapshotObject(flow.snapshotTree || flow.snapshot || flow.snapshotJson || flow);
@@ -1106,15 +1448,19 @@
         try {
             if (snapshot || hasMetricsPayload) {
                 // Блоки графіка/прогнозу коштів — зі зрізу; якщо зрізу немає, лишаємо порожніми
+                let refineP = null;
                 if (snapshot) {
                     processSnapshotJson(snapshot);
-                    // Асинхронно уточнюємо буфер ліквідності за 4 тижні (не блокуючи UI)
-                    refineKpisAndBuffer(isoDate, snapshot, flowData);
+                    // Асинхронно уточнюємо значення плиток і буфер ліквідності (не блокуючи UI)
+                    refineP = refineKpisAndBuffer(isoDate, snapshot, flowData);
                 } else {
                     prepareEmptyForecastForDate(isoDate);
                 }
                 // Блоки резюме/оборотний капітал/запаси/фінансування — з метрик (незалежно)
                 if (flowData) applyMetricsToDashboard(flowData, isoDate);
+                globalData._fromFlow = true;
+                // Дельти плиток і блоків — проти обраної дати порівняння (після уточнення значень)
+                Promise.resolve(refineP).then(() => applyComparison());
 
                 updateLanguageDOM();
                 buildChart();
@@ -1135,10 +1481,12 @@
                     missing.push("немає оперативних метрик (оборотний капітал / запаси / фінансування / резюме)");
                 }
 
+                const loadNote = consumeLoadNote();
                 if (missing.length === 0) {
-                    showSuccess(`Дані на ${dot} завантажено.`);
+                    if (loadNote) showBanner(`Дані на ${dot} завантажено.${loadNote}`, 'info');
+                    else showSuccess(`Дані на ${dot} завантажено.`);
                 } else {
-                    showBanner(`Дані на ${dot} завантажено частково. Бракує: ${missing.join("; ")}. Показано те, що наявне на цю дату.`, 'warn');
+                    showBanner(`Дані на ${dot} завантажено частково. Бракує: ${missing.join("; ")}. Показано те, що наявне на цю дату.${loadNote}`, 'warn');
                 }
             } else if (flowError) {
                 // Немає ні зрізу, ні метрик — очищаємо всі блоки й повідомляємо
@@ -1280,7 +1628,7 @@
             if (!wcRows.some(r => r.isTotal)) {
                 let tc = 0, td = 0;
                 wcRows.forEach(r => { const s = wcSign(r.title.uk); if (!r.isSub && s !== 0) { tc += s * r.current; td += s * r.delta; } });
-                wcRows.push({ title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: tc, previous: 0, delta: td, isSub: false, isTotal: true, isGray: false });
+                wcRows.push({ title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: tc, previous: tc - td, delta: td, isSub: false, isTotal: true, isGray: false, _computedTotal: true });
             }
             globalData.workingCapital = wcRows;
         }
@@ -1410,7 +1758,7 @@
 
     async function refreshSharePointData() {
         // Перезавантажує зріз поточної обраної дати та оновлює список дат календаря.
-        _snapCache.clear(); // ручне оновлення — скидаємо кеш, щоб підтягнути свіжі дані
+        _flowCache.clear(); // ручне оновлення — скидаємо кеш, щоб підтягнути свіжі дані
         await loadAvailableDatesFromSPQuiet();
         if (currentReportDate) {
             await loadMetricsForSelectedDate(currentReportDate);
@@ -1830,13 +2178,22 @@
         const outflowMenu = document.getElementById('outflowHighlightDropdown');
         if (outflowMenu) {
             const outflowBtn = outflowMenu.previousElementSibling;
-            if (!outflowBtn.contains(event.target) && !outflowBtn.contains(event.target)) outflowMenu.classList.add('hidden');
+            if (!outflowMenu.contains(event.target) && !outflowBtn.contains(event.target)) outflowMenu.classList.add('hidden');
         }
         const summaryMenu = document.getElementById('summarySettingsDropdown');
         if (summaryMenu) {
             const summaryBtn = summaryMenu.previousElementSibling;
             if (!summaryMenu.contains(event.target) && !summaryBtn.contains(event.target)) summaryMenu.classList.add('hidden');
         }
+        // Меню, що перемальовуються при кліку (кнопки всередині стають «від'єднаними»),
+        // перевіряємо через composedPath, а не contains.
+        const path = event.composedPath ? event.composedPath() : [];
+        ['chartLabelMenu', 'compareMenu'].forEach(id => {
+            const m = document.getElementById(id);
+            if (!m || m.classList.contains('hidden')) return;
+            const btn = m.previousElementSibling;
+            if (!path.includes(m) && !path.includes(btn) && !m.contains(event.target) && !(btn && btn.contains(event.target))) m.classList.add('hidden');
+        });
     });
 
     function toggleVisibility(blockId, checkbox) {
@@ -1856,6 +2213,7 @@
         }
         setTimeout(safeUpdateChart, 20);
         setTimeout(safeUpdateChart, 150);
+        if (summaryAutoFit) scheduleSummaryFit(true);
     }
 
     function changeSummaryFontSize(delta) {
@@ -1902,6 +2260,123 @@
             myLiquidityChart.options.scales.x.ticks.padding = currentXPadding;
             myLiquidityChart.update();
         }
+    }
+
+    // ⇕±: спільний відступ до ВСІХ підписів; разом росте поріг розсування
+    function changeStackGap(delta) {
+        currentLabelSpread += delta;
+        if (currentLabelSpread < -6) currentLabelSpread = -6;
+        if (currentLabelSpread > 30) currentLabelSpread = 30;
+        currentStackGap = Math.max(8, 20 + currentLabelSpread);
+        if (myLiquidityChart) myLiquidityChart.update('none');
+    }
+    function setLineAlign(key, align) {
+        if (lineLabelConfig[key]) lineLabelConfig[key].align = align;
+        if (myLiquidityChart) myLiquidityChart.update('none');
+        renderLineLabelMenu();
+    }
+    function changeLineOffset(key, delta) {
+        if (!lineLabelConfig[key]) return;
+        lineLabelConfig[key].offset = Math.min(60, Math.max(0, lineLabelConfig[key].offset + delta));
+        if (myLiquidityChart) myLiquidityChart.update('none');
+        renderLineLabelMenu();
+    }
+    function toggleChartLabelMenu() {
+        const el = document.getElementById('chartLabelMenu');
+        el.classList.toggle('hidden');
+        if (!el.classList.contains('hidden')) renderLineLabelMenu();
+    }
+    function renderLineLabelMenu() {
+        const body = document.getElementById('chartLabelMenuBody');
+        if (!body) return;
+        const lang = currentLang;
+        const onCls = 'bg-indigo-600 text-white', offCls = 'bg-white text-slate-600 hover:bg-slate-100';
+        body.innerHTML = LINE_META.map(m => {
+            const cfg = lineLabelConfig[m.key], topSel = cfg.align === 'top';
+            return `<div class="py-2 border-b border-slate-100 last:border-0">
+                <div class="text-xs font-semibold text-slate-700 mb-1.5 truncate">${m.label[lang]}</div>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex rounded-md overflow-hidden border border-slate-300 text-[11px] font-medium">
+                        <button onclick="setLineAlign('${m.key}','top')" class="px-2.5 py-1 ${topSel ? onCls : offCls}">${lang === 'uk' ? 'Зверху' : 'Top'}</button>
+                        <button onclick="setLineAlign('${m.key}','bottom')" class="px-2.5 py-1 ${!topSel ? onCls : offCls}">${lang === 'uk' ? 'Знизу' : 'Bottom'}</button>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] text-slate-400 mr-0.5">${lang === 'uk' ? 'відступ' : 'offset'}</span>
+                        <button onclick="changeLineOffset('${m.key}',-2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 rounded text-xs font-bold">−</button>
+                        <span class="text-xs w-6 text-center tabular-nums font-semibold text-slate-700">${cfg.offset}</span>
+                        <button onclick="changeLineOffset('${m.key}',2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 rounded text-xs font-bold">+</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+        const title = document.getElementById('lblChartLabelTitle');
+        if (title) title.innerText = lang === 'uk' ? 'Підписи ліній' : 'Line labels';
+    }
+
+    // ───── Автопідбір резюме під сторінку A3 ─────
+    // Від базових налаштувань (11 pt, відступ 8 px, без ущільнення) крок за кроком
+    // зменшуємо відступ між рядками, шрифт і ширину літер, доки права колонка
+    // (резюме + ОК + запаси + фінансування) не вміститься без переповнення.
+    const SUMMARY_FIT_STEPS = (() => {
+        const st = [];
+        let f = 11, g = 8, ls = 0;
+        const push = () => st.push({ f, g, ls });
+        push();
+        for (g = 6; g >= 4; g -= 2) push();                         // 1) відстань між блоками
+        for (f = 10.5; f >= 9; f -= 0.5) push();                     // 2) шрифт до 9 pt
+        for (ls = -0.1; ls >= -0.41; ls = Math.round((ls - 0.1) * 10) / 10) push();   // 3) ущільнення
+        for (f = 8.5; f >= 7.5; f -= 0.5) push();                    // 4) шрифт до 7.5 pt
+        for (g = 2; g >= 0; g -= 2) push();                          // 5) без відступів
+        return st;
+    })();
+
+    function summaryOverflows() {
+        const col = document.getElementById('rightColumn');
+        const box = document.getElementById('summaryTexts');
+        if (!col || !box || col.clientHeight === 0) return false;    // немає розкладки (приховано)
+        return col.scrollHeight > col.clientHeight + 1 || box.scrollHeight > box.clientHeight + 1;
+    }
+
+    function summaryFitSignature() {
+        if (!globalData) return '';
+        const vis = ['blockSummary', 'blockWC', 'blockFuel', 'blockLimits'].map(id => {
+            const el = document.getElementById(id); return el && el.classList.contains('force-hide') ? 0 : 1; }).join('');
+        return [currentLang, vis, (globalData.summary[currentLang] || []).join('\n'),
+                (globalData.workingCapital || []).length, (globalData.fuelInventories || []).length,
+                (globalData.creditLimits || []).length, isSummaryHeadersBold ? 1 : 0].join('|');
+    }
+
+    function applySummaryState(st) {
+        currentSummaryFontSize = st.f; currentSummaryGap = st.g; currentLetterSpacing = st.ls;
+        applySummaryFontSize(); applySummaryGap(); applyLetterSpacing();
+    }
+
+    // force=true — підібрати зараз (кнопка / зміна видимості блоків)
+    function autoFitSummary(force) {
+        if (!globalData) return false;
+        const sig = summaryFitSignature();
+        if (!force && (!summaryAutoFit || sig === _summaryFitSig)) return false;
+        const col = document.getElementById('rightColumn');
+        if (!col || col.clientHeight === 0) return false;          // розкладки ще немає — спробуємо пізніше
+        _summaryFitSig = sig;
+        let i = 0;
+        applySummaryState(SUMMARY_FIT_STEPS[0]);
+        while (summaryOverflows() && i < SUMMARY_FIT_STEPS.length - 1) applySummaryState(SUMMARY_FIT_STEPS[++i]);
+        const info = document.getElementById('summaryFitInfo');
+        const over = summaryOverflows();
+        if (info) info.textContent = `${currentSummaryFontSize} pt · відступ ${currentSummaryGap} px · літери ${currentLetterSpacing} px${over ? ' · не вміщується' : ''}`;
+        if (over) showBanner('Управлінське резюме задовге: навіть мінімальний шрифт не вміщує всі блоки на сторінку. Скоротіть текст або приховайте блок.', 'warn');
+        return true;
+    }
+
+    function scheduleSummaryFit(force) {
+        if (_summaryFitRaf) cancelAnimationFrame(_summaryFitRaf);
+        _summaryFitRaf = requestAnimationFrame(() => requestAnimationFrame(() => { _summaryFitRaf = 0; autoFitSummary(force); }));
+    }
+
+    function toggleSummaryAutoFit() {
+        summaryAutoFit = document.getElementById('chk_summary_autofit').checked;
+        if (summaryAutoFit) scheduleSummaryFit(true);
     }
 
     function safeUpdateChart() {
@@ -1979,9 +2454,10 @@
                               globalData.chart.postImportLiquidity, [globalData.chart.minThreshold])
                       .filter(v => typeof v === 'number' && isFinite(v));
         const dataMax = all.length ? Math.max(...all) : 1000;
-        const step = niceStep(dataMax * 1.18, 6);
+        const HEADROOM = 1.30;   // запас зверху, щоб підписам вистачало місця по вертикалі
+        const step = niceStep(dataMax * HEADROOM, 6);
         const half = step / 2;
-        return { step: step, max: Math.ceil((dataMax * 1.18) / half) * half };
+        return { step: step, max: Math.ceil((dataMax * HEADROOM) / half) * half };
     }
 
     function hasPeriods() {
@@ -2017,6 +2493,10 @@
         }
     };
 
+    // Підписи ліній: ВСІ значення видимі, дублікати (те саме округлене число лінії з
+    // вищим пріоритетом у цій точці) ховаються; підписи однієї сторони, що підходять
+    // ближче ніж currentStackGap, автоматично розсуваються. Сторону і відступ кожної
+    // лінії задає панель «Підписи ліній»; ⇕± — спільний відступ для всіх.
     function buildChart() {
         if(myLiquidityChart) myLiquidityChart.destroy();
         const ctx = document.getElementById('liquidityChart').getContext('2d');
@@ -2024,9 +2504,61 @@
         const yAxis = calcYAxis();
 
         const getHighlightColor = (data, index, mainColor) => {
-            const max = Math.max(...data), min = Math.min(...data);
+            const nums = data.filter(v => typeof v === 'number' && isFinite(v));
+            if (!nums.length) return paleColor;
+            const max = Math.max(...nums), min = Math.min(...nums);
             return (index === 0 || index === data.length - 1 || data[index] === max || data[index] === min) ? mainColor : paleColor;
         };
+
+        const roundV = (v) => (typeof v === 'number' && isFinite(v)) ? Math.round(v) : null;
+
+        // ДЕДУПЛІКАЦІЯ: ховаємо підпис, якщо таке саме число вже показує лінія вищого пріоритету
+        const distinctDisplay = (selfKey, higherKeys) => (c) => {
+            const i = c.dataIndex;
+            const self = roundV(globalData.chart[selfKey] ? globalData.chart[selfKey][i] : null);
+            if (self === null) return false;
+            for (const k of higherKeys) {
+                const other = roundV(globalData.chart[k] ? globalData.chart[k][i] : null);
+                if (other !== null && other === self) return false;
+            }
+            return true;
+        };
+
+        const lineAlign  = (key) => () => lineLabelConfig[key].align;
+        const lineAnchor = (key) => () => lineLabelConfig[key].align === 'top' ? 'end' : 'start';
+
+        // Відступ = власний відступ лінії + спільний ⇕± + автоматичне розсування
+        // проти ліній ВИЩОГО пріоритету на ТОМУ Ж боці, якщо вони ближче за currentStackGap.
+        const lineOffset = (selfKey) => (c) => {
+            const cfg = lineLabelConfig[selfKey];
+            let off = cfg.offset + currentLabelSpread;
+            const yScale = c.chart.scales.y;
+            if (!yScale) return off;
+            const i = c.dataIndex;
+            const selfV = globalData.chart[selfKey] ? globalData.chart[selfKey][i] : null;
+            if (typeof selfV !== 'number' || !isFinite(selfV)) return off;
+            const selfPx = yScale.getPixelForValue(selfV);
+            LINE_META.forEach(m => {
+                if (m.key === selfKey) return;
+                if (lineLabelConfig[m.key].align !== cfg.align) return;
+                if (getPrio(m.key) >= getPrio(selfKey)) return;
+                const ov = globalData.chart[m.key] ? globalData.chart[m.key][i] : null;
+                if (typeof ov !== 'number' || !isFinite(ov)) return;
+                if (Math.abs(selfPx - yScale.getPixelForValue(ov)) < currentStackGap) off += currentStackGap;
+            });
+            return Math.max(0, off);
+        };
+
+        const labelsFor = (key, color, size, weightPale, displayFn) => ({
+            display: displayFn,
+            clamp: true,
+            align: lineAlign(key),
+            anchor: lineAnchor(key),
+            offset: lineOffset(key),
+            color: (c) => getHighlightColor(globalData.chart[key], c.dataIndex, color),
+            font: (c) => ({ weight: getHighlightColor(globalData.chart[key], c.dataIndex, 'bold') === 'bold' ? '700' : weightPale, size: size }),
+            formatter: (v) => formatNum(v)
+        });
 
         myLiquidityChart = new Chart(ctx, {
             type: 'line',
@@ -2039,12 +2571,7 @@
                         borderColor: '#1E3A8A', 
                         borderWidth: 3, pointRadius: 2, pointBackgroundColor: '#1E3A8A', 
                         fill: false, clip: false, order: 1, 
-                        datalabels: { 
-                            display: true, align: 'top', anchor: 'center', 
-                            color: (c) => getHighlightColor(globalData.chart.totalLiquidity, c.dataIndex, '#1E3A8A'),
-                            font: (c) => ({ weight: getHighlightColor(globalData.chart.totalLiquidity, c.dataIndex, 'bold') === 'bold' ? '700' : '200', size: 14.6 }),
-                            formatter: (v) => formatNum(v) 
-                        } 
+                        datalabels: labelsFor('totalLiquidity', '#1E3A8A', 14.6, '200', true)
                     },
                     { 
                         label: chartTranslations[currentLang].ownCash, 
@@ -2052,12 +2579,7 @@
                         borderColor: '#6B7280', 
                         borderWidth: 1.5, pointRadius: 2, pointBackgroundColor: '#ffffff', 
                         fill: false, clip: false, order: 2, 
-                        datalabels: { 
-                            display: true, align: 'bottom', anchor: 'start', 
-                            color: (c) => getHighlightColor(globalData.chart.ownCash, c.dataIndex, '#6B7280'),
-                            font: (c) => ({ weight: getHighlightColor(globalData.chart.ownCash, c.dataIndex, 'bold') === 'bold' ? '700' : '500', size: 14.6 }),
-                            formatter: (v) => formatNum(v) 
-                        } 
+                        datalabels: labelsFor('ownCash', '#6B7280', 14.6, '500', distinctDisplay('ownCash', ['totalLiquidity']))
                     },
                     { 
                         label: chartTranslations[currentLang].ownCashMznn, 
@@ -2065,12 +2587,7 @@
                         borderColor: '#C2410C', 
                         borderWidth: 1.5, pointRadius: 2, pointBackgroundColor: '#ffffff', 
                         borderDash: [5, 5], fill: false, clip: false, order: 3, 
-                        datalabels: { 
-                            display: true, align: 'top', anchor: 'center', 
-                            color: (c) => getHighlightColor(globalData.chart.ownCashMznn, c.dataIndex, '#C2410C'),
-                            font: (c) => ({ weight: getHighlightColor(globalData.chart.ownCashMznn, c.dataIndex, 'bold') === 'bold' ? '700' : '500', size: 13 }),
-                            formatter: (v) => formatNum(v) 
-                        } 
+                        datalabels: labelsFor('ownCashMznn', '#C2410C', 13, '500', distinctDisplay('ownCashMznn', ['totalLiquidity', 'ownCash']))
                     },
                     { 
                         label: chartTranslations[currentLang].postImport, 
@@ -2078,14 +2595,7 @@
                         borderColor: '#475569', 
                         borderWidth: 1.5, pointRadius: 1.5, pointBackgroundColor: '#475569', 
                         borderDash: [12, 6], fill: false, clip: false, order: 4, 
-                        datalabels: { 
-                            display: true, 
-                            align: (c) => c.dataIndex === 0 ? -45 : (c.dataIndex === c.dataset.data.length - 1 ? 225 : 'top'), 
-                            anchor: 'end', 
-                            color: (c) => getHighlightColor(globalData.chart.postImportLiquidity, c.dataIndex, '#475569'),
-                            font: (c) => ({ weight: getHighlightColor(globalData.chart.postImportLiquidity, c.dataIndex, 'bold') === 'bold' ? '700' : '500', size: 14.6 }),
-                            formatter: (v) => formatNum(v) 
-                        } 
+                        datalabels: labelsFor('postImportLiquidity', '#475569', 14.6, '500', distinctDisplay('postImportLiquidity', ['totalLiquidity', 'ownCash', 'ownCashMznn']))
                     },
                     { 
                         label: chartTranslations[currentLang].minLimit, 
@@ -2103,7 +2613,7 @@
                 responsive: true, 
                 maintainAspectRatio: false,
                 devicePixelRatio: Math.max(2, window.devicePixelRatio || 1),
-                layout: { padding: { left: 26, right: 26, top: 30, bottom: 4 } }, 
+                layout: { padding: { left: 26, right: 26, top: 34, bottom: 4 } }, 
                 scales: {
                     x: { 
                         grid: { display: false }, 
@@ -2119,6 +2629,7 @@
                     }
                 },
                 plugins: {
+                    datalabels: { clamp: true, clip: false },
                     legend: { 
                         display: true, position: 'bottom', align: 'start', 
                         labels: { 
@@ -2134,11 +2645,42 @@
                 }
             },
             plugins: [{
+                // Підпис мінімального рівня: над або під лінією — там, де менше підписів даних
                 id: 'customLabels',
                 afterDraw: (chart) => {
-                    const { ctx, chartArea: { right }, scales: { y } } = chart;
-                    ctx.save(); ctx.font = '600 12pt Helvetica'; ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillStyle = '#991B1B'; 
-                    ctx.fillText(chartTranslations[currentLang].minLimit, right, y.getPixelForValue(globalData.chart.minThreshold) + 5); ctx.restore();
+                    const { ctx, chartArea, scales: { x, y } } = chart;
+                    const txt = chartTranslations[currentLang].minLimit;
+                    ctx.save();
+                    ctx.font = '600 12pt Helvetica';
+                    const textW = ctx.measureText(txt).width;
+                    const textH = 20, pad = 6;
+                    const rightX = chartArea.right, leftX = rightX - textW;
+                    const tY = y.getPixelForValue(globalData.chart.minThreshold);
+
+                    const centers = [];
+                    const n = globalData.chart.labels.length;
+                    for (let i = 0; i < n; i++) {
+                        if (x.getPixelForTick(i) < leftX - 12) continue;
+                        LINE_META.forEach(m => {
+                            const v = globalData.chart[m.key] ? globalData.chart[m.key][i] : null;
+                            if (typeof v !== 'number' || !isFinite(v)) return;
+                            const cfg = lineLabelConfig[m.key];
+                            const dir = cfg.align === 'top' ? -1 : 1;
+                            centers.push(y.getPixelForValue(v) + dir * (cfg.offset + currentLabelSpread + 10));
+                        });
+                    }
+                    const bandAbove = [tY - pad - textH, tY - pad];
+                    const bandBelow = [tY + pad, tY + pad + textH];
+                    const hits = (band) => centers.filter(cy => cy >= band[0] - textH / 2 && cy <= band[1] + textH / 2).length;
+                    let placeBelow = hits(bandBelow) <= hits(bandAbove);
+                    if (bandAbove[0] < chartArea.top) placeBelow = true;
+                    if (bandBelow[1] > chartArea.bottom) placeBelow = false;
+
+                    ctx.textAlign = 'right';
+                    ctx.fillStyle = '#991B1B';
+                    ctx.textBaseline = placeBelow ? 'top' : 'bottom';
+                    ctx.fillText(txt, rightX, placeBelow ? tY + pad : tY - pad);
+                    ctx.restore();
                 }
             }, periodAxisPlugin]
         });
@@ -2675,10 +3217,10 @@
         }
 
         const kpis = [
-            { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false },
-            { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferDays, unit: { uk: daysFormUk(bufferDays), en: daysFormEn(bufferDays) }, trend: kpiTrend(0, "дні", "days"), isGray: false },
-            { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false },
-            { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: (curPost === 0 ? '-' : curPost), unit: { uk: "млн грн", en: "UAH mln" }, trend: kpiTrend(0, "млн грн", "UAH mln"), isGray: false }
+            { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: trendPending(), isGray: false },
+            { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferDays, unit: { uk: daysFormUk(bufferDays), en: daysFormEn(bufferDays) }, trend: trendPending(), isGray: false },
+            { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: trendPending(), isGray: false },
+            { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: (curPost === 0 ? '-' : curPost), unit: { uk: "млн грн", en: "UAH mln" }, trend: trendPending(), isGray: false }
         ];
 
         // --- 4. Таблиця прогнозу грошових потоків (структура як у dashboard.html:
@@ -2851,6 +3393,11 @@
         if (thWC) thWC.innerText = lang === 'uk' ? 'Поточний' : 'Current';
         const thFuel = document.getElementById('thFuelCurrent');
         if (thFuel) thFuel.innerText = lang === 'uk' ? 'Поточні' : 'Current';
+        // Заголовок Δ з датою порівняння
+        const cmpUsed = compareInfo && compareInfo.state === 'ok' ? (compareInfo.metricsDate || compareInfo.snapDate) : null;
+        const deltaTh = cmpUsed ? `Δ<span class="th-period">${lang === 'uk' ? 'з' : 'vs'} ${DT.dm(cmpUsed)}</span>` : 'Δ';
+        ['thWCDelta', 'thFuelDelta'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = deltaTh; });
+        renderCompareUi();
 
         document.getElementById('kpiContainer').innerHTML = globalData.kpis.map((kpi, idx) => `
             <div class="kpi-card">
@@ -2860,7 +3407,7 @@
                     <span class="kpi-value">${formatNum(kpi.value)}</span>
                     <span class="unit-label" style="margin-top: 0;">${kpi.unit[lang]}</span>
                 </div>
-                <span class="${kpi.isGray ? 'gray-trend' : (kpi.trend.isPositive ? 'positive-trend' : 'negative-trend')}">${kpi.trend.text[lang]}</span>
+                <span class="${(kpi.isGray || kpi.trendNA) ? 'gray-trend' : (kpi.trend.isPositive ? 'positive-trend' : 'negative-trend')}">${kpi.trend.text[lang]}</span>
             </div>`).join('');
 
         document.getElementById('summaryTexts').innerHTML = globalData.summary[lang].map(t => {
@@ -2897,6 +3444,8 @@
         applySummaryFontSize(); 
         applySummaryGap();
         applyLetterSpacing();
+        renderLineLabelMenu();
+        scheduleSummaryFit(false);     // автопідбір — лише коли змінився вміст/мова/набір блоків
 
         const wcMenu = document.getElementById('wcMenu');
         if (wcMenu) {
@@ -3065,9 +3614,37 @@
         }
     }, false);
 
+    // Стартове завантаження: звіт на понеділок поточного тижня. Якщо зрізу немає або ФАКТ Т-1
+    // ще порожній (типово зранку в понеділок) — відкриваємо попередній тиждень (до 4 тижнів назад).
+    const INITIAL_LOOKBACK_WEEKS = 4;
+    async function loadLatestFilledReport() {
+        loadAvailableDatesFromSPQuiet();                       // календар заповнюється паралельно
+        const mon = getMostRecentMonday();
+        showLoading(`Пошук останнього заповненого звіту (від ${DT.dmy(mon)})…`);
+        const skipped = [];
+        for (let i = 0; i <= INITIAL_LOOKBACK_WEEKS; i++) {
+            const iso = DT.add(mon, -7 * i);
+            const e = await fetchFlowForDate(iso);
+            if (e.error) {
+                if (i === 0) break;                             // потік недоступний — старий сценарій
+                skipped.push(`${DT.dmy(iso)} (помилка)`); continue;
+            }
+            if (e.snap && e.dateOk && isSnapshotFilled(e.snap)) {
+                if (skipped.length) {
+                    _pendingLoadNote = `Звіт на ${skipped.join(', ')} ще не заповнений — показано останній заповнений тиждень ${DT.dmy(iso)}.`;
+                }
+                applyDateSelection(iso);
+                return;
+            }
+            skipped.push(DT.dmy(iso));
+        }
+        // Нічого не знайдено за останні тижні / потік недоступний — останній день зі списку дат
+        await loadAvailableDatesFromSP();
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         initEmptyDashboard();
-        loadAvailableDatesFromSP();
+        loadLatestFilledReport();
     });
 </script>
 </body>

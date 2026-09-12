@@ -25,6 +25,35 @@
         /* ---- Картки ---- */
         .card { background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .explorer { display: grid; grid-template-columns: 1fr 620px; gap: 12px; align-items: start; }
+        .explorer.wide { grid-template-columns: 1fr; }
+
+        /* ---- Аналітична таблиця ---- */
+        .an-wrap { overflow-x: auto; }
+        .an-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; font-variant-numeric: tabular-nums; }
+        .an-table th { font-size: 8.5pt; color: #64748b; font-weight: 600; padding: 4px 4px; border-bottom: 1.5px solid #94a3b8; text-align: right; background: #f8fafc; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 360px; position: sticky; left: 0; background: #fff; z-index: 1; }
+        .an-table th.nm-col { z-index: 3; background: #f8fafc; }
+        .an-table th .th-period { display: block; font-size: 6.5pt; font-weight: 500; color: #94a3b8; white-space: nowrap; line-height: 1.1; margin-top: 1px; }
+        .an-table td { padding: 3px 4px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+        .an-table tbody tr:hover td { background-color: #f8fafc; }
+        .an-table tbody tr.selected td { background-color: #eff6ff; }
+        .an-table tr.lvl-block td { background: #ecfdf5; font-weight: 700; color: #065f46; }
+        .an-table tr.lvl-block:hover td { background: #d1fae5; }
+        .an-table tr.lvl-item td { font-weight: 600; color: #1e293b; }
+        .an-table tr.lvl-total td { color: #b45309; font-weight: 600; }
+        .an-table tr.lvl-child td { color: #64748b; font-size: 8pt; }
+        .an-table tr.hidden-row td.nm-col .nm-txt { text-decoration: line-through; opacity: .65; }
+        .an-table td.col-sum, .an-table th.col-sum { border-left: 1.5px solid #cbd5e1; font-weight: 700; }
+        .an-table td.col-mon, .an-table th.col-mon { background: #fafafa; color: #7c3aed; }
+        .an-table td.neg { color: #b91c1c; }
+        .an-table td.zero { color: #cbd5e1; }
+        .an-code { color: #2563eb; font-size: 7.5pt; margin-right: 4px; }
+        .chk { font-size: 7.5pt; font-weight: 700; margin-left: 5px; padding: 0 3px; border-radius: 3px; }
+        .chk-ok { color: #047857; background: #ecfdf5; }
+        .chk-bad { color: #b91c1c; background: #fef2f2; }
+        .an-rowref { color: #94a3b8; font-size: 7.5pt; font-family: ui-monospace, Menlo, Consolas, monospace; }
+        .drill-btn { color: #4f46e5; cursor: pointer; font-size: 8pt; margin-left: 6px; opacity: 0; }
+        .an-table tr:hover .drill-btn { opacity: 1; }
 
         /* ---- Дерево ---- */
         .tree-pane { max-height: 720px; overflow: auto; }
@@ -145,11 +174,17 @@
 
         <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide">
             <div class="flex gap-1.5">
-                <button class="tab-btn active" id="tab-tree" onclick="setTab('tree')">Дерево (tree)</button>
+                <button class="tab-btn" id="tab-tree" onclick="setTab('tree')">Дерево (tree)</button>
+                <button class="tab-btn active" id="tab-table" onclick="setTab('table')">Таблиця (аналітик)</button>
                 <button class="tab-btn" id="tab-rows" onclick="setTab('rows')">Рядки (rows)</button>
                 <button class="tab-btn" id="tab-columns" onclick="setTab('columns')">Колонки (columns)</button>
                 <button class="tab-btn" id="tab-meta" onclick="setTab('meta')">Meta / схема</button>
             </div>
+            <span class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+                <span class="text-xs text-slate-600">Ієрархія:</span>
+                <button class="tab-btn active" id="hierExcel" onclick="setHier('excel')" title="Вкладеність відновлено за сумами статей — як на аркуші Excel">як в Excel</button>
+                <button class="tab-btn" id="hierJson" onclick="setHier('json')" title="Дерево рівно таке, як у полі tree снапшоту">як у БД (tree)</button>
+            </span>
             <input id="searchBox" type="text" placeholder="Пошук: назва, код, no, рядок Excel…" oninput="render()"
                    class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 w-80">
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
@@ -158,6 +193,13 @@
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input type="checkbox" id="expandAll" onchange="expanded = {}; render()"> Розгорнути всі рівні
             </label>
+            <span id="colGroups" class="hidden flex flex-wrap gap-3 items-center border-l pl-4 border-slate-200">
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="grpWeeks" checked onchange="render()"> Тижні Т0–Т12</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="grpMonths" onchange="render()"> Місяці М1–М3</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="grpPrev" onchange="render()"> Тиждень −1 (план/прогноз/факт + відхилення)</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="grpTotal" checked onchange="render()"> Σ 13 тижнів</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="unitThs" onchange="render()"> тис. грн</label>
+            </span>
             <span class="text-[10.5px] text-slate-500" id="paneCount">--</span>
         </div>
 
@@ -192,7 +234,9 @@
     let NODES = [];           // плоский індекс вузлів дерева
     let expanded = {};        // стан розгортання: expanded[path] = true
     let selectedId = null;
-    let currentTab = 'tree';
+    let currentTab = 'table';
+    let HIER = 'excel';       // 'excel' — відновлена ієрархія, 'json' — як у БД
+    let NORM_TREE = null;
 
     // Стан календаря
     let currentReportDate = "2026-09-07";
@@ -239,7 +283,9 @@
                     id, parentId, depth, node: n,
                     name: n.name || '', kind: n.kind || '', no: n.no, code: n.code,
                     src_row: n.src_row, keep: n.keep, key: n.key,
-                    jsonPath: 'tree[' + prefix.split('/').filter(Boolean).concat(String(i)).join('].children[') + ']',
+                    jsonPath: HIER === 'json'
+                        ? 'tree[' + prefix.split('/').filter(Boolean).concat(String(i)).join('].children[') + ']'
+                        : 'rows[' + ((n.seq || 1) - 1) + ']',
                     childIds: []
                 };
                 list.push(rec);
@@ -254,6 +300,23 @@
         return list;
     }
 
+    const activeTree = () => (HIER === 'json' ? (SNAP.tree || []) : (NORM_TREE || []));
+
+    function setHier(mode) {
+        if (!SNAP || mode === HIER) return;
+        HIER = mode;
+        const keepRow = selectedId && !String(selectedId).startsWith('row:') ? (byId(selectedId) || {}).src_row : null;
+        NODES = indexTree(activeTree());
+        expanded = {};
+        activeTree().forEach((n, i) => { expanded['/' + i] = true; });
+        const again = keepRow ? NODES.find(n => n.src_row === keepRow) : null;
+        selectedId = again ? again.id : null;
+        document.getElementById('hierExcel').className = 'tab-btn' + (HIER === 'excel' ? ' active' : '');
+        document.getElementById('hierJson').className = 'tab-btn' + (HIER === 'json' ? ' active' : '');
+        renderSummary();
+        render();
+    }
+
     const byId = id => NODES.find(n => n.id === id);
     const rowBySrc = src => (SNAP && SNAP.rows ? SNAP.rows.find(r => r.src_row === src) : null);
 
@@ -263,9 +326,10 @@
         if (!snap) throw new Error('у відповіді не знайдено об’єкт снапшоту (meta + tree)');
         ENVELOPE = envelope;
         SNAP = snap;
-        NODES = indexTree(snap.tree || []);
+        NORM_TREE = buildNormalizedTree(snap.rows || []);
+        NODES = indexTree(activeTree());
         expanded = {};
-        (snap.tree || []).forEach((n, i) => { expanded['/' + i] = true; });
+        activeTree().forEach((n, i) => { expanded['/' + i] = true; });
         selectedId = null;
         const iso = (snap.meta && snap.meta.forecast_date) || requestedIso || '';
         if (iso) { currentReportDate = iso; availableDates.add(iso); }
@@ -360,10 +424,13 @@
     // ---------- Вкладки ----------
     function setTab(tab) {
         currentTab = tab;
-        ['tree', 'rows', 'columns', 'meta'].forEach(t => {
+        ['tree', 'table', 'rows', 'columns', 'meta'].forEach(t => {
             const b = document.getElementById('tab-' + t);
             if (b) b.className = 'tab-btn' + (t === tab ? ' active' : '');
         });
+        const grp = document.getElementById('colGroups');
+        grp.className = (tab === 'table' ? 'flex' : 'hidden') + ' flex-wrap gap-3 items-center border-l pl-4 border-slate-200';
+        document.querySelector('.explorer').className = 'explorer' + (tab === 'table' ? ' wide' : '');
         render();
     }
 
@@ -402,7 +469,7 @@
                 const toggle = hasKids
                     ? `<span class="toggle-kids" onclick="event.stopPropagation(); toggleNode('${esc(id)}')">${open ? '−' : '+'}</span>`
                     : '<span class="toggle-placeholder"></span>';
-                const codeTxt = rec.no ? 'п. ' + rec.no : (rec.code || '');
+                const codeTxt = codeLabel(rec.node ? rec.node : rec);
                 out.push(`<div class="node kind-${esc(rec.kind)} ${rec.keep === false ? 'hidden-row' : ''} ${selectedId === id ? 'selected' : ''}"
                         style="padding-left:${4 + rec.depth * 14}px" onclick="selectNode('${esc(id)}')">
                     ${toggle}
@@ -478,12 +545,211 @@
             <table class="kv"><tbody>${rowsHtml}</tbody></table>`;
     }
 
+
+
+    // ---------- Відновлення ієрархії «як в Excel» ----------
+    // JSON-снапшот не переносить рівні відступів аркуша: щойно всередині статті
+    // трапляється підсумковий рядок, генератор кладе всі наступні рядки на один
+    // рівень. Відновлюємо вкладеність за сумами (13 тижнів) і за номером статті.
+    const NORM_KEYS = ['T0','T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+    const nvals = r => NORM_KEYS.map(k => (r.values && r.values[k]) || 0);
+    const nNonZero = v => v.some(x => Math.abs(x) >= 1);
+    const nSame = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1);
+    const nAdd = (a, b) => a.map((v, i) => v + b[i]);
+    const SUMMARY_RE = /^(Всього|КОНТРОЛЬ|Контроль|Грошовий потік|Чистий грошовий|Доступн|Залишки|Заборгован|Різниця|Надходження \(|Видатки \(|\*Інформаційно|Придбання МЗНН)/;
+
+    // Підсумковий рядок забирає наступні рядки, поки їхня сума не збігається з його значенням
+    function groupBySums(list) {
+        const n = list.length, memo = new Array(n).fill(null);
+        const node = i => {
+            if (memo[i]) return memo[i];
+            const r = list[i].row, own = nvals(r);
+            let out = { item: list[i], kids: [], next: i + 1 };
+            memo[i] = out;
+            if (nNonZero(own)) {
+                let k = i + 1, kids = [], cum = NORM_KEYS.map(() => 0);
+                while (k < n) {
+                    const c = node(k);
+                    if (kids.length && c.kids.length && (c.item.row.kind === 'total' || c.item.row.kind === 'subgroup')) break;
+                    kids.push(c); cum = nAdd(cum, nvals(c.item.row)); k = c.next;
+                    const enough = kids.length >= 2 || r.kind === 'total' || r.kind === 'subgroup';
+                    if (enough && nSame(cum, own)) {
+                        while (k < n && !nNonZero(nvals(list[k].row))) { const z = node(k); kids.push(z); k = z.next; }
+                        out = { item: list[i], kids, next: k };
+                        memo[i] = out;
+                        break;
+                    }
+                }
+            }
+            return out;
+        };
+        const top = [];
+        let i = 0;
+        while (i < n) { const c = node(i); top.push(c); i = c.next; }
+        return top;
+    }
+
+    function buildNormalizedTree(rows) {
+        const mk = r => ({ row: r, children: [], pending: [] });
+        const roots = [];
+        let stack = [], block = null, pend = null;
+        rows.forEach(r => {
+            const no = String(r.no == null ? '' : r.no).trim();
+            const nd = mk(r);
+            if (r.kind === 'block') {
+                roots.push(nd); block = nd; stack = [{ lvl: 0, nd }]; pend = nd;
+            } else if (r.kind === 'item' && no) {
+                const lvl = 1 + Math.max(0, no.split('.').length - 1);
+                while (stack.length && stack[stack.length - 1].lvl >= lvl) stack.pop();
+                const par = stack.length ? stack[stack.length - 1].nd : null;
+                (par ? par.pending : roots).push(nd);
+                stack.push({ lvl, nd }); pend = nd;
+            } else if (r.kind === 'total' && !r.code && !no && SUMMARY_RE.test(String(r.name).trim()) && block) {
+                while (stack.length > 1) stack.pop();
+                block.pending.push(nd); pend = block;
+            } else {
+                (pend ? pend.pending : roots).push(nd);
+            }
+        });
+        const finalize = nd => {
+            const grouped = nd.pending.length ? groupBySums(nd.pending) : [];
+            const conv = g => { const c = g.item; finalize(c); c.children = g.kids.map(conv).concat(c.children); return c; };
+            nd.children = grouped.map(conv).concat(nd.children);
+            nd.pending = [];
+        };
+        roots.forEach(finalize);
+        const toPlain = nd => Object.assign({}, nd.row, { children: nd.children.map(toPlain) });
+        return roots.map(toPlain);
+    }
+
+    // Контроль: чи дорівнює значення вузла сумі його дітей (за 13 тижнями)
+    function kidsCheck(rec) {
+        if (!rec.childIds.length) return null;
+        const own = nvals(rec.node);
+        if (!nNonZero(own)) return null;
+        const cum = rec.childIds.map(byId).reduce((s, c) => nAdd(s, nvals(c.node)), NORM_KEYS.map(() => 0));
+        const d = cum.map((v, i) => v - own[i]);
+        return { ok: nSame(cum, own), maxDiff: Math.max(...d.map(Math.abs)) };
+    }
+
+    // ---------- Аналітична таблиця (ієрархія × періоди) ----------
+    const WEEK_KEYS = ['T0','T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+    const MONTH_KEYS = ['M1','M2','M3'];
+    const PREV_KEYS = ['Tm1_plan','Tm1_forecast','dev_forecast','Tm1_fact','dev_fact'];
+
+    function activeColumns() {
+        const cols = SNAP.columns || {};
+        const keys = [];
+        if (document.getElementById('grpPrev').checked) PREV_KEYS.forEach(k => cols[k] && keys.push(k));
+        if (document.getElementById('grpWeeks').checked) WEEK_KEYS.forEach(k => cols[k] && keys.push(k));
+        if (document.getElementById('grpMonths').checked) MONTH_KEYS.forEach(k => cols[k] && keys.push(k));
+        if (document.getElementById('grpTotal').checked && cols.TT0_12) keys.push('TT0_12');
+        return keys;
+    }
+
+    // «code» у джерелі інколи містить текстову назву групи з колонки B — показуємо лише справжні коди
+    const isRealCode = c => /^\d+(\.\d+)*$/.test(String(c == null ? '' : c).trim());
+    const codeLabel = n => {
+        const no = String(n.no == null ? '' : n.no).trim();
+        if (no) return no;
+        return isRealCode(n.code) ? String(n.code).trim() : '';
+    };
+
+    const unitDiv = () => document.getElementById('unitThs').checked ? 1e3 : 1e6;
+    function fmtCell(v) {
+        if (v == null || isNaN(v)) return { txt: '–', cls: 'zero' };
+        const r = Math.round(v / unitDiv());
+        if (r === 0) return { txt: '0', cls: 'zero' };
+        return { txt: (r < 0 ? '−' : '') + sp(Math.abs(r).toLocaleString('uk-UA')), cls: r < 0 ? 'neg' : '' };
+    }
+
+    function visibleTableRows() {
+        const onlyKeep = document.getElementById('onlyKeep').checked;
+        const q = (document.getElementById('searchBox').value || '').trim();
+        const hits = new Set();
+        if (q) NODES.filter(matches).forEach(r => { let c = r; while (c) { hits.add(c.id); c = c.parentId ? byId(c.parentId) : null; } });
+        const out = [];
+        const walk = ids => ids.forEach(id => {
+            const rec = byId(id);
+            if (!rec) return;
+            if (onlyKeep && rec.keep === false) return;
+            if (q && !hits.has(id)) return;
+            out.push(rec);
+            const open = q ? true : isExpanded(id);
+            if (rec.childIds.length && open) walk(rec.childIds);
+        });
+        walk(NODES.filter(n => n.parentId === null).map(n => n.id));
+        return out;
+    }
+
+    function renderAnalystTable() {
+        const cols = SNAP.columns || {};
+        const keys = activeColumns();
+        const m = SNAP.meta || {};
+        const unit = document.getElementById('unitThs').checked ? 'тис. грн' : 'млн грн';
+
+        const head = `<tr>
+            <th class="nm-col">Стаття <span class="an-rowref">· рядок Excel</span></th>
+            ${keys.map(k => {
+                const c = cols[k] || {};
+                const cls = k === 'TT0_12' ? 'col-sum' : (MONTH_KEYS.indexOf(k) >= 0 ? 'col-mon' : '');
+                const top = c.date_range || c.label || k;
+                const sub = c.date_range ? `${c.label || k} · ${c.column || ''}` : `${c.column || ''}`;
+                return `<th class="${cls}">${esc(top)}<span class="th-period">${esc(sub)}</span></th>`;
+            }).join('')}
+        </tr>`;
+
+        const recs = visibleTableRows();
+        const body = recs.map(rec => {
+            const n = rec.node;
+            const hasKids = rec.childIds.length > 0;
+            const open = isExpanded(rec.id);
+            const toggle = hasKids
+                ? `<span class="toggle-kids" onclick="event.stopPropagation(); toggleNode('${esc(rec.id)}')">${open ? '−' : '+'}</span>`
+                : '<span class="toggle-placeholder"></span>';
+            const lvl = rec.kind === 'block' ? 'lvl-block' : rec.kind === 'item' ? 'lvl-item'
+                      : rec.kind === 'total' ? 'lvl-total' : rec.kind === 'subgroup' ? 'lvl-item' : 'lvl-child';
+            const codeTxt = codeLabel(n);
+            const chk = kidsCheck(rec);
+            const cells = keys.map(k => {
+                const c = fmtCell((n.values || {})[k]);
+                const cls = (k === 'TT0_12' ? 'col-sum ' : (MONTH_KEYS.indexOf(k) >= 0 ? 'col-mon ' : '')) + c.cls;
+                const ref = (cols[k] && cols[k].column ? cols[k].column : '') + rec.src_row;
+                return `<td class="${cls}" title="${esc(ref)} · ${esc(fmtNum((n.values || {})[k]))} грн">${c.txt}</td>`;
+            }).join('');
+            return `<tr class="${lvl} ${rec.keep === false ? 'hidden-row' : ''} ${selectedId === rec.id ? 'selected' : ''}" onclick="selectNode('${esc(rec.id)}')">
+                <td class="nm-col" style="padding-left:${6 + rec.depth * 16}px">
+                    ${toggle}
+                    ${codeTxt ? `<span class="an-code">${esc(codeTxt)}</span>` : ''}<span class="nm-txt">${esc(n.name)}</span>
+                    ${chk ? `<span class="chk ${chk.ok ? 'chk-ok' : 'chk-bad'}" title="${chk.ok ? 'Сума субстатей дорівнює значенню статті' : 'Сума субстатей відрізняється на ' + fmtNum(chk.maxDiff) + ' грн (макс. по тижнях)'}">${chk.ok ? 'Σ✓' : 'Σ≠'}</span>` : ''}
+                    <span class="an-rowref"> р.${esc(rec.src_row)}</span>
+                    <span class="drill-btn" onclick="event.stopPropagation(); selectNode('${esc(rec.id)}'); scrollToInspector()">джерело ▸</span>
+                </td>${cells}</tr>`;
+        }).join('');
+
+        document.getElementById('paneTitle').innerHTML = `Таблиця. Зріз ${esc(dmy(m.forecast_date || currentReportDate))} — ієрархія статей, ${esc(unit)}`;
+        const checks = NODES.map(kidsCheck).filter(Boolean);
+        const badCount = checks.filter(c => !c.ok).length;
+        document.getElementById('paneCount').innerHTML =
+            `рядків у таблиці: ${recs.length} · колонок: ${keys.length} · контроль сум: ` +
+            `<span class="${badCount ? 'text-red-600' : 'text-emerald-600'} font-semibold">${checks.length - badCount}/${checks.length} ✓</span>`;
+        document.getElementById('pane').innerHTML = keys.length
+            ? `<div class="an-wrap"><table class="an-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>`
+            : '<div class="text-xs text-slate-400 p-3">Оберіть хоча б одну групу колонок.</div>';
+    }
+
+    function scrollToInspector() {
+        const el = document.getElementById('inspector');
+        if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function render() {
         if (!SNAP) {
             document.getElementById('pane').innerHTML = '<div class="text-xs text-slate-400 p-3">Дані ще не завантажені. Оберіть дату зрізу або відкрийте локальний JSON.</div>';
             return;
         }
         if (currentTab === 'tree') renderTree();
+        else if (currentTab === 'table') renderAnalystTable();
         else if (currentTab === 'rows') renderRows();
         else if (currentTab === 'columns') renderColumns();
         else renderMeta();
@@ -542,6 +808,10 @@
             </tr>`;
         }).join('');
 
+        const chk = rec ? kidsCheck(rec) : null;
+        const chkTxt = !chk ? '<span class="muted">немає субстатей або нульове значення</span>'
+            : (chk.ok ? '<span class="text-emerald-600 font-semibold">Σ субстатей = значенню статті</span>'
+                      : `<span class="text-red-600 font-semibold">розбіжність до ${esc(fmtNum(chk.maxDiff))} грн</span>`);
         const rawObj = Object.assign({}, node);
         if (rawObj.children) rawObj.children = `[${node.children.length} дочірніх вузлів]`;
 
@@ -570,6 +840,8 @@
                     <tr><td>Діапазон комірок</td><td class="cell-ref">${esc((cols.Tm1_plan && cols.Tm1_plan.column || 'E') + src)}:${esc((cols.TT0_12 && cols.TT0_12.column || 'AA') + src)}</td></tr>
                     <tr><td>Ключ (key)</td><td>${esc(node.key || '—')}</td></tr>
                     <tr><td>Шлях у JSON</td><td class="cell-ref">${esc(rec ? rec.jsonPath : 'rows[' + ((row && row.seq - 1) || '?') + ']')}</td></tr>
+                    <tr><td>Ієрархія</td><td>${HIER === 'json' ? 'як у БД (поле tree)' : 'відновлена за сумами (як в Excel)'}</td></tr>
+                    <tr><td>Контроль субстатей</td><td>${chkTxt}</td></tr>
                     <tr><td>no / code</td><td>${esc(node.no || '—')} / ${esc(node.code || '—')}</td></tr>
                     <tr><td>Позиція в rows[]</td><td>${row ? 'seq ' + esc(row.seq) + (row.block ? ' · блок «' + esc(row.block) + '»' : '') : '<span class="muted">немає відповідника</span>'}</td></tr>
                     <tr><td>Ознака видимості</td><td>${esc(row && row.keep_raw ? row.keep_raw : (node.keep === true ? 'Залишаємо' : node.keep === false ? 'Скриваємо' : '—'))}</td></tr>
@@ -631,7 +903,7 @@
     function init() {
         document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
         renderCalendar();
-        render();
+        setTab('table');
         setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
         if (typeof fetch === 'function') loadFromCloud(currentReportDate);
     }

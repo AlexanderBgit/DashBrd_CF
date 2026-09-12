@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Структура JSON — першоджерело даних (Cloud)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
+        .executive-container {
+            width: 1587px; min-height: 1122px; margin: 0 auto; background-color: #ffffff;
+            padding: 24px 30px 20px 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; gap: 12px;
+        }
+
+        /* ---- Плитки (підсумкова смуга) ---- */
+        .sum-strip { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr 1.2fr; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+        .sum-cell { padding: 10px 14px; border-right: 1px solid #e2e8f0; }
+        .sum-cell:last-child { border-right: none; background: #f8fafc; }
+        .sum-title { font-size: 11px; font-weight: 700; color: #475569; }
+        .sum-val { font-size: 20px; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; margin-top: 3px; }
+        .sum-sub { font-size: 10.5px; color: #64748b; margin-top: 2px; word-break: break-all; }
+
+        /* ---- Картки ---- */
+        .card { background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .explorer { display: grid; grid-template-columns: 1fr 620px; gap: 12px; align-items: start; }
+
+        /* ---- Дерево ---- */
+        .tree-pane { max-height: 720px; overflow: auto; }
+        .node { display: flex; align-items: flex-start; gap: 6px; padding: 2px 4px; border-radius: 4px; cursor: pointer; font-size: 11.5px; line-height: 1.35; }
+        .node:hover { background: #f1f5f9; }
+        .node.selected { background: #eff6ff; box-shadow: inset 0 0 0 1px #bfdbfe; }
+        .node .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .node.kind-block > .nm { font-weight: 700; color: #1e293b; }
+        .node.kind-item > .nm { font-weight: 600; color: #334155; }
+        .node.kind-total > .nm { font-weight: 600; color: #b45309; }
+        .node.kind-child > .nm { color: #64748b; }
+        .node.kind-subgroup > .nm { color: #7c3aed; font-weight: 600; }
+        .node.hidden-row > .nm { text-decoration: line-through; opacity: .65; }
+
+        .toggle-kids {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 15px; height: 15px; font-size: 13px; font-weight: bold; line-height: 1;
+            color: #3b82f6; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 3px;
+            cursor: pointer; user-select: none; flex: 0 0 auto;
+        }
+        .toggle-kids:hover { background-color: #dbeafe; color: #1d4ed8; }
+        .toggle-placeholder { display: inline-block; width: 15px; flex: 0 0 auto; }
+
+        .badge { font-size: 8.5px; font-weight: 700; padding: 1px 4px; border-radius: 3px; white-space: nowrap; flex: 0 0 auto; text-transform: uppercase; }
+        .b-block { background: #e0e7ff; color: #3730a3; }
+        .b-item { background: #dcfce7; color: #166534; }
+        .b-total { background: #fef3c7; color: #92400e; }
+        .b-child { background: #f1f5f9; color: #475569; }
+        .b-subgroup { background: #ede9fe; color: #5b21b6; }
+        .b-row { background: #f1f5f9; color: #64748b; font-variant-numeric: tabular-nums; }
+
+        /* ---- Таблиці інспектора ---- */
+        .kv { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .kv td { padding: 3px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+        .kv td:first-child { color: #64748b; width: 34%; white-space: nowrap; }
+        .kv td:last-child { color: #1e293b; font-weight: 500; word-break: break-word; }
+
+        .val-table { width: 100%; border-collapse: collapse; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+        .val-table th { text-align: right; color: #64748b; font-weight: 600; padding: 3px 5px; background: #f8fafc; border-bottom: 1.5px solid #94a3b8; white-space: nowrap; }
+        .val-table th:first-child, .val-table td:first-child { text-align: left; }
+        .val-table td { text-align: right; padding: 2px 5px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+        .val-table tr:hover td { background: #f8fafc; }
+        .cell-ref { font-family: ui-monospace, Menlo, Consolas, monospace; color: #1d4ed8; font-size: 10px; }
+        .muted { color: #94a3b8; }
+
+        pre.raw { background: #0f172a; color: #e2e8f0; font-size: 10px; line-height: 1.45; padding: 10px; border-radius: 6px; max-height: 260px; overflow: auto; white-space: pre; }
+        .tab-btn { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; }
+        .tab-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+
+        .list-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+        .list-table th { position: sticky; top: 0; background: #f8fafc; text-align: left; color: #64748b; font-weight: 600; padding: 4px 6px; border-bottom: 1.5px solid #94a3b8; }
+        .list-table td { padding: 2px 6px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
+        .list-table tr { cursor: pointer; }
+        .list-table tr:hover td { background: #f8fafc; }
+        .list-table tr.selected td { background: #eff6ff; }
+
+        @media print {
+            @page { size: A3 landscape; margin: 0 !important; }
+            html, body { width: 1587px !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
+            .print-hide { display: none !important; }
+            .executive-container { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
+            .tree-pane { max-height: none !important; overflow: visible !important; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
+        <div>
+            <h1 class="text-lg font-bold text-slate-800">Структура JSON — першоджерело даних</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Зріз: <span id="navCurDate" class="font-semibold text-indigo-600">--</span>
+                · файл-джерело: <span id="navSrcFile" class="font-semibold text-slate-700">--</span></p>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
+            <div class="relative">
+                <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm">
+                    <span id="lblSelectedDate">Обрати дату</span>
+                </button>
+                <div id="calendarDropdown" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&larr;</button>
+                        <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase">Вересень 2026</span>
+                        <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&rarr;</button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+                        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
+                    </div>
+                    <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+                <button onclick="document.getElementById('fileInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Відкрити локальний JSON">Завантажити JSON</button>
+                <input type="file" id="fileInput" accept=".json,application/json" class="hidden" onchange="loadLocalFile(this)">
+                <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Друк">Друк</button>
+            </div>
+            <div>
+                <a href="index.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Головна</a>
+                <a href="analytics.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Аналітика</a>
+                <a href="compare.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Порівняння</a>
+                <span class="text-gray-800 font-semibold text-xs mr-4">Структура JSON</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="executive-container" id="dashboardContent">
+        <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Структура снапшоту <span id="hdrCur">--</span> · drill-down до першоджерела</h1>
+                <p class="text-xs text-slate-500 mt-0.5" id="hdrHorizon">Дерево статей → рядок Excel → комірка періоду</p>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-slate-400 font-medium">Значення у грн (в дужках — млн грн)</div>
+                <div class="text-[10.5px] text-slate-500 mt-0.5" id="hdrScope">--</div>
+            </div>
+        </div>
+
+        <div class="sum-strip" id="summaryStrip"></div>
+
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide">
+            <div class="flex gap-1.5">
+                <button class="tab-btn active" id="tab-tree" onclick="setTab('tree')">Дерево (tree)</button>
+                <button class="tab-btn" id="tab-rows" onclick="setTab('rows')">Рядки (rows)</button>
+                <button class="tab-btn" id="tab-columns" onclick="setTab('columns')">Колонки (columns)</button>
+                <button class="tab-btn" id="tab-meta" onclick="setTab('meta')">Meta / схема</button>
+            </div>
+            <input id="searchBox" type="text" placeholder="Пошук: назва, код, no, рядок Excel…" oninput="render()"
+                   class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 w-80">
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" id="onlyKeep" onchange="render()"> Лише keep = true
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" id="expandAll" onchange="expanded = {}; render()"> Розгорнути всі рівні
+            </label>
+            <span class="text-[10.5px] text-slate-500" id="paneCount">--</span>
+        </div>
+
+        <div class="explorer">
+            <div class="card">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-xs text-slate-700" id="paneTitle">Дерево статей</h3>
+                    <div class="flex gap-3 text-[10px] text-slate-500">
+                        <span><span class="badge b-block">block</span> блок</span>
+                        <span><span class="badge b-item">item</span> стаття</span>
+                        <span><span class="badge b-child">child</span> субстаття</span>
+                        <span><span class="badge b-total">total</span> підсумок</span>
+                        <span><span class="badge b-subgroup">subgroup</span> група</span>
+                    </div>
+                </div>
+                <div class="tree-pane" id="pane"></div>
+            </div>
+
+            <div class="card">
+                <h3 class="font-bold text-xs text-slate-700 mb-2">Інспектор вузла — першоджерело даних</h3>
+                <div id="inspector" class="text-xs text-slate-400">Оберіть вузол у дереві або рядок у таблиці.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // URL для отримання даних з SharePoint / Power Automate (той самий флоу, що й на сторінці порівняння)
+    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+
+    let SNAP = null;          // сам снапшот: { meta, columns, tree, rows }
+    let ENVELOPE = null;      // повна відповідь (щоб показати «обгортку» Power Automate)
+    let NODES = [];           // плоский індекс вузлів дерева
+    let expanded = {};        // стан розгортання: expanded[path] = true
+    let selectedId = null;
+    let currentTab = 'tree';
+
+    // Стан календаря
+    let currentReportDate = "2026-09-07";
+    let calViewDate = new Date(2026, 8, 7);
+    const availableDates = new Set();
+
+    // ---------- Утиліти ----------
+    const DAY = 86400000;
+    const isoAdd = (iso, days) => new Date(Date.parse(iso + 'T00:00:00Z') + days * DAY).toISOString().slice(0, 10);
+    const dmy = iso => String(iso || '').split('-').reverse().join('.');
+    const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const sp = s => s.replace(/[\u202F\u00A0]/g, ' ');
+    const fmtNum = v => (v == null || isNaN(v)) ? '–' : sp(Number(v).toLocaleString('uk-UA', { maximumFractionDigits: 2 }));
+    const fmtMln = v => (v == null || isNaN(v)) ? '–' : sp((v / 1e6).toLocaleString('uk-UA', { maximumFractionDigits: 1 }));
+
+    function setStatus(text, cls) {
+        const el = document.getElementById('dataStatus');
+        el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + (cls || 'bg-slate-100 text-slate-700');
+        el.textContent = text;
+    }
+
+    // Обгортка Power Automate може мати різну форму — дістаємо сам снапшот
+    function extractSnapshotObject(obj) {
+        if (!obj || typeof obj !== 'object') return null;
+        if (obj.tree && obj.meta) return obj;
+        const candidates = [obj.snapshot, obj.content, obj.body, obj.value, obj.data, obj.result, obj.json];
+        for (const c of candidates) {
+            if (!c) continue;
+            if (typeof c === 'string') { try { const p = JSON.parse(c); const r = extractSnapshotObject(p); if (r) return r; } catch (e) {} continue; }
+            const r = extractSnapshotObject(c);
+            if (r) return r;
+        }
+        if (Array.isArray(obj)) { for (const it of obj) { const r = extractSnapshotObject(it); if (r) return r; } }
+        return null;
+    }
+
+    // ---------- Індексація дерева ----------
+    function indexTree(tree) {
+        const list = [];
+        const walk = (nodes, parentId, depth, prefix) => {
+            (nodes || []).forEach((n, i) => {
+                const id = prefix + '/' + i;
+                const rec = {
+                    id, parentId, depth, node: n,
+                    name: n.name || '', kind: n.kind || '', no: n.no, code: n.code,
+                    src_row: n.src_row, keep: n.keep, key: n.key,
+                    jsonPath: 'tree[' + prefix.split('/').filter(Boolean).concat(String(i)).join('].children[') + ']',
+                    childIds: []
+                };
+                list.push(rec);
+                if (parentId != null) {
+                    const p = list.find(x => x.id === parentId);
+                    if (p) p.childIds.push(id);
+                }
+                if (n.children && n.children.length) walk(n.children, id, depth + 1, id);
+            });
+        };
+        walk(tree, null, 0, '');
+        return list;
+    }
+
+    const byId = id => NODES.find(n => n.id === id);
+    const rowBySrc = src => (SNAP && SNAP.rows ? SNAP.rows.find(r => r.src_row === src) : null);
+
+    // ---------- Завантаження ----------
+    function applySnapshot(envelope, requestedIso) {
+        const snap = extractSnapshotObject(envelope);
+        if (!snap) throw new Error('у відповіді не знайдено об’єкт снапшоту (meta + tree)');
+        ENVELOPE = envelope;
+        SNAP = snap;
+        NODES = indexTree(snap.tree || []);
+        expanded = {};
+        (snap.tree || []).forEach((n, i) => { expanded['/' + i] = true; });
+        selectedId = null;
+        const iso = (snap.meta && snap.meta.forecast_date) || requestedIso || '';
+        if (iso) { currentReportDate = iso; availableDates.add(iso); }
+        document.getElementById('navCurDate').textContent = iso ? dmy(iso) : '--';
+        document.getElementById('hdrCur').textContent = iso ? dmy(iso) : '--';
+        document.getElementById('lblSelectedDate').textContent = iso ? dmy(iso) : 'Обрати дату';
+        document.getElementById('navSrcFile').textContent = (snap.meta && snap.meta.source_file) || '--';
+        document.getElementById('hdrScope').textContent = 'Аркуш: ' + ((snap.meta && snap.meta.sheet) || '--') +
+            ' · схема v' + ((snap.meta && snap.meta.schema_version) || '?') +
+            ' · одиниці у файлі: ' + ((snap.meta && snap.meta.unit_hint) || '—');
+        renderSummary();
+        render();
+    }
+
+    async function fetchSnapshot(iso) {
+        const res = await fetch(GET_METRICS_FLOW_URL, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
+        });
+        if (!res.ok) throw new Error(`зріз ${dmy(iso)}: HTTP ${res.status}`);
+        return res.json();
+    }
+
+    async function loadFromCloud(iso) {
+        setStatus('Завантаження з хмари…', 'bg-indigo-100 text-indigo-800');
+        try {
+            const envelope = await fetchSnapshot(iso);
+            applySnapshot(envelope, iso);
+            setStatus(`Снапшот ${dmy(currentReportDate)} · вузлів: ${NODES.length} · рядків: ${(SNAP.rows || []).length}`, 'bg-emerald-100 text-emerald-800');
+        } catch (err) {
+            console.error(err);
+            setStatus('Помилка хмари: ' + err.message + ' — можна відкрити локальний JSON', 'bg-red-100 text-red-800');
+        }
+    }
+
+    function loadLocalFile(input) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                applySnapshot(JSON.parse(reader.result), null);
+                setStatus(`Файл ${file.name} · вузлів: ${NODES.length} · рядків: ${(SNAP.rows || []).length}`, 'bg-emerald-100 text-emerald-800');
+            } catch (e) {
+                setStatus('Не вдалося прочитати JSON: ' + e.message, 'bg-red-100 text-red-800');
+            }
+        };
+        reader.onerror = () => setStatus('Помилка читання файлу', 'bg-red-100 text-red-800');
+        reader.readAsText(file, 'utf-8');
+        input.value = '';
+    }
+
+    // ---------- Смуга підсумків ----------
+    function renderSummary() {
+        const strip = document.getElementById('summaryStrip');
+        if (!SNAP) { strip.innerHTML = ''; return; }
+        const m = SNAP.meta || {}, rows = SNAP.rows || [];
+        const kinds = {};
+        rows.forEach(r => { kinds[r.kind] = (kinds[r.kind] || 0) + 1; });
+        const kindsTxt = Object.keys(kinds).sort().map(k => `${k}: ${kinds[k]}`).join(' · ');
+        const kept = rows.filter(r => r.keep === true).length;
+        const maxDepth = NODES.reduce((s, n) => Math.max(s, n.depth), 0) + 1;
+        const cols = Object.keys(SNAP.columns || {});
+        strip.innerHTML = `
+            <div class="sum-cell">
+                <div class="sum-title">Файл-першоджерело</div>
+                <div class="sum-val" style="font-size:13px">${esc(m.source_file || '—')}</div>
+                <div class="sum-sub">аркуш «${esc(m.sheet || '—')}» · рядок кодів періодів: ${esc(m.period_code_row)}</div>
+            </div>
+            <div class="sum-cell">
+                <div class="sum-title">Рядки (rows)</div>
+                <div class="sum-val">${rows.length}</div>
+                <div class="sum-sub">${esc(kindsTxt)}</div>
+            </div>
+            <div class="sum-cell">
+                <div class="sum-title">Вузли дерева (tree)</div>
+                <div class="sum-val">${NODES.length}</div>
+                <div class="sum-sub">максимальна глибина: ${maxDepth} · keep=true: ${kept}</div>
+            </div>
+            <div class="sum-cell">
+                <div class="sum-title">Колонки-періоди</div>
+                <div class="sum-val">${cols.length}</div>
+                <div class="sum-sub">${esc(cols.slice(0, 8).join(', '))}${cols.length > 8 ? '…' : ''}</div>
+            </div>
+            <div class="sum-cell">
+                <div class="sum-title">Походження снапшоту</div>
+                <div class="sum-val" style="font-size:13px">${esc(m.generated_by || '—')}</div>
+                <div class="sum-sub">створено: ${esc((m.created_utc || '').replace('T', ' ').slice(0, 19))} UTC · sha256: ${esc(String(m.content_sha256 || '').slice(0, 16))}…</div>
+            </div>`;
+    }
+
+    // ---------- Вкладки ----------
+    function setTab(tab) {
+        currentTab = tab;
+        ['tree', 'rows', 'columns', 'meta'].forEach(t => {
+            const b = document.getElementById('tab-' + t);
+            if (b) b.className = 'tab-btn' + (t === tab ? ' active' : '');
+        });
+        render();
+    }
+
+    // ---------- Рендер ----------
+    function matches(rec) {
+        const q = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+        if (!q) return true;
+        return [rec.name, rec.code, rec.no, rec.key, rec.src_row, rec.kind]
+            .some(v => String(v == null ? '' : v).toLowerCase().includes(q));
+    }
+
+    function isExpanded(id) {
+        return document.getElementById('expandAll').checked ? true : !!expanded[id];
+    }
+
+    function renderTree() {
+        const onlyKeep = document.getElementById('onlyKeep').checked;
+        const q = (document.getElementById('searchBox').value || '').trim();
+        const hits = new Set();
+        if (q) {
+            NODES.filter(matches).forEach(r => {          // підсвічуємо збіги та всіх їхніх предків
+                let cur = r;
+                while (cur) { hits.add(cur.id); cur = cur.parentId ? byId(cur.parentId) : null; }
+            });
+        }
+        const out = [];
+        let shown = 0;
+        const walk = (ids) => {
+            ids.forEach(id => {
+                const rec = byId(id);
+                if (!rec) return;
+                if (onlyKeep && rec.keep === false) return;
+                if (q && !hits.has(id)) return;
+                const hasKids = rec.childIds.length > 0;
+                const open = q ? true : isExpanded(id);
+                const toggle = hasKids
+                    ? `<span class="toggle-kids" onclick="event.stopPropagation(); toggleNode('${esc(id)}')">${open ? '−' : '+'}</span>`
+                    : '<span class="toggle-placeholder"></span>';
+                const codeTxt = rec.no ? 'п. ' + rec.no : (rec.code || '');
+                out.push(`<div class="node kind-${esc(rec.kind)} ${rec.keep === false ? 'hidden-row' : ''} ${selectedId === id ? 'selected' : ''}"
+                        style="padding-left:${4 + rec.depth * 14}px" onclick="selectNode('${esc(id)}')">
+                    ${toggle}
+                    <span class="badge b-${esc(rec.kind)}">${esc(rec.kind)}</span>
+                    <span class="badge b-row">р.${esc(rec.src_row)}</span>
+                    <span class="nm">${codeTxt ? '<span class="muted">' + esc(codeTxt) + '</span> ' : ''}${esc(rec.name)}${hasKids ? ' <span class="muted">(' + rec.childIds.length + ')</span>' : ''}</span>
+                </div>`);
+                shown++;
+                if (hasKids && open) walk(rec.childIds);
+            });
+        };
+        walk(NODES.filter(n => n.parentId === null).map(n => n.id));
+        document.getElementById('paneTitle').textContent = 'Дерево статей (tree)';
+        document.getElementById('paneCount').textContent = `показано вузлів: ${shown} з ${NODES.length}`;
+        document.getElementById('pane').innerHTML = out.join('') || '<div class="text-xs text-slate-400 p-3">Немає вузлів за фільтром.</div>';
+    }
+
+    function renderRows() {
+        const onlyKeep = document.getElementById('onlyKeep').checked;
+        const q = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+        const rows = (SNAP.rows || []).filter(r => {
+            if (onlyKeep && r.keep === false) return false;
+            if (!q) return true;
+            return [r.name, r.code, r.no, r.key, r.src_row, r.kind, r.block]
+                .some(v => String(v == null ? '' : v).toLowerCase().includes(q));
+        });
+        const body = rows.map(r => `<tr onclick="selectRow(${r.src_row})" class="${selectedId === 'row:' + r.src_row ? 'selected' : ''}">
+            <td class="text-slate-400">${esc(r.seq)}</td>
+            <td class="cell-ref">${esc(r.src_row)}</td>
+            <td><span class="badge b-${esc(r.kind)}">${esc(r.kind)}</span></td>
+            <td>${esc(r.block || '')}</td>
+            <td>${esc(r.no || '')}</td>
+            <td>${esc(r.code || '')}</td>
+            <td title="${esc(r.name)}">${esc(r.name)}</td>
+            <td>${r.keep === true ? '✓' : (r.keep === false ? '—' : '')}</td>
+            <td class="text-right">${Object.keys(r.values || {}).length}</td>
+        </tr>`).join('');
+        document.getElementById('paneTitle').textContent = 'Плоский масив рядків (rows)';
+        document.getElementById('paneCount').textContent = `показано рядків: ${rows.length} з ${(SNAP.rows || []).length}`;
+        document.getElementById('pane').innerHTML = `<table class="list-table">
+            <thead><tr><th>seq</th><th>рядок Excel</th><th>kind</th><th>block</th><th>no</th><th>code</th><th>Назва</th><th>keep</th><th class="text-right">знач.</th></tr></thead>
+            <tbody>${body || '<tr><td colspan="9" class="text-slate-400 p-3">Немає рядків за фільтром.</td></tr>'}</tbody></table>`;
+    }
+
+    function renderColumns() {
+        const cols = SNAP.columns || {};
+        const body = Object.keys(cols).map(k => {
+            const c = cols[k] || {};
+            return `<tr><td class="font-semibold">${esc(k)}</td><td class="cell-ref">${esc(c.column)}</td>
+                <td>${c.code == null ? '<span class="muted">—</span>' : esc(c.code)}</td>
+                <td>${esc(c.label || '—')}</td><td>${esc(c.date_range || '—')}</td></tr>`;
+        }).join('');
+        document.getElementById('paneTitle').textContent = 'Мапа колонок (columns) → стовпці Excel';
+        document.getElementById('paneCount').textContent = `колонок: ${Object.keys(cols).length}`;
+        document.getElementById('pane').innerHTML = `<table class="list-table">
+            <thead><tr><th>Ключ у JSON</th><th>Стовпець Excel</th><th>code</th><th>Підпис</th><th>Період (дати)</th></tr></thead>
+            <tbody>${body}</tbody></table>`;
+    }
+
+    function renderMeta() {
+        const m = SNAP.meta || {};
+        const rowsHtml = Object.keys(m).map(k => `<tr><td>${esc(k)}</td><td>${esc(m[k])}</td></tr>`).join('');
+        const schema = [
+            ['meta', 'object', 'паспорт снапшоту: файл-джерело, аркуш, дати, автор, хеш вмісту'],
+            ['columns', 'object', 'ключ періоду → стовпець Excel, підпис і діапазон дат'],
+            ['tree', 'array', 'ієрархія статей (block → item → child), кожен вузол має src_row і values'],
+            ['rows', 'array', 'той самий набір рядків у плоскому вигляді (seq, src_row, kind, values)']
+        ].map(r => `<tr><td class="font-semibold">${esc(r[0])}</td><td class="cell-ref">${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('');
+        document.getElementById('paneTitle').textContent = 'Meta та схема верхнього рівня';
+        document.getElementById('paneCount').textContent = `полів meta: ${Object.keys(m).length}`;
+        document.getElementById('pane').innerHTML = `
+            <table class="list-table mb-4"><thead><tr><th>Гілка</th><th>Тип</th><th>Призначення</th></tr></thead><tbody>${schema}</tbody></table>
+            <table class="kv"><tbody>${rowsHtml}</tbody></table>`;
+    }
+
+    function render() {
+        if (!SNAP) {
+            document.getElementById('pane').innerHTML = '<div class="text-xs text-slate-400 p-3">Дані ще не завантажені. Оберіть дату зрізу або відкрийте локальний JSON.</div>';
+            return;
+        }
+        if (currentTab === 'tree') renderTree();
+        else if (currentTab === 'rows') renderRows();
+        else if (currentTab === 'columns') renderColumns();
+        else renderMeta();
+        renderInspector();
+    }
+
+    function toggleNode(id) { expanded[id] = !isExpanded(id); document.getElementById('expandAll').checked = false; render(); }
+    function selectNode(id) { selectedId = id; render(); }
+    function selectRow(src) { selectedId = 'row:' + src; render(); }
+
+    function focusTreeNode(src) {
+        const rec = NODES.find(n => n.src_row === src);
+        if (!rec) return;
+        let cur = rec.parentId ? byId(rec.parentId) : null;
+        while (cur) { expanded[cur.id] = true; cur = cur.parentId ? byId(cur.parentId) : null; }
+        currentTab = 'tree'; setTab('tree');
+        selectNode(rec.id);
+    }
+
+    // ---------- Інспектор: drill-down до першоджерела ----------
+    function renderInspector() {
+        const box = document.getElementById('inspector');
+        if (!selectedId) { box.innerHTML = '<div class="text-xs text-slate-400">Оберіть вузол у дереві або рядок у таблиці.</div>'; return; }
+
+        let node, rec = null, src;
+        if (String(selectedId).startsWith('row:')) {
+            src = Number(String(selectedId).slice(4));
+            node = rowBySrc(src);
+            rec = NODES.find(n => n.src_row === src) || null;
+        } else {
+            rec = byId(selectedId);
+            if (!rec) { box.innerHTML = ''; return; }
+            node = rec.node; src = rec.src_row;
+        }
+        if (!node) { box.innerHTML = '<div class="text-xs text-red-600">Вузол не знайдено.</div>'; return; }
+
+        const m = SNAP.meta || {}, cols = SNAP.columns || {};
+        const row = rowBySrc(src);
+        const values = node.values || {};
+        const parent = rec && rec.parentId ? byId(rec.parentId) : null;
+        const kids = rec ? rec.childIds.map(byId) : [];
+
+        const valRows = Object.keys(cols).map(k => {
+            const c = cols[k] || {};
+            const has = Object.prototype.hasOwnProperty.call(values, k);
+            const v = values[k];
+            const rowVal = row && row.values ? row.values[k] : undefined;
+            const mismatch = has && rowVal !== undefined && Number(v) !== Number(rowVal);
+            return `<tr>
+                <td>${esc(k)}<div class="muted" style="font-size:9px">${esc(c.label || '')}</div></td>
+                <td class="cell-ref">${esc(String(c.column || '') + (src || ''))}</td>
+                <td class="muted">${esc(c.date_range || '—')}</td>
+                <td>${has ? esc(fmtNum(v)) : '<span class="muted">відсутнє</span>'}</td>
+                <td class="muted">${has ? esc(fmtMln(v)) : ''}</td>
+                <td>${mismatch ? '<span class="text-red-600 font-semibold">≠ rows[]</span>' : (has ? '<span class="text-emerald-600">=</span>' : '')}</td>
+            </tr>`;
+        }).join('');
+
+        const rawObj = Object.assign({}, node);
+        if (rawObj.children) rawObj.children = `[${node.children.length} дочірніх вузлів]`;
+
+        box.innerHTML = `
+            <div class="flex items-start justify-between gap-3 mb-2">
+                <div>
+                    <div class="text-sm font-bold text-slate-800">${esc(node.name || '—')}</div>
+                    <div class="flex gap-1.5 mt-1">
+                        <span class="badge b-${esc(node.kind)}">${esc(node.kind)}</span>
+                        <span class="badge b-row">Excel рядок ${esc(src)}</span>
+                        <span class="badge ${node.keep === false ? 'b-total' : 'b-item'}">keep: ${node.keep === true ? 'true' : (node.keep === false ? 'false' : '—')}</span>
+                    </div>
+                </div>
+                <div class="flex gap-1.5 print-hide">
+                    ${rec && !String(selectedId).startsWith('row:') ? '' : `<button class="tab-btn" onclick="focusTreeNode(${src})">Показати в дереві</button>`}
+                    ${!String(selectedId).startsWith('row:') && row ? `<button class="tab-btn" onclick="setTab('rows'); selectRow(${src})">Показати в rows[]</button>` : ''}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="text-[11px] font-bold text-slate-600 mb-1">Першоджерело</div>
+                <table class="kv"><tbody>
+                    <tr><td>Файл Excel</td><td>${esc(m.source_file || '—')}</td></tr>
+                    <tr><td>Аркуш</td><td>${esc(m.sheet || '—')}</td></tr>
+                    <tr><td>Рядок аркуша</td><td class="cell-ref">${esc(src)}</td></tr>
+                    <tr><td>Діапазон комірок</td><td class="cell-ref">${esc((cols.Tm1_plan && cols.Tm1_plan.column || 'E') + src)}:${esc((cols.TT0_12 && cols.TT0_12.column || 'AA') + src)}</td></tr>
+                    <tr><td>Ключ (key)</td><td>${esc(node.key || '—')}</td></tr>
+                    <tr><td>Шлях у JSON</td><td class="cell-ref">${esc(rec ? rec.jsonPath : 'rows[' + ((row && row.seq - 1) || '?') + ']')}</td></tr>
+                    <tr><td>no / code</td><td>${esc(node.no || '—')} / ${esc(node.code || '—')}</td></tr>
+                    <tr><td>Позиція в rows[]</td><td>${row ? 'seq ' + esc(row.seq) + (row.block ? ' · блок «' + esc(row.block) + '»' : '') : '<span class="muted">немає відповідника</span>'}</td></tr>
+                    <tr><td>Ознака видимості</td><td>${esc(row && row.keep_raw ? row.keep_raw : (node.keep === true ? 'Залишаємо' : node.keep === false ? 'Скриваємо' : '—'))}</td></tr>
+                    <tr><td>Батьківський вузол</td><td>${parent ? `<a class="text-blue-600 cursor-pointer" onclick="selectNode('${esc(parent.id)}')">${esc(parent.name)}</a> <span class="muted">(р.${esc(parent.src_row)})</span>` : '<span class="muted">корінь</span>'}</td></tr>
+                    <tr><td>Дочірні вузли</td><td>${kids.length ? kids.map(k => `<a class="text-blue-600 cursor-pointer" onclick="selectNode('${esc(k.id)}')">${esc(k.name)}</a>`).join(', ') : '<span class="muted">немає</span>'}</td></tr>
+                </tbody></table>
+            </div>
+
+            <div class="mb-3">
+                <div class="text-[11px] font-bold text-slate-600 mb-1">Значення за періодами · комірка Excel</div>
+                <table class="val-table">
+                    <thead><tr><th>Період</th><th>Комірка</th><th>Дати</th><th>Значення, грн</th><th>млн</th><th>rows[]</th></tr></thead>
+                    <tbody>${valRows}</tbody>
+                </table>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <div class="text-[11px] font-bold text-slate-600">Сирий фрагмент JSON</div>
+                    <button class="tab-btn print-hide" onclick="copyRaw()">Копіювати</button>
+                </div>
+                <pre class="raw" id="rawJson">${esc(JSON.stringify(rawObj, null, 2))}</pre>
+            </div>`;
+    }
+
+    function copyRaw() {
+        const t = document.getElementById('rawJson');
+        if (t && navigator.clipboard) navigator.clipboard.writeText(t.textContent);
+    }
+
+    // ---------- Календар ----------
+    function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
+    function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
+
+    function renderCalendar() {
+        const MONTHS = ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
+        const y = calViewDate.getFullYear(), mo = calViewDate.getMonth();
+        document.getElementById('calendarMonthYear').textContent = `${MONTHS[mo]} ${y}`;
+        const first = new Date(y, mo, 1), days = new Date(y, mo + 1, 0).getDate();
+        let offset = (first.getDay() + 6) % 7;
+        let html = '<span></span>'.repeat(offset);
+        for (let d = 1; d <= days; d++) {
+            const iso = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const isCur = iso === currentReportDate;
+            const known = availableDates.has(iso);
+            html += `<button onclick="selectDate('${iso}')" class="p-1 rounded-md ${isCur ? 'bg-indigo-600 text-white font-bold' : known ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-100 text-slate-700'}">${d}</button>`;
+        }
+        document.getElementById('calendarDaysGrid').innerHTML = html;
+    }
+
+    function selectDate(iso) {
+        currentReportDate = iso;
+        calViewDate = new Date(iso + 'T00:00:00');
+        document.getElementById('lblSelectedDate').textContent = dmy(iso);
+        document.getElementById('calendarDropdown').classList.add('hidden');
+        loadFromCloud(iso);
+    }
+
+    function init() {
+        document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
+        renderCalendar();
+        render();
+        setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
+        if (typeof fetch === 'function') loadFromCloud(currentReportDate);
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

@@ -70,6 +70,8 @@
         #printMeasure { position: absolute; left: -30000px; top: 0; visibility: hidden; }
         .print-page { position: relative; overflow: hidden; background: #fff; }
         .print-scale { transform-origin: top left; }
+        /* таблиця друку: фіксовані ширини колонок, щоб на всіх сторінках вони збігалися */
+        .print-table { table-layout: fixed !important; }
         .print-title { font-weight: 700; color: #0f172a; margin-bottom: 6px; }
         .print-title .sub { font-weight: 400; color: #475569; }
 
@@ -236,6 +238,8 @@
     const PAGE = { w: 420, h: 297, margin: 8 };   // A3 landscape, мм
     const MAX_PAGES = 2;
     const MIN_SCALE = 0.35;
+    const ROW_SLACK = 1.06;   // запас на перенос довгих назв статей при фіксованих ширинах
+    const ZOOM_OK = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('zoom', '2');
     const pageW = () => (PAGE.w - 2 * PAGE.margin) * PX_PER_MM;
     const pageH = () => (PAGE.h - 2 * PAGE.margin) * PX_PER_MM;
 
@@ -261,6 +265,8 @@
         holder.appendChild(clone);
 
         const natW = Math.max(clone.scrollWidth || 0, clone.offsetWidth || 0, 1);
+        const headCells = clone.tHead ? Array.from(clone.tHead.rows[0].cells) : [];
+        const colW = headCells.map(c => c.offsetWidth || 0);
         const titleH = title.offsetHeight || 40;
         const headH = clone.tHead ? (clone.tHead.offsetHeight || 24) : 0;
         const rows = clone.tBodies[0] ? Array.from(clone.tBodies[0].rows) : [];
@@ -268,7 +274,7 @@
         const theadHtml = clone.tHead ? clone.tHead.outerHTML : '';
         const rowsHtml = rows.map(r => r.outerHTML);
         holder.innerHTML = '';
-        return { natW, titleH, headH, rowH, theadHtml, rowsHtml, totalRowsH: rowH.reduce((a, b) => a + b, 0) };
+        return { natW, colW, titleH, headH, rowH, theadHtml, rowsHtml, totalRowsH: rowH.reduce((a, b) => a + b, 0) };
     }
 
     function buildPrintPages() {
@@ -288,8 +294,9 @@
             const pages = [];
             let cur = [], used = m.titleH + m.headH;                         // перша сторінка несе заголовок
             m.rowH.forEach((h, i) => {
-                if (cur.length && used + h > capacity) { pages.push(cur); cur = []; used = m.headH; }
-                cur.push(i); used += h;
+                const hh = h * ROW_SLACK;
+                if (cur.length && used + hh > capacity) { pages.push(cur); cur = []; used = m.headH; }
+                cur.push(i); used += hh;
             });
             if (cur.length) pages.push(cur);
             return pages;
@@ -304,6 +311,16 @@
             pagesRows = paginate(scale);
         }
 
+        // Ширина таблиці в «природних» пікселях, щоб після масштабування
+        // вона рівно заповнила сторінку по ширині
+        const targetW = W / scale;
+        const colSum = (m.colW || []).reduce((a, b) => a + b, 0);
+        const factor = colSum > 0 ? targetW / colSum : 1;
+        const widths = (m.colW && m.colW.length ? m.colW : []).map(w => Math.max(1, w * factor));
+        const colgroup = widths.length
+            ? '<colgroup>' + widths.map(w => '<col style="width:' + w.toFixed(2) + 'px">').join('') + '</colgroup>'
+            : '';
+
         pagesRows.forEach((idxs, p) => {
             const page = document.createElement('div');
             page.className = 'print-page';
@@ -311,10 +328,14 @@
             page.style.height = H + 'px';
             const inner = document.createElement('div');
             inner.className = 'print-scale';
-            inner.style.width = m.natW + 'px';
-            inner.style.transform = 'scale(' + scale + ')';
+            inner.style.width = targetW + 'px';
+            // zoom (а не transform) — браузер перераховує макет, тому текст
+            // растеризується у повній роздільності принтера й не «пливе»
+            if (ZOOM_OK) inner.style.zoom = scale;
+            else { inner.style.transform = 'scale(' + scale + ')'; inner.style.transformOrigin = 'top left'; }
             inner.innerHTML = (p === 0 ? printTitleHtml() : '') +
-                '<table class="an-table print-table" style="width:' + m.natW + 'px">' + m.theadHtml +
+                '<table class="an-table print-table" style="width:' + targetW.toFixed(2) + 'px">' +
+                colgroup + m.theadHtml +
                 '<tbody>' + idxs.map(i => m.rowsHtml[i]).join('') + '</tbody></table>';
             page.appendChild(inner);
             root.appendChild(page);
@@ -701,7 +722,9 @@
             const toggle = isMon
                 ? `<span class="mon-toggle" title="${monthOpen[k] ? 'Згорнути тижні місяця' : 'Показати тижні місяця'}" onclick="toggleMonth('${k}')">${monthOpen[k] ? '−' : '+'}</span>`
                 : '';
-            return `<th class="${cls}">${esc(c.date_range || label)}${toggle}${c.date_range ? `<span class="th-period">${esc(label)}</span>` : ''}</th>`;
+            const main = c.date_range ? esc(c.date_range) : label;
+            const sub = c.date_range ? `<span class="th-period">${label}</span>` : '';
+            return `<th class="${cls}">${main}${toggle}${sub}</th>`;
         }).join('')}</tr>`;
 
         const recs = visibleRows();

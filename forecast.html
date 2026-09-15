@@ -7,85 +7,28 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        
-        :root {
-            /* Динамічні змінні для друку (розраховуються скриптом під 1 сторінку в ширину і 2 у висоту) */
-            --p-base-font: 8.5pt;
-            --p-cell-pad-y: 2.2px;
-            --p-cell-pad-x: 3.5px;
-            --p-nm-width: 340px;
-        }
-
-        body { font-family: 'Helvetica', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
-        
-        /* Базовий стиль контейнера */
+        body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
         .executive-container {
-            min-height: 900px; margin: 0 auto; background-color: #fff;
+            width: 1587px; min-height: 900px; margin: 0 auto; background-color: #fff;
             padding: 20px 26px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1);
             display: flex; flex-direction: column; gap: 10px;
-            transition: width 0.2s ease, max-width 0.2s ease;
         }
-
-        /* Режим А3 на екрані */
-        .view-a3 body { height: auto; overflow: auto; }
-        .view-a3 .executive-container,
-        .view-a3 nav { width: 1587px !important; max-width: 1587px !important; }
-        .view-a3 .an-wrap { max-height: 780px; }
-
-        /* Режим на весь екран (по замовчуванню) */
-        body.view-fluid {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            padding: 10px;
-        }
-        .view-fluid nav {
-            width: 100% !important;
-            max-width: 100% !important;
-            margin-bottom: 8px !important;
-            flex-shrink: 0;
-        }
-        .view-fluid .executive-container {
-            width: 100% !important;
-            max-width: 100% !important;
-            min-height: 0 !important;
-            flex: 1 1 0%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            padding: 14px 18px;
-        }
-        .view-fluid .card {
-            flex: 1 1 0%;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            overflow: hidden;
-            padding: 4px;
-        }
-        .view-fluid .an-wrap {
-            max-height: none !important;
-            height: 100%;
-            flex: 1 1 0%;
-        }
-
         .card { background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+
         .an-wrap { overflow: auto; max-height: 780px; }
-        .an-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; font-variant-numeric: tabular-nums; }
-        .an-table th { font-size: 8pt; color: #475569; font-weight: 600; padding: 4px 4px; border-bottom: 1.5px solid #94a3b8;
+        .an-table { width: 100%; border-collapse: collapse; font-size: 9pt; font-variant-numeric: tabular-nums; }
+        .an-table th { font-size: 8.5pt; color: #475569; font-weight: 600; padding: 5px 5px; border-bottom: 1.5px solid #94a3b8;
                        text-align: right; background: #f8fafc; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
-        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 360px; position: sticky; left: 0; background: #fff; z-index: 1; }
+        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 420px; position: sticky; left: 0; background: #fff; z-index: 1; }
         .an-table th.nm-col { z-index: 3; background: #f8fafc; }
-        .an-table th .th-period { display: block; font-size: 7pt; font-weight: 500; color: #94a3b8; line-height: 1.15; margin-top: 1px; white-space: normal; }
-        .an-table td { padding: 2.5px 4px; text-align: right; color: #334155; border-bottom: 1px solid #eef2f6; white-space: nowrap; }
+        .an-table th .th-period { display: block; font-size: 7pt; font-weight: 500; color: #94a3b8; line-height: 1.15; margin-top: 1px; }
+        .an-table td { padding: 3px 5px; text-align: right; color: #334155; border-bottom: 1px solid #eef2f6; white-space: nowrap; }
         .an-table tbody tr:hover td { background-color: #f8fafc; }
 
-        /* Екранна стилізація рівнів */
-        tr.lvl-block td { background: #e0e7ff; font-weight: 700; color: #312e81; font-size: 9pt; }
+        tr.lvl-block td { background: #e0e7ff; font-weight: 700; color: #312e81; }
         tr.lvl-item  td { font-weight: 700; color: #1e293b; background: #f8fafc; }
         tr.lvl-sub   td { font-weight: 600; color: #334155; }
-        tr.lvl-leaf  td { color: #475569; font-size: 8pt; font-weight: 400; }
+        tr.lvl-leaf  td { color: #475569; }
         tr.row-key   td { background: #dbeafe !important; color: #1e3a8a; font-weight: 700; border-top: 1px solid #93c5fd; border-bottom: 1px solid #93c5fd; }
         tr.row-cover td { color: #047857; }
         tr.row-blue td { color: #1d4ed8; font-weight: 600; }
@@ -100,138 +43,56 @@
         .an-table tbody td.col-dev.neg { font-weight: 600; }
         td.zero { color: #cbd5e1; }
 
-        .toggle-kids { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px;
-            font-size: 11px; font-weight: bold; line-height: 1; color: #3b82f6; background: #eff6ff; border: 1px solid #bfdbfe;
+        .toggle-kids { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
+            font-size: 13px; font-weight: bold; line-height: 1; color: #3b82f6; background: #eff6ff; border: 1px solid #bfdbfe;
             border-radius: 3px; cursor: pointer; user-select: none; flex: 0 0 auto; margin-right: 5px; }
         .toggle-kids:hover { background: #dbeafe; color: #1d4ed8; }
-        .toggle-placeholder { display: inline-block; width: 19px; }
-        .mon-toggle { display: inline-block; margin-left: 4px; padding: 0 3px; border: 1px solid #c7d2fe; border-radius: 3px;
-            background: #eef2ff; color: #4338ca; cursor: pointer; font-size: 7.5pt; }
-        .an-code { color: #64748b; font-size: 8pt; margin-right: 4px; }
+        .toggle-placeholder { display: inline-block; width: 20px; }
+        .mon-toggle { display: inline-block; margin-left: 5px; padding: 0 4px; border: 1px solid #c7d2fe; border-radius: 3px;
+            background: #eef2ff; color: #4338ca; cursor: pointer; font-size: 8pt; }
+        .mon-toggle:hover { background: #e0e7ff; }
+        .an-code { color: #64748b; font-size: 8pt; margin-right: 5px; }
         .ctl { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; }
         .ctl.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 
-        /* Стилі для аркуша А3 у модальному вікні */
-        .a3-sheet {
-            width: 1587px;
-            min-height: 1122px;
-            background: #ffffff;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            padding: 24px 28px;
-            box-sizing: border-box;
-            transform-origin: top center;
-            transition: transform 0.15s ease-out;
-            margin: 15px auto;
-        }
+        /* ---------- режими перегляду ---------- */
+        .view-a3 .executive-container, .view-a3 nav { width: 1587px !important; max-width: 1587px !important; }
+        .view-a3 .an-wrap { max-height: 780px; }
+        body.view-fluid { height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 10px; }
+        .view-fluid nav { width: 100% !important; max-width: 100% !important; margin-bottom: 8px !important; flex-shrink: 0; }
+        .view-fluid .executive-container { width: 100% !important; max-width: 100% !important; min-height: 0 !important;
+            flex: 1 1 0%; overflow: hidden; display: flex; flex-direction: column; padding: 14px 18px; }
+        .view-fluid .card { flex: 1 1 0%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; padding: 4px; }
+        .view-fluid .an-wrap { max-height: none !important; height: 100%; flex: 1 1 0%; }
 
-        /* ------------------------------------------------------------- */
-        /* АДАПТИВНІ ДРУКОВАНІ СТИЛІ (МАСШТАБУЮТЬСЯ ЧЕРЕЗ CSS-ЗМІННІ)    */
-        /* ------------------------------------------------------------- */
-        .print-mode .executive-container,
+        /* ---------- ДРУК: сторінки збирає скрипт, масштаб підбирається під A3 ---------- */
+        #printRoot { display: none; }
+        #printMeasure { position: absolute; left: -30000px; top: 0; visibility: hidden; }
+        .print-page { position: relative; overflow: hidden; background: #fff; }
+        .print-scale { transform-origin: top left; }
+        .print-title { font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+        .print-title .sub { font-weight: 400; color: #475569; }
+
+        .print-table { width: auto !important; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 8.5pt; }
+        .print-table th, .print-table td { position: static !important; white-space: nowrap; }
+        .print-table th.nm-col, .print-table td.nm-col { min-width: 0 !important; max-width: 520px; white-space: normal; }
+        .print-table th { font-size: 8pt; padding: 3px 4px; border-bottom: 1.5px solid #475569; background: #f1f5f9 !important; }
+        .print-table td { padding: 2px 4px; border-bottom: 1px solid #e5e7eb; }
+        .print-table .toggle-kids, .print-table .toggle-placeholder, .print-table .mon-toggle { display: none !important; }
+        .print-table tr.lvl-block td { background: #e2e8f0 !important; color: #0f172a !important; }
+        .print-table tr.row-key td { background: #dbeafe !important; }
+
+        .preview-sheet { background: #fff; box-shadow: 0 25px 50px -12px rgba(0,0,0,.5); margin: 0 auto 18px auto;
+                         transform-origin: top center; transition: transform .15s ease-out; }
+
+        @page { size: A3 landscape; margin: 8mm; }
         @media print {
-            .executive-container { width: 100% !important; max-width: 100% !important; padding: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
-            .card { border: none !important; padding: 0 !important; }
-            .an-wrap { max-height: none !important; overflow: visible !important; }
-            
-            .an-table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-                table-layout: auto !important;
-            }
-
-            /* Шапка таблиці */
-            .an-table th {
-                font-size: calc(var(--p-base-font) * 1.05) !important;
-                padding: calc(var(--p-cell-pad-y) * 1.2) var(--p-cell-pad-x) !important;
-                line-height: 1.15 !important;
-                border-bottom: 1.5px solid #475569 !important;
-            }
-            .an-table th.nm-col,
-            .an-table td.nm-col {
-                width: var(--p-nm-width) !important;
-                min-width: var(--p-nm-width) !important;
-                max-width: calc(var(--p-nm-width) * 1.2) !important;
-                white-space: normal !important;
-                line-height: 1.15 !important;
-            }
-            .an-table th .th-period {
-                font-size: calc(var(--p-base-font) * 0.82) !important;
-                line-height: 1 !important;
-            }
-
-            /* 1. Блоки ("Надходження", "Видатки") */
-            tr.lvl-block td {
-                font-size: calc(var(--p-base-font) * 1.25) !important;
-                font-weight: 800 !important;
-                background: #f1f5f9 !important;
-                color: #0f172a !important;
-                padding: calc(var(--p-cell-pad-y) * 1.6) var(--p-cell-pad-x) !important;
-                border-top: 1.5px solid #94a3b8 !important;
-                border-bottom: 1.5px solid #94a3b8 !important;
-            }
-
-            /* 2. Батьківські статті ("1 Нафта", "2 Газ", "1 Обов'язкові платежі") */
-            tr.lvl-item td {
-                font-size: calc(var(--p-base-font) * 1.12) !important;
-                font-weight: 700 !important;
-                color: #1e293b !important;
-                background: #fafafa !important;
-                padding: calc(var(--p-cell-pad-y) * 1.2) var(--p-cell-pad-x) !important;
-            }
-
-            /* 3. Підсумки груп другого рівня ("Податки", "Державні податки") */
-            tr.lvl-sub td {
-                font-size: calc(var(--p-base-font) * 1.02) !important;
-                font-weight: 600 !important;
-                color: #334155 !important;
-                padding: var(--p-cell-pad-y) var(--p-cell-pad-x) !important;
-            }
-
-            /* 4. Дочірні рядки та цифри (контрагенти, деталі) */
-            tr.lvl-leaf td {
-                font-size: var(--p-base-font) !important;
-                font-weight: 400 !important;
-                color: #334155 !important;
-                padding: var(--p-cell-pad-y) var(--p-cell-pad-x) !important;
-                line-height: 1.12 !important;
-            }
-
-            /* Ключові підсумки ("Всього надходжень", "Всього витрат", "Чистий грошовий потік") */
-            tr.row-key td {
-                font-size: calc(var(--p-base-font) * 1.18) !important;
-                font-weight: 800 !important;
-                background: #e2e8f0 !important;
-                border-top: 1.5px solid #475569 !important;
-                border-bottom: 1.5px solid #475569 !important;
-                padding: calc(var(--p-cell-pad-y) * 1.4) var(--p-cell-pad-x) !important;
-            }
-
-            .toggle-kids, .mon-toggle, .toggle-placeholder {
-                display: none !important;
-            }
-
-            tr {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-            }
-        }
-
-        @media print {
-            @page {
-                size: A3 landscape;
-                margin: 6mm 5mm !important;
-            }
-            html, body {
-                width: 100% !important;
-                height: auto !important;
-                overflow: visible !important;
-                background: #fff !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            .print-hide, #printPreviewModal {
-                display: none !important;
-            }
+            html, body { width: auto !important; height: auto !important; overflow: visible !important;
+                         background: #fff !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+            body > *:not(#printRoot) { display: none !important; }
+            #printRoot { display: block !important; }
+            .print-page { page-break-after: always; break-after: page; }
+            .print-page:last-child { page-break-after: auto; break-after: auto; }
         }
     </style>
 </head>
@@ -246,7 +107,6 @@
                 <button id="btnViewFluid" onclick="setViewMode('fluid')" class="ctl active border-none !py-1 !px-2.5 text-xs">На весь екран</button>
                 <button id="btnViewA3" onclick="setViewMode('a3')" class="ctl border-none !py-1 !px-2.5 text-xs">Формат А3</button>
             </div>
-
             <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
             <div class="relative">
                 <button onclick="toggleCalendarDropdown()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm">
@@ -267,22 +127,14 @@
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
                 <button onclick="document.getElementById('fileInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Завантажити JSON</button>
                 <input type="file" id="fileInput" accept=".json,application/json" class="hidden" onchange="loadLocalFile(this)">
-                
-                <button onclick="openPrintPreview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm" title="Попередній перегляд у пропорціях друкованого аркуша А3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span>Перегляд А3</span>
-                </button>
-                
+                <button onclick="openPrintPreview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Перегляд у пропорціях аркуша А3">Перегляд А3</button>
                 <button onclick="triggerDirectPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
             </div>
         </div>
     </nav>
 
     <div class="executive-container">
-        <div class="flex justify-between items-end border-b border-slate-200 pb-2 shrink-0">
+        <div class="flex justify-between items-end border-b border-slate-200 pb-2">
             <div>
                 <h1 class="text-xl font-bold text-slate-800">ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» 13 тижнів станом на <span id="hdrCur">--</span></h1>
                 <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Горизонт прогнозу: <span id="hdrRange">--</span></p>
@@ -293,7 +145,7 @@
             </div>
         </div>
 
-        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide shrink-0">
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide">
             <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="render()"
                    class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 w-72">
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer" title="Ховає технічні та довідкові рядки аркуша, залишаючи статті звіту">
@@ -326,38 +178,26 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНЕ ВІКНО: ПОПЕРЕДНІЙ ПЕРЕГЛЯД А3 -->
-    <div id="printPreviewModal" class="fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-50 hidden flex-col">
+    <div id="printRoot"></div>
+    <div id="printMeasure"></div>
+
+    <div id="printPreviewModal" class="fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-50 hidden flex-col print-hide">
         <div class="bg-slate-900 border-b border-slate-700 text-white px-5 py-3 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
-                <span class="font-bold text-sm text-slate-200">Попередній перегляд A3 Landscape</span>
-                <span class="text-xs bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded font-mono">Масштаб: <span id="previewScaleVal">100%</span></span>
+                <span class="font-bold text-sm text-slate-200">Попередній перегляд A3 landscape</span>
+                <span class="text-xs bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded font-mono" id="previewInfo">--</span>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="zoomPreview(-0.1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-bold border border-slate-700" title="Зменшити">−</button>
+                <button onclick="zoomPreview(-0.1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-bold border border-slate-700">−</button>
                 <button onclick="autoFitPreview()" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-semibold border border-slate-700">Вписати</button>
-                <button onclick="setPreviewZoom(1.0)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-semibold border border-slate-700">100%</button>
-                <button onclick="zoomPreview(0.1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-bold border border-slate-700" title="Збільшити">+</button>
-                
+                <button onclick="setPreviewZoom(1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-semibold border border-slate-700">100%</button>
+                <button onclick="zoomPreview(0.1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-bold border border-slate-700">+</button>
                 <div class="w-px h-5 bg-slate-700 mx-1"></div>
-
-                <button onclick="triggerDirectPrint()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs flex items-center gap-1.5 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                    </svg>
-                    <span>Друкувати</span>
-                </button>
-                <button onclick="closePrintPreview()" class="bg-slate-700 hover:bg-red-600 text-white px-3 py-1 rounded-lg font-semibold text-xs transition-colors">
-                    Закрити (Esc)
-                </button>
+                <button onclick="triggerDirectPrint()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs shadow-sm">Друкувати</button>
+                <button onclick="closePrintPreview()" class="bg-slate-700 hover:bg-red-600 text-white px-3 py-1 rounded-lg font-semibold text-xs transition-colors">Закрити (Esc)</button>
             </div>
         </div>
-
-        <div id="previewScrollArea" class="flex-1 overflow-auto p-6 flex justify-center items-start bg-slate-950/60">
-            <div id="previewSheet" class="a3-sheet print-mode">
-                <div id="previewContent"></div>
-            </div>
-        </div>
+        <div id="previewScrollArea" class="flex-1 overflow-auto p-6 bg-slate-950/60"></div>
     </div>
 
     <script>
@@ -379,139 +219,155 @@
     const sp = s => s.replace(/[\u202F\u00A0]/g, ' ');
 
     function setViewMode(mode) {
-        const body = document.body;
-        const btnFluid = document.getElementById('btnViewFluid');
-        const btnA3 = document.getElementById('btnViewA3');
-        if (mode === 'a3') {
-            body.classList.remove('view-fluid');
-            body.classList.add('view-a3');
-            btnA3.classList.add('active');
-            btnFluid.classList.remove('active');
-        } else {
-            body.classList.remove('view-a3');
-            body.classList.add('view-fluid');
-            btnFluid.classList.add('active');
-            btnA3.classList.remove('active');
+        const a3 = mode === 'a3';
+        document.body.classList.toggle('view-a3', a3);
+        document.body.classList.toggle('view-fluid', !a3);
+        document.getElementById('btnViewA3').classList.toggle('active', a3);
+        document.getElementById('btnViewFluid').classList.toggle('active', !a3);
+    }
+
+    // =====================================================================
+    //  ДРУК. Замість фіксованих кеглів — вимірюємо природний розмір таблиці
+    //  й підбираємо один масштаб так, щоб усі колонки влізли в ширину
+    //  аркуша A3 landscape, а всі рядки — у MAX_PAGES сторінок у висоту.
+    //  Рядки розкладаємо по сторінках самі (шапка повторюється на кожній).
+    // =====================================================================
+    const PX_PER_MM = 96 / 25.4;
+    const PAGE = { w: 420, h: 297, margin: 8 };   // A3 landscape, мм
+    const MAX_PAGES = 2;
+    const MIN_SCALE = 0.35;
+    const pageW = () => (PAGE.w - 2 * PAGE.margin) * PX_PER_MM;
+    const pageH = () => (PAGE.h - 2 * PAGE.margin) * PX_PER_MM;
+
+    function printTitleHtml() {
+        const g = id => document.getElementById(id).textContent;
+        const created = g('hdrCreated');
+        return `<div class="print-title" style="font-size:13pt">
+            ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» 13 тижнів станом на ${esc(g('hdrCur'))}
+            <div class="sub" style="font-size:8.5pt;margin-top:2px">Горизонт прогнозу: ${esc(g('hdrRange'))} · ${esc(g('hdrUnit'))}${created && created !== '--' ? ' · ' + esc(created) : ''}</div>
+        </div>`;
+    }
+
+    function measureTable() {
+        const src = document.querySelector('#pane table');
+        if (!src) return null;
+        const holder = document.getElementById('printMeasure');
+        holder.innerHTML = '';
+        const title = document.createElement('div');
+        title.innerHTML = printTitleHtml();
+        const clone = src.cloneNode(true);
+        clone.className = 'an-table print-table';
+        holder.appendChild(title);
+        holder.appendChild(clone);
+
+        const natW = Math.max(clone.scrollWidth || 0, clone.offsetWidth || 0, 1);
+        const titleH = title.offsetHeight || 40;
+        const headH = clone.tHead ? (clone.tHead.offsetHeight || 24) : 0;
+        const rows = clone.tBodies[0] ? Array.from(clone.tBodies[0].rows) : [];
+        const rowH = rows.map(r => r.offsetHeight || 14);
+        const theadHtml = clone.tHead ? clone.tHead.outerHTML : '';
+        const rowsHtml = rows.map(r => r.outerHTML);
+        holder.innerHTML = '';
+        return { natW, titleH, headH, rowH, theadHtml, rowsHtml, totalRowsH: rowH.reduce((a, b) => a + b, 0) };
+    }
+
+    function buildPrintPages() {
+        const root = document.getElementById('printRoot');
+        root.innerHTML = '';
+        const m = measureTable();
+        if (!m || !m.rowsHtml.length) return { pages: 0, scale: 1, natW: 0 };
+
+        const W = pageW(), H = pageH();
+        const scaleW = W / m.natW;                                           // всі колонки в ширину аркуша
+        const neededH = m.titleH + MAX_PAGES * m.headH + m.totalRowsH;       // заголовок + шапки + рядки
+        const scaleH = (MAX_PAGES * H) / neededH;                            // усі рядки у MAX_PAGES сторінок
+
+        // розкладка рядків по сторінках за заданим масштабом
+        const paginate = sc => {
+            const capacity = H / sc;                                         // ємність сторінки у «природних» px
+            const pages = [];
+            let cur = [], used = m.titleH + m.headH;                         // перша сторінка несе заголовок
+            m.rowH.forEach((h, i) => {
+                if (cur.length && used + h > capacity) { pages.push(cur); cur = []; used = m.headH; }
+                cur.push(i); used += h;
+            });
+            if (cur.length) pages.push(cur);
+            return pages;
+        };
+
+        // стартовий масштаб — теоретичний; далі зменшуємо, доки реальна
+        // розкладка не вкладеться рівно в MAX_PAGES сторінок
+        let scale = Math.max(MIN_SCALE, Math.min(scaleW, scaleH, 1));
+        let pagesRows = paginate(scale);
+        while (pagesRows.length > MAX_PAGES && scale > MIN_SCALE) {
+            scale = Math.max(MIN_SCALE, scale * 0.97);
+            pagesRows = paginate(scale);
         }
-    }
 
-    // -------------------------------------------------------------
-    // АДАПТИВНИЙ РОЗРАХУНОК РОЗМІРІВ ДЛЯ 1 СТОРІНКИ В ШИРИНУ ТА 2 У ВИСОТУ
-    // -------------------------------------------------------------
-    function calculateAdaptivePrintScale() {
-        const activeColsCount = activeColumns().length;
-        const visibleRowsCount = visibleRows().length;
-
-        // Доступна корисна ширина аркуша A3 landscape за вирахуванням полів
-        const targetA3Width = 1530; 
-        // Доступна висота для рівно двох сторінок A3 (1122 * 2 = 2244px мінус поля й колонтитули)
-        const target2PagesHeight = 2050; 
-
-        // 1. Ширина першої колонки "Стаття" залежно від кількості колонок
-        let nmColWidth = 340;
-        if (activeColsCount > 22) nmColWidth = 270;
-        else if (activeColsCount > 18) nmColWidth = 300;
-        else if (activeColsCount < 14) nmColWidth = 400;
-
-        // 2. Ширина однієї числової колонки за замовчуванням
-        const remainingWidth = targetA3Width - nmColWidth;
-        const widthPerCol = remainingWidth / Math.max(1, activeColsCount);
-
-        // 3. Масштабування шрифту за шириною
-        let scaleX = widthPerCol / 62; 
-        scaleX = Math.max(0.68, Math.min(1.45, scaleX));
-
-        // 4. Масштабування за висотою (для розподілу точно на 2 сторінки)
-        // Висота шапки + відступи ~140px; залишок ділимо на кількість рядків
-        const heightAvailableForRows = target2PagesHeight - 140;
-        const targetRowHeight = heightAvailableForRows / Math.max(30, visibleRowsCount);
-        
-        let scaleY = targetRowHeight / 24; 
-        scaleY = Math.max(0.70, Math.min(1.35, scaleY));
-
-        // Беремо спільний масштаб, щоб ідеально вкластися і по ширині, і по висоті
-        const optimalScale = Math.min(scaleX, scaleY);
-
-        // Обчислюємо фінальні розміри
-        const finalBaseFont = Math.round(8.5 * optimalScale * 10) / 10;
-        const finalPadY = Math.round(2.2 * optimalScale * 10) / 10;
-        const finalPadX = Math.round(3.5 * optimalScale * 10) / 10;
-
-        // Записуємо в кореневі CSS-змінні
-        document.documentElement.style.setProperty('--p-base-font', `${finalBaseFont}pt`);
-        document.documentElement.style.setProperty('--p-cell-pad-y', `${finalPadY}px`);
-        document.documentElement.style.setProperty('--p-cell-pad-x', `${finalPadX}px`);
-        document.documentElement.style.setProperty('--p-nm-width', `${nmColWidth}px`);
-    }
-
-    let currentPreviewZoom = 1.0;
-
-    function openPrintPreview() {
-        calculateAdaptivePrintScale();
-
-        const modal = document.getElementById('printPreviewModal');
-        const content = document.getElementById('previewContent');
-        const container = document.querySelector('.executive-container');
-
-        const clone = container.cloneNode(true);
-        const filters = clone.querySelector('.bg-slate-50');
-        if (filters) filters.remove();
-        const wrap = clone.querySelector('.an-wrap');
-        if (wrap) {
-            wrap.style.maxHeight = 'none';
-            wrap.style.overflow = 'visible';
-        }
-        clone.style.boxShadow = 'none';
-        clone.style.padding = '0';
-        clone.style.width = '100%';
-
-        content.innerHTML = '';
-        content.appendChild(clone);
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-
-        setTimeout(autoFitPreview, 40);
-    }
-
-    function closePrintPreview() {
-        const modal = document.getElementById('printPreviewModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    }
-
-    function setPreviewZoom(scale) {
-        currentPreviewZoom = Math.max(0.25, Math.min(2.0, scale));
-        const sheet = document.getElementById('previewSheet');
-        sheet.style.transform = `scale(${currentPreviewZoom})`;
-        document.getElementById('previewScaleVal').textContent = `${Math.round(currentPreviewZoom * 100)}%`;
-        
-        const scaledHeight = sheet.offsetHeight * currentPreviewZoom;
-        sheet.style.marginBottom = `${Math.max(40, scaledHeight - sheet.offsetHeight + 40)}px`;
-    }
-
-    function zoomPreview(delta) {
-        setPreviewZoom(currentPreviewZoom + delta);
-    }
-
-    function autoFitPreview() {
-        const area = document.getElementById('previewScrollArea');
-        if (!area) return;
-        const availableWidth = area.clientWidth - 70;
-        const targetScale = availableWidth / 1587;
-        setPreviewZoom(targetScale);
+        pagesRows.forEach((idxs, p) => {
+            const page = document.createElement('div');
+            page.className = 'print-page';
+            page.style.width = W + 'px';
+            page.style.height = H + 'px';
+            const inner = document.createElement('div');
+            inner.className = 'print-scale';
+            inner.style.width = m.natW + 'px';
+            inner.style.transform = 'scale(' + scale + ')';
+            inner.innerHTML = (p === 0 ? printTitleHtml() : '') +
+                '<table class="an-table print-table" style="width:' + m.natW + 'px">' + m.theadHtml +
+                '<tbody>' + idxs.map(i => m.rowsHtml[i]).join('') + '</tbody></table>';
+            page.appendChild(inner);
+            root.appendChild(page);
+        });
+        return { pages: pagesRows.length, scale, natW: m.natW };
     }
 
     function triggerDirectPrint() {
-        calculateAdaptivePrintScale();
+        buildPrintPages();
+        closePrintPreview();
         window.print();
     }
 
-    window.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && !document.getElementById('printPreviewModal').classList.contains('hidden')) {
-            closePrintPreview();
-        }
-    });
+    let previewZoom = 1;
+    function openPrintPreview() {
+        const info = buildPrintPages();
+        const area = document.getElementById('previewScrollArea');
+        area.innerHTML = '';
+        const mm = PAGE.margin * PX_PER_MM;
+        Array.from(document.getElementById('printRoot').children).forEach(p => {
+            const sheet = document.createElement('div');
+            sheet.className = 'preview-sheet';
+            sheet.style.width = (PAGE.w * PX_PER_MM) + 'px';
+            sheet.style.height = (PAGE.h * PX_PER_MM) + 'px';
+            sheet.style.padding = mm + 'px';
+            sheet.appendChild(p.cloneNode(true));
+            area.appendChild(sheet);
+        });
+        document.getElementById('previewInfo').textContent =
+            'сторінок: ' + info.pages + ' · масштаб таблиці: ' + Math.round(info.scale * 100) + '%';
+        const modal = document.getElementById('printPreviewModal');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        setTimeout(autoFitPreview, 40);
+    }
+    function closePrintPreview() {
+        const modal = document.getElementById('printPreviewModal');
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+    }
+    function setPreviewZoom(z) {
+        previewZoom = Math.max(0.2, Math.min(2, z));
+        const h = PAGE.h * PX_PER_MM;
+        document.querySelectorAll('.preview-sheet').forEach(s => {
+            s.style.transform = 'scale(' + previewZoom + ')';
+            s.style.marginBottom = (18 + h * (previewZoom - 1)) + 'px';
+        });
+    }
+    function zoomPreview(d) { setPreviewZoom(previewZoom + d); }
+    function autoFitPreview() {
+        const area = document.getElementById('previewScrollArea');
+        if (!area) return;
+        setPreviewZoom((area.clientWidth - 60) / (PAGE.w * PX_PER_MM));
+    }
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') closePrintPreview(); });
 
     function setStatus(text, cls) {
         const el = document.getElementById('dataStatus');
@@ -533,22 +389,6 @@
         return null;
     }
 
-    function resetDefaultExpanded() {
-        expanded = {};
-        if (Array.isArray(TREE)) {
-            TREE.forEach((n, i) => {
-                expanded['/' + i] = true;
-            });
-        }
-    }
-
-    function toggleExpandAll(checked) {
-        if (!checked) {
-            resetDefaultExpanded();
-        }
-        render();
-    }
-
     // ---------- Відновлення ієрархії статей ----------
     const NORM_KEYS = ['T0','T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
     const nvals = r => NORM_KEYS.map(k => (r.values && r.values[k]) || 0);
@@ -558,11 +398,14 @@
     const clean = s => String(s == null ? '' : s).replace(/\s+/g, ' ').replace(/[’']/g, "'").trim();
     const SUMMARY_RE = /^(Всього|КОНТРОЛЬ|Контроль|Грошовий потік|Чистий грошовий|Доступн|Залишки|Заборгован|Різниця|Надходження \(|Видатки \(|\*Інформаційно|Придбання МЗНН)/;
 
+    // Рівні підсумкових рядків, де сума не дає однозначної вкладеності (структура як у друкованому звіті)
     const LEVEL_HINTS = {
         'Податки': 1, 'Державні податки': 2, 'Рентна плата': 3, 'Інші податки': 2, 'Місцеві податки': 3,
         'Заробітна плата': 1, 'Енергія': 1, "Інші обов'язкові операційні платежі": 1
     };
+    // Рядки, які не показуємо у звіті взагалі (разом із дочірніми)
     const DROP_ROWS = [/^КОНТРОЛЬ витрат по напрямках/i];
+    // Останній рядок звіту — усе, що нижче, у звіт не потрапляє
     const LAST_ROW_RE = /^\*?\s*Інформаційно: придбання НП/i;
 
     function groupBySums(list) {
@@ -592,6 +435,8 @@
         return top;
     }
 
+    // Для списків із відомою структурою (податки) — стек за рівнями,
+    // підсумок закривається, щойно сума його дітей зійшлася з його значенням.
     function groupByHints(list) {
         const top = [], stack = [];
         const close = () => stack.pop();
@@ -617,7 +462,9 @@
     }
 
     function buildTree(rows) {
-        let dropping = false;
+        // Рядок «КОНТРОЛЬ витрат по напрямках» прибираємо разом із дочірніми,
+        // а також безіменні технічні рядки аркуша.
+        let dropping = false, tailCut = false;
         const lastIdx = rows.findIndex(r => LAST_ROW_RE.test(clean(r.name)));
         const usable = rows.filter((r, i) => {
             if (lastIdx >= 0 && i > lastIdx) return false;
@@ -716,6 +563,7 @@
         }
     }
 
+    // Понеділок поточного тижня, а якщо зрізу ще немає — найсвіжіший наявний понеділок
     async function loadLatestMonday(weeksBack) {
         let iso = mondayOf(new Date());
         const limit = weeksBack || 8;
@@ -785,12 +633,14 @@
     }
 
     function toggleMonth(k) { monthOpen[k] = !monthOpen[k]; render(); }
+    function resetDefaultExpanded() {
+        expanded = {};
+        if (Array.isArray(TREE)) TREE.forEach((n, i) => { expanded['/' + i] = true; });
+    }
+    function toggleExpandAll(checked) { if (!checked) resetDefaultExpanded(); render(); }
     function toggleNode(id) {
-        const expandAllBox = document.getElementById('expandAll');
-        if (expandAllBox.checked) {
-            expandAllBox.checked = false;
-            NODES.forEach(n => { expanded[n.id] = true; });
-        }
+        const box = document.getElementById('expandAll');
+        if (box.checked) { box.checked = false; NODES.forEach(n => { expanded[n.id] = true; }); }
         expanded[id] = !isExpanded(id);
         render();
     }
@@ -832,15 +682,8 @@
     }
 
     function formatColumnLabel(k, label) {
-        if (k === 'dev_fact') {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 7.5pt;">+/- (факт - план)</span>';
-        }
-        if (k === 'dev_forecast') {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 7.5pt;">+/- (прогноз - план)</span>';
-        }
-        if (/відхилення/i.test(label) && /факт/i.test(label)) {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 7.5pt;">+/- (факт - план)</span>';
-        }
+        if (k === 'dev_fact') return 'Відхилення,<br><span style="font-weight:500">+/− (факт − план)</span>';
+        if (k === 'dev_forecast') return 'Відхилення,<br><span style="font-weight:500">+/− (прогноз − план)</span>';
         return esc(label);
     }
 
@@ -854,16 +697,11 @@
             const isMon = MONTH_KEYS.indexOf(k) >= 0;
             const cls = k === 'TT0_12' ? 'col-sum' : isMon ? 'col-mon'
                       : DEV_KEYS.indexOf(k) >= 0 ? 'col-prev col-dev' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev' : '');
-            const rawLabel = (c.label || k).replace(/\s+/g, ' ').trim();
-            const formattedLabel = formatColumnLabel(k, rawLabel);
+            const label = formatColumnLabel(k, (c.label || k).replace(/\s+/g, ' ').trim());
             const toggle = isMon
                 ? `<span class="mon-toggle" title="${monthOpen[k] ? 'Згорнути тижні місяця' : 'Показати тижні місяця'}" onclick="toggleMonth('${k}')">${monthOpen[k] ? '−' : '+'}</span>`
                 : '';
-            
-            const mainText = c.date_range ? esc(c.date_range) : formattedLabel;
-            const subText = c.date_range ? `<span class="th-period">${formattedLabel}</span>` : '';
-
-            return `<th class="${cls}">${mainText}${toggle}${subText}</th>`;
+            return `<th class="${cls}">${esc(c.date_range || label)}${toggle}${c.date_range ? `<span class="th-period">${esc(label)}</span>` : ''}</th>`;
         }).join('')}</tr>`;
 
         const recs = visibleRows();
@@ -872,11 +710,9 @@
             const toggle = hasKids
                 ? `<span class="toggle-kids" onclick="event.stopPropagation(); toggleNode('${esc(rec.id)}')">${open ? '−' : '+'}</span>`
                 : '<span class="toggle-placeholder"></span>';
-            
             const lvl = rec.kind === 'block' ? 'lvl-block'
                       : rec.kind === 'item' ? 'lvl-item'
                       : (rec.kind === 'total' || rec.kind === 'subgroup') ? 'lvl-sub' : 'lvl-leaf';
-            
             const extra = (isKeyRow(n) ? ' row-key' : '') + (isCoverRow(n) ? ' row-cover' : '') + (isBlueRow(n) ? ' row-blue' : '');
             const codeTxt = String(n.no == null ? '' : n.no).trim();
             const cells = keys.map(k => {
@@ -888,10 +724,8 @@
                 const cls = base + c.cls + (isDev && c.cls === '' ? ' pos' : '');
                 return `<td class="${cls}">${c.txt}</td>`;
             }).join('');
-            
-            const padLeft = 4 + rec.depth * 13;
             return `<tr class="${lvl}${extra}" onclick="${hasKids ? `toggleNode('${esc(rec.id)}')` : ''}">
-                <td class="nm-col" style="padding-left:${padLeft}px">${toggle}${codeTxt ? `<span class="an-code">${esc(codeTxt)}</span>` : ''}<span class="nm-txt">${esc(n.name)}</span></td>
+                <td class="nm-col" style="padding-left:${6 + rec.depth * 16}px">${toggle}${codeTxt ? `<span class="an-code">${esc(codeTxt)}</span>` : ''}<span class="nm-txt">${esc(n.name)}</span></td>
                 ${cells}</tr>`;
         }).join('');
 

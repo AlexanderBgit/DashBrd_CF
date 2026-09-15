@@ -18,17 +18,55 @@
         }
 
         /* Режим А3 */
+        .view-a3 body {
+            height: auto;
+            overflow: auto;
+        }
         .view-a3 .executive-container,
         .view-a3 nav {
             width: 1587px !important;
             max-width: 1587px !important;
         }
+        .view-a3 .an-wrap {
+            max-height: 780px;
+        }
 
-        /* Режим на всю ширину (по замовчуванню) */
-        .view-fluid .executive-container,
+        /* Режим на всю ширину та висоту (по замовчуванню) */
+        body.view-fluid {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 10px;
+        }
         .view-fluid nav {
             width: 100% !important;
             max-width: 100% !important;
+            margin-bottom: 8px !important;
+            flex-shrink: 0;
+        }
+        .view-fluid .executive-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 0 !important;
+            flex: 1 1 0%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 14px 18px;
+        }
+        .view-fluid .card {
+            flex: 1 1 0%;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+            padding: 4px;
+        }
+        .view-fluid .an-wrap {
+            max-height: none !important;
+            height: 100%;
+            flex: 1 1 0%;
         }
 
         .card { background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
@@ -75,9 +113,9 @@
 
         @media print {
             @page { size: A3 landscape; margin: 0 !important; }
-            html, body { width: 1587px !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
+            html, body { width: 1587px !important; height: auto !important; overflow: visible !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
             .print-hide { display: none !important; }
-            .executive-container { width: 1587px !important; box-shadow: none !important; border-radius: 0 !important; }
+            .executive-container { width: 1587px !important; min-height: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
             .an-wrap { max-height: none !important; overflow: visible !important; }
         }
     </style>
@@ -91,7 +129,7 @@
         <div class="flex items-center gap-4">
             <!-- Перемикач режиму відображення -->
             <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
-                <button id="btnViewFluid" onclick="setViewMode('fluid')" class="ctl active border-none !py-1 !px-2.5 text-xs">На всю ширину</button>
+                <button id="btnViewFluid" onclick="setViewMode('fluid')" class="ctl active border-none !py-1 !px-2.5 text-xs">На весь екран</button>
                 <button id="btnViewA3" onclick="setViewMode('a3')" class="ctl border-none !py-1 !px-2.5 text-xs">Формат А3</button>
             </div>
 
@@ -121,7 +159,7 @@
     </nav>
 
     <div class="executive-container">
-        <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+        <div class="flex justify-between items-end border-b border-slate-200 pb-2 shrink-0">
             <div>
                 <h1 class="text-xl font-bold text-slate-800">ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» 13 тижнів станом на <span id="hdrCur">--</span></h1>
                 <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Горизонт прогнозу: <span id="hdrRange">--</span></p>
@@ -132,7 +170,7 @@
             </div>
         </div>
 
-        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide">
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide shrink-0">
             <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="render()"
                    class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 w-72">
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer" title="Ховає технічні та довідкові рядки аркуша, залишаючи статті звіту">
@@ -221,11 +259,10 @@
         return null;
     }
 
-    // Функція для встановлення дефолтного стану дерева (як на скріншоті)
+    // Базовий стан дерева: розгорнуті лише кореневі блоки (Надходження, Видатки)
     function resetDefaultExpanded() {
         expanded = {};
         if (Array.isArray(TREE)) {
-            // Розгортаємо лише верхній рівень (кореневі блоки: Надходження, Видатки тощо)
             TREE.forEach((n, i) => {
                 expanded['/' + i] = true;
             });
@@ -596,7 +633,7 @@
 
     function init() {
         document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
-        setViewMode('fluid'); // За замовчуванням — перегляд без прив'язки до А3
+        setViewMode('fluid'); // За замовчуванням — перегляд на весь екран (без прив'язки до А3)
         renderCalendar();
         render();
         setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');

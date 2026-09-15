@@ -111,61 +111,71 @@
         .ctl { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; }
         .ctl.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 
-        /* Стилі для аркуша А3 у модальному вікні та при друку */
+        /* Стилі для аркуша А3 у модальному вікні */
         .a3-sheet {
             width: 1587px;
             min-height: 1122px;
             background: #ffffff;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            padding: 20px 24px;
+            padding: 16px 20px;
             box-sizing: border-box;
             transform-origin: top center;
             transition: transform 0.15s ease-out;
             margin: 20px auto;
+            overflow: hidden;
         }
 
-        /* Стиснення міжрядкових інтервалів та оптимізація розмірів для A3 landscape */
-        .print-mode .an-table,
-        @media print {
-            .an-table {
-                font-size: 7.6pt !important;
-                width: 100% !important;
-            }
-            .an-table th {
-                font-size: 7pt !important;
-                padding: 3px 2.5px !important;
-                line-height: 1.15 !important;
-            }
-            .an-table th.nm-col, .an-table td.nm-col {
-                min-width: 270px !important;
-                max-width: 320px !important;
-                width: 290px !important;
-                white-space: normal !important;
-            }
-            .an-table th .th-period {
-                font-size: 6pt !important;
-                line-height: 1.1 !important;
-            }
-            .an-table td {
-                padding: 1.4px 2.5px !important; /* Ущільнений міжрядковий інтервал */
-                line-height: 1.15 !important;
-            }
-            .toggle-kids, .mon-toggle {
-                display: none !important; /* Ховаємо технічні кнопки розгортання */
-            }
-            .toggle-placeholder {
-                display: none !important;
-            }
-            tr {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-            }
+        /* Стилі попереднього перегляду друку */
+        .print-mode .executive-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+        .print-mode .card {
+            border: none !important;
+            padding: 0 !important;
+        }
+        .print-mode .an-wrap {
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        .print-mode .an-table {
+            font-size: 6.9pt !important;
+            width: 100% !important;
+        }
+        .print-mode .an-table th {
+            font-size: 6.4pt !important;
+            padding: 2px 2px !important;
+            line-height: 1.1 !important;
+        }
+        .print-mode .an-table th.nm-col,
+        .print-mode .an-table td.nm-col {
+            min-width: 220px !important;
+            max-width: 250px !important;
+            width: 230px !important;
+            white-space: normal !important;
+            padding-right: 4px !important;
+        }
+        .print-mode .an-table th .th-period {
+            font-size: 5.5pt !important;
+            line-height: 1 !important;
+        }
+        .print-mode .an-table td {
+            padding: 1.1px 2px !important; /* Ущільнений міжрядковий інтервал */
+            line-height: 1.12 !important;
+        }
+        .print-mode .toggle-kids,
+        .print-mode .mon-toggle,
+        .print-mode .toggle-placeholder {
+            display: none !important;
         }
 
+        /* Стилі при фізичному друку */
         @media print {
             @page {
                 size: A3 landscape;
-                margin: 8mm 6mm !important;
+                margin: 6mm 5mm !important;
             }
             html, body {
                 width: 100% !important;
@@ -194,6 +204,39 @@
             .an-wrap {
                 max-height: none !important;
                 overflow: visible !important;
+            }
+            .an-table {
+                font-size: 6.9pt !important;
+                width: 100% !important;
+            }
+            .an-table th {
+                font-size: 6.4pt !important;
+                padding: 2px 2px !important;
+                line-height: 1.1 !important;
+            }
+            .an-table th.nm-col,
+            .an-table td.nm-col {
+                min-width: 220px !important;
+                max-width: 250px !important;
+                width: 230px !important;
+                white-space: normal !important;
+            }
+            .an-table th .th-period {
+                font-size: 5.5pt !important;
+                line-height: 1 !important;
+            }
+            .an-table td {
+                padding: 1.1px 2px !important;
+                line-height: 1.12 !important;
+            }
+            .toggle-kids,
+            .mon-toggle,
+            .toggle-placeholder {
+                display: none !important;
+            }
+            tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
         }
     </style>
@@ -241,7 +284,7 @@
                     <span>Перегляд А3</span>
                 </button>
                 
-                <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
+                <button onclick="triggerDirectPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
             </div>
         </div>
     </nav>
@@ -292,7 +335,7 @@
     </div>
 
     <!-- МОДАЛЬНЕ ВІКНО: ПОПЕРЕДНІЙ ПЕРЕГЛЯД А3 -->
-    <div id="printPreviewModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex-col">
+    <div id="printPreviewModal" class="fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-50 hidden flex-col">
         <div class="bg-slate-900 border-b border-slate-700 text-white px-5 py-3 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
                 <span class="font-bold text-sm text-slate-200">Попередній перегляд A3 Landscape</span>
@@ -306,7 +349,7 @@
                 
                 <div class="w-px h-5 bg-slate-700 mx-1"></div>
 
-                <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs flex items-center gap-1.5 shadow-sm">
+                <button onclick="triggerDirectPrint()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs flex items-center gap-1.5 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
@@ -318,7 +361,7 @@
             </div>
         </div>
 
-        <div id="previewScrollArea" class="flex-1 overflow-auto p-8 flex justify-center items-start bg-slate-950/50">
+        <div id="previewScrollArea" class="flex-1 overflow-auto p-6 flex justify-center items-start bg-slate-950/60">
             <div id="previewSheet" class="a3-sheet print-mode">
                 <div id="previewContent"></div>
             </div>
@@ -361,7 +404,7 @@
         }
     }
 
-    // ---------- Попередній перегляд А3 ----------
+    // ---------- Попередній перегляд А3 та авто-вписування всіх стовпців ----------
     let currentPreviewZoom = 1.0;
 
     function openPrintPreview() {
@@ -387,7 +430,24 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        setTimeout(autoFitPreview, 40);
+        // Авто-вписування колонок по ширині аркуша A3
+        setTimeout(() => {
+            fitTableColumnsToA3(clone);
+            autoFitPreview();
+        }, 50);
+    }
+
+    // Розрахунок коефіцієнту, щоб таблиця зі 100% стовпців ніколи не вилізала за правий край
+    function fitTableColumnsToA3(containerEl) {
+        const table = containerEl.querySelector('.an-table');
+        if (!table) return;
+        table.style.zoom = ''; // скидання
+        const maxAllowedWidth = 1547; // 1587px мінус поля по 20px
+        const currentTableWidth = table.scrollWidth;
+        if (currentTableWidth > maxAllowedWidth) {
+            const fitFactor = (maxAllowedWidth / currentTableWidth);
+            table.style.zoom = fitFactor.toFixed(3);
+        }
     }
 
     function closePrintPreview() {
@@ -413,9 +473,25 @@
     function autoFitPreview() {
         const area = document.getElementById('previewScrollArea');
         if (!area) return;
-        const availableWidth = area.clientWidth - 80;
+        const availableWidth = area.clientWidth - 70;
         const targetScale = availableWidth / 1587;
         setPreviewZoom(targetScale);
+    }
+
+    // Друк із гарантованим вписуванням стовпців
+    function triggerDirectPrint() {
+        const table = document.querySelector('.executive-container .an-table');
+        if (table) {
+            const maxAllowedWidth = 1540;
+            const currentTableWidth = table.scrollWidth;
+            if (currentTableWidth > maxAllowedWidth) {
+                table.style.zoom = (maxAllowedWidth / currentTableWidth).toFixed(3);
+            }
+        }
+        window.print();
+        setTimeout(() => {
+            if (table) table.style.zoom = '';
+        }, 1000);
     }
 
     window.addEventListener('keydown', e => {
@@ -742,17 +818,16 @@
         return out;
     }
 
-    // Форматування підпису колонки (розбиття "Відхилення, +/- (факт - план)" у 2 рядки)
+    // Форматування назви: "Відхилення," в перший рядок, "+/- (факт - план)" у другий
     function formatColumnLabel(k, label) {
         if (k === 'dev_fact') {
-            return 'Відхилення,<br><span style="font-weight: normal; font-size: 7pt;">+/- (факт - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.5pt;">+/- (факт - план)</span>';
         }
         if (k === 'dev_forecast') {
-            return 'Відхилення,<br><span style="font-weight: normal; font-size: 7pt;">+/- (прогноз - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.5pt;">+/- (прогноз - план)</span>';
         }
-        // Загальний випадок, якщо текст містить таку фразу
-        if (/відхилення.*?(\+|\-|\+\/\-).*?факт.*?план/i.test(label)) {
-            return label.replace(/(відхилення,?)(\s*)(\+?\/?\-?\s*\(факт\s*-\s*план\))/i, '$1<br><span style="font-weight: normal; font-size: 7pt;">$3</span>');
+        if (/відхилення/i.test(label) && /факт/i.test(label)) {
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.5pt;">+/- (факт - план)</span>';
         }
         return esc(label);
     }
@@ -773,7 +848,6 @@
                 ? `<span class="mon-toggle" title="${monthOpen[k] ? 'Згорнути тижні місяця' : 'Показати тижні місяця'}" onclick="toggleMonth('${k}')">${monthOpen[k] ? '−' : '+'}</span>`
                 : '';
             
-            // Якщо є діапазон дат, показуємо його зверху, а підпис знизу
             const mainText = c.date_range ? esc(c.date_range) : formattedLabel;
             const subText = c.date_range ? `<span class="th-period">${formattedLabel}</span>` : '';
 
@@ -836,7 +910,7 @@
 
     function init() {
         document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
-        setViewMode('fluid'); // За замовчуванням — перегляд на весь екран (без прив'язки до А3)
+        setViewMode('fluid');
         renderCalendar();
         render();
         setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');

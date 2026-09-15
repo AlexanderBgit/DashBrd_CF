@@ -75,9 +75,9 @@
         .an-table { width: 100%; border-collapse: collapse; font-size: 9pt; font-variant-numeric: tabular-nums; }
         .an-table th { font-size: 8.5pt; color: #475569; font-weight: 600; padding: 5px 5px; border-bottom: 1.5px solid #94a3b8;
                        text-align: right; background: #f8fafc; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
-        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 420px; position: sticky; left: 0; background: #fff; z-index: 1; }
+        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 360px; position: sticky; left: 0; background: #fff; z-index: 1; }
         .an-table th.nm-col { z-index: 3; background: #f8fafc; }
-        .an-table th .th-period { display: block; font-size: 7pt; font-weight: 500; color: #94a3b8; line-height: 1.15; margin-top: 1px; }
+        .an-table th .th-period { display: block; font-size: 7pt; font-weight: 500; color: #94a3b8; line-height: 1.15; margin-top: 1px; white-space: normal; }
         .an-table td { padding: 3px 5px; text-align: right; color: #334155; border-bottom: 1px solid #eef2f6; white-space: nowrap; }
         .an-table tbody tr:hover td { background-color: #f8fafc; }
 
@@ -111,25 +111,90 @@
         .ctl { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; }
         .ctl.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 
-        /* Стилі для аркуша А3 у модальному вікні */
+        /* Стилі для аркуша А3 у модальному вікні та при друку */
         .a3-sheet {
             width: 1587px;
             min-height: 1122px;
             background: #ffffff;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            padding: 30px 36px;
+            padding: 20px 24px;
             box-sizing: border-box;
             transform-origin: top center;
             transition: transform 0.15s ease-out;
             margin: 20px auto;
         }
 
+        /* Стиснення міжрядкових інтервалів та оптимізація розмірів для A3 landscape */
+        .print-mode .an-table,
         @media print {
-            @page { size: A3 landscape; margin: 0 !important; }
-            html, body { width: 1587px !important; height: auto !important; overflow: visible !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
-            .print-hide, #printPreviewModal { display: none !important; }
-            .executive-container { width: 1587px !important; min-height: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
-            .an-wrap { max-height: none !important; overflow: visible !important; }
+            .an-table {
+                font-size: 7.6pt !important;
+                width: 100% !important;
+            }
+            .an-table th {
+                font-size: 7pt !important;
+                padding: 3px 2.5px !important;
+                line-height: 1.15 !important;
+            }
+            .an-table th.nm-col, .an-table td.nm-col {
+                min-width: 270px !important;
+                max-width: 320px !important;
+                width: 290px !important;
+                white-space: normal !important;
+            }
+            .an-table th .th-period {
+                font-size: 6pt !important;
+                line-height: 1.1 !important;
+            }
+            .an-table td {
+                padding: 1.4px 2.5px !important; /* Ущільнений міжрядковий інтервал */
+                line-height: 1.15 !important;
+            }
+            .toggle-kids, .mon-toggle {
+                display: none !important; /* Ховаємо технічні кнопки розгортання */
+            }
+            .toggle-placeholder {
+                display: none !important;
+            }
+            tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        }
+
+        @media print {
+            @page {
+                size: A3 landscape;
+                margin: 8mm 6mm !important;
+            }
+            html, body {
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                background: #fff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .print-hide, #printPreviewModal {
+                display: none !important;
+            }
+            .executive-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-height: 0 !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .card {
+                border: none !important;
+                padding: 0 !important;
+            }
+            .an-wrap {
+                max-height: none !important;
+                overflow: visible !important;
+            }
         }
     </style>
 </head>
@@ -228,10 +293,9 @@
 
     <!-- МОДАЛЬНЕ ВІКНО: ПОПЕРЕДНІЙ ПЕРЕГЛЯД А3 -->
     <div id="printPreviewModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex-col">
-        <!-- Панель керування вікном перегляду -->
         <div class="bg-slate-900 border-b border-slate-700 text-white px-5 py-3 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
-                <span class="font-bold text-sm text-slate-200">Попередній перегляд: Альбомний аркуш A3 (1587 × 1122 px)</span>
+                <span class="font-bold text-sm text-slate-200">Попередній перегляд A3 Landscape</span>
                 <span class="text-xs bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded font-mono">Масштаб: <span id="previewScaleVal">100%</span></span>
             </div>
             <div class="flex items-center gap-2">
@@ -254,10 +318,8 @@
             </div>
         </div>
 
-        <!-- Контейнер скролу аркуша -->
         <div id="previewScrollArea" class="flex-1 overflow-auto p-8 flex justify-center items-start bg-slate-950/50">
-            <div id="previewSheet" class="a3-sheet">
-                <!-- Сюди клонується вміст звіту -->
+            <div id="previewSheet" class="a3-sheet print-mode">
                 <div id="previewContent"></div>
             </div>
         </div>
@@ -307,12 +369,9 @@
         const content = document.getElementById('previewContent');
         const container = document.querySelector('.executive-container');
 
-        // Клонуємо контент поточного дашборду для попереднього перегляду
         const clone = container.cloneNode(true);
-        // Прибираємо фільтри з роздруківки
         const filters = clone.querySelector('.bg-slate-50');
         if (filters) filters.remove();
-        // Забезпечуємо повне розгортання таблиці без обмеження за скролом
         const wrap = clone.querySelector('.an-wrap');
         if (wrap) {
             wrap.style.maxHeight = 'none';
@@ -328,7 +387,6 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        // Автоматично масштабуємо під ширину вікна користувача
         setTimeout(autoFitPreview, 40);
     }
 
@@ -339,13 +397,11 @@
     }
 
     function setPreviewZoom(scale) {
-        currentPreviewZoom = Math.max(0.3, Math.min(2.0, scale));
+        currentPreviewZoom = Math.max(0.25, Math.min(2.0, scale));
         const sheet = document.getElementById('previewSheet');
         sheet.style.transform = `scale(${currentPreviewZoom})`;
         document.getElementById('previewScaleVal').textContent = `${Math.round(currentPreviewZoom * 100)}%`;
         
-        // Коригуємо зовнішню висоту для правильного скролу при зміні масштабу
-        const area = document.getElementById('previewScrollArea');
         const scaledHeight = sheet.offsetHeight * currentPreviewZoom;
         sheet.style.marginBottom = `${Math.max(40, scaledHeight - sheet.offsetHeight + 40)}px`;
     }
@@ -362,7 +418,6 @@
         setPreviewZoom(targetScale);
     }
 
-    // Закриття по Escape
     window.addEventListener('keydown', e => {
         if (e.key === 'Escape' && !document.getElementById('printPreviewModal').classList.contains('hidden')) {
             closePrintPreview();
@@ -389,7 +444,6 @@
         return null;
     }
 
-    // Базовий стан дерева: розгорнуті лише кореневі блоки (Надходження, Видатки)
     function resetDefaultExpanded() {
         expanded = {};
         if (Array.isArray(TREE)) {
@@ -399,7 +453,6 @@
         }
     }
 
-    // Обробник перемикання чекбоксу "Розгорнути всі рівні"
     function toggleExpandAll(checked) {
         if (!checked) {
             resetDefaultExpanded();
@@ -689,6 +742,21 @@
         return out;
     }
 
+    // Форматування підпису колонки (розбиття "Відхилення, +/- (факт - план)" у 2 рядки)
+    function formatColumnLabel(k, label) {
+        if (k === 'dev_fact') {
+            return 'Відхилення,<br><span style="font-weight: normal; font-size: 7pt;">+/- (факт - план)</span>';
+        }
+        if (k === 'dev_forecast') {
+            return 'Відхилення,<br><span style="font-weight: normal; font-size: 7pt;">+/- (прогноз - план)</span>';
+        }
+        // Загальний випадок, якщо текст містить таку фразу
+        if (/відхилення.*?(\+|\-|\+\/\-).*?факт.*?план/i.test(label)) {
+            return label.replace(/(відхилення,?)(\s*)(\+?\/?\-?\s*\(факт\s*-\s*план\))/i, '$1<br><span style="font-weight: normal; font-size: 7pt;">$3</span>');
+        }
+        return esc(label);
+    }
+
     function render() {
         const pane = document.getElementById('pane');
         if (!SNAP) { pane.innerHTML = '<div class="text-xs text-slate-400 p-3">Дані ще не завантажені. Оберіть дату зрізу або відкрийте локальний файл.</div>'; return; }
@@ -699,11 +767,17 @@
             const isMon = MONTH_KEYS.indexOf(k) >= 0;
             const cls = k === 'TT0_12' ? 'col-sum' : isMon ? 'col-mon'
                       : DEV_KEYS.indexOf(k) >= 0 ? 'col-prev col-dev' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev' : '');
-            const label = (c.label || k).replace(/\s+/g, ' ').trim();
+            const rawLabel = (c.label || k).replace(/\s+/g, ' ').trim();
+            const formattedLabel = formatColumnLabel(k, rawLabel);
             const toggle = isMon
                 ? `<span class="mon-toggle" title="${monthOpen[k] ? 'Згорнути тижні місяця' : 'Показати тижні місяця'}" onclick="toggleMonth('${k}')">${monthOpen[k] ? '−' : '+'}</span>`
                 : '';
-            return `<th class="${cls}">${esc(c.date_range || label)}${toggle}${c.date_range ? `<span class="th-period">${esc(label)}</span>` : ''}</th>`;
+            
+            // Якщо є діапазон дат, показуємо його зверху, а підпис знизу
+            const mainText = c.date_range ? esc(c.date_range) : formattedLabel;
+            const subText = c.date_range ? `<span class="th-period">${formattedLabel}</span>` : '';
+
+            return `<th class="${cls}">${mainText}${toggle}${subText}</th>`;
         }).join('')}</tr>`;
 
         const recs = visibleRows();

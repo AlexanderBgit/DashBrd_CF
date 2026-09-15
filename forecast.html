@@ -38,7 +38,9 @@
         td.col-mon, th.col-mon { background: #fafaff; color: #4338ca; font-weight: 600; }
         td.col-sum, th.col-sum { border-left: 1.5px solid #cbd5e1; font-weight: 700; }
         td.col-prev, th.col-prev { background: #fafafa; }
-        td.neg, tr.row-key td.neg, tr.row-cover td.neg { color: #dc2626; }
+        .an-table tbody td.neg { color: #dc2626 !important; }
+        .an-table tbody td.col-dev.pos { color: #047857 !important; font-weight: 600; }
+        .an-table tbody td.col-dev.neg { font-weight: 600; }
         td.zero { color: #cbd5e1; }
 
         .toggle-kids { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
@@ -119,7 +121,12 @@
                 <input type="checkbox" id="expandAll" onchange="expanded = {}; render()"> Розгорнути всі рівні
             </label>
             <span class="flex items-center gap-2 border-l pl-4 border-slate-200">
-                <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="grpPrev" onchange="render()"> Тиждень −1 (план / прогноз / факт)</label>
+                <span class="text-xs text-slate-600">Тиждень −1:</span>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_plan" checked onchange="render()"> план</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_forecast" onchange="render()"> прогноз</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="coldev_forecast" onchange="render()"> Δ прогноз − план</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_fact" checked onchange="render()"> факт</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="coldev_fact" checked onchange="render()"> Δ факт − план</label>
                 <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="grpTotal" checked onchange="render()"> Разом 13 тижнів</label>
             </span>
             <span class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
@@ -383,10 +390,14 @@
     ];
     const PREV_KEYS = ['Tm1_plan', 'Tm1_forecast', 'dev_forecast', 'Tm1_fact', 'dev_fact'];
     const MONTH_KEYS = MONTHS.map(m => m.key);
+    const DEV_KEYS = ['dev_forecast', 'dev_fact'];
 
     function activeColumns() {
         const cols = SNAP.columns || {}, keys = [];
-        if (document.getElementById('grpPrev').checked) PREV_KEYS.forEach(k => cols[k] && keys.push(k));
+        PREV_KEYS.forEach(k => {
+            const box = document.getElementById('col' + k);
+            if (box && box.checked && cols[k]) keys.push(k);
+        });
         MONTHS.forEach(m => {
             if (monthOpen[m.key]) m.weeks.forEach(w => cols[w] && keys.push(w));
             if (cols[m.key]) keys.push(m.key);
@@ -458,12 +469,13 @@
         const head = `<tr><th class="nm-col">Стаття</th>${keys.map(k => {
             const c = cols[k] || {};
             const isMon = MONTH_KEYS.indexOf(k) >= 0;
-            const cls = k === 'TT0_12' ? 'col-sum' : isMon ? 'col-mon' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev' : '');
+            const cls = k === 'TT0_12' ? 'col-sum' : isMon ? 'col-mon'
+                      : DEV_KEYS.indexOf(k) >= 0 ? 'col-prev col-dev' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev' : '');
             const label = (c.label || k).replace(/\s+/g, ' ').trim();
             const toggle = isMon
                 ? `<span class="mon-toggle" title="${monthOpen[k] ? 'Згорнути тижні місяця' : 'Показати тижні місяця'}" onclick="toggleMonth('${k}')">${monthOpen[k] ? '−' : '+'}</span>`
                 : '';
-            return `<th class="${cls}">${esc(c.date_range || label)}${toggle}<span class="th-period">${esc(label)}</span></th>`;
+            return `<th class="${cls}">${esc(c.date_range || label)}${toggle}${c.date_range ? `<span class="th-period">${esc(label)}</span>` : ''}</th>`;
         }).join('')}</tr>`;
 
         const recs = visibleRows();
@@ -480,7 +492,10 @@
             const cells = keys.map(k => {
                 const c = fmtCell((n.values || {})[k]);
                 const isMon = MONTH_KEYS.indexOf(k) >= 0;
-                const cls = (k === 'TT0_12' ? 'col-sum ' : isMon ? 'col-mon ' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev ' : '')) + c.cls;
+                const isDev = DEV_KEYS.indexOf(k) >= 0;
+                const base = k === 'TT0_12' ? 'col-sum ' : isMon ? 'col-mon '
+                           : isDev ? 'col-prev col-dev ' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev ' : '');
+                const cls = base + c.cls + (isDev && c.cls === '' ? ' pos' : '');
                 return `<td class="${cls}">${c.txt}</td>`;
             }).join('');
             return `<tr class="${lvl}${extra}" onclick="${hasKids ? `toggleNode('${esc(rec.id)}')` : ''}">

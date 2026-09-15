@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
+        body { font-family: 'Helvetica', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
         
         /* Базовий стиль контейнера */
         .executive-container {
@@ -17,21 +17,13 @@
             transition: width 0.2s ease, max-width 0.2s ease;
         }
 
-        /* Режим А3 */
-        .view-a3 body {
-            height: auto;
-            overflow: auto;
-        }
+        /* Режим А3 на екрані */
+        .view-a3 body { height: auto; overflow: auto; }
         .view-a3 .executive-container,
-        .view-a3 nav {
-            width: 1587px !important;
-            max-width: 1587px !important;
-        }
-        .view-a3 .an-wrap {
-            max-height: 780px;
-        }
+        .view-a3 nav { width: 1587px !important; max-width: 1587px !important; }
+        .view-a3 .an-wrap { max-height: 780px; }
 
-        /* Режим на всю ширину та висоту (по замовчуванню) */
+        /* Режим на весь екран (по замовчуванню) */
         body.view-fluid {
             height: 100vh;
             display: flex;
@@ -70,21 +62,21 @@
         }
 
         .card { background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
-
         .an-wrap { overflow: auto; max-height: 780px; }
-        .an-table { width: 100%; border-collapse: collapse; font-size: 9pt; font-variant-numeric: tabular-nums; }
-        .an-table th { font-size: 8.5pt; color: #475569; font-weight: 600; padding: 5px 5px; border-bottom: 1.5px solid #94a3b8;
+        .an-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; font-variant-numeric: tabular-nums; }
+        .an-table th { font-size: 8pt; color: #475569; font-weight: 600; padding: 4px 4px; border-bottom: 1.5px solid #94a3b8;
                        text-align: right; background: #f8fafc; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
-        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 360px; position: sticky; left: 0; background: #fff; z-index: 1; }
+        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 340px; position: sticky; left: 0; background: #fff; z-index: 1; }
         .an-table th.nm-col { z-index: 3; background: #f8fafc; }
         .an-table th .th-period { display: block; font-size: 7pt; font-weight: 500; color: #94a3b8; line-height: 1.15; margin-top: 1px; white-space: normal; }
-        .an-table td { padding: 3px 5px; text-align: right; color: #334155; border-bottom: 1px solid #eef2f6; white-space: nowrap; }
+        .an-table td { padding: 2.5px 4px; text-align: right; color: #334155; border-bottom: 1px solid #eef2f6; white-space: nowrap; }
         .an-table tbody tr:hover td { background-color: #f8fafc; }
 
-        tr.lvl-block td { background: #e0e7ff; font-weight: 700; color: #312e81; }
+        /* Екранна стилізація рівнів */
+        tr.lvl-block td { background: #e0e7ff; font-weight: 700; color: #312e81; font-size: 9pt; }
         tr.lvl-item  td { font-weight: 700; color: #1e293b; background: #f8fafc; }
         tr.lvl-sub   td { font-weight: 600; color: #334155; }
-        tr.lvl-leaf  td { color: #475569; }
+        tr.lvl-leaf  td { color: #475569; font-size: 8pt; font-weight: 400; }
         tr.row-key   td { background: #dbeafe !important; color: #1e3a8a; font-weight: 700; border-top: 1px solid #93c5fd; border-bottom: 1px solid #93c5fd; }
         tr.row-cover td { color: #047857; }
         tr.row-blue td { color: #1d4ed8; font-weight: 600; }
@@ -99,15 +91,14 @@
         .an-table tbody td.col-dev.neg { font-weight: 600; }
         td.zero { color: #cbd5e1; }
 
-        .toggle-kids { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
-            font-size: 13px; font-weight: bold; line-height: 1; color: #3b82f6; background: #eff6ff; border: 1px solid #bfdbfe;
+        .toggle-kids { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px;
+            font-size: 11px; font-weight: bold; line-height: 1; color: #3b82f6; background: #eff6ff; border: 1px solid #bfdbfe;
             border-radius: 3px; cursor: pointer; user-select: none; flex: 0 0 auto; margin-right: 5px; }
         .toggle-kids:hover { background: #dbeafe; color: #1d4ed8; }
-        .toggle-placeholder { display: inline-block; width: 20px; }
-        .mon-toggle { display: inline-block; margin-left: 5px; padding: 0 4px; border: 1px solid #c7d2fe; border-radius: 3px;
-            background: #eef2ff; color: #4338ca; cursor: pointer; font-size: 8pt; }
-        .mon-toggle:hover { background: #e0e7ff; }
-        .an-code { color: #64748b; font-size: 8pt; margin-right: 5px; }
+        .toggle-placeholder { display: inline-block; width: 19px; }
+        .mon-toggle { display: inline-block; margin-left: 4px; padding: 0 3px; border: 1px solid #c7d2fe; border-radius: 3px;
+            background: #eef2ff; color: #4338ca; cursor: pointer; font-size: 7.5pt; }
+        .an-code { color: #64748b; font-size: 8pt; margin-right: 4px; }
         .ctl { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; }
         .ctl.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 
@@ -117,65 +108,115 @@
             min-height: 1122px;
             background: #ffffff;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            padding: 16px 20px;
+            padding: 14px 18px;
             box-sizing: border-box;
             transform-origin: top center;
             transition: transform 0.15s ease-out;
-            margin: 20px auto;
+            margin: 15px auto;
             overflow: hidden;
         }
 
-        /* Стилі попереднього перегляду друку */
-        .print-mode .executive-container {
-            width: 100% !important;
-            max-width: 100% !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-        }
-        .print-mode .card {
-            border: none !important;
-            padding: 0 !important;
-        }
-        .print-mode .an-wrap {
-            max-height: none !important;
-            overflow: visible !important;
-        }
-        .print-mode .an-table {
-            font-size: 6.9pt !important;
-            width: 100% !important;
-        }
-        .print-mode .an-table th {
-            font-size: 6.4pt !important;
-            padding: 2px 2px !important;
-            line-height: 1.1 !important;
-        }
-        .print-mode .an-table th.nm-col,
-        .print-mode .an-table td.nm-col {
-            min-width: 220px !important;
-            max-width: 250px !important;
-            width: 230px !important;
-            white-space: normal !important;
-            padding-right: 4px !important;
-        }
-        .print-mode .an-table th .th-period {
-            font-size: 5.5pt !important;
-            line-height: 1 !important;
-        }
-        .print-mode .an-table td {
-            padding: 1.1px 2px !important; /* Ущільнений міжрядковий інтервал */
-            line-height: 1.12 !important;
-        }
-        .print-mode .toggle-kids,
-        .print-mode .mon-toggle,
-        .print-mode .toggle-placeholder {
-            display: none !important;
+        /* ------------------------------------------------------------- */
+        /* ДРУКОВАНІ СТИЛІ: РІВНІ РЯДКІВ ТА КОМПАКТНІСТЬ (ЯК В EXCEL)    */
+        /* ------------------------------------------------------------- */
+        .print-mode .executive-container,
+        @media print {
+            .executive-container { width: 100% !important; max-width: 100% !important; padding: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
+            .card { border: none !important; padding: 0 !important; }
+            .an-wrap { max-height: none !important; overflow: visible !important; }
+            
+            /* Загальна геометрія таблиці під A3 landscape */
+            .an-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            .an-table th {
+                font-size: 6.2pt !important;
+                padding: 2px 1.5px !important;
+                line-height: 1.1 !important;
+                border-bottom: 1.2px solid #64748b !important;
+            }
+            .an-table th.nm-col,
+            .an-table td.nm-col {
+                min-width: 210px !important;
+                max-width: 240px !important;
+                width: 220px !important;
+                white-space: normal !important;
+                line-height: 1.15 !important;
+            }
+            .an-table th .th-period {
+                font-size: 5.2pt !important;
+                line-height: 1 !important;
+            }
+
+            /* --- ДИФЕРЕНЦІАЦІЯ РІВНІВ РЯДКІВ --- */
+            
+            /* 1. Кореневі блоки ("Надходження", "Видатки") */
+            tr.lvl-block td {
+                font-size: 7.2pt !important;
+                font-weight: 800 !important;
+                background: #f1f5f9 !important;
+                color: #0f172a !important;
+                padding: 1.8px 2px !important;
+                border-top: 1px solid #cbd5e1 !important;
+                border-bottom: 1px solid #cbd5e1 !important;
+            }
+
+            /* 2. Батьківські статті першого рівня ("1 Нафта", "2 Газ", "1 Обов'язкові платежі") */
+            tr.lvl-item td {
+                font-size: 6.8pt !important;
+                font-weight: 700 !important;
+                color: #1e293b !important;
+                background: #fafafa !important;
+                padding: 1.3px 2px !important;
+            }
+
+            /* 3. Підсумкові/групові статті другого рівня ("Податки", "Державні податки") */
+            tr.lvl-sub td {
+                font-size: 6.4pt !important;
+                font-weight: 600 !important;
+                color: #334155 !important;
+                padding: 1.1px 2px !important;
+            }
+
+            /* 4. Дочірні рядки / контрагенти (Альянс, Глуско, банки тощо) — КОМПАКТНІ ТА ЗМЕНШЕНІ */
+            tr.lvl-leaf td {
+                font-size: 5.8pt !important; /* Зменшений шрифт */
+                font-weight: 400 !important; /* Тонкий акуратний шрифт */
+                color: #475569 !important;
+                padding: 0.9px 2px !important; /* Ущільнений міжрядковий інтервал */
+                line-height: 1.12 !important;
+            }
+            tr.lvl-leaf td.nm-col .nm-txt {
+                color: #475569 !important;
+            }
+
+            /* Ключові підсумкові рядки ("Всього надходжень", "Всього витрат", "Чистий грошовий потік") */
+            tr.row-key td {
+                font-size: 7.0pt !important;
+                font-weight: 800 !important;
+                background: #e2e8f0 !important;
+                border-top: 1px solid #64748b !important;
+                border-bottom: 1px solid #64748b !important;
+                padding: 1.6px 2px !important;
+            }
+
+            /* Ховаємо інтерактивні кнопки згортання */
+            .toggle-kids, .mon-toggle, .toggle-placeholder {
+                display: none !important;
+            }
+
+            /* Розбивка сторінок */
+            tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
         }
 
-        /* Стилі при фізичному друку */
         @media print {
             @page {
                 size: A3 landscape;
-                margin: 6mm 5mm !important;
+                margin: 5mm 4mm !important;
             }
             html, body {
                 width: 100% !important;
@@ -187,56 +228,6 @@
             }
             .print-hide, #printPreviewModal {
                 display: none !important;
-            }
-            .executive-container {
-                width: 100% !important;
-                max-width: 100% !important;
-                min-height: 0 !important;
-                box-shadow: none !important;
-                border-radius: 0 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            .card {
-                border: none !important;
-                padding: 0 !important;
-            }
-            .an-wrap {
-                max-height: none !important;
-                overflow: visible !important;
-            }
-            .an-table {
-                font-size: 6.9pt !important;
-                width: 100% !important;
-            }
-            .an-table th {
-                font-size: 6.4pt !important;
-                padding: 2px 2px !important;
-                line-height: 1.1 !important;
-            }
-            .an-table th.nm-col,
-            .an-table td.nm-col {
-                min-width: 220px !important;
-                max-width: 250px !important;
-                width: 230px !important;
-                white-space: normal !important;
-            }
-            .an-table th .th-period {
-                font-size: 5.5pt !important;
-                line-height: 1 !important;
-            }
-            .an-table td {
-                padding: 1.1px 2px !important;
-                line-height: 1.12 !important;
-            }
-            .toggle-kids,
-            .mon-toggle,
-            .toggle-placeholder {
-                display: none !important;
-            }
-            tr {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
             }
         }
     </style>
@@ -430,19 +421,17 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        // Авто-вписування колонок по ширині аркуша A3
         setTimeout(() => {
             fitTableColumnsToA3(clone);
             autoFitPreview();
         }, 50);
     }
 
-    // Розрахунок коефіцієнту, щоб таблиця зі 100% стовпців ніколи не вилізала за правий край
     function fitTableColumnsToA3(containerEl) {
         const table = containerEl.querySelector('.an-table');
         if (!table) return;
-        table.style.zoom = ''; // скидання
-        const maxAllowedWidth = 1547; // 1587px мінус поля по 20px
+        table.style.zoom = '';
+        const maxAllowedWidth = 1547;
         const currentTableWidth = table.scrollWidth;
         if (currentTableWidth > maxAllowedWidth) {
             const fitFactor = (maxAllowedWidth / currentTableWidth);
@@ -478,7 +467,6 @@
         setPreviewZoom(targetScale);
     }
 
-    // Друк із гарантованим вписуванням стовпців
     function triggerDirectPrint() {
         const table = document.querySelector('.executive-container .an-table');
         if (table) {
@@ -818,16 +806,15 @@
         return out;
     }
 
-    // Форматування назви: "Відхилення," в перший рядок, "+/- (факт - план)" у другий
     function formatColumnLabel(k, label) {
         if (k === 'dev_fact') {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.5pt;">+/- (факт - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.2pt;">+/- (факт - план)</span>';
         }
         if (k === 'dev_forecast') {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.5pt;">+/- (прогноз - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.2pt;">+/- (прогноз - план)</span>';
         }
         if (/відхилення/i.test(label) && /факт/i.test(label)) {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.5pt;">+/- (факт - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.2pt;">+/- (факт - план)</span>';
         }
         return esc(label);
     }
@@ -860,9 +847,12 @@
             const toggle = hasKids
                 ? `<span class="toggle-kids" onclick="event.stopPropagation(); toggleNode('${esc(rec.id)}')">${open ? '−' : '+'}</span>`
                 : '<span class="toggle-placeholder"></span>';
+            
+            // Визначення рівня ієрархії
             const lvl = rec.kind === 'block' ? 'lvl-block'
                       : rec.kind === 'item' ? 'lvl-item'
                       : (rec.kind === 'total' || rec.kind === 'subgroup') ? 'lvl-sub' : 'lvl-leaf';
+            
             const extra = (isKeyRow(n) ? ' row-key' : '') + (isCoverRow(n) ? ' row-cover' : '') + (isBlueRow(n) ? ' row-blue' : '');
             const codeTxt = String(n.no == null ? '' : n.no).trim();
             const cells = keys.map(k => {
@@ -874,8 +864,10 @@
                 const cls = base + c.cls + (isDev && c.cls === '' ? ' pos' : '');
                 return `<td class="${cls}">${c.txt}</td>`;
             }).join('');
+            
+            const padLeft = 4 + rec.depth * 13;
             return `<tr class="${lvl}${extra}" onclick="${hasKids ? `toggleNode('${esc(rec.id)}')` : ''}">
-                <td class="nm-col" style="padding-left:${6 + rec.depth * 16}px">${toggle}${codeTxt ? `<span class="an-code">${esc(codeTxt)}</span>` : ''}<span class="nm-txt">${esc(n.name)}</span></td>
+                <td class="nm-col" style="padding-left:${padLeft}px">${toggle}${codeTxt ? `<span class="an-code">${esc(codeTxt)}</span>` : ''}<span class="nm-txt">${esc(n.name)}</span></td>
                 ${cells}</tr>`;
         }).join('');
 

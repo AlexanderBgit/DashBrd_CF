@@ -7,6 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        
+        :root {
+            /* Динамічні змінні для друку (розраховуються скриптом під 1 сторінку в ширину і 2 у висоту) */
+            --p-base-font: 8.5pt;
+            --p-cell-pad-y: 2.2px;
+            --p-cell-pad-x: 3.5px;
+            --p-nm-width: 340px;
+        }
+
         body { font-family: 'Helvetica', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
         
         /* Базовий стиль контейнера */
@@ -115,9 +124,9 @@
             margin: 15px auto;
         }
 
-        /* ------------------------------------------------------------------- */
-        /* ДРУКОВАНІ СТИЛІ: ЗБІЛЬШЕНИЙ У 2.5-3 РАЗИ ШРИФТ ТА ЧІТКА ІЄРАРХІЯ    */
-        /* ------------------------------------------------------------------- */
+        /* ------------------------------------------------------------- */
+        /* АДАПТИВНІ ДРУКОВАНІ СТИЛІ (МАСШТАБУЮТЬСЯ ЧЕРЕЗ CSS-ЗМІННІ)    */
+        /* ------------------------------------------------------------- */
         .print-mode .executive-container,
         @media print {
             .executive-container { width: 100% !important; max-width: 100% !important; padding: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
@@ -127,73 +136,74 @@
             .an-table {
                 width: 100% !important;
                 border-collapse: collapse !important;
+                table-layout: auto !important;
             }
 
             /* Шапка таблиці */
             .an-table th {
-                font-size: 9.5pt !important; /* Було 6.2pt */
-                padding: 5px 3.5px !important;
+                font-size: calc(var(--p-base-font) * 1.05) !important;
+                padding: calc(var(--p-cell-pad-y) * 1.2) var(--p-cell-pad-x) !important;
                 line-height: 1.15 !important;
-                border-bottom: 2px solid #475569 !important;
+                border-bottom: 1.5px solid #475569 !important;
             }
             .an-table th.nm-col,
             .an-table td.nm-col {
-                min-width: 380px !important;
-                max-width: 440px !important;
-                width: 400px !important;
+                width: var(--p-nm-width) !important;
+                min-width: var(--p-nm-width) !important;
+                max-width: calc(var(--p-nm-width) * 1.2) !important;
                 white-space: normal !important;
-                line-height: 1.2 !important;
+                line-height: 1.15 !important;
             }
             .an-table th .th-period {
-                font-size: 8pt !important;
-                line-height: 1.1 !important;
+                font-size: calc(var(--p-base-font) * 0.82) !important;
+                line-height: 1 !important;
             }
 
             /* 1. Блоки ("Надходження", "Видатки") */
             tr.lvl-block td {
-                font-size: 11.5pt !important; /* Крупний виразний заголовок */
+                font-size: calc(var(--p-base-font) * 1.25) !important;
                 font-weight: 800 !important;
                 background: #f1f5f9 !important;
                 color: #0f172a !important;
-                padding: 5px 4px !important;
+                padding: calc(var(--p-cell-pad-y) * 1.6) var(--p-cell-pad-x) !important;
                 border-top: 1.5px solid #94a3b8 !important;
                 border-bottom: 1.5px solid #94a3b8 !important;
             }
 
             /* 2. Батьківські статті ("1 Нафта", "2 Газ", "1 Обов'язкові платежі") */
             tr.lvl-item td {
-                font-size: 10.5pt !important;
+                font-size: calc(var(--p-base-font) * 1.12) !important;
                 font-weight: 700 !important;
                 color: #1e293b !important;
-                background: #f8fafc !important;
-                padding: 3.5px 3px !important;
+                background: #fafafa !important;
+                padding: calc(var(--p-cell-pad-y) * 1.2) var(--p-cell-pad-x) !important;
             }
 
             /* 3. Підсумки груп другого рівня ("Податки", "Державні податки") */
             tr.lvl-sub td {
-                font-size: 9.8pt !important;
+                font-size: calc(var(--p-base-font) * 1.02) !important;
                 font-weight: 600 !important;
                 color: #334155 !important;
-                padding: 3px 3px !important;
+                padding: var(--p-cell-pad-y) var(--p-cell-pad-x) !important;
             }
 
-            /* 4. Дочірні статті та цифри (контрагенти, деталі) */
+            /* 4. Дочірні рядки та цифри (контрагенти, деталі) */
             tr.lvl-leaf td {
-                font-size: 9.0pt !important; /* Було 5.8pt - тепер читабельно */
+                font-size: var(--p-base-font) !important;
                 font-weight: 400 !important;
                 color: #334155 !important;
-                padding: 2.2px 3px !important;
-                line-height: 1.15 !important;
+                padding: var(--p-cell-pad-y) var(--p-cell-pad-x) !important;
+                line-height: 1.12 !important;
             }
 
             /* Ключові підсумки ("Всього надходжень", "Всього витрат", "Чистий грошовий потік") */
             tr.row-key td {
-                font-size: 11pt !important;
+                font-size: calc(var(--p-base-font) * 1.18) !important;
                 font-weight: 800 !important;
                 background: #e2e8f0 !important;
                 border-top: 1.5px solid #475569 !important;
                 border-bottom: 1.5px solid #475569 !important;
-                padding: 4px 3px !important;
+                padding: calc(var(--p-cell-pad-y) * 1.4) var(--p-cell-pad-x) !important;
             }
 
             .toggle-kids, .mon-toggle, .toggle-placeholder {
@@ -209,7 +219,7 @@
         @media print {
             @page {
                 size: A3 landscape;
-                margin: 8mm 6mm !important;
+                margin: 6mm 5mm !important;
             }
             html, body {
                 width: 100% !important;
@@ -232,7 +242,6 @@
             <p class="text-xs text-slate-500 mt-0.5">станом на <span id="navCurDate" class="font-semibold text-indigo-600">--</span></p>
         </div>
         <div class="flex items-center gap-4">
-            <!-- Перемикач режиму відображення -->
             <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
                 <button id="btnViewFluid" onclick="setViewMode('fluid')" class="ctl active border-none !py-1 !px-2.5 text-xs">На весь екран</button>
                 <button id="btnViewA3" onclick="setViewMode('a3')" class="ctl border-none !py-1 !px-2.5 text-xs">Формат А3</button>
@@ -259,7 +268,6 @@
                 <button onclick="document.getElementById('fileInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Завантажити JSON</button>
                 <input type="file" id="fileInput" accept=".json,application/json" class="hidden" onchange="loadLocalFile(this)">
                 
-                <!-- Кнопка перегляду для друку А3 -->
                 <button onclick="openPrintPreview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm" title="Попередній перегляд у пропорціях друкованого аркуша А3">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -268,7 +276,7 @@
                     <span>Перегляд А3</span>
                 </button>
                 
-                <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
+                <button onclick="triggerDirectPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
             </div>
         </div>
     </nav>
@@ -333,7 +341,7 @@
                 
                 <div class="w-px h-5 bg-slate-700 mx-1"></div>
 
-                <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs flex items-center gap-1.5 shadow-sm">
+                <button onclick="triggerDirectPrint()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs flex items-center gap-1.5 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
@@ -370,7 +378,6 @@
     const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const sp = s => s.replace(/[\u202F\u00A0]/g, ' ');
 
-    // ---------- Керування режимом відображення ----------
     function setViewMode(mode) {
         const body = document.body;
         const btnFluid = document.getElementById('btnViewFluid');
@@ -388,10 +395,60 @@
         }
     }
 
-    // ---------- Попередній перегляд А3 ----------
+    // -------------------------------------------------------------
+    // АДАПТИВНИЙ РОЗРАХУНОК РОЗМІРІВ ДЛЯ 1 СТОРІНКИ В ШИРИНУ ТА 2 У ВИСОТУ
+    // -------------------------------------------------------------
+    function calculateAdaptivePrintScale() {
+        const activeColsCount = activeColumns().length;
+        const visibleRowsCount = visibleRows().length;
+
+        // Доступна корисна ширина аркуша A3 landscape за вирахуванням полів
+        const targetA3Width = 1530; 
+        // Доступна висота для рівно двох сторінок A3 (1122 * 2 = 2244px мінус поля й колонтитули)
+        const target2PagesHeight = 2050; 
+
+        // 1. Ширина першої колонки "Стаття" залежно від кількості колонок
+        let nmColWidth = 340;
+        if (activeColsCount > 22) nmColWidth = 270;
+        else if (activeColsCount > 18) nmColWidth = 300;
+        else if (activeColsCount < 14) nmColWidth = 400;
+
+        // 2. Ширина однієї числової колонки за замовчуванням
+        const remainingWidth = targetA3Width - nmColWidth;
+        const widthPerCol = remainingWidth / Math.max(1, activeColsCount);
+
+        // 3. Масштабування шрифту за шириною
+        let scaleX = widthPerCol / 62; 
+        scaleX = Math.max(0.68, Math.min(1.45, scaleX));
+
+        // 4. Масштабування за висотою (для розподілу точно на 2 сторінки)
+        // Висота шапки + відступи ~140px; залишок ділимо на кількість рядків
+        const heightAvailableForRows = target2PagesHeight - 140;
+        const targetRowHeight = heightAvailableForRows / Math.max(30, visibleRowsCount);
+        
+        let scaleY = targetRowHeight / 24; 
+        scaleY = Math.max(0.70, Math.min(1.35, scaleY));
+
+        // Беремо спільний масштаб, щоб ідеально вкластися і по ширині, і по висоті
+        const optimalScale = Math.min(scaleX, scaleY);
+
+        // Обчислюємо фінальні розміри
+        const finalBaseFont = Math.round(8.5 * optimalScale * 10) / 10;
+        const finalPadY = Math.round(2.2 * optimalScale * 10) / 10;
+        const finalPadX = Math.round(3.5 * optimalScale * 10) / 10;
+
+        // Записуємо в кореневі CSS-змінні
+        document.documentElement.style.setProperty('--p-base-font', `${finalBaseFont}pt`);
+        document.documentElement.style.setProperty('--p-cell-pad-y', `${finalPadY}px`);
+        document.documentElement.style.setProperty('--p-cell-pad-x', `${finalPadX}px`);
+        document.documentElement.style.setProperty('--p-nm-width', `${nmColWidth}px`);
+    }
+
     let currentPreviewZoom = 1.0;
 
     function openPrintPreview() {
+        calculateAdaptivePrintScale();
+
         const modal = document.getElementById('printPreviewModal');
         const content = document.getElementById('previewContent');
         const container = document.querySelector('.executive-container');
@@ -424,7 +481,7 @@
     }
 
     function setPreviewZoom(scale) {
-        currentPreviewZoom = Math.max(0.3, Math.min(2.0, scale));
+        currentPreviewZoom = Math.max(0.25, Math.min(2.0, scale));
         const sheet = document.getElementById('previewSheet');
         sheet.style.transform = `scale(${currentPreviewZoom})`;
         document.getElementById('previewScaleVal').textContent = `${Math.round(currentPreviewZoom * 100)}%`;
@@ -443,6 +500,11 @@
         const availableWidth = area.clientWidth - 70;
         const targetScale = availableWidth / 1587;
         setPreviewZoom(targetScale);
+    }
+
+    function triggerDirectPrint() {
+        calculateAdaptivePrintScale();
+        window.print();
     }
 
     window.addEventListener('keydown', e => {
@@ -771,13 +833,13 @@
 
     function formatColumnLabel(k, label) {
         if (k === 'dev_fact') {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 8pt;">+/- (факт - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 7.5pt;">+/- (факт - план)</span>';
         }
         if (k === 'dev_forecast') {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 8pt;">+/- (прогноз - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 7.5pt;">+/- (прогноз - план)</span>';
         }
         if (/відхилення/i.test(label) && /факт/i.test(label)) {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 8pt;">+/- (факт - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 7.5pt;">+/- (факт - план)</span>';
         }
         return esc(label);
     }

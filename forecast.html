@@ -31,6 +31,8 @@
         tr.lvl-leaf  td { color: #475569; }
         tr.row-key   td { background: #dbeafe !important; color: #1e3a8a; font-weight: 700; border-top: 1px solid #93c5fd; border-bottom: 1px solid #93c5fd; }
         tr.row-cover td { color: #047857; }
+        tr.row-blue td { color: #1d4ed8; font-weight: 600; }
+        tr.row-blue td.nm-col .nm-txt { color: #1d4ed8; }
         tr.row-cover td.nm-col .nm-txt { color: #047857; font-weight: 600; }
 
         td.col-mon, th.col-mon { background: #fafaff; color: #4338ca; font-weight: 600; }
@@ -136,9 +138,14 @@
     const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 
     let SNAP = null, NODES = [], TREE = null, expanded = {}, UNIT = 'ths';
-    let monthOpen = { M1: true, M2: true, M3: true };
-    let currentReportDate = "2026-09-07";
-    let calViewDate = new Date(2026, 8, 7);
+    let monthOpen = { M1: true, M2: false, M3: false };
+    const DAY = 86400000;
+    const isoOf = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const mondayOf = d => { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return isoOf(x); };
+    const isoShift = (iso, days) => isoOf(new Date(Date.parse(iso + 'T12:00:00') + days * DAY));
+
+    let currentReportDate = mondayOf(new Date());
+    let calViewDate = new Date(currentReportDate + 'T12:00:00');
     const availableDates = new Set();
 
     const dmy = iso => String(iso || '').split('-').reverse().join('.');
@@ -181,6 +188,8 @@
     };
     // Рядки, які не показуємо у звіті взагалі (разом із дочірніми)
     const DROP_ROWS = [/^КОНТРОЛЬ витрат по напрямках/i];
+    // Останній рядок звіту — усе, що нижче, у звіт не потрапляє
+    const LAST_ROW_RE = /^\*?\s*Інформаційно: придбання НП/i;
 
     function groupBySums(list) {
         const n = list.length, memo = new Array(n).fill(null);
@@ -238,8 +247,10 @@
     function buildTree(rows) {
         // Рядок «КОНТРОЛЬ витрат по напрямках» прибираємо разом із дочірніми,
         // а також безіменні технічні рядки аркуша.
-        let dropping = false;
-        const usable = rows.filter(r => {
+        let dropping = false, tailCut = false;
+        const lastIdx = rows.findIndex(r => LAST_ROW_RE.test(clean(r.name)));
+        const usable = rows.filter((r, i) => {
+            if (lastIdx >= 0 && i > lastIdx) return false;
             if (r.kind === 'block') dropping = false;
             if (DROP_ROWS.some(re => re.test(clean(r.name)))) { dropping = true; return false; }
             if (dropping) return false;
@@ -316,19 +327,40 @@
         render();
     }
 
+    async function fetchSnapshot(iso) {
+        const res = await fetch(GET_METRICS_FLOW_URL, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+    }
+
     async function loadFromCloud(iso) {
         setStatus('Завантаження…', 'bg-indigo-100 text-indigo-800');
         try {
-            const res = await fetch(GET_METRICS_FLOW_URL, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
-            });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            applySnapshot(await res.json(), iso);
+            applySnapshot(await fetchSnapshot(iso), iso);
             setStatus('Зріз ' + dmy(currentReportDate), 'bg-emerald-100 text-emerald-800');
         } catch (err) {
             setStatus('Дані недоступні: ' + err.message + ' — можна відкрити локальний JSON', 'bg-red-100 text-red-800');
         }
+    }
+
+    // Понеділок поточного тижня, а якщо зрізу ще немає — найсвіжіший наявний понеділок
+    async function loadLatestMonday(weeksBack) {
+        let iso = mondayOf(new Date());
+        const limit = weeksBack || 8;
+        setStatus('Пошук останнього зрізу…', 'bg-indigo-100 text-indigo-800');
+        for (let i = 0; i < limit; i++) {
+            try {
+                const data = await fetchSnapshot(iso);
+                applySnapshot(data, iso);
+                setStatus('Зріз ' + dmy(currentReportDate) + (i ? ' (останній наявний)' : ''), 'bg-emerald-100 text-emerald-800');
+                return iso;
+            } catch (e) { iso = isoShift(iso, -7); }
+        }
+        setStatus('Зрізів за останні ' + limit + ' тижнів не знайдено — можна відкрити локальний JSON', 'bg-red-100 text-red-800');
+        return null;
     }
 
     function loadLocalFile(input) {
@@ -385,9 +417,11 @@
 
     // ---------- Рядки ----------
     const KEY_ROWS = [/^Всього витрат/i, /^Всього видатків/i, /^Всього надходжень/i, /^Грошовий потік/i, /^Чистий грошовий потік/i];
+    const BLUE_ROWS = [/^Доступні залишки/i, /^Залишки доступні до використання/i];
     const COVER_ROWS = [/^Повернення покриття/i, /^Розміщення покриття постімпорт/i, /^Оплата по постімпорту/i, /^постімпорт$/i];
     const isKeyRow = n => KEY_ROWS.some(re => re.test(clean(n.name)));
     const isCoverRow = n => COVER_ROWS.some(re => re.test(clean(n.name)));
+    const isBlueRow = n => BLUE_ROWS.some(re => re.test(clean(n.name)));
 
     function matches(rec) {
         const q = clean(document.getElementById('searchBox').value).toLowerCase();
@@ -441,7 +475,7 @@
             const lvl = rec.kind === 'block' ? 'lvl-block'
                       : rec.kind === 'item' ? 'lvl-item'
                       : (rec.kind === 'total' || rec.kind === 'subgroup') ? 'lvl-sub' : 'lvl-leaf';
-            const extra = (isKeyRow(n) ? ' row-key' : '') + (isCoverRow(n) ? ' row-cover' : '');
+            const extra = (isKeyRow(n) ? ' row-key' : '') + (isCoverRow(n) ? ' row-cover' : '') + (isBlueRow(n) ? ' row-blue' : '');
             const codeTxt = String(n.no == null ? '' : n.no).trim();
             const cells = keys.map(k => {
                 const c = fmtCell((n.values || {})[k]);
@@ -488,7 +522,7 @@
         renderCalendar();
         render();
         setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
-        if (typeof fetch === 'function') loadFromCloud(currentReportDate);
+        if (typeof fetch === 'function') loadLatestMonday();
     }
     window.addEventListener('DOMContentLoaded', init);
     </script>

@@ -8,11 +8,29 @@
     <style>
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
+        
+        /* Базовий стиль контейнера */
         .executive-container {
-            width: 1587px; min-height: 900px; margin: 0 auto; background-color: #fff;
+            min-height: 900px; margin: 0 auto; background-color: #fff;
             padding: 20px 26px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1);
             display: flex; flex-direction: column; gap: 10px;
+            transition: width 0.2s ease, max-width 0.2s ease;
         }
+
+        /* Режим А3 */
+        .view-a3 .executive-container,
+        .view-a3 nav {
+            width: 1587px !important;
+            max-width: 1587px !important;
+        }
+
+        /* Режим на всю ширину (по замовчуванню) */
+        .view-fluid .executive-container,
+        .view-fluid nav {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
         .card { background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
 
         .an-wrap { overflow: auto; max-height: 780px; }
@@ -59,18 +77,24 @@
             @page { size: A3 landscape; margin: 0 !important; }
             html, body { width: 1587px !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
             .print-hide { display: none !important; }
-            .executive-container { box-shadow: none !important; border-radius: 0 !important; }
+            .executive-container { width: 1587px !important; box-shadow: none !important; border-radius: 0 !important; }
             .an-wrap { max-height: none !important; overflow: visible !important; }
         }
     </style>
 </head>
-<body>
-    <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
+<body class="view-fluid">
+    <nav class="bg-white shadow p-3 mb-4 rounded-lg mx-auto flex justify-between items-center print-hide">
         <div>
             <h1 class="text-lg font-bold text-slate-800">ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» на 13 тижнів</h1>
             <p class="text-xs text-slate-500 mt-0.5">станом на <span id="navCurDate" class="font-semibold text-indigo-600">--</span></p>
         </div>
         <div class="flex items-center gap-4">
+            <!-- Перемикач режиму відображення -->
+            <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+                <button id="btnViewFluid" onclick="setViewMode('fluid')" class="ctl active border-none !py-1 !px-2.5 text-xs">На всю ширину</button>
+                <button id="btnViewA3" onclick="setViewMode('a3')" class="ctl border-none !py-1 !px-2.5 text-xs">Формат А3</button>
+            </div>
+
             <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
             <div class="relative">
                 <button onclick="toggleCalendarDropdown()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm">
@@ -159,6 +183,24 @@
     const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const sp = s => s.replace(/[\u202F\u00A0]/g, ' ');
 
+    // ---------- Керування режимом відображення ----------
+    function setViewMode(mode) {
+        const body = document.body;
+        const btnFluid = document.getElementById('btnViewFluid');
+        const btnA3 = document.getElementById('btnViewA3');
+        if (mode === 'a3') {
+            body.classList.remove('view-fluid');
+            body.classList.add('view-a3');
+            btnA3.classList.add('active');
+            btnFluid.classList.remove('active');
+        } else {
+            body.classList.remove('view-a3');
+            body.classList.add('view-fluid');
+            btnFluid.classList.add('active');
+            btnA3.classList.remove('active');
+        }
+    }
+
     function setStatus(text, cls) {
         const el = document.getElementById('dataStatus');
         el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + (cls || 'bg-slate-100 text-slate-700');
@@ -188,14 +230,11 @@
     const clean = s => String(s == null ? '' : s).replace(/\s+/g, ' ').replace(/[’']/g, "'").trim();
     const SUMMARY_RE = /^(Всього|КОНТРОЛЬ|Контроль|Грошовий потік|Чистий грошовий|Доступн|Залишки|Заборгован|Різниця|Надходження \(|Видатки \(|\*Інформаційно|Придбання МЗНН)/;
 
-    // Рівні підсумкових рядків, де сума не дає однозначної вкладеності (структура як у друкованому звіті)
     const LEVEL_HINTS = {
         'Податки': 1, 'Державні податки': 2, 'Рентна плата': 3, 'Інші податки': 2, 'Місцеві податки': 3,
         'Заробітна плата': 1, 'Енергія': 1, "Інші обов'язкові операційні платежі": 1
     };
-    // Рядки, які не показуємо у звіті взагалі (разом із дочірніми)
     const DROP_ROWS = [/^КОНТРОЛЬ витрат по напрямках/i];
-    // Останній рядок звіту — усе, що нижче, у звіт не потрапляє
     const LAST_ROW_RE = /^\*?\s*Інформаційно: придбання НП/i;
 
     function groupBySums(list) {
@@ -225,8 +264,6 @@
         return top;
     }
 
-    // Для списків із відомою структурою (податки) — стек за рівнями,
-    // підсумок закривається, щойно сума його дітей зійшлася з його значенням.
     function groupByHints(list) {
         const top = [], stack = [];
         const close = () => stack.pop();
@@ -252,9 +289,7 @@
     }
 
     function buildTree(rows) {
-        // Рядок «КОНТРОЛЬ витрат по напрямках» прибираємо разом із дочірніми,
-        // а також безіменні технічні рядки аркуша.
-        let dropping = false, tailCut = false;
+        let dropping = false;
         const lastIdx = rows.findIndex(r => LAST_ROW_RE.test(clean(r.name)));
         const usable = rows.filter((r, i) => {
             if (lastIdx >= 0 && i > lastIdx) return false;
@@ -353,7 +388,6 @@
         }
     }
 
-    // Понеділок поточного тижня, а якщо зрізу ще немає — найсвіжіший наявний понеділок
     async function loadLatestMonday(weeksBack) {
         let iso = mondayOf(new Date());
         const limit = weeksBack || 8;
@@ -534,6 +568,7 @@
 
     function init() {
         document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
+        setViewMode('fluid'); // За замовчуванням — перегляд без прив'язки до А3
         renderCalendar();
         render();
         setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');

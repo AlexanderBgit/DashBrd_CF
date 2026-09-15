@@ -66,7 +66,7 @@
         .an-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; font-variant-numeric: tabular-nums; }
         .an-table th { font-size: 8pt; color: #475569; font-weight: 600; padding: 4px 4px; border-bottom: 1.5px solid #94a3b8;
                        text-align: right; background: #f8fafc; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
-        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 340px; position: sticky; left: 0; background: #fff; z-index: 1; }
+        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 360px; position: sticky; left: 0; background: #fff; z-index: 1; }
         .an-table th.nm-col { z-index: 3; background: #f8fafc; }
         .an-table th .th-period { display: block; font-size: 7pt; font-weight: 500; color: #94a3b8; line-height: 1.15; margin-top: 1px; white-space: normal; }
         .an-table td { padding: 2.5px 4px; text-align: right; color: #334155; border-bottom: 1px solid #eef2f6; white-space: nowrap; }
@@ -108,105 +108,98 @@
             min-height: 1122px;
             background: #ffffff;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            padding: 14px 18px;
+            padding: 24px 28px;
             box-sizing: border-box;
             transform-origin: top center;
             transition: transform 0.15s ease-out;
             margin: 15px auto;
-            overflow: hidden;
         }
 
-        /* ------------------------------------------------------------- */
-        /* ДРУКОВАНІ СТИЛІ: РІВНІ РЯДКІВ ТА КОМПАКТНІСТЬ (ЯК В EXCEL)    */
-        /* ------------------------------------------------------------- */
+        /* ------------------------------------------------------------------- */
+        /* ДРУКОВАНІ СТИЛІ: ЗБІЛЬШЕНИЙ У 2.5-3 РАЗИ ШРИФТ ТА ЧІТКА ІЄРАРХІЯ    */
+        /* ------------------------------------------------------------------- */
         .print-mode .executive-container,
         @media print {
             .executive-container { width: 100% !important; max-width: 100% !important; padding: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
             .card { border: none !important; padding: 0 !important; }
             .an-wrap { max-height: none !important; overflow: visible !important; }
             
-            /* Загальна геометрія таблиці під A3 landscape */
             .an-table {
                 width: 100% !important;
                 border-collapse: collapse !important;
             }
+
+            /* Шапка таблиці */
             .an-table th {
-                font-size: 6.2pt !important;
-                padding: 2px 1.5px !important;
-                line-height: 1.1 !important;
-                border-bottom: 1.2px solid #64748b !important;
+                font-size: 9.5pt !important; /* Було 6.2pt */
+                padding: 5px 3.5px !important;
+                line-height: 1.15 !important;
+                border-bottom: 2px solid #475569 !important;
             }
             .an-table th.nm-col,
             .an-table td.nm-col {
-                min-width: 210px !important;
-                max-width: 240px !important;
-                width: 220px !important;
+                min-width: 380px !important;
+                max-width: 440px !important;
+                width: 400px !important;
                 white-space: normal !important;
-                line-height: 1.15 !important;
+                line-height: 1.2 !important;
             }
             .an-table th .th-period {
-                font-size: 5.2pt !important;
-                line-height: 1 !important;
+                font-size: 8pt !important;
+                line-height: 1.1 !important;
             }
 
-            /* --- ДИФЕРЕНЦІАЦІЯ РІВНІВ РЯДКІВ --- */
-            
-            /* 1. Кореневі блоки ("Надходження", "Видатки") */
+            /* 1. Блоки ("Надходження", "Видатки") */
             tr.lvl-block td {
-                font-size: 7.2pt !important;
+                font-size: 11.5pt !important; /* Крупний виразний заголовок */
                 font-weight: 800 !important;
                 background: #f1f5f9 !important;
                 color: #0f172a !important;
-                padding: 1.8px 2px !important;
-                border-top: 1px solid #cbd5e1 !important;
-                border-bottom: 1px solid #cbd5e1 !important;
+                padding: 5px 4px !important;
+                border-top: 1.5px solid #94a3b8 !important;
+                border-bottom: 1.5px solid #94a3b8 !important;
             }
 
-            /* 2. Батьківські статті першого рівня ("1 Нафта", "2 Газ", "1 Обов'язкові платежі") */
+            /* 2. Батьківські статті ("1 Нафта", "2 Газ", "1 Обов'язкові платежі") */
             tr.lvl-item td {
-                font-size: 6.8pt !important;
+                font-size: 10.5pt !important;
                 font-weight: 700 !important;
                 color: #1e293b !important;
-                background: #fafafa !important;
-                padding: 1.3px 2px !important;
+                background: #f8fafc !important;
+                padding: 3.5px 3px !important;
             }
 
-            /* 3. Підсумкові/групові статті другого рівня ("Податки", "Державні податки") */
+            /* 3. Підсумки груп другого рівня ("Податки", "Державні податки") */
             tr.lvl-sub td {
-                font-size: 6.4pt !important;
+                font-size: 9.8pt !important;
                 font-weight: 600 !important;
                 color: #334155 !important;
-                padding: 1.1px 2px !important;
+                padding: 3px 3px !important;
             }
 
-            /* 4. Дочірні рядки / контрагенти (Альянс, Глуско, банки тощо) — КОМПАКТНІ ТА ЗМЕНШЕНІ */
+            /* 4. Дочірні статті та цифри (контрагенти, деталі) */
             tr.lvl-leaf td {
-                font-size: 5.8pt !important; /* Зменшений шрифт */
-                font-weight: 400 !important; /* Тонкий акуратний шрифт */
-                color: #475569 !important;
-                padding: 0.9px 2px !important; /* Ущільнений міжрядковий інтервал */
-                line-height: 1.12 !important;
-            }
-            tr.lvl-leaf td.nm-col .nm-txt {
-                color: #475569 !important;
+                font-size: 9.0pt !important; /* Було 5.8pt - тепер читабельно */
+                font-weight: 400 !important;
+                color: #334155 !important;
+                padding: 2.2px 3px !important;
+                line-height: 1.15 !important;
             }
 
-            /* Ключові підсумкові рядки ("Всього надходжень", "Всього витрат", "Чистий грошовий потік") */
+            /* Ключові підсумки ("Всього надходжень", "Всього витрат", "Чистий грошовий потік") */
             tr.row-key td {
-                font-size: 7.0pt !important;
+                font-size: 11pt !important;
                 font-weight: 800 !important;
                 background: #e2e8f0 !important;
-                border-top: 1px solid #64748b !important;
-                border-bottom: 1px solid #64748b !important;
-                padding: 1.6px 2px !important;
+                border-top: 1.5px solid #475569 !important;
+                border-bottom: 1.5px solid #475569 !important;
+                padding: 4px 3px !important;
             }
 
-            /* Ховаємо інтерактивні кнопки згортання */
             .toggle-kids, .mon-toggle, .toggle-placeholder {
                 display: none !important;
             }
 
-            /* Розбивка сторінок */
             tr {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
@@ -216,7 +209,7 @@
         @media print {
             @page {
                 size: A3 landscape;
-                margin: 5mm 4mm !important;
+                margin: 8mm 6mm !important;
             }
             html, body {
                 width: 100% !important;
@@ -275,7 +268,7 @@
                     <span>Перегляд А3</span>
                 </button>
                 
-                <button onclick="triggerDirectPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
+                <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
             </div>
         </div>
     </nav>
@@ -340,7 +333,7 @@
                 
                 <div class="w-px h-5 bg-slate-700 mx-1"></div>
 
-                <button onclick="triggerDirectPrint()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs flex items-center gap-1.5 shadow-sm">
+                <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs flex items-center gap-1.5 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
@@ -395,7 +388,7 @@
         }
     }
 
-    // ---------- Попередній перегляд А3 та авто-вписування всіх стовпців ----------
+    // ---------- Попередній перегляд А3 ----------
     let currentPreviewZoom = 1.0;
 
     function openPrintPreview() {
@@ -421,22 +414,7 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        setTimeout(() => {
-            fitTableColumnsToA3(clone);
-            autoFitPreview();
-        }, 50);
-    }
-
-    function fitTableColumnsToA3(containerEl) {
-        const table = containerEl.querySelector('.an-table');
-        if (!table) return;
-        table.style.zoom = '';
-        const maxAllowedWidth = 1547;
-        const currentTableWidth = table.scrollWidth;
-        if (currentTableWidth > maxAllowedWidth) {
-            const fitFactor = (maxAllowedWidth / currentTableWidth);
-            table.style.zoom = fitFactor.toFixed(3);
-        }
+        setTimeout(autoFitPreview, 40);
     }
 
     function closePrintPreview() {
@@ -446,7 +424,7 @@
     }
 
     function setPreviewZoom(scale) {
-        currentPreviewZoom = Math.max(0.25, Math.min(2.0, scale));
+        currentPreviewZoom = Math.max(0.3, Math.min(2.0, scale));
         const sheet = document.getElementById('previewSheet');
         sheet.style.transform = `scale(${currentPreviewZoom})`;
         document.getElementById('previewScaleVal').textContent = `${Math.round(currentPreviewZoom * 100)}%`;
@@ -465,21 +443,6 @@
         const availableWidth = area.clientWidth - 70;
         const targetScale = availableWidth / 1587;
         setPreviewZoom(targetScale);
-    }
-
-    function triggerDirectPrint() {
-        const table = document.querySelector('.executive-container .an-table');
-        if (table) {
-            const maxAllowedWidth = 1540;
-            const currentTableWidth = table.scrollWidth;
-            if (currentTableWidth > maxAllowedWidth) {
-                table.style.zoom = (maxAllowedWidth / currentTableWidth).toFixed(3);
-            }
-        }
-        window.print();
-        setTimeout(() => {
-            if (table) table.style.zoom = '';
-        }, 1000);
     }
 
     window.addEventListener('keydown', e => {
@@ -808,13 +771,13 @@
 
     function formatColumnLabel(k, label) {
         if (k === 'dev_fact') {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.2pt;">+/- (факт - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 8pt;">+/- (факт - план)</span>';
         }
         if (k === 'dev_forecast') {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.2pt;">+/- (прогноз - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 8pt;">+/- (прогноз - план)</span>';
         }
         if (/відхилення/i.test(label) && /факт/i.test(label)) {
-            return 'Відхилення,<br><span style="font-weight: 500; font-size: 6.2pt;">+/- (факт - план)</span>';
+            return 'Відхилення,<br><span style="font-weight: 500; font-size: 8pt;">+/- (факт - план)</span>';
         }
         return esc(label);
     }
@@ -848,7 +811,6 @@
                 ? `<span class="toggle-kids" onclick="event.stopPropagation(); toggleNode('${esc(rec.id)}')">${open ? '−' : '+'}</span>`
                 : '<span class="toggle-placeholder"></span>';
             
-            // Визначення рівня ієрархії
             const lvl = rec.kind === 'block' ? 'lvl-block'
                       : rec.kind === 'item' ? 'lvl-item'
                       : (rec.kind === 'total' || rec.kind === 'subgroup') ? 'lvl-sub' : 'lvl-leaf';

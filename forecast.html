@@ -142,7 +142,7 @@
                 <input type="checkbox" id="hideZero" onchange="render()"> Приховати нульові рядки
             </label>
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                <input type="checkbox" id="expandAll" onchange="expanded = {}; render()"> Розгорнути всі рівні
+                <input type="checkbox" id="expandAll" onchange="toggleExpandAll(this.checked)"> Розгорнути всі рівні
             </label>
             <span class="flex items-center gap-2 border-l pl-4 border-slate-200">
                 <span class="text-xs text-slate-600">Тиждень −1:</span>
@@ -219,6 +219,25 @@
         }
         if (Array.isArray(obj)) for (const it of obj) { const r = extractSnapshotObject(it); if (r) return r; }
         return null;
+    }
+
+    // Функція для встановлення дефолтного стану дерева (як на скріншоті)
+    function resetDefaultExpanded() {
+        expanded = {};
+        if (Array.isArray(TREE)) {
+            // Розгортаємо лише верхній рівень (кореневі блоки: Надходження, Видатки тощо)
+            TREE.forEach((n, i) => {
+                expanded['/' + i] = true;
+            });
+        }
+    }
+
+    // Обробник перемикання чекбоксу "Розгорнути всі рівні"
+    function toggleExpandAll(checked) {
+        if (!checked) {
+            resetDefaultExpanded();
+        }
+        render();
     }
 
     // ---------- Відновлення ієрархії статей ----------
@@ -353,8 +372,8 @@
         SNAP = snap;
         TREE = buildTree(snap.rows || []);
         NODES = indexTree(TREE);
-        expanded = {};
-        TREE.forEach((n, i) => { expanded['/' + i] = true; });
+        resetDefaultExpanded();
+        document.getElementById('expandAll').checked = false;
         const m = snap.meta || {};
         const iso = m.forecast_date || requestedIso || '';
         if (iso) { currentReportDate = iso; availableDates.add(iso); }
@@ -457,7 +476,16 @@
     }
 
     function toggleMonth(k) { monthOpen[k] = !monthOpen[k]; render(); }
-    function toggleNode(id) { expanded[id] = !isExpanded(id); document.getElementById('expandAll').checked = false; render(); }
+    function toggleNode(id) {
+        const expandAllBox = document.getElementById('expandAll');
+        if (expandAllBox.checked) {
+            // Якщо було розгорнуто все, копіюємо всі ID у стан expanded перед зміною
+            expandAllBox.checked = false;
+            NODES.forEach(n => { expanded[n.id] = true; });
+        }
+        expanded[id] = !isExpanded(id);
+        render();
+    }
     const isExpanded = id => (document.getElementById('expandAll').checked ? true : !!expanded[id]);
 
     // ---------- Рядки ----------

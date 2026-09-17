@@ -903,14 +903,13 @@
         const s = collapsed[tableId] || {};
         return s[key] !== undefined ? s[key] : !document.getElementById('showKids').checked;
     }
-
     function renderTable(cfg) {
         TABLES[cfg.tableId] = cfg;
         const { tableId, mode } = cfg;
         const P = dmy(M.prev.start), C = dmy(M.cur.start);
         const valueMode = mode === 'cur' || mode === 'prev';
 
-        // Усі таблиці використовують єдину вісь M.weeks
+        // Усі 3 таблиці використовують єдину вісь M.weeks
         const cols = M.weeks.map((w, i) => {
             const hasData = (mode === 'delta') ? w.common : (w[mode] != null);
             const edge = !w.common && hasData;
@@ -936,7 +935,7 @@
              <span class="legend-chip"><i style="background:#fee2e2"></i>погіршує чистий потік</span>` :
             (hasEdge ? `<span class="legend-chip"><i style="background:#fef3c7"></i>тиждень поза спільним горизонтом</span>` : '');
 
-        // ЄДИНА ШИРИНА ДЛЯ ВСІХ ТАБЛИЦЬ: завжди резервуємо місце під col-pct (4.4%)
+        // Єдина фіксована ширина стовпців для всіх таблиць
         const weekW = ((100 - 19 - 5.8 - 4.4) / Math.max(1, n)).toFixed(3);
 
         let head = `<th>Стаття</th>` + cols.map(c => {
@@ -946,7 +945,6 @@
 
         head += `<th class="col-sum">Σ<span class="th-period">${mode === 'delta' ? 'відхилення' : 'разом'}</span></th>`;
 
-        // У Таблицях 2 і 3 додаємо порожній th для збереження суворої геометрії стовпців
         if (!valueMode) {
             head += `<th class="col-pct">Δ, %<span class="th-period">до ${dm(M.prev.start)}</span></th>`;
         } else {
@@ -987,7 +985,7 @@
                 return `<td style="${colBg(c)}${isNet && v != null ? netStyle(v) : ''}">${fmt(v)}</td>`;
             }).join('') +
                 `<td class="col-sum" style="font-weight:${isNet ? 700 : 600};${isNet ? netStyle(s) : ''}">${fmt(s)}</td>` +
-                `<td class="col-pct"></td>`; // завжди додаємо пусту клітинку для вирівнювання з Таблицею 1
+                `<td class="col-pct"></td>`;
         };
 
         const allArts = [...M.inflows, ...M.outflows];
@@ -1013,128 +1011,6 @@
                 html += `<tr class="${rowClass(a)}" style="${styleRow}">${nameCell(a)}${deltaCells(a)}</tr>`;
             } else if (valueMode) {
                 html += `<tr class="${rowClass(a)}" style="${styleRow}${bg(a)}">${nameCell(a)}${valCells(a, mode)}</tr>`;
-            }
-        };
-
-        const emitGroup = (total, arts) => {
-            const byK = Object.fromEntries(arts.map(a => [a.key, a]));
-            const visible = a => { let p = byK[a.parent]; while (p) { if (isCollapsed(tableId, p.key)) return false; p = byK[p.parent]; } return true; };
-            emit(total);
-            arts.forEach(a => {
-                if (a.hidden || (a.parent && a.isZero) || !visible(a)) return;
-                emit(a);
-            });
-        };
-
-        emitGroup(M.tInf, M.inflows);
-        emitGroup(M.tOut, M.outflows);
-        emit(M.tNet);
-        document.getElementById(tableId + 'Body').innerHTML = html;
-
-        const noteEl = document.getElementById(tableId + 'Note');
-        if (noteEl) noteEl.textContent = cfg.note ? cfg.note(ctx) : '';
-    }
-        TABLES[cfg.tableId] = cfg;
-        const { tableId, mode } = cfg;
-        const P = dmy(M.prev.start), C = dmy(M.cur.start);
-        const valueMode = mode === 'cur' || mode === 'prev';
-        const withPct = !valueMode;
-
-        // Вимоги 2, 3, 4: Усі таблиці використовують єдину вісь M.weeks
-        const cols = M.weeks.map((w, i) => {
-            const hasData = (mode === 'delta') ? w.common : (w[mode] != null);
-            const edge = !w.common && hasData;
-            let sub = '';
-            if (mode === 'delta') {
-                sub = `${w.curKey || ''} · ${w.prevKey || ''}`;
-            } else {
-                sub = w[mode + 'Key'] ? `${w[mode + 'Key']}${edge ? (mode === 'prev' ? ' · вибув' : ' · новий') : ''}` : '';
-            }
-            return { w, i, hasData, edge, isFact: w.isFact, sub };
-        });
-
-        const n = cols.length;
-        const sumRole = (a, role) => sumArr(cols.map(c => c.hasData ? (a.byWeek[role][c.i] || 0) : 0));
-        const sumDelta = a => sumArr(cols.map(c => c.hasData ? (a.delta[c.i] || 0) : 0));
-        const ctx = { P, C, n, cols };
-
-        document.getElementById(tableId + 'Title').textContent = cfg.title(ctx);
-        const hasEdge = cols.some(c => c.edge);
-        document.getElementById(tableId + 'Legend').innerHTML = !valueMode ?
-            `<span class="legend-chip"><i style="background:#e2e8f0"></i>факт (Т-1)</span>
-             <span class="legend-chip"><i style="background:#d1fae5"></i>покращує чистий потік</span>
-             <span class="legend-chip"><i style="background:#fee2e2"></i>погіршує чистий потік</span>` :
-            (hasEdge ? `<span class="legend-chip"><i style="background:#fef3c7"></i>тиждень поза спільним горизонтом</span>` : '');
-
-        const weekW = ((100 - 19 - 5.8 - (withPct ? 4.4 : 0)) / Math.max(1, n)).toFixed(3);
-        let head = `<th>Стаття</th>` + cols.map(c => {
-            const bgStyle = c.isFact ? 'background:#f1f5f9;color:#475569;' : (c.edge ? 'background:#fef3c7;color:#92400e;' : '');
-            return `<th style="width:${weekW}%;${bgStyle}">${c.w.label}<span class="th-period">${c.sub}</span></th>`;
-        }).join('');
-        head += `<th class="col-sum">Σ<span class="th-period">${mode === 'delta' ? 'відхилення' : 'разом'}</span></th>`;
-        if (withPct) head += `<th class="col-pct">Δ, %<span class="th-period">до ${dm(M.prev.start)}</span></th>`;
-        document.getElementById(tableId + 'Head').innerHTML = head;
-
-        const maxAbs = Math.max(1, ...[...M.inflows, ...M.outflows].filter(a => a.driver && !a.hidden)
-            .flatMap(a => cols.map(c => Math.abs(a.delta[c.i] || 0))));
-        
-        const heat = (d, kind, isFact) => {
-            if (isFact) return 'background-color:#f8fafc;';
-            if (d == null || Math.abs(mln(d)) < 0.5) return '';
-            const good = kind === 'outflow' ? d < 0 : d > 0;
-            const alpha = Math.min(1, Math.abs(d) / maxAbs) * 0.55 + 0.06;
-            return `background-color:${good ? `rgba(16,185,129,${alpha.toFixed(2)})` : `rgba(239,68,68,${alpha.toFixed(2)})`};`;
-        };
-
-        const deltaCells = a => {
-            const sd = sumDelta(a), base = sumRole(a, 'prev');
-            return cols.map(c => {
-                if (!c.hasData) return `<td></td>`; // порожній стовпець поза горизонтом порівняння
-                return `<td style="${heat(a.delta[c.i], a.kind, c.isFact)}color:${goodColor(a.delta[c.i], a.kind)}">${fmtD(a.delta[c.i])}</td>`;
-            }).join('') +
-                `<td class="col-sum" style="font-weight:700;color:${goodColor(sd, a.kind)}">${fmtD(sd)}</td>` +
-                `<td class="col-pct" style="color:${goodColor(sd, a.kind)}">${a.kind === 'net' ? '–' : fmtPct(sd, base)}</td>`;
-        };
-
-        const netStyle = v => `color:${v >= 0 ? COLORS.pos : COLORS.neg};font-weight:700;`;
-        const colBg = c => c.isFact ? 'background:#f8fafc;' : (c.edge ? 'background:#fffbeb;' : '');
-
-        const valCells = (a, role, padPct) => {
-            const isNet = a.key === '__net';
-            const s = sumRole(a, role);
-            return cols.map(c => {
-                // Якщо періоду немає у поточному або попередньому зрізі — малюємо пусту білу клітинку
-                if (!c.hasData) return `<td></td>`;
-                const v = a.byWeek[role][c.i];
-                return `<td style="${colBg(c)}${isNet && v != null ? netStyle(v) : ''}">${fmt(v)}</td>`;
-            }).join('') +
-                `<td class="col-sum" style="font-weight:${isNet ? 700 : 600};${isNet ? netStyle(s) : ''}">${fmt(s)}</td>` +
-                (padPct ? '<td class="col-pct"></td>' : '');
-        };
-
-        const allArts = [...M.inflows, ...M.outflows];
-        const hasVisibleKids = a => a.hasKids && allArts.some(c => c.parent === a.key && !c.hidden && !c.isZero);
-        const rowClass = a => [a.isTotal ? 'font-bold' : (a.depth === 0 ? 'sub' : 'child'), a.isRest ? 'rest' : ''].join(' ');
-        const bg = a => a.key === '__inf' ? 'background:#ecfdf5;' : a.key === '__out' ? 'background:#fff7ed;' : a.key === '__net' ? 'background:#e2e8f0;' : '';
-
-        const nameCell = a => {
-            const col = isCollapsed(tableId, a.key);
-            let toggle = a.isTotal ? '' : `<span class="toggle-placeholder"></span>`;
-            if (!a.isTotal && hasVisibleKids(a)) {
-                toggle = `<span class="toggle-kids" data-toggle="${esc(a.key)}" title="${col ? 'Розгорнути' : 'Згорнути'}">${col ? '+' : '−'}</span>`;
-            }
-            const code = a.code && !a.isTotal ? `<span class="text-slate-400 mr-1">${esc(a.code)}</span>` : '';
-            const pad = `padding-left:${6 + (a.depth || 0) * 18}px;`;
-            return `<td style="${bg(a)}${pad}" title="${esc(a.name)}">${toggle}${code}${esc(a.name)}</td>`;
-        };
-
-        let html = '';
-        const emit = a => {
-            const styleRow = a.key === '__net' ? 'border-top:2px solid #94a3b8;' : (a.key === '__out' ? 'border-top:2px solid #cbd5e1;' : '');
-            if (mode === 'delta') {
-                html += `<tr class="${rowClass(a)}" style="${styleRow}">${nameCell(a)}${deltaCells(a)}</tr>`;
-            } else if (valueMode) {
-                html += `<tr class="${rowClass(a)}" style="${styleRow}${bg(a)}">${nameCell(a)}${valCells(a, mode, false)}</tr>`;
             }
         };
 

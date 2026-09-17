@@ -73,7 +73,7 @@
             <button onclick="copyTable()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Копіювати</button>
             <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк</button>
         </div>
-        <div>
+        <div id="navLinks">
             <a href="sop-home" class="text-blue-600 hover:underline mr-3 text-xs font-semibold">CF Показники</a>
             <a href="sop-credit" class="text-gray-800 hover:underline font-semibold text-xs">Кредити</a>
         </div>
@@ -258,6 +258,32 @@ function buildCalendar(D) {
     }
     return { D, lastFactSun, horizonEndSun, months, openingSun: isoAdd(months[0].start, -1) };
 }
+
+function highlightActiveNav() {
+    const currentPath = window.location.pathname.toLowerCase();
+    const links = document.querySelectorAll('#navLinks a');
+
+    links.forEach(a => {
+        const href = a.getAttribute('href').toLowerCase();
+        // Перевіряємо, чи поточний URL містить назву файлу з href
+        const isCurrent = currentPath.endsWith(href) || 
+                          (href.includes('sop-home') && (currentPath.endsWith('/') || currentPath.endsWith('/dashbrd_cf/')));
+
+        if (isCurrent) {
+            // Активна сторінка: чорний текст без лінка-підкреслення
+            a.className = 'text-gray-800 font-semibold text-xs cursor-default';
+            a.removeAttribute('href'); // вимикаємо клік на саму себе
+        } else {
+            // Сторінка для переходу: синій колір з підкресленням при наведенні
+            a.className = 'text-blue-600 hover:underline mr-3 text-xs font-semibold';
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    highlightActiveNav();
+    // решта викликів (наприклад, loadReport)...
+});
 
 // ---------- JSON ----------
 const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim();

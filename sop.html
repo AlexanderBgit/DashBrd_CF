@@ -47,10 +47,6 @@
     .w-table .x { background: #fffbeb; }
     .w-table .mb { border-left: 1.5px solid #94a3b8; }
 
-    .d-table { border-collapse: collapse; font-size: 8.5pt; width: 100%; }
-    .d-table th, .d-table td { padding: 4px 6px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
-    .d-table th { color: #475569; font-weight: 600; background: #f8fafc; }
-
     .src-tag { display: inline-block; font-size: 7pt; font-weight: 600; padding: 0 5px; border-radius: 4px; margin-left: 6px; vertical-align: 1px; }
     .t-f13 { background: #e0e7ff; color: #3730a3; }
     .t-cred { background: #fef3c7; color: #92400e; }
@@ -69,7 +65,7 @@
 <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
     <div>
         <h1 class="text-lg font-bold text-slate-800">Кредити та постімпорт — помісячно</h1>
-        <p class="text-xs text-slate-500 mt-0.5">Зріз: <span id="navDate" class="font-semibold text-indigo-600">--</span>
+        <p class="text-xs text-slate-500 mt-0.5">Дані: <span id="navDate" class="font-semibold text-indigo-600">--</span>
             <span id="navFile" class="ml-2 text-slate-400"></span></p>
     </div>
     <div class="flex items-center gap-4">
@@ -91,7 +87,7 @@
     <div class="flex justify-between items-end border-b border-slate-200 pb-2">
         <div>
             <h1 class="text-xl font-bold text-slate-800">Кредити, постімпорт</h1>
-            <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Завантаження останнього зрізу…</p>
+            <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Завантаження даних…</p>
         </div>
         <div class="text-right text-[10.5px] text-slate-500" id="hdrUnit">--</div>
     </div>
@@ -136,9 +132,6 @@
         <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
             <input type="checkbox" id="showWeeks" onchange="render()"> Тижнева розбивка
         </label>
-        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-            <input type="checkbox" id="showDiag" onchange="render()"> Джерела даних
-        </label>
     </div>
 
     <div class="flex flex-wrap gap-5 text-[10.5px] text-slate-600">
@@ -161,40 +154,29 @@
             Постімпорт — сума денних значень CRED за тиждень. Жовтим позначено тижні, що перетинають межу місяців.</p>
     </div>
 
-    <div id="diagSection" class="hidden">
-        <h3 class="font-bold text-xs text-slate-700 mb-2">Джерела даних</h3>
-        <table class="d-table" id="diagMeta"></table>
-        <table class="d-table mt-3" id="diagNodes"></table>
-        <table class="d-table mt-3" id="diagSnaps"></table>
-    </div>
-
     <details class="border border-slate-200 rounded-lg px-4 py-2 text-[11px] text-slate-600 leading-relaxed" id="helpBox">
         <summary class="font-bold text-xs text-slate-700 cursor-pointer">Довідка: як рахуються показники</summary>
         <div class="mt-2 space-y-2 max-w-[1100px]">
             <p><b>Два джерела.</b></p>
-            <ul class="list-disc pl-5">
-                <li><span class="src-tag t-f13" style="margin-left:0">F13</span> <b>Кредити</b> — тижневі зрізи «ПРОГНОЗ РУХУ КОШТІВ 13 тижнів» (потік Get_CashFlow_Metrics):
-                    чисте залучення = 6.1.1 «Отримано кредитних коштів» − 6.2.1 «Повернення кредиту»;
-                    відсотки та комісії = 6.2.2 «Відсотки за корист. кредитами» + 6.2.11 «Комісія за обслуговування кредитів»;
-                    заборгованість — рядок «Заборгованність по кредитн. лініям».
-                    Факт тижня — колонка <span id="helpFactKey">Tm1_fact</span> зрізу наступного понеділка, прогноз — T0–T12 зрізу <span id="helpDate">--</span>.</li>
-                <li><span class="src-tag t-cred" style="margin-left:0">CRED</span> <b>Пост-імпорт</b> — останній файл CRED_*.json з теки snapshots_cred (потік Get_CRED_Latest),
-                    аркуш «План 13 недель»: чисте залучення = «Отримано постімпортне фінансування» − «Оплата по постімпорту»;
-                    комісії = 3.2.02.11; заборгованість — рядки «Заборгованість постімпорт …». Дані денні, тож місяць рахується точно за датами платежів.</li>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><span class="src-tag t-f13" style="margin-left:0">F13</span> <b>Кредити</b> — тижневі зрізи «ПРОГНОЗ РУХУ КОШТІВ 13 тижнів»: чисте залучення = 6.1.1 «Отримано кредитних коштів» − 6.2.1 «Повернення кредиту»;<br>
+                    відсотки та комісії = 6.2.2 «Відсотки за корист. кредитами» + 6.2.11 «Комісія за обслуговування кредитів»;<br>
+                    заборгованість — рядок «Заборгованність по кредитн. лініям». Факт тижня — <span id="helpFactKey">Tm1_fact</span>, прогноз — T0–T12 даних на <span id="helpDate">--</span>.</li>
+                <li><span class="src-tag t-cred" style="margin-left:0">CRED</span> <b>Пост-імпорт</b> — останній файл CRED_*.json: чисте залучення = «Отримано постімпортне фінансування» − «Оплата по постімпорту»;<br>
+                    комісії = 3.2.02.11; заборгованість — рядки «Заборгованість постімпорт …».<br>
+                    Дані денні, тож місяць рахується точно за датами платежів.</li>
             </ul>
             <div>
                 <div class="font-semibold text-slate-700">Як тижні кредитів потрапляють у місяць</div>
-                <ul class="list-disc pl-5">
-                    <li><b>частками — за календарними днями</b>: потоки тижня діляться пропорційно дням у місяці;
-                        заборгованість на останній день = борг на кінець попереднього тижня + чисте залучення тижня × (днів до кінця місяця / 7).</li>
-                    <li><b>цілком — за місяцем</b>: тиждень належить місяцю, на який припадає його середа; заборгованість — на кінець останнього такого тижня.</li>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><b>частками — за календарними днями</b>: потоки тижня діляться пропорційно дням у місяці; заборгованість на останній день = борг на кінець попереднього тижня + чисте залучення тижня × (днів до кінця місяця / 7).</li>
+                    <li><b>цілком — за місяцем</b>: тиждень належить місяцю, на який припадає його середина тижня; заборгованість — на кінець останнього такого тижня.</li>
                 </ul>
             </div>
-            <p>Дата зрізу береться з CRED-файлу (понеділок); для неї та попередніх понеділків завантажуються зрізи F13.
-               Контроль: рядок «зміна боргу − чисте залучення» має сходитися в усіх місяцях.
-               Помаранчевим позначено клітинки з неповними даними — наведіть курсор, щоб побачити причину.</p>
-            <p><b>Важливо:</b> у прогнозі F13 дат платежів немає, тому кредити на межових тижнях розподіляються за правилом вище;
-               постімпорт розподілено за фактичними датами платежів.</p>
+            <p>Дата даних береться з CRED-файлу (понеділок); для неї та попередніх понеділків завантажуються дані F13.</p>
+            <p>Контроль: рядок «зміна боргу − чисте залучення» має сходитися в усіх місяцях.<br>
+               Помаранчевим позначено клітинки з неповними даними.</p>
+            <p><b>Важливо:</b> у прогнозі F13 дат платежів немає, тому кредити на межових тижнях розподіляються за правилом вище; постімпорт розподілено за фактичними датами платежів.</p>
         </div>
     </details>
 </div>
@@ -214,10 +196,10 @@ const MAX_FACT_MONTHS = 3;
 
 // рядки F13 для кредитів
 const SPECS = [
-    { id: 'crIn',  title: 'Отримано кредитних коштів', no: '6.1.1', code: '3.1.02.02', tests: [/^отримано\s+кредитн/iu], bankPrefix: /^отримано\s+кредитних\s+коштів\s*/iu },
-    { id: 'crOut', title: 'Повернення кредиту',         no: '6.2.1', code: '3.2.02.04', tests: [/^повернення\s+кредит/iu],  bankPrefix: /^повернення\s+кредиту\s*/iu },
-    { id: 'intCr', title: 'Відсотки за корист. кредитами', no: '6.2.2', code: '3.2.02.03', tests: [/^відсотки\s+за\s+корист/iu] },
-    { id: 'comCr', title: 'Комісія за обслуговування кредитів', no: '6.2.11', code: '3.2.02.10', tests: [/^комісія\s+за\s+обслуговування\s+кредит/iu], optional: true },
+    { id: 'crIn',   title: 'Отримано кредитних коштів', no: '6.1.1', code: '3.1.02.02', tests: [/^отримано\s+кредитн/iu], bankPrefix: /^отримано\s+кредитних\s+коштів\s*/iu },
+    { id: 'crOut',  title: 'Повернення кредиту',         no: '6.2.1', code: '3.2.02.04', tests: [/^повернення\s+кредит/iu],  bankPrefix: /^повернення\s+кредиту\s*/iu },
+    { id: 'intCr',  title: 'Відсотки за корист. кредитами', no: '6.2.2', code: '3.2.02.03', tests: [/^відсотки\s+за\s+корист/iu] },
+    { id: 'comCr',  title: 'Комісія за обслуговування кредитів', no: '6.2.11', code: '3.2.02.10', tests: [/^комісія\s+за\s+обслуговування\s+кредит/iu], optional: true },
     { id: 'debtCr', title: 'Заборгованність по кредитн. лініям', bal: true, tests: [/^заборгован\p{L}*\s+по\s+кредитн/iu], bankPrefix: /^заборгованість\s+кредити\s*/iu }
 ];
 
@@ -241,7 +223,7 @@ const WLABEL = { netTotal: 'Чисте залучення, всього', netCr:
                  crIn: '   отримано кредитів', crOut: '   повернено кредитів', piIn: '   отримано постімпорту', piOut: '   сплачено постімпорту',
                  intTotal: 'Відсотки та комісії, всього', intCr: 'Відсотки та комісії — кредити (F13)', intPi: 'Відсотки та комісії — пост-імпорт (CRED)',
                  debtTotal: 'Заборгованість, всього', debtCr: 'Заборгованість — кредити (F13)', debtPi: 'Заборгованість — пост-імпорт (CRED)' };
-// CRED: лише пост-імпорт
+
 const CRED_FLOW_MAP = { pi_in: ['netPi', 1], pi_out: ['netPi', -1], pi_fee: ['intPi', 1] };
 const CRED_REQUIRED = ['pi_in', 'pi_out', 'pi_fee', 'pi_debt'];
 const UNITS = { uah: { k: 1, dec: 0, lbl: 'грн' }, th: { k: 1e3, dec: 0, lbl: 'тис. грн' },
@@ -449,7 +431,6 @@ function prkWeekValues(ps, col) {
     add('debtCr', (o, x, b) => { o.debt = x; o.name = b.name; });
     return v;
 }
-// тиждень кредитів (пн) → значення з потрібного зрізу
 function crWeek(mon) {
     if (CRW[mon]) return CRW[mon];
     const D = CAL.D;
@@ -502,13 +483,12 @@ async function loadLatest() {
     }
 }
 
-// потрібні понеділки F13: від тижня перед відкриттям до дати зрізу
 function neededMondays() {
     const first = CAL.months[0];
     const openMon = toMonday(isoAdd(first.cs, -1));
     const from = isoAdd(openMon, -7);
     const list = [];
-    for (let s = isoAdd(from, 7); s <= CAL.D; s = isoAdd(s, 7)) list.push(s);   // зріз s дає факт тижня s-7
+    for (let s = isoAdd(from, 7); s <= CAL.D; s = isoAdd(s, 7)) list.push(s);
     return list;
 }
 
@@ -555,7 +535,6 @@ function buildCalendar() {
         const all = days(start, end);
         const notes = [];
         if (end < ce) notes.push(`горизонт — до ${dmy(end)}`);
-        // тижні кредитів у режимі «цілком»: середа в межах місяця
         let wedWeeks = [];
         for (let w = toMonday(cs); w <= ce; w = isoAdd(w, 7)) {
             const wed = isoAdd(w, 2);
@@ -569,8 +548,6 @@ function buildCalendar() {
     return { D, rule, factUntil, dataFrom, dataTo, horizonEnd, months, openDay: months.length ? isoAdd(months[0].start, -1) : null };
 }
 
-// ---------- кредити: період за правилом ----------
-// потоки за [s, e] (частками): Σ частка днів × значення тижня
 function crFlowDays(s, e, pick) {
     let sum = 0; const miss = [];
     for (let w = toMonday(s); w <= e; w = isoAdd(w, 7)) {
@@ -582,7 +559,6 @@ function crFlowDays(s, e, pick) {
     }
     return { v: sum, miss };
 }
-// борг на кінець дня x (частками): борг попереднього тижня + чисте залучення × k/7
 function crDebtDays(x, pickDebt, pickNet) {
     const w = toMonday(x), k = days(w, x);
     const cw = crWeek(w);
@@ -608,7 +584,6 @@ function aggregate() {
     const rule = CAL.rule;
     const bankKeys = new Map();
     const collectBanks = cw => { if (cw.ok) Object.entries(cw.v.banks).forEach(([k, b]) => { if (!bankKeys.has(k) || b.debt != null) bankKeys.set(k, b.name); }); };
-    // усі тижні діапазону — для переліку банків
     for (let w = toMonday(CAL.openDay); w <= CAL.months[CAL.months.length - 1].end; w = isoAdd(w, 7)) collectBanks(crWeek(w));
 
     const crMonth = m => {
@@ -634,7 +609,7 @@ function aggregate() {
         });
         return o;
     };
-    // відкриття
+
     let openCr;
     if (rule === 'days') openCr = crDebtDays(CAL.openDay, v => v.debtCr, v => v.netCr);
     else { const fw = CAL.months[0].wedWeeks[0]; openCr = fw ? crDebtWeek(isoAdd(fw, -7), v => v.debtCr) : { v: null, miss: [] }; }
@@ -735,14 +710,29 @@ function render() {
     const showCtrl = document.getElementById('showCtrl').checked;
     const showBanks = document.getElementById('showBanks').checked;
     document.getElementById('navDate').textContent = dmy(CAL.D);
+    
+    // Формування скороченого імені файлу CRED (CRED_YYYY-MM-DD_HHMMSS)
+    let credCleanName = 'CRED';
+    if (SNAP.__file && SNAP.__file.name) {
+        const m = SNAP.__file.name.match(/(CRED_\d{4}-\d{2}-\d{2}_\d+)/i);
+        credCleanName = m ? m[1] : SNAP.__file.name.replace(/\.json$/i, '');
+    }
+
     const created = m0.created_utc ? new Date(m0.created_utc).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) : '';
-    const fileTxt = SNAP.__file ? `CRED: ${SNAP.__file.name}` + (SNAP.__file.count > 1 ? ` (останній з ${SNAP.__file.count})` : '') : 'CRED';
-    document.getElementById('navFile').textContent = '· ' + [fileTxt, created ? `сформовано ${created}` : '',
-        cur && !cur.error ? `F13: зріз ${dmy(CAL.D)}` : 'F13: зріз відсутній'].filter(Boolean).join(' · ');
+    const fileTxt = `CRED: ${credCleanName}`;
+    
+    document.getElementById('navFile').textContent = '· ' + [
+        fileTxt, 
+        created ? `сформовано ${created}` : '',
+        cur && !cur.error ? `F13: дані ${dmy(CAL.D)}` : 'F13: дані відсутні'
+    ].filter(Boolean).join(' · ');
+    
     document.getElementById('navFile').title = SNAP.__file && SNAP.__file.modified ? `CRED змінено в SharePoint: ${SNAP.__file.modified}` : '';
+    
     document.getElementById('hdrSub').textContent =
-        `Зріз ${dmy(CAL.D)}. Факт — по ${dmy(CAL.factUntil)}, прогноз — ${dmy(isoAdd(CAL.factUntil, 1))}–${dmy(CAL.horizonEnd)}. ` +
-        `Кредити — F13 (${CAL.rule === 'days' ? 'тижні поділено за днями' : 'тиждень цілком до місяця'}), пост-імпорт — CRED за датами платежів.`;
+        `Дані ${dmy(CAL.D)}. Факт — по ${dmy(CAL.factUntil)}, прогноз — ${dmy(isoAdd(CAL.factUntil, 1))}–${dmy(CAL.horizonEnd)}. ` +
+        `Кредити — F13 (${CAL.rule === 'days' ? 'тижні за днями' : 'тиждень цілком'}), пост-імпорт — CRED за датами платежів.`;
+        
     document.getElementById('hdrUnit').innerHTML = `${u.lbl}<br>залучення «+», повернення «−»`;
     document.getElementById('helpDate').textContent = dmy(CAL.D);
     document.getElementById('helpFactKey').textContent = cur && cur.factKey ? cur.factKey : 'Tm1_fact';
@@ -796,9 +786,6 @@ function render() {
     const showW = document.getElementById('showWeeks').checked;
     document.getElementById('weekSection').classList.toggle('hidden', !showW);
     if (showW) renderWeeks();
-    const showD = document.getElementById('showDiag').checked;
-    document.getElementById('diagSection').classList.toggle('hidden', !showD);
-    if (showD) renderDiag();
 }
 
 // ---------- тижні ----------
@@ -856,39 +843,6 @@ function renderWeeks() {
     document.getElementById('weekTable').innerHTML = h + '</tbody>';
 }
 
-// ---------- джерела ----------
-function renderDiag() {
-    const m = SNAP.meta;
-    const kv = [
-        ['CRED: файл у SharePoint', SNAP.__file ? `${SNAP.__file.name}; змінено ${SNAP.__file.modified || '—'}; файлів у теці: ${SNAP.__file.count ?? '—'}` : 'не передано потоком'],
-        ['CRED: файл-джерело', `${m.source_file || '—'}, аркуш «${m.sheet || '—'}»`],
-        ['CRED: дата зрізу', `${dmy(m.forecast_date)} (${m.forecast_date_source || '—'}); факт по ${dmy(m.fact_until)}`],
-        ['CRED: дані', `${dmy(m.date_from)} – ${dmy(m.date_to)}, ${m.day_count} дн.; сформовано ${m.created_utc || '—'}, ${m.generated_by || '—'}`],
-        ['CRED: рядки пост-імпорту', CRED_REQUIRED.map(t => `${t}: ${IDX.used[t] || 0}`).join('; ')],
-        ['CRED: попередження', (m.warnings || []).join('; ') || 'немає']
-    ];
-    document.getElementById('diagMeta').innerHTML = '<tbody>' + kv.map(([k, v]) =>
-        `<tr><th class="w-[200px]">${k}</th><td>${esc(v)}</td></tr>`).join('') + '</tbody>';
-
-    const cur = PRK[CAL.D];
-    let h = `<thead><tr><th>F13: показник</th><th>Рядок у зрізі ${dmy(CAL.D)}</th><th>№ / код</th><th>Як знайдено</th><th>Банків</th></tr></thead><tbody>`;
-    SPECS.forEach(s => {
-        const n = cur && !cur.error ? cur.nodes[s.id] : null;
-        h += `<tr><td class="font-semibold">${esc(s.title)}</td>` + (n
-            ? `<td>${n.path.length ? '<span class="text-slate-400">' + esc(n.path.join(' › ')) + ' › </span>' : ''}${esc(n.name)}</td><td>${esc(n.no || '—')} / ${esc(n.code || '—')}</td><td>${esc(n.how)}</td><td>${n.banks.length || '—'}</td>`
-            : `<td colspan="4" class="${s.optional ? 'text-slate-400' : 'text-amber-700'}">не знайдено${s.optional ? ' — необов’язковий, береться 0' : ''}</td>`) + '</tr>';
-    });
-    document.getElementById('diagNodes').innerHTML = h + '</tbody>';
-
-    let t = `<thead><tr><th>F13: зріз</th><th>Дата у JSON</th><th>Автор</th><th>Використано для</th><th>Стан</th></tr></thead><tbody>`;
-    Object.values(PRK).sort((a, b) => a.requested.localeCompare(b.requested)).forEach(p => {
-        const use = [p.requested === CAL.D ? 'прогноз T0–T12' : null, `факт ${dm(isoAdd(p.requested, -7))}–${dm(isoAdd(p.requested, -1))}`].filter(Boolean).join('; ');
-        const st = p.error ? `<span class="text-red-700">${esc(p.error)}</span>` : !p.dateOk ? '<span class="text-red-700">дата не збігається</span>' : 'OK';
-        t += `<tr><td>${dmy(p.requested)}</td><td>${p.date ? dmy(p.date) : '—'}</td><td>${esc(p.meta ? p.meta.generated_by || '—' : '—')}</td><td>${use}</td><td>${st}</td></tr>`;
-    });
-    document.getElementById('diagSnaps').innerHTML = t + '</tbody>';
-}
-
 // ---------- вивантаження ----------
 function tableAoa() {
     const hdr1 = ['Показник', 'Джерело', 'Початок', ...CAL.months.map(m => m.label)];
@@ -913,7 +867,7 @@ function exportXlsx() {
     const u = unit(), m = SNAP.meta;
     const wb = XLSX.utils.book_new();
     const aoa = [[`Кредити, постімпорт, ${u.lbl}`],
-                 [`Зріз ${dmy(CAL.D)}; факт по ${dmy(CAL.factUntil)}; горизонт до ${dmy(CAL.horizonEnd)}; кредити — F13 (${CAL.rule === 'days' ? 'частками за днями' : 'тиждень цілком'}), пост-імпорт — CRED (${SNAP.__file ? SNAP.__file.name : m.source_file || ''})`], [],
+                 [`Дані ${dmy(CAL.D)}; факт по ${dmy(CAL.factUntil)}; горизонт до ${dmy(CAL.horizonEnd)}; кредити — F13 (${CAL.rule === 'days' ? 'тижні за днями' : 'тиждень цілком'}), пост-імпорт — CRED (${SNAP.__file ? SNAP.__file.name : m.source_file || ''})`], [],
                  ...tableAoa()];
     const ws1 = XLSX.utils.aoa_to_sheet(aoa);
     ws1['!cols'] = [{ wch: 50 }, { wch: 8 }, ...aoa[3].slice(2).map(() => ({ wch: 20 }))];
@@ -928,18 +882,6 @@ function exportXlsx() {
     ws2['!cols'] = [{ wch: 44 }, ...list.map(() => ({ wch: 16 }))];
     XLSX.utils.book_append_sheet(wb, ws2, 'Тижні');
 
-    const aoaS = [['Параметр', 'Значення'],
-        ['CRED: файл', SNAP.__file ? SNAP.__file.name : ''], ['CRED: джерело', `${m.source_file || ''} / ${m.sheet || ''}`],
-        ['CRED: дата зрізу', dmy(m.forecast_date)], ['CRED: факт по', dmy(m.fact_until)], ['CRED: попередження', (m.warnings || []).join('; ')],
-        ['F13: зрізи', Object.values(PRK).map(p => `${dmy(p.requested)} ${p.error ? '(' + p.error + ')' : 'OK'}`).join('; ')], [],
-        ['Методологія'],
-        ['Кредити (F13): 6.1.1 − 6.2.1; відсотки 6.2.2 + 6.2.11; заборгованість «Заборгованність по кредитн. лініям».'],
-        [CAL.rule === 'days' ? 'Тижні кредитів поділено між місяцями за днями; борг на кінець місяця = борг попереднього тижня + чисте залучення × частку днів.'
-                             : 'Тиждень кредитів належить місяцю своєї середи; борг — на кінець останнього тижня місяця.'],
-        ['Пост-імпорт (CRED): отримано − оплата по постімпорту; комісії 3.2.02.11; заборгованість постімпорт — за датами платежів.']];
-    const ws3 = XLSX.utils.aoa_to_sheet(aoaS);
-    ws3['!cols'] = [{ wch: 30 }, { wch: 100 }];
-    XLSX.utils.book_append_sheet(wb, ws3, 'Джерела');
     XLSX.writeFile(wb, `Кредити_постімпорт_${dmy(CAL.D)}.xlsx`);
 }
 

@@ -47,10 +47,9 @@
     .w-table .x { background: #fffbeb; }
     .w-table .mb { border-left: 1.5px solid #94a3b8; }
 
-    .d-table { border-collapse: collapse; font-size: 8.5pt; width: 100%; }
-    .d-table th, .d-table td { padding: 4px 6px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
-    .d-table th { color: #475569; font-weight: 600; background: #f8fafc; }
-
+    .src-tag { display: inline-block; font-size: 7pt; font-weight: 600; padding: 0 5px; border-radius: 4px; margin-left: 6px; vertical-align: 1px; }
+    .t-f13 { background: #e0e7ff; color: #3730a3; }
+    .t-cred { background: #fef3c7; color: #92400e; }
     button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #4f46e5; outline-offset: 1px; }
 
     @media print {
@@ -66,24 +65,20 @@
 <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
     <div>
         <h1 class="text-lg font-bold text-slate-800">Кредити та постімпорт — помісячно</h1>
-        <p class="text-xs text-slate-500 mt-0.5">Зріз прогнозу: <span id="navDate" class="font-semibold text-indigo-600">--</span></p>
+        <p class="text-xs text-slate-500 mt-0.5">Дані: <span id="navDate" class="font-semibold text-indigo-600">--</span>
+            <span id="navFile" class="ml-2 text-slate-400"></span></p>
     </div>
     <div class="flex items-center gap-4">
         <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 max-w-[420px] truncate" title="">Підготовка…</span>
-        <div class="flex items-center gap-2">
-            <label for="dateInput" class="text-xs text-slate-600">Будь-яка дата тижня</label>
-            <input type="date" id="dateInput" class="border border-slate-300 rounded px-2 py-1 text-xs">
-            <button onclick="loadReport(document.getElementById('dateInput').value)"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Сформувати</button>
-        </div>
+        <button onclick="loadLatest()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Оновити</button>
         <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
             <button onclick="exportXlsx()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Excel</button>
             <button onclick="copyTable()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Копіювати</button>
             <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк</button>
         </div>
         <div>
-            <a href="sop2.html" class="text-blue-600 hover:underline mr-3 text-xs font-semibold">Помісячно CF</a>
-            <a href="sop_credits.html" class="text-gray-800 font-semibold text-xs">Кредити</a>
+            <a href="sop-home.html" class="text-blue-600 hover:underline mr-3 text-xs font-semibold">CF Показники</a>
+            <a href="sop-credit.html" class="text-gray-800 font-semibold text-xs">Кредити</a>
         </div>
     </div>
 </nav>
@@ -92,7 +87,7 @@
     <div class="flex justify-between items-end border-b border-slate-200 pb-2">
         <div>
             <h1 class="text-xl font-bold text-slate-800">Кредити, постімпорт</h1>
-            <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Оберіть дату, щоб сформувати звіт.</p>
+            <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Завантаження даних…</p>
         </div>
         <div class="text-right text-[10.5px] text-slate-500" id="hdrUnit">--</div>
     </div>
@@ -108,21 +103,26 @@
             </select>
         </div>
         <div class="flex items-center gap-2">
-            <label for="ruleSel" class="text-xs font-bold text-slate-600">Тиждень у місяці:</label>
+            <label for="ruleSel" class="text-xs font-bold text-slate-600">Тижні кредитів у місяці:</label>
             <select id="ruleSel" onchange="rebuild()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
                 <option value="days" selected>частками — за календарними днями</option>
                 <option value="wed">цілком — за місяцем</option>
             </select>
         </div>
         <div class="flex items-center gap-2">
+            <label for="horSel" class="text-xs font-bold text-slate-600">Горизонт:</label>
+            <select id="horSel" onchange="rebuild()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
+                <option value="13" selected>13 тижнів</option>
+                <option value="26">26 тижнів</option>
+                <option value="0">усі дані CRED</option>
+            </select>
+        </div>
+        <div class="flex items-center gap-2">
             <label for="factSel" class="text-xs font-bold text-slate-600">Закритих місяців:</label>
-            <select id="factSel" onchange="loadReport(CAL ? CAL.D : null)" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
+            <select id="factSel" onchange="rebuild()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
                 <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
             </select>
         </div>
-        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer" title="Безготівкове постімпортне фінансування не потрапляє у виписку, тому у фактичних тижнях чисте залучення береться як зміна заборгованості">
-            <input type="checkbox" id="piDebtFact" checked onchange="rebuild()"> Постімпорт у факті — за зміною боргу
-        </label>
         <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
             <input type="checkbox" id="showBanks" onchange="render()"> Розбивка за банками
         </label>
@@ -132,107 +132,100 @@
         <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
             <input type="checkbox" id="showWeeks" onchange="render()"> Тижнева розбивка
         </label>
-        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-            <input type="checkbox" id="showDiag" onchange="render()"> Джерела даних
-        </label>
     </div>
 
-    <div class="flex gap-5 text-[10.5px] text-slate-600">
-        <span><span class="badge b-fact">факт</span> усі тижні місяця — фактичні дані</span>
-        <span><span class="badge b-mixed">факт + прогноз</span> частина тижнів уже фактична</span>
-        <span><span class="badge b-fc">прогноз</span> дані поточного зрізу</span>
-        <span><span class="badge b-part">неповний</span> горизонт прогнозу закінчується раніше кінця місяця</span>
+    <div class="flex flex-wrap gap-5 text-[10.5px] text-slate-600">
+        <span><span class="badge b-fact">факт</span> усі дні місяця — фактичні дані</span>
+        <span><span class="badge b-mixed">факт + прогноз</span> частина днів уже фактична</span>
+        <span><span class="badge b-fc">прогноз</span> дні після дати зрізу</span>
+        <span><span class="badge b-part">неповний</span> горизонт закінчується раніше кінця місяця</span>
+        <span><span class="src-tag t-f13">F13</span> тижневі зрізи прогнозу руху коштів</span>
+        <span><span class="src-tag t-cred">CRED</span> денний зріз «План 13 недель»</span>
     </div>
+
+    <div id="warnBox" class="hidden bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2 text-[11px]"></div>
 
     <div class="overflow-x-auto"><table class="m-table" id="monthTable"></table></div>
+
     <div id="weekSection" class="hidden">
-        <h3 class="font-bold text-xs text-slate-700 mb-2">Тижнева розбивка (перевірка помісячних сум)</h3>
+        <h3 class="font-bold text-xs text-slate-700 mb-2">Тижнева розбивка (пн–нд)</h3>
         <div class="overflow-x-auto border border-slate-200 rounded-lg"><table class="w-table" id="weekTable"></table></div>
-        <p class="text-[10px] text-slate-500 mt-1">Жовтим позначено тижні, що перетинають межу місяців: у первинці їхні платежі можуть бути датовані іншим місяцем.</p>
+        <p class="text-[10px] text-slate-500 mt-1">Кредити — значення тижня зі зрізів F13 (факт — колонка Tm1_fact зрізу наступного понеділка, прогноз — T0…T12).
+            Постімпорт — сума денних значень CRED за тиждень. Жовтим позначено тижні, що перетинають межу місяців.</p>
     </div>
 
-    <div id="diagSection" class="hidden">
-        <h3 class="font-bold text-xs text-slate-700 mb-2">Джерела даних</h3>
-        <table class="d-table" id="diagNodes"></table>
-        <table class="d-table mt-3" id="diagSnaps"></table>
-    </div>
     <details class="border border-slate-200 rounded-lg px-4 py-2 text-[11px] text-slate-600 leading-relaxed" id="helpBox">
         <summary class="font-bold text-xs text-slate-700 cursor-pointer">Довідка: як рахуються показники</summary>
         <div class="mt-2 space-y-2 max-w-[1100px]">
-            <p>
-                Кредити = 6.1.1 «Отримано кредитних коштів» − 6.2.1 «Повернення кредиту»;<br>
-                пост-імпорт = 6.1.3 «Отримано постімпортне фінансування» − 6.2.3 «Оплата по постімпорту».<br>
-                Відсотки та комісії: кредити = 6.2.2 «Відсотки за корист. кредитами» + 6.2.11 «Комісія за обслуговування кредитів»;<br>
-                пост-імпорт = 6.2.12 «Комісія по постімпорту».<br>
-                Заборгованість — знімок рядків «Заборгованність по кредитн. лініям» і «Заборгованність по постімпорту» на кінець останнього тижня періоду.<br>
-                Факт тижня береться з колонки <span id="helpFactKey">Tm1_fact</span> зрізу наступного понеділка, прогноз — з T0–T12 зрізу <span id="helpDate">обраної дати</span>.<br>
-                Помаранчевим позначено періоди з неповними даними — наведіть курсор, щоб побачити причину.
-            </p>
+            <p><b>Два джерела.</b></p>
+            <ul class="list-disc pl-5 space-y-1">
+                <li><span class="src-tag t-f13" style="margin-left:0">F13</span> <b>Кредити</b> — тижневі зрізи «ПРОГНОЗ РУХУ КОШТІВ 13 тижнів»: чисте залучення = 6.1.1 «Отримано кредитних коштів» − 6.2.1 «Повернення кредиту»;<br>
+                    відсотки та комісії = 6.2.2 «Відсотки за корист. кредитами» + 6.2.11 «Комісія за обслуговування кредитів»;<br>
+                    заборгованість — рядок «Заборгованність по кредитн. лініям». Факт тижня — <span id="helpFactKey">Tm1_fact</span>, прогноз — T0–T12 даних на <span id="helpDate">--</span>.</li>
+                <li><span class="src-tag t-cred" style="margin-left:0">CRED</span> <b>Пост-імпорт</b> — останній файл CRED_*.json: чисте залучення = «Отримано постімпортне фінансування» − «Оплата по постімпорту»;<br>
+                    комісії = 3.2.02.11; заборгованість — рядки «Заборгованість постімпорт …».<br>
+                    Дані денні, тож місяць рахується точно за датами платежів.</li>
+            </ul>
             <div>
-                <div class="font-semibold text-slate-700">Як рахується</div>
-                <ul class="list-disc pl-5">
-                    <li>Чисте залучення: кредити = 6.1.1 − 6.2.1, постімпорт = 6.1.3 − 6.2.3.</li>
-                    <li>Відсотки та комісії: кредити = 6.2.2 + 6.2.11, постімпорт = 6.2.12.</li>
-                    <li>Заборгованість: знімок рядків «Заборгованність по кредитн. лініям» і «…по постімпорту» на кінець місяця.</li>
+                <div class="font-semibold text-slate-700">Як тижні кредитів потрапляють у місяць</div>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><b>частками — за календарними днями</b>: потоки тижня діляться пропорційно дням у місяці; <span class="whitespace-nowrap">заборгованість на останній день = борг на кінець попереднього тижня + чисте залучення тижня × (днів до кінця місяця / 7).</span></li>
+                    <li><b>цілком — за місяцем</b>: тиждень належить місяцю, на який припадає його середина тижня; заборгованість — на кінець останнього такого тижня.</li>
                 </ul>
             </div>
-            <p>Контроль: рядок «зміна боргу − чисте залучення» сходиться в усіх місяцях. Контроль розраховується в режимі «цілком — за місяцем»; у режимі «частками» потоки межових тижнів діляться між місяцями, тому рядок контролю порожній.</p>
-            <p><b>Важливо:</b> постімпорт у ручному розрахунку порахований за датами платежів. У прогнозі дати платежів немає, тому на межових тижнях суми цілком потрапляють в один з місяців.</p>
+            <p>Дата даних береться з CRED-файлу (понеділок); для неї та попередніх понеділків завантажуються дані F13.</p>
+            <p>Контроль: рядок «зміна боргу − чисте залучення» має сходитися в усіх місяцях.<br>
+               Помаранчевим позначено клітинки з неповними даними.</p>
+            <p><b>Важливо:</b> у прогнозі F13 дат платежів немає, тому кредити на межових тижнях розподіляються за правилом вище; постімпорт розподілено за фактичними датами платежів.</p>
         </div>
     </details>
 </div>
 
 <script>
 // =====================================================================
-// Джерело — той самий Power Automate flow, що й у sop2.html / compare.html
+// Джерела
+//  • Get_CRED_Latest     — останній CRED_*.json (пост-імпорт, денні дані)
+//  • Get_CashFlow_Metrics — зрізи PRK13W за датою (кредити, тижневі дані)
 // =====================================================================
+const CRED_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/01/workflows/d4c4e8fdf2ff4593a36836b3c5434c43/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=yyyFwxCC6UXV90I6t9f-n1NKFdTdNJRd8jneEF8d5lQ";
 const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 const FETCH_CONCURRENCY = 4;
 const FORECAST_KEYS = ["T0","T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
-const CTRL_TOL = 1000;           // грн — допуск контролю «зміна боргу = чисте залучення»
+const CTRL_TOL = 1000;   // грн
+const MAX_FACT_MONTHS = 3;
 
-// =====================================================================
-// МЕТОДОЛОГІЯ
-//  • Тиждень пн–нд. Режим «цілком»: тиждень належить місяцю, у який
-//    припадає його середа (28.09–04.10 → вересень, 30.11–06.12 → грудень).
-//    Режим «частками»: потоки тижня діляться між місяцями пропорційно днях.
-//  • Факт тижня W — колонка Tm1_fact зрізу W+7; прогноз — T0…T12 зрізу D.
-//  • Чисте залучення: кредити = 6.1.1 − 6.2.1; постімпорт = 6.1.3 − 6.2.3.
-//  • Відсотки та комісії: кредити = 6.2.2 + 6.2.11; постімпорт = 6.2.12.
-//  • Заборгованість (тіло) — знімок рядків «Заборгованність по кредитн.
-//    лініям» / «…по постімпорту» на кінець останнього тижня місяця.
-//  • Контроль: борг(кін) − борг(поч) має дорівнювати чистому залученню.
-// =====================================================================
+// рядки F13 для кредитів
 const SPECS = [
-    { id: 'crIn',  title: 'Отримано кредитних коштів',  no: '6.1.1',  code: '3.1.02.02', tests: [/^отримано\s+кредитн/iu], bankPrefix: /^отримано\s+кредитних\s+коштів\s*/iu },
-    { id: 'crOut', title: 'Повернення кредиту',          no: '6.2.1',  code: '3.2.02.04', tests: [/^повернення\s+кредит/iu],  bankPrefix: /^повернення\s+кредиту\s*/iu },
-    { id: 'piIn',  title: 'Отримано постімпортне фінансування', no: '6.1.3', code: null, tests: [/^отримано\s+пост-?імпорт/iu], bankPrefix: /^отримано\s+постімпортне\s+фінансування\s*/iu },
-    { id: 'piOut', title: 'Оплата по постімпорту',       no: '6.2.3',  code: '3.2.02.13', tests: [/^оплата\s+по\s+пост-?імпорт/iu], bankPrefix: /^оплата\s+по\s+постімпорту\s*/iu },
-    { id: 'intCr', title: 'Відсотки за корист. кредитами', no: '6.2.2', code: '3.2.02.03', tests: [/^відсотки\s+за\s+корист/iu] },
-    { id: 'comCr', title: 'Комісія за обслуговування кредитів', no: '6.2.11', code: '3.2.02.10', tests: [/^комісія\s+за\s+обслуговування\s+кредит/iu], optional: true },
-    { id: 'comPi', title: 'Комісія по постімпорту',      no: '6.2.12', code: '3.2.02.11', tests: [/^комісія\s+по\s+пост-?імпорт/iu] },
-    { id: 'debtCr', title: 'Заборгованість по кредитних лініях', bal: true, tests: [/^заборгован\p{L}*\s+по\s+кредитн/iu], bankPrefix: /^заборгованість\s+кредити\s*/iu },
-    { id: 'debtPi', title: 'Заборгованість по постімпорту',      bal: true, tests: [/^заборгован\p{L}*\s+по\s+пост-?імпорт/iu], bankPrefix: /^заборгованість\s+постімпорт\s*/iu }
+    { id: 'crIn',   title: 'Отримано кредитних коштів', no: '6.1.1', code: '3.1.02.02', tests: [/^отримано\s+кредитн/iu], bankPrefix: /^отримано\s+кредитних\s+коштів\s*/iu },
+    { id: 'crOut',  title: 'Повернення кредиту',         no: '6.2.1', code: '3.2.02.04', tests: [/^повернення\s+кредит/iu],  bankPrefix: /^повернення\s+кредиту\s*/iu },
+    { id: 'intCr',  title: 'Відсотки за корист. кредитами', no: '6.2.2', code: '3.2.02.03', tests: [/^відсотки\s+за\s+корист/iu] },
+    { id: 'comCr',  title: 'Комісія за обслуговування кредитів', no: '6.2.11', code: '3.2.02.10', tests: [/^комісія\s+за\s+обслуговування\s+кредит/iu], optional: true },
+    { id: 'debtCr', title: 'Заборгованність по кредитн. лініям', bal: true, tests: [/^заборгован\p{L}*\s+по\s+кредитн/iu], bankPrefix: /^заборгованість\s+кредити\s*/iu }
 ];
 
-// Рядки звіту (порядок = порядок ручного розрахунку)
 const ROWS = [
     { id: 'netTotal', label: 'Чисте залучення (+) / повернення (−), всього', type: 'flow', lvl: 0 },
-    { id: 'netCr',    label: 'кредити',     type: 'flow', lvl: 1, bank: 'cr' },
-    { id: 'netPi',    label: 'пост-імпорт', type: 'flow', lvl: 1, bank: 'pi' },
+    { id: 'netCr',    label: 'кредити',     type: 'flow', lvl: 1, bank: 'cr', src: 'f13' },
+    { id: 'netPi',    label: 'пост-імпорт', type: 'flow', lvl: 1, bank: 'pi', src: 'cred' },
     { id: 'intTotal', label: 'Сплата відсотків та комісій, всього', type: 'flow', lvl: 0, sep: true },
-    { id: 'intCr',    label: 'кредити',     type: 'flow', lvl: 1 },
-    { id: 'intPi',    label: 'пост-імпорт', type: 'flow', lvl: 1 },
+    { id: 'intCr',    label: 'кредити',     type: 'flow', lvl: 1, src: 'f13' },
+    { id: 'intPi',    label: 'пост-імпорт', type: 'flow', lvl: 1, src: 'cred' },
     { id: 'debtTotal', label: 'Заборгованість на кінець місяця, всього (тіло)', type: 'bal', lvl: 0, sep: true },
-    { id: 'debtCr',   label: 'кредити',     type: 'bal', lvl: 1, bank: 'cr' },
-    { id: 'debtPi',   label: 'пост-імпорт', type: 'bal', lvl: 1, bank: 'pi' }
+    { id: 'debtCr',   label: 'кредити',     type: 'bal', lvl: 1, bank: 'cr', src: 'f13' },
+    { id: 'debtPi',   label: 'пост-імпорт', type: 'bal', lvl: 1, bank: 'pi', src: 'cred' }
 ];
 const CTRL_ROWS = [
-    { id: 'ctrlCr', label: 'контроль кредити: Δ боргу − чисте залучення', type: 'ctrl', lvl: 1 },
-    { id: 'ctrlPi', label: 'контроль пост-імпорт: Δ боргу − чисте залучення', type: 'ctrl', lvl: 1 }
+    { id: 'ctrlCr', label: 'контроль кредити: Δ боргу − чисте залучення', src: 'f13' },
+    { id: 'ctrlPi', label: 'контроль пост-імпорт: Δ боргу − чисте залучення', src: 'cred' }
 ];
-const FLOW_IDS = ['netTotal', 'netCr', 'netPi', 'intTotal', 'intCr', 'intPi'];
-const BAL_IDS = ['debtTotal', 'debtCr', 'debtPi'];
+const SRC_TAG = { f13: '<span class="src-tag t-f13">F13</span>', cred: '<span class="src-tag t-cred">CRED</span>' };
+const WLABEL = { netTotal: 'Чисте залучення, всього', netCr: 'Чисте залучення — кредити (F13)', netPi: 'Чисте залучення — пост-імпорт (CRED)',
+                 crIn: '   отримано кредитів', crOut: '   повернено кредитів', piIn: '   отримано постімпорту', piOut: '   сплачено постімпорту',
+                 intTotal: 'Відсотки та комісії, всього', intCr: 'Відсотки та комісії — кредити (F13)', intPi: 'Відсотки та комісії — пост-імпорт (CRED)',
+                 debtTotal: 'Заборгованість, всього', debtCr: 'Заборгованість — кредити (F13)', debtPi: 'Заборгованість — пост-імпорт (CRED)' };
+
+const CRED_FLOW_MAP = { pi_in: ['netPi', 1], pi_out: ['netPi', -1], pi_fee: ['intPi', 1] };
+const CRED_REQUIRED = ['pi_in', 'pi_out', 'pi_fee', 'pi_debt'];
 const UNITS = { uah: { k: 1, dec: 0, lbl: 'грн' }, th: { k: 1e3, dec: 0, lbl: 'тис. грн' },
                 mln: { k: 1e6, dec: 0, lbl: 'млн грн' }, mln1: { k: 1e6, dec: 1, lbl: 'млн грн' } };
 const MONTHS = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
@@ -240,108 +233,136 @@ const MONTHS = ["Січень","Лютий","Березень","Квітень",
 // ---------- дати ----------
 const DAY = 86400000;
 const isoAdd = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * DAY).toISOString().slice(0, 10);
-const dow = iso => new Date(iso + 'T00:00:00Z').getUTCDay();          // 0 = нд
+const dow = iso => new Date(iso + 'T00:00:00Z').getUTCDay();
 const toMonday = iso => isoAdd(iso, -((dow(iso) + 6) % 7));
 const dmy = iso => iso ? iso.split('-').reverse().join('.') : '--';
 const dm = iso => { const [, m, d] = iso.split('-'); return `${d}.${m}`; };
-const ymOf = iso => { const [y, m] = iso.split('-').map(Number); return { y, m: m - 1 }; };
-const ymKey = a => `${a.y}-${String(a.m + 1).padStart(2, '0')}`;
+const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / DAY) + 1;
 const ym = (y, m) => { const d = new Date(Date.UTC(y, m, 1)); return { y: d.getUTCFullYear(), m: d.getUTCMonth() }; };
-const nextYm = a => ym(a.y, a.m + 1), prevYm = a => ym(a.y, a.m - 1);
-const firstDay = a => `${ymKey(a)}-01`;
+const ymOf = iso => ym(+iso.slice(0, 4), +iso.slice(5, 7) - 1);
+const firstDay = a => `${a.y}-${String(a.m + 1).padStart(2, '0')}-01`;
 const lastDay = a => new Date(Date.UTC(a.y, a.m + 1, 0)).toISOString().slice(0, 10);
+const maxIso = (a, b) => a > b ? a : b, minIso = (a, b) => a < b ? a : b;
+const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim();
 function normDate(s) {
     if (!s) return null;
     s = String(s).trim();
     let m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})/); if (m) return `${m[3]}-${m[2]}-${m[1]}`;
     m = s.match(/^(\d{4}-\d{2}-\d{2})/); return m ? m[1] : null;
 }
-// частка днів тижня (пн mon) у місяці a
-function shareIn(mon, a) {
-    const f = firstDay(a), l = lastDay(a);
-    let n = 0;
-    for (let i = 0; i < 7; i++) { const d = isoAdd(mon, i); if (d >= f && d <= l) n++; }
-    return n / 7;
-}
 
-// ---------- календар ----------
-function buildCalendar(D, rule, factMonths) {
-    const horizonEndSun = isoAdd(D, FORECAST_KEYS.length * 7 - 1);
-    const lastFactSun = isoAdd(D, -1);
-    const curMonth = rule === 'wed' ? ymOf(isoAdd(D, 2)) : ymOf(D);
-    let a = curMonth;
-    for (let i = 0; i < factMonths; i++) a = prevYm(a);
-
-    const srcOf = mon => mon < D ? { src: 'fact' }
-        : mon <= isoAdd(D, (FORECAST_KEYS.length - 1) * 7) ? { src: 'forecast', tIdx: Math.round((Date.parse(mon) - Date.parse(D)) / DAY / 7) }
-        : { src: 'none' };
-
-    const months = [];
-    for (;;) {
-        let weeks = [];
-        if (rule === 'wed') {
-            let w = toMonday(firstDay(a)); if (isoAdd(w, 2) < firstDay(a)) w = isoAdd(w, 7);
-            for (; isoAdd(w, 2) <= lastDay(a); w = isoAdd(w, 7)) weeks.push({ mon: w, sun: isoAdd(w, 6), share: 1 });
-        } else {
-            for (let w = toMonday(firstDay(a)); w <= lastDay(a); w = isoAdd(w, 7))
-                weeks.push({ mon: w, sun: isoAdd(w, 6), share: shareIn(w, a) });
-        }
-        if (weeks[0].mon > horizonEndSun) break;
-        weeks = weeks.map(w => Object.assign(w, srcOf(w.mon)));
-        const inH = weeks.filter(w => w.src !== 'none');
-        const nFact = inH.filter(w => w.src === 'fact').length;
-        const partial = inH.length < weeks.length;
-        // тиждень-знімок боргу: останній тиждень місяця (у межах горизонту)
-        const closeW = rule === 'wed' ? inH[inH.length - 1]
-                     : (inH.find(w => w.mon <= lastDay(a) && w.sun >= lastDay(a)) || inH[inH.length - 1]);
-        months.push({
-            key: ymKey(a), a, label: `${MONTHS[a.m]} ${a.y}`, weeks: inH, allWeeks: weeks,
-            start: weeks[0].mon, end: weeks[weeks.length - 1].sun, calStart: firstDay(a), calEnd: lastDay(a),
-            closeW, partial, nFact, nFc: inH.length - nFact,
-            status: nFact === inH.length ? 'fact' : (nFact === 0 ? 'forecast' : 'mixed')
-        });
-        a = nextYm(a);
-    }
-    // тиждень відкриття: попередній перед першим тижнем першого місяця
-    const openMon = isoAdd(months[0].weeks[0].mon, -7);
-    return { D, rule, lastFactSun, horizonEndSun, months, openMon, openSun: isoAdd(openMon, 6) };
-}
-
-// ---------- JSON ----------
-const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim();
-
-function unwrap(obj, depth = 0) {
-    if (obj == null || depth > 6) return null;
-    if (typeof obj === 'string') { try { return unwrap(JSON.parse(obj), depth + 1); } catch { return null; } }
-    if (Array.isArray(obj)) { for (const x of obj) { const r = unwrap(x, depth + 1); if (r) return r; } return null; }
-    if (Array.isArray(obj.tree)) return obj;
-    if (typeof obj['$content'] === 'string') {
-        try {
-            const bytes = Uint8Array.from(atob(obj['$content']), c => c.charCodeAt(0));
-            const r = unwrap(new TextDecoder('utf-8').decode(bytes), depth + 1); if (r) return r;
-        } catch { /* далі */ }
-    }
-    for (const k of ['snapshot', 'body', 'data', 'content', 'value', 'result']) {
-        if (obj[k] != null) { const r = unwrap(obj[k], depth + 1); if (r) return r; }
+// ---------- розпаковка відповідей потоків ----------
+function b64json(obj) {
+    if (obj && typeof obj['$content'] === 'string') {
+        try { return JSON.parse(new TextDecoder('utf-8').decode(Uint8Array.from(atob(obj['$content']), c => c.charCodeAt(0)))); }
+        catch { return null; }
     }
     return null;
 }
+function unwrapBy(test) {
+    const f = (obj, depth = 0) => {
+        if (obj == null || depth > 6) return null;
+        if (typeof obj === 'string') { try { return f(JSON.parse(obj), depth + 1); } catch { return null; } }
+        if (Array.isArray(obj)) { for (const x of obj) { const r = f(x, depth + 1); if (r) return r; } return null; }
+        if (typeof obj !== 'object') return null;
+        if (test(obj)) return obj;
+        const dec = b64json(obj); if (dec) { const r = f(dec, depth + 1); if (r) return r; }
+        for (const k of ['snapshot', 'body', 'data', 'content', 'value', 'result']) {
+            if (obj[k] != null) { const r = f(obj[k], depth + 1); if (r) return r; }
+        }
+        return null;
+    };
+    return f;
+}
+const unwrapCred = unwrapBy(o => Array.isArray(o.rows) && o.meta && o.meta.schema === 'cred_daily');
+const unwrapPrk = unwrapBy(o => Array.isArray(o.tree));
 
-function flattenTree(tree) {
-    const out = [];
-    const walk = (nodes, top, path) => (nodes || []).forEach((n, i) => {
-        const t = top == null ? i : top;
-        out.push({ node: n, top: t, path, name: cleanName(n.name), no: String(n.no ?? '').trim(),
-                   code: cleanName(n.code), kind: n.kind || '' });
-        if (n.children && n.children.length) walk(n.children, t, path.concat(cleanName(n.name)));
-    });
-    walk(tree, null, []);
-    return out;
+async function postJson(url, body) {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) {
+        let msg = '';
+        try { const e = await res.json(); msg = e.message || e.error || ''; } catch { /* порожнє тіло */ }
+        const err = new Error(`HTTP ${res.status}${msg ? ' — ' + msg : ''}`); err.status = res.status; throw err;
+    }
+    const txt = await res.text();
+    if (!txt.trim()) throw new Error('порожня відповідь потоку');
+    try { return JSON.parse(txt); } catch { throw new Error('відповідь потоку не є JSON'); }
 }
 
-const nonZeroCount = n => Object.values(n.values || {}).filter(v => typeof v === 'number' && Math.abs(v) >= 1).length;
-const bankKey = s => cleanName(s).toLowerCase().replace(/[\s()]/g, '');
+// ---------- CRED (пост-імпорт) ----------
+async function fetchCred() {
+    let raw;
+    try { raw = await postJson(CRED_FLOW_URL, { kind: 'cred', latest: true }); }
+    catch (e) { if (e.status === 404) throw new Error('у теці snapshots_cred немає файлів CRED_*.json'); throw e; }
+    const snap = unwrapCred(raw);
+    if (!snap) throw new Error('відповідь Get_CRED_Latest не схожа на CRED-snapshot (meta.schema = "cred_daily")');
+    snap.__file = raw && raw.fileName ? { name: raw.fileName, modified: raw.modified, count: raw.filesInFolder } : null;
+    return snap;
+}
 
+function indexCred(snap) {
+    const dates = (snap.dates || []).slice().sort();
+    const pos = new Map(dates.map((d, i) => [d, i]));
+    const n = dates.length;
+    const zero = () => new Float64Array(n);
+    const flow = { netPi: zero(), intPi: zero(), piIn: zero(), piOut: zero() };
+    const debtPi = zero();
+    const banks = new Map();
+    const used = {}, rowsByType = {};
+    const bankOf = r => {
+        const key = r.bank_key || (r.bank || '').toLowerCase();
+        if (!key) return null;
+        let b = banks.get(key);
+        if (!b) banks.set(key, b = { key, name: r.bank, net: zero(), debt: zero() });
+        if (r.type === 'pi_debt' && r.bank) b.name = r.bank;
+        return b;
+    };
+    (snap.rows || []).forEach(r => {
+        (rowsByType[r.type] = rowsByType[r.type] || []).push(r);
+        if (r.kind !== 'item') return;
+        const vals = r.values || {};
+        if (CRED_FLOW_MAP[r.type]) {
+            const [id, sign] = CRED_FLOW_MAP[r.type];
+            used[r.type] = (used[r.type] || 0) + 1;
+            const b = r.type !== 'pi_fee' ? bankOf(r) : null;
+            for (const [d, v] of Object.entries(vals)) {
+                const i = pos.get(d); if (i == null) continue;
+                flow[id][i] += sign * v;
+                if (r.type === 'pi_in') flow.piIn[i] += v;
+                if (r.type === 'pi_out') flow.piOut[i] += v;
+                if (b) b.net[i] += sign * v;
+            }
+        } else if (r.type === 'pi_debt') {
+            used.pi_debt = (used.pi_debt || 0) + 1;
+            const b = bankOf(r);
+            for (const [d, v] of Object.entries(vals)) {
+                const i = pos.get(d); if (i == null) continue;
+                debtPi[i] += v; if (b) b.debt[i] += v;
+            }
+        }
+    });
+    const cumOf = arr => { const c = new Float64Array(n + 1); for (let i = 0; i < n; i++) c[i + 1] = c[i] + arr[i]; return c; };
+    const cum = {}; Object.entries(flow).forEach(([k, a]) => cum[k] = cumOf(a));
+    banks.forEach(b => b.cum = cumOf(b.net));
+    return { dates, pos, n, cum, debtPi, banks, used, rowsByType };
+}
+function lowerBound(a, x) { let l = 0, h = a.length; while (l < h) { const m = (l + h) >> 1; if (a[m] < x) l = m + 1; else h = m; } return l; }
+function upperBound(a, x) { let l = 0, h = a.length; while (l < h) { const m = (l + h) >> 1; if (a[m] <= x) l = m + 1; else h = m; } return l; }
+const credSum = (c, a, b) => { const i0 = lowerBound(IDX.dates, a), i1 = upperBound(IDX.dates, b); return i1 <= i0 ? 0 : c[i1] - c[i0]; };
+const credAt = (arr, d) => { const i = IDX.pos.get(d); return i == null ? null : arr[i]; };
+
+// ---------- F13 (кредити) ----------
+const nonZeroCount = n => Object.values(n.values || {}).filter(v => typeof v === 'number' && Math.abs(v) >= 1).length;
+const bankKey = s => cleanName(s).toLowerCase().replace(/[\s()\-]/g, '');
+function flattenTree(tree) {
+    const out = [];
+    const walk = (nodes, path) => (nodes || []).forEach(n => {
+        out.push({ node: n, path, name: cleanName(n.name), no: String(n.no ?? '').trim(), code: cleanName(n.code), kind: n.kind || '' });
+        if (n.children && n.children.length) walk(n.children, path.concat(cleanName(n.name)));
+    });
+    walk(tree, []);
+    return out;
+}
 function resolveNodes(flat) {
     const res = {};
     SPECS.forEach(s => {
@@ -354,41 +375,29 @@ function resolveNodes(flat) {
         }
         if (!cands.length) { res[s.id] = null; return; }
         const best = cands.slice().sort((x, y) => nonZeroCount(y.node) - nonZeroCount(x.node))[0];
-        // банки: дочірні рядки з кодом «<префікс> <банк>»
         let banks = [];
         if (s.bankPrefix) {
             const pool = s.bal ? flat : (best.node.children || []).map(n => ({ node: n, code: cleanName(n.code), name: cleanName(n.name) }));
-            banks = pool.filter(e => s.bankPrefix.test(e.code))
-                        .map(e => ({ key: bankKey(e.code.replace(s.bankPrefix, '')), name: e.name.replace(/\s*\((?=[^)]*(%|USD|UAH|кінець|обнулення))[^)]*\)/iu, ''), node: e.node }));
+            banks = pool.filter(e => s.bankPrefix.test(e.code)).map(e => ({
+                key: bankKey(e.code.replace(s.bankPrefix, '')),
+                name: e.name.replace(/\s*\((?=[^)]*(%|USD|UAH|кінець|обнулення))[^)]*\)/iu, ''), node: e.node }));
         }
         res[s.id] = Object.assign({}, best, { how, alt: cands.length - 1, banks });
     });
     return res;
 }
-
 function detectFactKey(snap) {
     const keys = Object.keys(snap.columns || {});
     return keys.find(k => /^tm1[_\s-]*fact/i.test(k)) || keys.find(k => /m1.*fact/i.test(k)) || 'Tm1_fact';
 }
 function detectForecastKeys(snap) {
-    const cols = snap.columns || {};
     const map = [];
-    Object.entries(cols).forEach(([k, c]) => {
+    Object.entries(snap.columns || {}).forEach(([k, c]) => {
         const n = typeof c.code === 'number' ? c.code : (/^-?\d+$/.test(String(c.code ?? '').trim()) ? Number(c.code) : null);
         if (n != null && n >= 0 && n < FORECAST_KEYS.length && !/fact|plan|forecast|dev/i.test(k)) map[n] = k;
     });
     return FORECAST_KEYS.map((k, i) => map[i] || k);
 }
-
-function processSnapshot(raw, requestedIso) {
-    const snap = unwrap(raw);
-    if (!snap) throw new Error('у відповіді немає дерева tree');
-    const date = normDate(snap.meta && (snap.meta.forecast_date || snap.meta.report_date));
-    const flat = flattenTree(snap.tree);
-    return { requested: requestedIso || date, date, dateOk: !date || !requestedIso || date === requestedIso, dateMissing: !date,
-             meta: snap.meta || {}, factKey: detectFactKey(snap), fcKeys: detectForecastKeys(snap), nodes: resolveNodes(flat) };
-}
-
 function cell(node, key) {
     if (!node || !node.values || !(key in node.values)) return 0;
     const v = node.values[key];
@@ -396,197 +405,274 @@ function cell(node, key) {
     const n = parseFloat(String(v ?? '').replace(/[\s\u00A0]/g, '').replace(',', '.'));
     return isFinite(n) ? n : 0;
 }
-
-// значення тижня з одного зрізу/колонки
-function weekValues(ps, col) {
+async function getPrk(iso) {
+    if (PRK[iso]) return PRK[iso];
+    let r;
+    try {
+        const raw = await postJson(GET_METRICS_FLOW_URL, { reportDate: iso, reportDateDot: dmy(iso) });
+        const snap = unwrapPrk(raw);
+        if (!snap) throw new Error('у відповіді немає зрізу (tree)');
+        const date = normDate(snap.meta && (snap.meta.forecast_date || snap.meta.report_date));
+        r = { requested: iso, date, dateOk: !date || date === iso, meta: snap.meta || {},
+              factKey: detectFactKey(snap), fcKeys: detectForecastKeys(snap), nodes: resolveNodes(flattenTree(snap.tree)) };
+    } catch (e) { r = { requested: iso, error: e.message }; }
+    return (PRK[iso] = r);
+}
+function prkWeekValues(ps, col) {
     const N = ps.nodes, g = id => N[id] ? cell(N[id].node, col) : 0;
-    const v = {
-        crIn: g('crIn'), crOut: g('crOut'), piIn: g('piIn'), piOut: g('piOut'),
-        intCr: g('intCr') + g('comCr'), intPi: g('comPi'),
-        debtCr: N.debtCr ? cell(N.debtCr.node, col) : null,
-        debtPi: N.debtPi ? cell(N.debtPi.node, col) : null
-    };
+    const v = { crIn: g('crIn'), crOut: g('crOut'), intCr: g('intCr') + g('comCr'), debtCr: N.debtCr ? cell(N.debtCr.node, col) : null, banks: {} };
     v.netCr = v.crIn - v.crOut;
-    v.netPi = v.piIn - v.piOut;
-    v.netTotal = v.netCr + v.netPi;
-    v.intTotal = v.intCr + v.intPi;
-    v.debtTotal = v.debtCr == null || v.debtPi == null ? null : v.debtCr + v.debtPi;
-    // банки
-    v.banks = { cr: {}, pi: {} };
-    const add = (grp, specId, field, sign) => (N[specId] ? N[specId].banks : []).forEach(b => {
-        const o = v.banks[grp][b.key] || (v.banks[grp][b.key] = { name: b.name, net: 0, debt: null });
-        if (field === 'debt') o.debt = cell(b.node, col); else o.net += sign * cell(b.node, col);
-        if (field === 'debt' && specId.startsWith('debt')) o.name = o.name || b.name;
+    const add = (specId, fn) => (N[specId] ? N[specId].banks : []).forEach(b => {
+        const o = v.banks[b.key] || (v.banks[b.key] = { name: b.name, net: 0, debt: null });
+        fn(o, cell(b.node, col), b);
     });
-    add('cr', 'crIn', 'net', 1); add('cr', 'crOut', 'net', -1); add('cr', 'debtCr', 'debt');
-    add('pi', 'piIn', 'net', 1); add('pi', 'piOut', 'net', -1); add('pi', 'debtPi', 'debt');
-    v.factPiGap = /fact/i.test(col) && Math.abs(v.piIn) < 1 && Math.abs(v.piOut) >= 1;
+    add('crIn', (o, x) => o.net += x);
+    add('crOut', (o, x) => o.net -= x);
+    add('debtCr', (o, x, b) => { o.debt = x; o.name = b.name; });
     return v;
 }
-
-// ---------- джерела ----------
-async function fetchSnapshot(iso) {
-    const res = await fetch(GET_METRICS_FLOW_URL, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const txt = await res.text();
-    if (!txt.trim()) throw new Error('порожня відповідь');
-    return JSON.parse(txt);
-}
-
-async function getSnapshot(iso) {
-    try { return processSnapshot(await fetchSnapshot(iso), iso); }
-    catch (e) { return { requested: iso, error: e.message }; }
-}
-
-async function pool(items, n, fn) {
-    const out = new Array(items.length); let i = 0;
-    await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
-        while (i < items.length) { const k = i++; out[k] = await fn(items[k]); }
-    }));
-    return out;
+function crWeek(mon) {
+    if (CRW[mon]) return CRW[mon];
+    const D = CAL.D;
+    let r;
+    if (mon < D) {
+        const s = PRK[isoAdd(mon, 7)];
+        if (!s) r = { ok: false, why: 'зріз F13 не завантажено' };
+        else if (s.error) r = { ok: false, why: `зріз F13 ${dmy(s.requested)}: ${s.error}` };
+        else if (!s.dateOk) r = { ok: false, why: `зріз F13 ${dmy(s.requested)} має дату ${dmy(s.date)}` };
+        else r = { ok: true, src: 'fact', label: `факт, зріз ${dm(s.requested)}`, v: prkWeekValues(s, s.factKey) };
+    } else {
+        const t = Math.round((Date.parse(mon) - Date.parse(D)) / DAY / 7);
+        const s = PRK[D];
+        if (t >= FORECAST_KEYS.length) r = { ok: false, out: true, why: 'поза горизонтом F13 (T12)' };
+        else if (!s || s.error) r = { ok: false, why: `зріз F13 ${dmy(D)}: ${s ? s.error : 'не завантажено'}` };
+        else if (!s.dateOk) r = { ok: false, why: `зріз F13 ${dmy(D)} має дату ${dmy(s.date)}` };
+        else r = { ok: true, src: 'forecast', t, label: `прогноз T${t}`, v: prkWeekValues(s, s.fcKeys[t]) };
+    }
+    return (CRW[mon] = Object.assign({ mon }, r));
 }
 
 // ---------- стан ----------
-let CAL = null, SNAPS = {}, WEEKS = {}, AGG = null, loadToken = 0;
+let SNAP = null, IDX = null, CAL = null, AGG = null, PRK = {}, CRW = {}, loadToken = 0;
 
 function setStatus(text, cls) {
     const el = document.getElementById('dataStatus');
     el.textContent = text; el.title = text;
     el.className = 'text-xs font-medium px-2.5 py-1 rounded-full max-w-[420px] truncate ' + cls;
 }
-const rule = () => document.getElementById('ruleSel').value;
-const factMonths = () => Number(document.getElementById('factSel').value);
-
-async function loadReport(anyIso) {
-    if (!anyIso) { setStatus('Оберіть дату', 'bg-amber-100 text-amber-800'); return; }
-    const token = ++loadToken;
-    const D = toMonday(anyIso);
-    document.getElementById('dateInput').value = D;
-    // запитуємо зрізи для обох правил, щоб перемикання не вимагало нових запитів
-    const calW = buildCalendar(D, 'wed', factMonths()), calP = buildCalendar(D, 'days', factMonths());
-    const firstMon = [calW.openMon, calP.openMon].sort()[0];
-    const dates = [];
-    for (let s = isoAdd(firstMon, 7); s <= D; s = isoAdd(s, 7)) dates.push(s);
-
-    let done = 0;
-    setStatus(`Завантаження зрізів: 0 з ${dates.length}…`, 'bg-indigo-100 text-indigo-800');
-    const results = await pool(dates, FETCH_CONCURRENCY, async iso => {
-        const r = await getSnapshot(iso);
-        done++;
-        if (token === loadToken) setStatus(`Завантаження зрізів: ${done} з ${dates.length}…`, 'bg-indigo-100 text-indigo-800');
-        return r;
-    });
-    if (token !== loadToken) return;
-
-    const snaps = Object.fromEntries(results.map(r => [r.requested, r]));
-    const cur = snaps[D];
-    if (!cur || cur.error) { setStatus(`Зріз ${dmy(D)} не завантажено: ${cur ? cur.error : 'немає даних'}`, 'bg-red-100 text-red-800'); return; }
-    if (!cur.dateOk) { setStatus(`Отримано зріз ${dmy(cur.date)} замість ${dmy(D)} — оберіть тиждень, для якого є зріз`, 'bg-red-100 text-red-800'); return; }
-    SNAPS = snaps;
-    rebuild(D);
+async function pool(items, n, fn) {
+    let i = 0;
+    await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+        while (i < items.length) { const k = i++; await fn(items[k]); }
+    }));
 }
 
-function rebuild(D) {
-    D = D || (CAL && CAL.D);
-    if (!D || !SNAPS[D]) return;
-    CAL = buildCalendar(D, rule(), factMonths());
-    WEEKS = buildWeeks();
+async function loadLatest() {
+    const token = ++loadToken;
+    PRK = {};
+    setStatus('Завантаження останнього CRED-зрізу…', 'bg-indigo-100 text-indigo-800');
+    try {
+        const snap = await fetchCred();
+        if (token !== loadToken) return;
+        SNAP = snap; IDX = indexCred(snap);
+        await rebuild(token);
+    } catch (e) {
+        if (token !== loadToken) return;
+        setStatus('Зріз не завантажено: ' + e.message, 'bg-red-100 text-red-800');
+        document.getElementById('hdrSub').textContent = 'Не вдалося отримати CRED-snapshot: ' + e.message;
+    }
+}
+
+function neededMondays() {
+    const first = CAL.months[0];
+    const openMon = toMonday(isoAdd(first.cs, -1));
+    const from = isoAdd(openMon, -7);
+    const list = [];
+    for (let s = isoAdd(from, 7); s <= CAL.D; s = isoAdd(s, 7)) list.push(s);
+    return list;
+}
+
+async function rebuild(token) {
+    if (!SNAP) return;
+    token = token || loadToken;
+    CAL = buildCalendar();
+    if (!CAL.months.length) { setStatus('У файлі CRED немає даних для обраного горизонту', 'bg-red-100 text-red-800'); return; }
+    const need = neededMondays().filter(d => !PRK[d]);
+    if (need.length) {
+        let done = 0;
+        setStatus(`Завантаження зрізів F13: 0 з ${need.length}…`, 'bg-indigo-100 text-indigo-800');
+        await pool(need, FETCH_CONCURRENCY, async d => {
+            await getPrk(d);
+            done++;
+            if (token === loadToken) setStatus(`Завантаження зрізів F13: ${done} з ${need.length}…`, 'bg-indigo-100 text-indigo-800');
+        });
+        if (token !== loadToken) return;
+    }
+    CRW = {};
     AGG = aggregate();
     render();
     const warn = collectWarnings();
     if (warn.length) setStatus('Увага: ' + warn.join('; '), 'bg-amber-100 text-amber-800');
-    else setStatus(`Сформовано: ${Object.keys(SNAPS).length} зрізів, контроль боргу ОК`, 'bg-emerald-100 text-emerald-800');
+    else setStatus('Сформовано: кредити — F13, пост-імпорт — CRED; контроль боргу ОК', 'bg-emerald-100 text-emerald-800');
 }
 
-function buildWeeks() {
-    const W = {};
-    const cur = SNAPS[CAL.D];
-    const factFor = mon => {
-        const s = SNAPS[isoAdd(mon, 7)];
-        if (!s) return { ok: false, why: 'зріз не запитувався' };
-        if (s.error) return { ok: false, why: `зріз ${dmy(s.requested)}: ${s.error}` };
-        if (!s.dateOk) return { ok: false, why: `зріз ${dmy(s.requested)} має дату ${dmy(s.date)}` };
-        return { ok: true, ps: s, col: s.factKey, srcLabel: `факт, зріз ${dm(s.requested)}` };
-    };
-    const all = [{ mon: CAL.openMon, sun: CAL.openSun, src: 'fact', opening: true }];
-    CAL.months.forEach(m => m.weeks.forEach(w => { if (!all.some(x => x.mon === w.mon)) all.push(w); }));
-    all.forEach(w => {
-        const r = w.src === 'fact' ? factFor(w.mon)
-            : { ok: true, ps: cur, col: cur.fcKeys[w.tIdx], srcLabel: `прогноз ${FORECAST_KEYS[w.tIdx]}` };
-        const cross = ymOf(w.mon).m !== ymOf(w.sun || isoAdd(w.mon, 6)).m;
-        W[w.mon] = Object.assign({ mon: w.mon, sun: isoAdd(w.mon, 6), src: w.src, tIdx: w.tIdx, opening: !!w.opening, cross },
-                                 r, { v: r.ok ? weekValues(r.ps, r.col) : null });
-    });
-    if (document.getElementById('piDebtFact').checked) {
-        all.forEach(w => {
-            const wk = W[w.mon], pv = W[isoAdd(w.mon, -7)];
-            if (wk.opening || wk.src !== 'fact' || !wk.ok) return;
-            if (!pv || !pv.ok || wk.v.debtPi == null || pv.v.debtPi == null) { wk.piByDebt = 'нема боргу попереднього тижня'; return; }
-            const v = wk.v, net = v.debtPi - pv.v.debtPi;
-            v.piByDebt = Math.abs(net - v.netPi) >= 1 ? { flow: v.netPi, debt: net } : null;
-            v.netPi = net; v.piIn = net + v.piOut;
-            v.netTotal = v.netCr + v.netPi;
-            Object.entries(v.banks.pi).forEach(([k, b]) => {
-                const pb = pv.v.banks.pi[k];
-                if (b.debt != null && pb && pb.debt != null) b.net = b.debt - pb.debt;
-            });
-            v.factPiGap = false;
-        });
+// ---------- календар ----------
+function buildCalendar() {
+    const m = SNAP.meta;
+    const D = toMonday(m.forecast_date);
+    const factUntil = m.fact_until || isoAdd(D, -1);
+    const dataFrom = IDX.dates[0], dataTo = IDX.dates[IDX.n - 1];
+    const hor = Number(document.getElementById('horSel').value);
+    const horizonEnd = hor ? minIso(isoAdd(D, hor * 7 - 1), dataTo) : dataTo;
+    const rule = document.getElementById('ruleSel').value;
+    let a = ymOf(D);
+    for (let i = 0; i < Number(document.getElementById('factSel').value); i++) a = ym(a.y, a.m - 1);
+    const months = [];
+    while (firstDay(a) <= horizonEnd) {
+        const cs = firstDay(a), ce = lastDay(a);
+        const start = cs, end = minIso(ce, horizonEnd);
+        const factDays = factUntil < start ? 0 : days(start, minIso(end, factUntil));
+        const all = days(start, end);
+        const notes = [];
+        if (end < ce) notes.push(`горизонт — до ${dmy(end)}`);
+        let wedWeeks = [];
+        for (let w = toMonday(cs); w <= ce; w = isoAdd(w, 7)) {
+            const wed = isoAdd(w, 2);
+            if (wed >= cs && wed <= ce && isoAdd(w, 6) <= maxIso(horizonEnd, end) && w <= end) wedWeeks.push(w);
+        }
+        months.push({ a, label: `${MONTHS[a.m]} ${a.y}`, cs, ce, start, end, partial: notes.length > 0, notes,
+                      factDays, fcDays: all - factDays, wedWeeks,
+                      status: factDays === all ? 'fact' : factDays === 0 ? 'forecast' : 'mixed' });
+        a = ym(a.y, a.m + 1);
     }
-    return W;
+    return { D, rule, factUntil, dataFrom, dataTo, horizonEnd, months, openDay: months.length ? isoAdd(months[0].start, -1) : null };
 }
+
+function crFlowDays(s, e, pick) {
+    let sum = 0; const miss = [];
+    for (let w = toMonday(s); w <= e; w = isoAdd(w, 7)) {
+        const k = days(maxIso(s, w), minIso(e, isoAdd(w, 6)));
+        if (k <= 0) continue;
+        const cw = crWeek(w);
+        if (!cw.ok) { miss.push(cw); continue; }
+        sum += pick(cw.v) * k / 7;
+    }
+    return { v: sum, miss };
+}
+function crDebtDays(x, pickDebt, pickNet) {
+    const w = toMonday(x), k = days(w, x);
+    const cw = crWeek(w);
+    if (k === 7) return cw.ok ? { v: pickDebt(cw.v), miss: [] } : { v: null, miss: [cw] };
+    const pw = crWeek(isoAdd(w, -7));
+    const miss = [pw, cw].filter(z => !z.ok);
+    if (miss.length) return { v: null, miss };
+    const pd = pickDebt(pw.v);
+    return { v: pd == null ? null : pd + pickNet(cw.v) * k / 7, miss };
+}
+function crFlowWeeks(weeks, pick) {
+    let sum = 0; const miss = [];
+    weeks.forEach(w => { const cw = crWeek(w); if (cw.ok) sum += pick(cw.v); else miss.push(cw); });
+    return { v: sum, miss };
+}
+function crDebtWeek(w, pickDebt) {
+    const cw = crWeek(w);
+    return cw.ok ? { v: pickDebt(cw.v), miss: [] } : { v: null, miss: [cw] };
+}
+const finalize = r => (r.miss.some(z => z.out) ? { v: null, miss: r.miss } : r);
 
 function aggregate() {
-    const open = WEEKS[CAL.openMon];
-    let prev = open.ok ? { debtCr: open.v.debtCr, debtPi: open.v.debtPi, debtTotal: open.v.debtTotal, banks: open.v.banks } : null;
-    const openVals = prev;
-    const months = CAL.months.map(m => {
-        const o = { missing: [], banks: { cr: {}, pi: {} } };
-        FLOW_IDS.forEach(id => o[id] = 0);
-        m.weeks.forEach(w => {
-            const wk = WEEKS[w.mon];
-            if (!wk.ok) { o.missing.push(wk); return; }
-            FLOW_IDS.forEach(id => o[id] += w.share * wk.v[id]);
-            ['cr', 'pi'].forEach(g => Object.entries(wk.v.banks[g]).forEach(([k, b]) => {
-                const t = o.banks[g][k] || (o.banks[g][k] = { name: b.name, net: 0, debt: null });
-                t.net += w.share * b.net;
-            }));
+    const rule = CAL.rule;
+    const bankKeys = new Map();
+    const collectBanks = cw => { if (cw.ok) Object.entries(cw.v.banks).forEach(([k, b]) => { if (!bankKeys.has(k) || b.debt != null) bankKeys.set(k, b.name); }); };
+    for (let w = toMonday(CAL.openDay); w <= CAL.months[CAL.months.length - 1].end; w = isoAdd(w, 7)) collectBanks(crWeek(w));
+
+    const crMonth = m => {
+        const pickNet = v => v.netCr, pickInt = v => v.intCr, pickDebt = v => v.debtCr;
+        const o = {};
+        if (rule === 'days') {
+            o.netCr = finalize(crFlowDays(m.start, m.end, pickNet));
+            o.intCr = finalize(crFlowDays(m.start, m.end, pickInt));
+            o.debtCr = finalize(crDebtDays(m.end, pickDebt, pickNet));
+        } else {
+            const ws = m.wedWeeks;
+            o.netCr = finalize(crFlowWeeks(ws, pickNet));
+            o.intCr = finalize(crFlowWeeks(ws, pickInt));
+            o.debtCr = ws.length ? finalize(crDebtWeek(ws[ws.length - 1], pickDebt)) : { v: null, miss: [] };
+            o.weeksTxt = ws.length ? `тижні ${dm(ws[0])}–${dm(isoAdd(ws[ws.length - 1], 6))}` : '';
+        }
+        o.bankCr = {};
+        bankKeys.forEach((name, k) => {
+            const pn = v => (v.banks[k] ? v.banks[k].net : 0), pd = v => (v.banks[k] ? v.banks[k].debt : null);
+            o.bankCr[k] = rule === 'days'
+                ? { net: crFlowDays(m.start, m.end, pn).v, debt: crDebtDays(m.end, pd, pn).v }
+                : { net: crFlowWeeks(m.wedWeeks, pn).v, debt: m.wedWeeks.length ? crDebtWeek(m.wedWeeks[m.wedWeeks.length - 1], pd).v : null };
         });
-        const cw = WEEKS[m.closeW.mon];
-        BAL_IDS.forEach(id => o[id] = cw.ok ? cw.v[id] : null);
-        if (cw.ok) ['cr', 'pi'].forEach(g => Object.entries(cw.v.banks[g]).forEach(([k, b]) => {
-            const t = o.banks[g][k] || (o.banks[g][k] = { name: b.name, net: 0, debt: null });
-            t.debt = b.debt;
-        }));
-        const cc = (d, n, p) => d == null || p == null || CAL.rule !== 'wed' ? null : (d - p) - n;
-        o.ctrlCr = prev && !o.missing.length ? cc(o.debtCr, o.netCr, prev.debtCr) : null;
-        o.ctrlPi = prev && !o.missing.length ? cc(o.debtPi, o.netPi, prev.debtPi) : null;
-        prev = cw.ok ? { debtCr: o.debtCr, debtPi: o.debtPi, debtTotal: o.debtTotal } : null;
+        return o;
+    };
+
+    let openCr;
+    if (rule === 'days') openCr = crDebtDays(CAL.openDay, v => v.debtCr, v => v.netCr);
+    else { const fw = CAL.months[0].wedWeeks[0]; openCr = fw ? crDebtWeek(isoAdd(fw, -7), v => v.debtCr) : { v: null, miss: [] }; }
+    const openPi = credAt(IDX.debtPi, CAL.openDay);
+    const open = { debtCr: openCr.v, debtPi: openPi, missCr: openCr.miss };
+    open.debtTotal = open.debtCr == null || open.debtPi == null ? null : open.debtCr + open.debtPi;
+    const openBanks = { cr: {}, pi: {} };
+    bankKeys.forEach((n, k) => {
+        const pn = v => (v.banks[k] ? v.banks[k].net : 0), pd = v => (v.banks[k] ? v.banks[k].debt : null);
+        openBanks.cr[k] = rule === 'days' ? crDebtDays(CAL.openDay, pd, pn).v
+            : (CAL.months[0].wedWeeks[0] ? crDebtWeek(isoAdd(CAL.months[0].wedWeeks[0], -7), pd).v : null);
+    });
+    IDX.banks.forEach((b, k) => openBanks.pi[k] = credAt(b.debt, CAL.openDay));
+
+    let prev = open;
+    const months = CAL.months.map(m => {
+        const c = crMonth(m);
+        const o = { miss: {}, weeksTxt: c.weeksTxt || '' };
+        o.netCr = c.netCr.v; o.miss.netCr = c.netCr.miss;
+        o.intCr = c.intCr.v; o.miss.intCr = c.intCr.miss;
+        o.debtCr = c.debtCr.v; o.miss.debtCr = c.debtCr.miss;
+        const inData = m.start >= CAL.dataFrom;
+        o.netPi = inData ? credSum(IDX.cum.netPi, m.start, m.end) : null;
+        o.intPi = inData ? credSum(IDX.cum.intPi, m.start, m.end) : null;
+        o.debtPi = credAt(IDX.debtPi, m.end);
+        if (!inData) o.miss.netPi = o.miss.intPi = [{ why: `дані CRED починаються з ${dmy(CAL.dataFrom)}` }];
+        const add = (x, y) => x == null || y == null ? null : x + y;
+        o.netTotal = add(o.netCr, o.netPi);
+        o.intTotal = add(o.intCr, o.intPi);
+        o.debtTotal = add(o.debtCr, o.debtPi);
+        ['netTotal', 'intTotal', 'debtTotal'].forEach((t, i) => {
+            const cr = ['netCr', 'intCr', 'debtCr'][i], pi = ['netPi', 'intPi', 'debtPi'][i];
+            o.miss[t] = [...(o.miss[cr] || []), ...(o.miss[pi] || [])];
+        });
+        o.ctrlCr = prev && prev.debtCr != null && o.debtCr != null && o.netCr != null && !o.miss.netCr.length ? (o.debtCr - prev.debtCr) - o.netCr : null;
+        o.ctrlPi = prev && prev.debtPi != null && o.debtPi != null && o.netPi != null ? (o.debtPi - prev.debtPi) - o.netPi : null;
+        o.banks = { cr: c.bankCr, pi: {} };
+        IDX.banks.forEach((b, k) => o.banks.pi[k] = { net: credSum(b.cum, m.start, m.end), debt: credAt(b.debt, m.end) });
+        prev = o;
         return o;
     });
-    return { open: openVals, openOk: open.ok, openWhy: open.why, months };
+    return { open, openBanks, months, bankNames: { cr: bankKeys, pi: new Map([...IDX.banks].map(([k, b]) => [k, b.name])) } };
 }
 
 function collectWarnings() {
     const w = [];
-    const miss = Object.values(WEEKS).filter(x => !x.ok);
-    if (miss.length) w.push(`немає факту за ${miss.length} тиж. (${miss.map(x => dm(x.mon) + (x.opening ? ' — відкриття' : '')).join(', ')})`);
-    const cur = SNAPS[CAL.D];
-    SPECS.forEach(s => { if (!cur.nodes[s.id] && !s.optional) w.push(`не знайдено «${s.title}»`); });
+    const cur = PRK[CAL.D];
+    if (!cur || cur.error) w.push(`немає зрізу F13 на ${dmy(CAL.D)} — кредити не розраховано`);
+    else SPECS.forEach(s => { if (!cur.nodes[s.id] && !s.optional) w.push(`F13: не знайдено «${s.title}»`); });
+    const missWeeks = new Set();
+    AGG.months.forEach(m => Object.values(m.miss).flat().forEach(z => { if (z.mon && !z.out) missWeeks.add(z.mon); }));
+    (AGG.open.missCr || []).forEach(z => { if (z.mon && !z.out) missWeeks.add(z.mon); });
+    if (missWeeks.size) w.push(`немає даних F13 за тижні ${[...missWeeks].sort().map(dm).join(', ')}`);
+    const missing = CRED_REQUIRED.filter(t => !IDX.used[t]);
+    if (missing.length) w.push(`у CRED немає рядків: ${missing.join(', ')}`);
     const bad = AGG.months.filter(m => [m.ctrlCr, m.ctrlPi].some(x => x != null && Math.abs(x) >= CTRL_TOL)).length;
     if (bad) w.push(`контроль боргу не сходиться у ${bad} міс.`);
-    const gaps = Object.values(WEEKS).filter(x => x.ok && x.v.factPiGap && !x.opening);
-    if (gaps.length) w.push(`у факті ${gaps.map(x => dm(x.mon)).join(', ')} є оплата постімпорту без отримання`);
-    const nodebt = Object.values(WEEKS).filter(x => x.piByDebt);
-    if (nodebt.length) w.push(`постімпорт ${nodebt.map(x => dm(x.mon)).join(', ')} — за рухом коштів (${nodebt[0].piByDebt})`);
+    if (Math.floor((Date.now() - Date.parse(SNAP.meta.forecast_date)) / DAY) > 13) w.push(`CRED-зріз від ${dmy(SNAP.meta.forecast_date)} — понад 2 тижні тому`);
     return w;
 }
 
 // ---------- форматування ----------
-function unit() { return UNITS[document.getElementById('unitSel').value]; }
+const unit = () => UNITS[document.getElementById('unitSel').value];
 function shown(v) {
     if (v == null) return null;
     const u = unit();
@@ -598,200 +684,215 @@ function fmtNum(x, dec) {
     if (Object.is(x, -0) || x === 0) return '0';
     return (x < 0 ? '−' : '') + Math.abs(x).toLocaleString('uk-UA', { minimumFractionDigits: dec, maximumFractionDigits: dec }).replace(/[\u202F\u00A0]/g, ' ');
 }
-const statusBadge = m => m.partial ? `<span class="badge b-part">неповний</span>`
-    : m.status === 'fact' ? `<span class="badge b-fact">факт</span>`
-    : m.status === 'mixed' ? `<span class="badge b-mixed">факт ${m.nFact} + прогноз ${m.nFc} тиж.</span>`
-    : `<span class="badge b-fc">прогноз</span>`;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const statusBadge = m => (m.partial ? `<span class="badge b-part">неповний</span> ` : '') +
+    (m.status === 'fact' ? `<span class="badge b-fact">факт</span>`
+     : m.status === 'mixed' ? `<span class="badge b-mixed">факт ${m.factDays} + прогноз ${m.fcDays} дн.</span>`
+     : `<span class="badge b-fc">прогноз</span>`);
 const colCls = m => m.status === 'fact' ? 'c-fact' : m.status === 'mixed' ? 'c-mixed' : '';
-const periodOf = m => `${dm(m.weeks[0].mon < m.calStart && CAL.rule === 'days' ? m.calStart : m.weeks[0].mon)}–${dmy(m.partial ? m.weeks[m.weeks.length - 1].sun : (CAL.rule === 'days' ? m.calEnd : m.end))}`;
+const periodOf = m => `${dm(m.start)}–${dmy(m.end)}`;
+const missTip = miss => [...new Map((miss || []).map(z => [(z.mon || '') + z.why, z])).values()]
+    .map(z => (z.mon ? `${dm(z.mon)}–${dm(isoAdd(z.mon, 6))}: ` : '') + z.why).join('; ');
 
-function bankRows(grp) {
-    const keys = new Map();
-    AGG.months.forEach(a => Object.entries(a.banks[grp]).forEach(([k, b]) => { if (!keys.has(k)) keys.set(k, b.name); }));
-    return [...keys.entries()].filter(([k]) => AGG.months.some(a => {
-        const b = a.banks[grp][k]; return b && (Math.abs(b.net) >= 1 || Math.abs(b.debt || 0) >= 1);
-    })).map(([k, name]) => ({ k, name }));
+function bankRows(grp, isBal) {
+    const out = [];
+    AGG.bankNames[grp].forEach((name, k) => {
+        const any = AGG.months.some(a => { const b = a.banks[grp][k]; return b && (Math.abs(b.net || 0) >= 1 || (isBal && Math.abs(b.debt || 0) >= 1)); });
+        if (any) out.push({ k, name: name || k });
+    });
+    return out.sort((x, y) => x.name.localeCompare(y.name, 'uk'));
 }
 
 // ---------- рендер ----------
 function render() {
-    if (!CAL) return;
-    const u = unit(), cur = SNAPS[CAL.D];
+    if (!CAL || !AGG) return;
+    const u = unit(), m0 = SNAP.meta, cur = PRK[CAL.D];
     const showCtrl = document.getElementById('showCtrl').checked;
     const showBanks = document.getElementById('showBanks').checked;
     document.getElementById('navDate').textContent = dmy(CAL.D);
-    document.getElementById('hdrSub').textContent =
-        `Зріз прогнозу ${dmy(CAL.D)}. Факт — по ${dmy(CAL.lastFactSun)}, прогноз — ${dmy(CAL.D)}–${dmy(CAL.horizonEndSun)}. ` +
-        (CAL.rule === 'wed' ? 'Кожен тиждень віднесено цілком до одного місяця.' : 'Тижні, що перетинають межу, поділено за днями.');
-    document.getElementById('hdrUnit').innerHTML = `${u.lbl}<br>залучення «+», повернення «−»`;
+    
+    // Формування скороченого імені файлу CRED (CRED_YYYY-MM-DD_HHMMSS)
+    let credCleanName = 'CRED';
+    if (SNAP.__file && SNAP.__file.name) {
+        const m = SNAP.__file.name.match(/(CRED_\d{4}-\d{2}-\d{2}_\d+)/i);
+        credCleanName = m ? m[1] : SNAP.__file.name.replace(/\.json$/i, '');
+    }
 
-    const nOpen = CAL.months.length;
+    const created = m0.created_utc ? new Date(m0.created_utc).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    const fileTxt = `CRED: ${credCleanName}`;
+    
+    document.getElementById('navFile').textContent = '· ' + [
+        fileTxt, 
+        created ? `сформовано ${created}` : '',
+        cur && !cur.error ? `F13: дані ${dmy(CAL.D)}` : 'F13: дані відсутні'
+    ].filter(Boolean).join(' · ');
+    
+    document.getElementById('navFile').title = SNAP.__file && SNAP.__file.modified ? `CRED змінено в SharePoint: ${SNAP.__file.modified}` : '';
+    
+    document.getElementById('hdrSub').textContent =
+        `Дані ${dmy(CAL.D)}. Факт — по ${dmy(CAL.factUntil)}, прогноз — ${dmy(isoAdd(CAL.factUntil, 1))}–${dmy(CAL.horizonEnd)}. ` +
+        `Кредити — F13 (${CAL.rule === 'days' ? 'тижні за днями' : 'тиждень цілком'}), пост-імпорт — CRED за датами платежів.`;
+        
+    document.getElementById('hdrUnit').innerHTML = `${u.lbl}<br>залучення «+», повернення «−»`;
+    document.getElementById('helpDate').textContent = dmy(CAL.D);
+    document.getElementById('helpFactKey').textContent = cur && cur.factKey ? cur.factKey : 'Tm1_fact';
+
+    const wb = document.getElementById('warnBox');
+    const w = (m0.warnings || []).filter(x => !/допоміжну таблицю/.test(x));
+    wb.classList.toggle('hidden', !w.length);
+    wb.innerHTML = w.length ? '<b>Попередження у CRED-snapshot:</b> ' + w.map(esc).join('; ') : '';
+
     let h = `<thead><tr><th>Показник</th><th class="c-open">Початок</th>` +
         CAL.months.map(m => `<th class="${colCls(m)}">${m.label}<br>${statusBadge(m)}</th>`).join('') + `</tr>` +
-        `<tr><th></th><th class="c-open">на ${dmy(CAL.openSun)}</th>` +
-        CAL.months.map(m => `<th class="${colCls(m)}">${periodOf(m)}` +
-            (m.partial ? `<br>кінець місяця ${dmy(m.calEnd)} поза горизонтом` : '') + `</th>`).join('') + `</tr></thead><tbody>`;
+        `<tr><th></th><th class="c-open">на ${dmy(CAL.openDay)}</th>` +
+        CAL.months.map(m => `<th class="${colCls(m)}">${periodOf(m)}${m.partial ? `<br>${esc(m.notes[0])}` : ''}</th>`).join('') + `</tr></thead><tbody>`;
 
-    const cellHtml = (m, a, v, extra = '') => {
-        const warn = a.missing.length ? ' warn' : '';
-        const tip = a.missing.length ? ` title="Немає даних: ${a.missing.map(x => dm(x.mon) + ' — ' + x.why).join('; ')}"` : '';
-        return `<td class="${colCls(m)} ${v == null ? 'na' : ''}${warn} ${extra}"${tip}>${fmtNum(shown(v))}</td>`;
+    const cellHtml = (m, a, id, v, extraTip) => {
+        const miss = (a.miss && a.miss[id]) || [];
+        const warn = miss.length ? ' warn' : '';
+        const tips = [miss.length ? 'Неповні дані: ' + missTip(miss) : '', extraTip || ''].filter(Boolean).join(' | ');
+        return `<td class="${colCls(m)} ${v == null ? 'na' : ''}${warn}"${tips ? ` title="${esc(tips)}"` : ''}>${fmtNum(shown(v))}</td>`;
     };
-    const rowHtml = (label, cls, openVal, getter, isBal) => {
-        let r = `<tr class="${cls}"><td>${label}</td><td class="c-open ${isBal && openVal == null ? 'na' : ''}">${isBal ? fmtNum(shown(openVal)) : ''}</td>`;
-        AGG.months.forEach((a, i) => { r += cellHtml(CAL.months[i], a, getter(a)); });
-        return r + '</tr>';
-    };
-
     ROWS.forEach(r => {
         const isBal = r.type === 'bal';
-        h += rowHtml(r.label, `lvl${r.lvl} ${r.sep ? 'sep' : ''}`, isBal && AGG.open ? AGG.open[r.id] : null, a => a[r.id], isBal);
-        if (showBanks && r.bank) bankRows(r.bank).forEach(b => {
-            h += rowHtml(b.name, 'lvl2', isBal && AGG.open && AGG.open.banks[r.bank][b.k] ? AGG.open.banks[r.bank][b.k].debt : null,
-                         a => a.banks[r.bank][b.k] ? (isBal ? a.banks[r.bank][b.k].debt : a.banks[r.bank][b.k].net) : (isBal ? null : 0), isBal);
+        const openVal = isBal ? AGG.open[r.id] : null;
+        const openTip = isBal && r.id !== 'debtPi' && AGG.open.missCr.length ? ` title="${esc('Неповні дані: ' + missTip(AGG.open.missCr))}"` : '';
+        h += `<tr class="lvl${r.lvl} ${r.sep ? 'sep' : ''}"><td>${esc(r.label)}${r.src ? SRC_TAG[r.src] : ''}</td>` +
+             `<td class="c-open ${isBal && openVal == null ? 'na' : ''}"${openTip}>${isBal ? fmtNum(shown(openVal)) : ''}</td>`;
+        AGG.months.forEach((a, i) => h += cellHtml(CAL.months[i], a, r.id, a[r.id], r.src === 'f13' && a.weeksTxt ? a.weeksTxt : ''));
+        h += '</tr>';
+        if (showBanks && r.bank) bankRows(r.bank, isBal).forEach(b => {
+            const ov = isBal ? AGG.openBanks[r.bank][b.k] : null;
+            h += `<tr class="lvl2"><td>${esc(b.name)}</td><td class="c-open ${isBal && ov == null ? 'na' : ''}">${isBal ? fmtNum(shown(ov)) : ''}</td>` +
+                 AGG.months.map((a, i) => {
+                     const x = a.banks[r.bank][b.k];
+                     const v = x ? (isBal ? x.debt : x.net) : (isBal ? null : 0);
+                     return `<td class="${colCls(CAL.months[i])} ${v == null ? 'na' : ''}">${fmtNum(shown(v))}</td>`;
+                 }).join('') + '</tr>';
         });
     });
     if (showCtrl) CTRL_ROWS.forEach((r, j) => {
-        h += `<tr class="ctrl ${j === 0 ? 'sep' : ''}"><td>${r.label}</td><td class="c-open"></td>`;
+        h += `<tr class="ctrl ${j === 0 ? 'sep' : ''}"><td>${r.label}${SRC_TAG[r.src]}</td><td class="c-open"></td>`;
         AGG.months.forEach((a, i) => {
             const v = a[r.id], m = CAL.months[i];
             const cls = v == null ? 'na' : Math.abs(v) >= CTRL_TOL ? 'bad' : 'ok';
-            const tip = v == null ? (CAL.rule !== 'wed' ? 'контроль доступний лише в режимі «цілком»' : a.missing.length ? 'неповні дані' : 'немає боргу на початок періоду') : Math.abs(v) >= CTRL_TOL ? 'зміна боргу не дорівнює чистому залученню' : 'сходиться';
+            const tip = v == null ? 'недостатньо даних для контролю' : Math.abs(v) >= CTRL_TOL ? 'зміна боргу не дорівнює чистому залученню' : 'сходиться';
             h += `<td class="${colCls(m)} ${cls}" title="${tip}">${v == null ? '–' : Math.abs(v) < CTRL_TOL ? '✓' : fmtNum(shown(v))}</td>`;
         });
         h += '</tr>';
     });
     document.getElementById('monthTable').innerHTML = h + '</tbody>';
 
-    document.getElementById('helpFactKey').textContent = cur.factKey;
-    document.getElementById('helpDate').textContent = dmy(CAL.D);
-
     const showW = document.getElementById('showWeeks').checked;
     document.getElementById('weekSection').classList.toggle('hidden', !showW);
     if (showW) renderWeeks();
-
-    const showD = document.getElementById('showDiag').checked;
-    document.getElementById('diagSection').classList.toggle('hidden', !showD);
-    if (showD) renderDiag();
 }
 
+// ---------- тижні ----------
 function weekList() {
-    const list = [WEEKS[CAL.openMon]], seen = new Set([CAL.openMon]), mStart = new Set();
-    CAL.months.forEach(m => m.weeks.forEach((w, j) => {
-        if (j === 0) mStart.add(w.mon);
-        if (!seen.has(w.mon)) { seen.add(w.mon); list.push(WEEKS[w.mon]); }
-    }));
-    return { list, mStart };
+    const list = [];
+    const from = CAL.months[0].start, to = CAL.months[CAL.months.length - 1].end;
+    const mStarts = new Set(CAL.months.map(m => toMonday(m.start)));
+    for (let w = toMonday(from); w <= to; w = isoAdd(w, 7)) {
+        list.push({ mon: w, sun: isoAdd(w, 6), t: Math.round((Date.parse(w) - Date.parse(CAL.D)) / DAY / 7),
+                    fact: isoAdd(w, 6) <= CAL.factUntil, cross: ymOf(w).m !== ymOf(isoAdd(w, 6)).m, mb: mStarts.has(w) && w !== toMonday(from) });
+    }
+    return list;
 }
-const monthsOfWeek = mon => CAL.months.filter(m => m.weeks.some(w => w.mon === mon))
-    .map(m => { const w = m.weeks.find(x => x.mon === mon); return MONTHS[m.a.m].toLowerCase() + (w.share < 1 ? ` ${Math.round(w.share * 7)}/7` : ''); }).join(', ');
-
+function weekVal(w, id) {
+    const cw = crWeek(w.mon);
+    const cr = f => cw.ok ? f(cw.v) : null;
+    const piOk = w.mon >= CAL.dataFrom && w.sun <= CAL.dataTo;
+    const pi = key => piOk ? credSum(IDX.cum[key], w.mon, w.sun) : null;
+    const add = (x, y) => x == null || y == null ? null : x + y;
+    switch (id) {
+        case 'netCr': return cr(v => v.netCr);
+        case 'crIn': return cr(v => v.crIn);
+        case 'crOut': return cr(v => v.crOut);
+        case 'intCr': return cr(v => v.intCr);
+        case 'debtCr': return cr(v => v.debtCr);
+        case 'netPi': return pi('netPi');
+        case 'piIn': return pi('piIn');
+        case 'piOut': return pi('piOut');
+        case 'intPi': return pi('intPi');
+        case 'debtPi': return credAt(IDX.debtPi, w.sun);
+        case 'netTotal': return add(weekVal(w, 'netCr'), weekVal(w, 'netPi'));
+        case 'intTotal': return add(weekVal(w, 'intCr'), weekVal(w, 'intPi'));
+        case 'debtTotal': return add(weekVal(w, 'debtCr'), weekVal(w, 'debtPi'));
+    }
+    return null;
+}
+const WEEK_IDS = ['netTotal', 'netCr', 'crIn', 'crOut', 'netPi', 'piIn', 'piOut', 'intTotal', 'intCr', 'intPi', 'debtTotal', 'debtCr', 'debtPi'];
 function renderWeeks() {
-    const { list, mStart } = weekList();
-    const cls = w => `${w.src === 'fact' ? 'f' : ''} ${w.cross ? 'x' : ''} ${mStart.has(w.mon) ? 'mb' : ''}`;
-    let h = `<thead><tr><th>Показник</th>` + list.map(w =>
-        `<th class="${cls(w)}">${dm(w.mon)}–${dm(w.sun)}<br><span class="font-normal text-slate-400">${w.opening ? 'відкриття' : (w.ok ? w.srcLabel : 'немає')}</span>` +
-        `<br><span class="font-normal text-slate-400">${w.opening ? '' : monthsOfWeek(w.mon)}</span></th>`).join('') + `</tr></thead><tbody>`;
-    ROWS.forEach(r => {
-        h += `<tr><td class="${r.lvl ? 'text-slate-500 pl-4' : 'font-semibold'}">${r.label}</td>` + list.map(w => {
-            const show = !w.opening || r.type === 'bal';
-            const v = w.ok && show ? w.v[r.id] : null;
-            return `<td class="${cls(w)}" ${!w.ok ? `title="${w.why}"` : ''}>${show ? fmtNum(shown(v)) : ''}</td>`;
-        }).join('') + `</tr>`;
+    const list = weekList();
+    const cls = w => `${w.fact ? 'f' : ''} ${w.cross ? 'x' : ''} ${w.mb ? 'mb' : ''}`;
+    let h = `<thead><tr><th>Показник</th>` + list.map(w => {
+        const cw = crWeek(w.mon);
+        return `<th class="${cls(w)}">${dm(w.mon)}–${dm(w.sun)}<br><span class="font-normal text-slate-400">${w.t < 0 ? 'факт' : 'T' + w.t}</span>` +
+               `<br><span class="font-normal text-slate-400">F13: ${cw.ok ? esc(cw.label) : 'немає'}</span></th>`;
+    }).join('') + `</tr></thead><tbody>`;
+    WEEK_IDS.forEach(id => {
+        const lvl0 = /Total$/.test(id);
+        h += `<tr><td class="${lvl0 ? 'font-semibold' : 'text-slate-500 pl-4'}">${esc(WLABEL[id])}</td>` +
+             list.map(w => {
+                 const cw = crWeek(w.mon);
+                 const tip = /Cr$|crIn|crOut/.test(id) && !cw.ok ? ` title="${esc(cw.why)}"` : '';
+                 return `<td class="${cls(w)}"${tip}>${fmtNum(shown(weekVal(w, id)))}</td>`;
+             }).join('') + `</tr>`;
     });
     document.getElementById('weekTable').innerHTML = h + '</tbody>';
 }
 
-function renderDiag() {
-    const cur = SNAPS[CAL.D];
-    const okSnaps = Object.values(SNAPS).filter(s => !s.error && s.dateOk);
-    let h = `<thead><tr><th>Показник</th><th>Рядок у зрізі ${dmy(CAL.D)}</th><th>№ / код / тип</th><th>Як знайдено</th><th>Банків</th><th>У зрізах</th></tr></thead><tbody>`;
-    SPECS.forEach(s => {
-        const n = cur.nodes[s.id];
-        const found = okSnaps.filter(p => p.nodes && p.nodes[s.id]).length;
-        h += `<tr><td class="font-semibold">${s.title}</td>` +
-             (n ? `<td>${n.path.length ? '<span class="text-slate-400">' + n.path.join(' › ') + ' › </span>' : ''}${n.name}</td><td>${n.no || '—'} / ${n.code || '—'} / ${n.kind || '—'}</td><td>${n.how}${n.alt ? ` (ще ${n.alt})` : ''}</td><td>${n.banks.length || '—'}</td>`
-                : `<td colspan="4" class="${s.optional ? 'text-slate-400' : 'text-amber-700'}">не знайдено${s.optional ? ' — рядок необов’язковий, береться 0' : ''}</td>`) +
-             `<td>${found} з ${okSnaps.length}</td></tr>`;
-    });
-    document.getElementById('diagNodes').innerHTML = h + '</tbody>';
-
-    let s = `<thead><tr><th>Запитаний зріз</th><th>Дата у JSON</th><th>Файл / автор</th><th>Колонка факту</th><th>Використано для</th><th>Стан</th></tr></thead><tbody>`;
-    Object.values(SNAPS).sort((a, b) => a.requested.localeCompare(b.requested)).forEach(p => {
-        const use = [p.requested === CAL.D ? 'прогноз T0–T12' : null,
-                     WEEKS[isoAdd(p.requested, -7)] ? `факт ${dm(isoAdd(p.requested, -7))}–${dm(isoAdd(p.requested, -1))}` : null].filter(Boolean).join('; ') || '—';
-        const st = p.error ? `<span class="text-red-700">${p.error}</span>` : !p.dateOk ? `<span class="text-red-700">дата не збігається</span>`
-                 : p.dateMissing ? `<span class="text-amber-700">немає meta.forecast_date</span>` : 'OK';
-        const src = p.meta ? [p.fileName, p.meta.generated_by].filter(Boolean).join(' / ') : '—';
-        s += `<tr><td>${dmy(p.requested)}</td><td>${p.date ? dmy(p.date) : '—'}</td><td>${src || '—'}</td><td>${p.factKey || '—'}</td><td>${use}</td><td>${st}</td></tr>`;
-    });
-    document.getElementById('diagSnaps').innerHTML = s + '</tbody>';
-}
-
 // ---------- вивантаження ----------
 function tableAoa() {
-    const hdr1 = ['Показник', 'Початок', ...CAL.months.map(m => m.label)];
-    const hdr2 = ['', `на ${dmy(CAL.openSun)}`, ...CAL.months.map(periodOf)];
-    const hdr3 = ['Тип даних', 'факт', ...CAL.months.map(m => (m.partial ? 'неповний, ' : '') +
-        (m.status === 'fact' ? 'факт' : m.status === 'mixed' ? `факт ${m.nFact} + прогноз ${m.nFc} тиж.` : 'прогноз'))];
+    const hdr1 = ['Показник', 'Джерело', 'Початок', ...CAL.months.map(m => m.label)];
+    const hdr2 = ['', '', `на ${dmy(CAL.openDay)}`, ...CAL.months.map(periodOf)];
+    const hdr3 = ['Тип даних', '', 'факт', ...CAL.months.map(m => (m.partial ? 'неповний, ' : '') +
+        (m.status === 'fact' ? 'факт' : m.status === 'mixed' ? `факт ${m.factDays} + прогноз ${m.fcDays} дн.` : 'прогноз'))];
     const body = [];
+    const showBanks = document.getElementById('showBanks').checked;
     ROWS.forEach(r => {
         const isBal = r.type === 'bal';
-        body.push([r.lvl ? '   ' + r.label : r.label, isBal && AGG.open ? shown(AGG.open[r.id]) : null, ...AGG.months.map(a => shown(a[r.id]))]);
-        if (document.getElementById('showBanks').checked && r.bank) bankRows(r.bank).forEach(b => body.push(['      ' + b.name,
-            isBal && AGG.open && AGG.open.banks[r.bank][b.k] ? shown(AGG.open.banks[r.bank][b.k].debt) : null,
-            ...AGG.months.map(a => a.banks[r.bank][b.k] ? shown(isBal ? a.banks[r.bank][b.k].debt : a.banks[r.bank][b.k].net) : null)]));
+        body.push([r.lvl ? '   ' + r.label : r.label, r.src ? r.src.toUpperCase() : '', isBal ? shown(AGG.open[r.id]) : null, ...AGG.months.map(a => shown(a[r.id]))]);
+        if (showBanks && r.bank) bankRows(r.bank, isBal).forEach(b => body.push(['      ' + b.name, r.src.toUpperCase(),
+            isBal ? shown(AGG.openBanks[r.bank][b.k]) : null,
+            ...AGG.months.map(a => { const x = a.banks[r.bank][b.k]; return x ? shown(isBal ? x.debt : x.net) : null; })]));
     });
     return [hdr1, hdr2, hdr3, ...body];
 }
 
 function exportXlsx() {
-    if (!CAL) return;
+    if (!AGG) return;
     if (!window.XLSX) { setStatus('Бібліотека Excel не завантажилась — скористайтесь «Копіювати»', 'bg-red-100 text-red-800'); return; }
-    const u = unit(), cur = SNAPS[CAL.D];
+    const u = unit(), m = SNAP.meta;
     const wb = XLSX.utils.book_new();
     const aoa = [[`Кредити, постімпорт, ${u.lbl}`],
-                 [`Зріз прогнозу ${dmy(CAL.D)}; факт по ${dmy(CAL.lastFactSun)}; ` +
-                  (CAL.rule === 'wed' ? 'тиждень — цілком за місяцем' : 'тижні поділено за днями')], [], ...tableAoa()];
+                 [`Дані ${dmy(CAL.D)}; факт по ${dmy(CAL.factUntil)}; горизонт до ${dmy(CAL.horizonEnd)}; кредити — F13 (${CAL.rule === 'days' ? 'тижні за днями' : 'тиждень цілком'}), пост-імпорт — CRED (${SNAP.__file ? SNAP.__file.name : m.source_file || ''})`], [],
+                 ...tableAoa()];
     const ws1 = XLSX.utils.aoa_to_sheet(aoa);
-    ws1['!cols'] = [{ wch: 50 }, ...aoa[3].slice(1).map(() => ({ wch: 20 }))];
+    ws1['!cols'] = [{ wch: 50 }, { wch: 8 }, ...aoa[3].slice(2).map(() => ({ wch: 20 }))];
     XLSX.utils.book_append_sheet(wb, ws1, 'Помісячно');
 
-    const { list } = weekList();
+    const list = weekList();
     const aoaW = [['Показник', ...list.map(w => `${dmy(w.mon)}–${dmy(w.sun)}`)],
-                  ['Місяць', ...list.map(w => w.opening ? 'відкриття' : monthsOfWeek(w.mon))],
-                  ['Джерело', ...list.map(w => w.ok ? w.srcLabel : 'немає: ' + w.why)],
-                  ...ROWS.map(r => [r.label, ...list.map(w => w.ok && (!w.opening || r.type === 'bal') ? shown(w.v[r.id]) : null)])];
+                  ['Тиждень', ...list.map(w => w.t < 0 ? 'факт' : 'T' + w.t)],
+                  ['Джерело F13', ...list.map(w => { const cw = crWeek(w.mon); return cw.ok ? cw.label : 'немає: ' + cw.why; })],
+                  ...WEEK_IDS.map(id => [WLABEL[id], ...list.map(w => shown(weekVal(w, id)))])];
     const ws2 = XLSX.utils.aoa_to_sheet(aoaW);
-    ws2['!cols'] = [{ wch: 50 }, ...list.map(() => ({ wch: 16 }))];
+    ws2['!cols'] = [{ wch: 44 }, ...list.map(() => ({ wch: 16 }))];
     XLSX.utils.book_append_sheet(wb, ws2, 'Тижні');
-
-    const aoaS = [['Показник', 'Рядок у зрізі', '№', 'Код', 'Тип', 'Як знайдено'],
-                  ...SPECS.map(s => { const n = cur.nodes[s.id]; return n ? [s.title, n.name, n.no, n.code, n.kind, n.how] : [s.title, 'не знайдено', '', '', '', '']; }),
-                  [], ['Методологія'],
-                  ['Кредити = 6.1.1 − 6.2.1; пост-імпорт = 6.1.3 − 6.2.3; відсотки: кредити = 6.2.2 + 6.2.11, пост-імпорт = 6.2.12.'],
-                  [CAL.rule === 'wed' ? 'Тиждень належить місяцю, у який припадає його середа.' : 'Потоки тижнів, що перетинають межу, поділено між місяцями пропорційно днях.'],
-                  ['Заборгованість — знімок на кінець останнього тижня періоду.'],
-                  [`Факт тижня — колонка ${cur.factKey} зрізу наступного понеділка; прогноз — T0–T12 зрізу ${dmy(CAL.D)}.`]];
-    const ws3 = XLSX.utils.aoa_to_sheet(aoaS);
-    ws3['!cols'] = [{ wch: 36 }, { wch: 44 }, { wch: 8 }, { wch: 14 }, { wch: 8 }, { wch: 14 }];
-    XLSX.utils.book_append_sheet(wb, ws3, 'Джерела');
 
     XLSX.writeFile(wb, `Кредити_постімпорт_${dmy(CAL.D)}.xlsx`);
 }
 
 async function copyTable() {
-    if (!CAL) return;
+    if (!AGG) return;
     const tsv = tableAoa().map(r => r.map(v => v == null ? '' : typeof v === 'number' ? String(v).replace('.', ',') : v).join('\t')).join('\n');
     try { await navigator.clipboard.writeText(tsv); setStatus('Таблицю скопійовано — вставте в Excel', 'bg-emerald-100 text-emerald-800'); }
     catch { setStatus('Браузер заборонив доступ до буфера обміну', 'bg-red-100 text-red-800'); }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const t = new Date();
-    const today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-    loadReport(today);
-});
+document.addEventListener('DOMContentLoaded', loadLatest);
 </script>
 </body>
 </html>

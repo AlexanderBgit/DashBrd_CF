@@ -74,8 +74,8 @@
             <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк</button>
         </div>
         <div id="navLinks">
-            <a href="sop-home" class="text-blue-600 hover:underline mr-3 text-xs font-semibold">CF Показники</a>
-            <a href="sop-credit" class="text-gray-800 hover:underline font-semibold text-xs">Кредити</a>
+            <a href="sop-home" class="mr-3 text-xs font-semibold">CF Показники</a>
+            <a href="sop-credit" class="text-xs font-semibold">Кредити</a>
         </div>
     </div>
 </nav>
@@ -263,26 +263,34 @@ function highlightActiveNav() {
     const currentPath = window.location.pathname.toLowerCase();
     const links = document.querySelectorAll('#navLinks a');
 
-    links.forEach(a => {
-        const href = a.getAttribute('href').toLowerCase();
-        // Перевіряємо, чи поточний URL містить назву файлу з href
-        const isCurrent = currentPath.endsWith(href) || 
-                          (href.includes('sop-home') && (currentPath.endsWith('/') || currentPath.endsWith('/dashbrd_cf/')));
+    // Визначаємо, яка вкладка є поточною для цієї сторінки (sop-home)
+    const isHome = currentPath.includes('sop-home') || 
+                   currentPath.includes('monthly') || 
+                   currentPath.endsWith('/') || 
+                   currentPath.endsWith('/dashbrd_cf');
 
-        if (isCurrent) {
-            // Активна сторінка: чорний текст без лінка-підкреслення
-            a.className = 'text-gray-800 font-semibold text-xs cursor-default';
-            a.removeAttribute('href'); // вимикаємо клік на саму себе
+    links.forEach(a => {
+        const href = (a.getAttribute('href') || '').toLowerCase();
+        const matchesThis = href.includes('sop-home') ? isHome : (!isHome && currentPath.includes('sop-credit'));
+
+        if (matchesThis) {
+            // Поточна активна сторінка — чорний текст, без переходу
+            a.className = 'text-slate-800 font-bold text-xs cursor-default pointer-events-none';
+            if (href.includes('sop-home')) a.classList.add('mr-3');
+            a.removeAttribute('href');
         } else {
-            // Сторінка для переходу: синій колір з підкресленням при наведенні
-            a.className = 'text-blue-600 hover:underline mr-3 text-xs font-semibold';
+            // Сторінка для переходу — синій текст з підкресленням
+            a.className = 'text-blue-600 hover:underline text-xs font-semibold';
+            if (href.includes('sop-home')) a.classList.add('mr-3');
         }
     });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    highlightActiveNav();
-    // решта викликів (наприклад, loadReport)...
+    highlightActiveNav(); // <-- обов'язковий виклик підсвічування
+    const t = new Date();
+    const today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    loadReport(today);
 });
 
 // ---------- JSON ----------

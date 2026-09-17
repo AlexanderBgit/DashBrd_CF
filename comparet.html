@@ -360,8 +360,19 @@
 
     // Т-2 ПРИБРАНО: починаємо виключно з T-1
     const ALL_KEYS = ["T-1", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+
     const vals = node => ALL_KEYS.map(k => {
-        const v = node && node.values ? node.values[k] : 0;
+        if (!node || !node.values) return 0;
+        
+        let v = 0;
+        if (k === "T-1") {
+            // Беремо факт за Т-1, якщо він є, інакше прогноз або прямий ключ T-1
+            v = node.values["Tm1_fact"] !== undefined ? node.values["Tm1_fact"] :
+                (node.values["Tm1_forecast"] !== undefined ? node.values["Tm1_forecast"] : node.values["T-1"]);
+        } else {
+            v = node.values[k];
+        }
+        
         return typeof v === 'number' && isFinite(v) ? v : 0;
     });
 

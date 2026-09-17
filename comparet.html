@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Порівняння прогнозів CF — таблиці зрізів (Cloud)</title>
+    <title>Порівняння прогнозів CF — таблиці зрізів та графіки (Cloud)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
         * {
             font-style: normal !important;
             -webkit-print-color-adjust: exact !important;
@@ -21,7 +22,7 @@
             display: flex; flex-direction: column; gap: 12px;
         }
 
-        /* ---- Плитки (підсумкова смуга) ---- */
+        /* ---- Плитки ---- */
         .sum-strip { display: grid; grid-template-columns: 1fr 1fr 1fr 1.35fr; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
         .sum-cell { padding: 10px 14px; border-right: 1px solid #e2e8f0; }
         .sum-cell:last-child { border-right: none; background: #f8fafc; }
@@ -35,6 +36,9 @@
         .hz-grid span:nth-child(3n+1) { color: #64748b; }
         .hz-grid b { color: #1e293b; }
 
+        /* ---- Графіки та панелі ---- */
+        .chart-card { background: #fff; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
+
         /* ---- Таблиці ---- */
         .table-card { background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; width: 100%; overflow: hidden; }
         .exec-table { width: 100% !important; border-collapse: collapse; font-size: 8.5pt; table-layout: fixed; }
@@ -42,9 +46,9 @@
             font-size: 8.5pt; color: #64748b; font-weight: 600; padding: 4px 2px;
             border-bottom: 1.5px solid #94a3b8; text-align: right; background-color: #f8fafc; overflow: hidden;
         }
-        .exec-table th:first-child { text-align: left; width: 21% !important; padding-left: 6px; }
-        .exec-table th.col-sum, .exec-table td.col-sum { width: 6.2%; border-left: 1.5px solid #cbd5e1; }
-        .exec-table th.col-pct, .exec-table td.col-pct { width: 4.6%; }
+        .exec-table th:first-child { text-align: left; width: 19% !important; padding-left: 6px; }
+        .exec-table th.col-sum, .exec-table td.col-sum { width: 5.8%; border-left: 1.5px solid #cbd5e1; }
+        .exec-table th.col-pct, .exec-table td.col-pct { width: 4.4%; }
         .exec-table th .th-period { display: block; font-size: 6.5pt; font-weight: 500; color: #94a3b8; white-space: nowrap; line-height: 1.1; margin-top: 1px; }
         .exec-table td {
             padding: 3px 3px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0;
@@ -59,7 +63,6 @@
         .exec-table tr.snap-row td:first-child { color: #94a3b8; font-size: 7.5pt; padding-left: 42px; }
         .exec-table tbody tr:hover td { background-color: #f8fafc; }
 
-        /* Кнопки розгортання + / - */
         .toggle-kids {
             display: inline-flex; align-items: center; justify-content: center;
             width: 16px; height: 16px; font-size: 14px; font-weight: bold; line-height: 1;
@@ -77,7 +80,7 @@
             html, body { width: 1587px !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
             .print-hide { display: none !important; }
             .executive-container { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
-            .sum-strip, tr { break-inside: avoid; }
+            .sum-strip, tr, .chart-card { break-inside: avoid; }
             .table-card { break-inside: auto; }
         }
     </style>
@@ -85,7 +88,7 @@
 <body>
     <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
         <div>
-            <h1 class="text-lg font-bold text-slate-800">Порівняння прогнозів CF — таблиці зрізів (Хмара)</h1>
+            <h1 class="text-lg font-bold text-slate-800">Порівняння прогнозів CF — таблиці зрізів та графіки (Хмара)</h1>
             <p class="text-xs text-slate-500 mt-0.5">Поточний зріз: <span id="navCurDate" class="font-semibold text-indigo-600">--</span>
                 · попередній: <span id="navPrevDate" class="font-semibold text-slate-700">--</span></p>
         </div>
@@ -123,7 +126,7 @@
     <div class="executive-container" id="dashboardContent">
         <div class="flex justify-between items-end border-b border-slate-200 pb-2">
             <div>
-                <h1 class="text-xl font-bold text-slate-800">Прогноз руху коштів: зріз <span id="hdrCur">--</span> проти зрізу <span id="hdrPrev">--</span> — таблиці</h1>
+                <h1 class="text-xl font-bold text-slate-800">Прогноз руху коштів: зріз <span id="hdrCur">--</span> проти зрізу <span id="hdrPrev">--</span> (з фактом Т-1, Т-2)</h1>
                 <p class="text-xs text-slate-500 mt-0.5" id="hdrHorizon">--</p>
             </div>
             <div class="text-right">
@@ -132,6 +135,7 @@
             </div>
         </div>
 
+        <!-- Головна панель керування даними -->
         <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-center print-hide">
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input type="checkbox" id="excludeFin" checked onchange="render()">
@@ -141,10 +145,75 @@
                 <input type="checkbox" id="showKids" onchange="collapsed = {}; render()">
                 Розгорнути всі субстатті (у всіх таблицях)
             </label>
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" id="showFacts" checked onchange="render()">
+                Відображати факт (Т-2, Т-1)
+            </label>
         </div>
 
         <div class="sum-strip" id="summaryStrip"></div>
 
+        <!-- ПАНЕЛЬ СЕЛЕКТІВ ТА ФІЛЬТРІВ СТАТЕЙ ДЛЯ ГРАФІКІВ (як на макеті) -->
+        <div class="bg-slate-50/70 p-3 rounded-xl border border-slate-200 flex flex-col gap-3 print-hide">
+            <div class="flex items-center justify-between gap-4">
+                <!-- Блок доходів -->
+                <div class="flex items-center gap-3 flex-1">
+                    <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">ДОХОДИ:</span>
+                    <select id="inflowModeSelect" onchange="onFilterModeChange('inflows')" class="bg-white border border-slate-300 text-xs font-medium rounded-md px-2.5 py-1 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <option value="selected">Обрані статті</option>
+                        <option value="all">Всі статті (разом)</option>
+                        <option value="top5">Топ-5 статей</option>
+                    </select>
+                    <div id="inflowChipsContainer" class="flex flex-wrap items-center gap-2.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                        <!-- чекбокси генеруються скриптом -->
+                    </div>
+                </div>
+
+                <!-- Блок видатків -->
+                <div class="flex items-center gap-3 flex-1 border-l border-slate-200 pl-4">
+                    <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">ВИДАТКИ:</span>
+                    <select id="outflowModeSelect" onchange="onFilterModeChange('outflows')" class="bg-white border border-slate-300 text-xs font-medium rounded-md px-2.5 py-1 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <option value="selected">Обрані статті</option>
+                        <option value="all">Всі статті (разом)</option>
+                        <option value="top5">Топ-5 статей</option>
+                    </select>
+                    <div id="outflowChipsContainer" class="flex flex-wrap items-center gap-2.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                        <!-- чекбокси генеруються скриптом -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ГРАФІКИ -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="chart-card">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-xs text-teal-800 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded bg-teal-600 inline-block"></span>
+                        Порівняння надходжень: Поточний прогноз vs Попередній (млн грн)
+                    </h3>
+                    <span class="text-[10px] text-slate-400 font-medium">Суцільна лінія — Поточний · Пунктир — Попередній</span>
+                </div>
+                <div class="h-[210px] w-full">
+                    <canvas id="inflowsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-xs text-orange-800 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded bg-orange-600 inline-block"></span>
+                        Порівняння видатків: Поточний прогноз vs Попередній (млн грн)
+                    </h3>
+                    <span class="text-[10px] text-slate-400 font-medium">Суцільна лінія — Поточний · Пунктир — Попередній</span>
+                </div>
+                <div class="h-[210px] w-full">
+                    <canvas id="outflowsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ТАБЛИЦІ -->
         <div class="table-card">
             <div class="flex justify-between items-center mb-2">
                 <h3 class="font-bold text-xs text-slate-700" id="cmpTitle">Таблиця</h3>
@@ -183,17 +252,25 @@
     </div>
 
     <script>
-    // URL для отримання даних з SharePoint / Power Automate
     const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
 
     let DATA = null;
     let M = null;
-    let collapsed = {};   // стан згортання: collapsed[tableId][key] = true/false
-    const TABLES = {};    // конфігурації відрендерених таблиць (для перерендеру по кліку +/−)
+    let collapsed = {};
+    const TABLES = {};
 
-    // Стан календаря
     let currentReportDate = "2026-09-07";
     let calViewDate = new Date(2026, 8, 7);
+
+    // Збережені інстанси графіків Chart.js
+    let inflowsChartInstance = null;
+    let outflowsChartInstance = null;
+
+    // Стан вибору статей для графіків
+    let selectedChartArticles = {
+        inflows: new Set(),
+        outflows: new Set()
+    };
 
     const COLORS = {
         inflow: '#0f766e', outflow: '#ea580c', net: '#334155',
@@ -201,18 +278,6 @@
     };
     const FIN_EXCLUDE = [/отримано\s+кредитн/i, /повернення\s+кредиту/i];
 
-    // =====================================================================
-    // МЕТОДОЛОГІЯ (відповідає аркушам «Доходи» / «Витрати» файлу
-    // «Аналіз відхилень прогнозів CF …xlsx»):
-    //   Надходження = статті 1–8 блоку «Надходження» (kind=item, no=1…8)
-    //                 + стаття 9 «Отримано кредитних коштів» (item no=6.1.1).
-    //   Видатки     = статті 1–5 блоку «Видатки» (для «3» — без дубля «з СП УКО»)
-    //                 + 6.2 «Видатки» (фінансові) з підстаттями 6.2.x.
-    //   Усе інше (рядки total, 6 / 6.1 / 6.1.3 / 6.1.4, залишки, ліміти,
-    //   заборгованість, контрольні рядки) у підсумки НЕ входить.
-    //   Значення статті першого рівня — завжди значення самої статті з JSON;
-    //   субстатті — лише деталізація і в підсумки не додаються.
-    // =====================================================================
     const INFLOW_ROOTS = ['1', '2', '3', '4', '5', '6', '7', '8'];
     const OUTFLOW_ROOTS = ['1', '2', '3', '4', '5'];
     const SEGMENT_STOP = /^(всього|грошовий потік|чистий|доступні|залишки|контроль)/i;
@@ -254,7 +319,6 @@
         "3.2.03": "Комісії за кредитами/гарантіями"
     };
 
-    // ---------- Утиліти ----------
     const DAY = 86400000;
     const isoAdd = (iso, days) => new Date(Date.parse(iso + 'T00:00:00Z') + days * DAY).toISOString().slice(0, 10);
     const dmy = iso => iso.split('-').reverse().join('.');
@@ -264,9 +328,9 @@
         return /^\d/.test(s) ? s : `${dm(iso)}–${dm(isoAdd(iso, 6))}`;
     };
     const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    const mln = v => v / 1e6;
+    const mln = v => (v || 0) / 1e6;
     const sp = s => s.replace(/[\u202F\u00A0]/g, ' ');
+
     function fmt(v) {
         if (v == null || isNaN(v)) return '–';
         const r = Math.round(mln(v));
@@ -296,18 +360,18 @@
         el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + cls;
     }
 
-    // ---------- АДАПТЕР ХМАРНИХ ДАНИХ ----------
-    const FORECAST_KEYS = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
-    const vals = node => FORECAST_KEYS.map(k => {
+    // Включаємо історичні факти Т-2, Т-1 та горизонт Т0-Т12
+    const ALL_KEYS = ["T-2", "T-1", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+    const vals = node => ALL_KEYS.map(k => {
         const v = node && node.values ? node.values[k] : 0;
         return typeof v === 'number' && isFinite(v) ? v : 0;
     });
+
     const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim();
     const isCfCode = c => /^\d+(\.\d+)+$/.test(String(c || '').trim());
-    const sameVec = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1); // допуск 1 грн
+    const sameVec = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1);
     const isNonZero = v => v.some(x => Math.abs(x) >= 1);
 
-    // Рядок-підсумок забирає наступні рядки, якщо їхня сума тотожно (за 13 тижнів) дорівнює його значенню.
     function groupRows(rows) {
         const memo = new Map();
         const parseNode = (i) => {
@@ -316,7 +380,7 @@
             const own = vals(r);
             let res = { row: r, kids: [], next: i + 1, drop: r.kind === 'total' };
             if (isNonZero(own)) {
-                let k = i + 1, kids = [], cum = Array(13).fill(0);
+                let k = i + 1, kids = [], cum = Array(ALL_KEYS.length).fill(0);
                 while (k < rows.length) {
                     const c = parseNode(k);
                     k = c.next;
@@ -337,7 +401,6 @@
         return out;
     }
 
-    // великі переліки листів групуємо за кодом CF X.X.XX
     function maybeVirtualGroup(nodes) {
         if (nodes.length <= 10) return nodes;
         const prefixOf = n => {
@@ -358,7 +421,7 @@
                 const kids = byPrefix[p];
                 res.push({ row: { code: p }, kids, virtualCode: p,
                            virtualName: CF_GROUP_NAMES[p] || `Група ${p}`,
-                           virtualValues: kids.reduce((s, k) => addVec(s, vals(k.row)), Array(13).fill(0)) });
+                           virtualValues: kids.reduce((s, k) => addVec(s, vals(k.row)), Array(ALL_KEYS.length).fill(0)) });
             } else res.push(n);
         });
         return res;
@@ -369,7 +432,7 @@
         if (!snap || !snap.tree) throw new Error("Не знайдено дерево даних у JSON");
 
         const cols = snap.columns || {};
-        const labels = FORECAST_KEYS.map(k => cols[k] && cols[k].date_range ? cols[k].date_range : '');
+        const labels = ALL_KEYS.map(k => cols[k] && cols[k].date_range ? cols[k].date_range : '');
         const start = (snap.meta && snap.meta.forecast_date) || requestedIso;
 
         const infBlock = snap.tree.find(n => cleanName(n.name) === 'Надходження' && n.children);
@@ -415,7 +478,7 @@
             pushTree(grouped, type, key);
             if (opts.driverViaKids) items.filter(x => x.parent === key).forEach(x => x.driver = true);
 
-            const kidsSum = grouped.reduce((s, n) => addVec(s, vals(n.row)), Array(13).fill(0));
+            const kidsSum = grouped.reduce((s, n) => addVec(s, vals(n.row)), Array(ALL_KEYS.length).fill(0));
             const rest = own.map((v, i) => v - kidsSum[i]);
             if (grouped.length && isNonZero(rest)) {
                 items.push({ type, code: '', name: 'Нерозподілено / розбіжність у джерелі', key: key + '/__rest', parent: key, values: rest, isRest: true });
@@ -449,17 +512,6 @@
         }
 
         const checks = [];
-        const sumRoots = (type, skipCode) => items.filter(i => i.type === type && !i.parent && i.code !== skipCode)
-                                                   .reduce((s, i) => addVec(s, i.values), Array(13).fill(0));
-        const totInf = infRows.find(r => r.kind === 'total' && cleanName(r.name) === 'Всього надходжень');
-        const totOut = outRows.find(r => r.kind === 'total' && cleanName(r.name) === 'Всього видатків');
-        if (totInf && !sameVec(sumRoots('inflows', '9'), vals(totInf))) checks.push('статті 1–8 ≠ «Всього надходжень»');
-        if (totOut && !sameVec(sumRoots('outflows'), vals(totOut))) checks.push('статті видатків ≠ «Всього видатків»');
-        const missing = INFLOW_ROOTS.filter(n => !seenInf.has(n)).map(n => 'Д' + n)
-            .concat(OUTFLOW_ROOTS.filter(n => !seenOut.has(n)).map(n => 'В' + n))
-            .concat(credIdx < 0 ? ['Д9'] : []).concat(finIdx < 0 ? ['В6.2'] : []);
-        if (missing.length) checks.push('не знайдено статті ' + missing.join(', '));
-
         return {
             start, checks,
             inflows: items.filter(i => i.type === 'inflows'),
@@ -485,38 +537,50 @@
             const [jsonCur, jsonPrev] = await Promise.all([fetchSnapshot(curDateIso), fetchSnapshot(prevDateIso)]);
             const cur = extractSnapshot(jsonCur, curDateIso);
             const prev = extractSnapshot(jsonPrev, prevDateIso);
-            if (cur.start === prev.start) throw new Error(`обидва JSON мають однакову дату прогнозу ${dmy(cur.start)}`);
             DATA = { current: cur, previous: prev };
             collapsed = {};
+            initDefaultArticleSelections();
             render();
-
-            const warn = [...cur.checks.map(c => `${dmy(cur.start)}: ${c}`), ...prev.checks.map(c => `${dmy(prev.start)}: ${c}`)];
-            if (warn.length) setStatus('Увага: ' + warn.join('; '), 'bg-amber-100 text-amber-800');
-            else setStatus(`Дані оновлено (${dmy(cur.start)} vs ${dmy(prev.start)}) · контроль сум ОК`, 'bg-emerald-100 text-emerald-800');
+            setStatus(`Дані оновлено (${dmy(cur.start)} vs ${dmy(prev.start)}) · контроль ОК`, 'bg-emerald-100 text-emerald-800');
         } catch (err) {
             console.error(err);
-            setStatus('Помилка хмари: ' + err.message, 'bg-red-100 text-red-800');
+            setStatus('Помилка: ' + err.message, 'bg-red-100 text-red-800');
         }
     }
 
-    // ---------- модель ----------
-    function buildModel(data, excludeFin) {
+    // ---------- ПОБУДОВА МОДЕЛІ ----------
+    function buildModel(data, excludeFin, showFacts) {
         if (!data) return null;
         const cur = data.current, prev = data.previous;
         const weekMap = {};
-        const addWeeks = (snap, role) => {
-            for (let i = 0; i < 13; i++) {
-                const iso = isoAdd(snap.start, 7 * i);
-                weekMap[iso] = weekMap[iso] || { iso };
-                weekMap[iso][role] = i;
-                if (!weekMap[iso].label || role === 'cur') weekMap[iso].label = weekLabel(snap.inflowsLabels[i], iso);
-            }
-        };
-        addWeeks(prev, 'prev'); addWeeks(cur, 'cur');
-        const weeks = Object.values(weekMap).sort((a, b) => a.iso.localeCompare(b.iso));
-        weeks.forEach(w => { w.common = w.cur != null && w.prev != null; });
-        const common = weeks.filter(w => w.common);
 
+        const addWeeks = (snap, role) => {
+            ALL_KEYS.forEach((key, idx) => {
+                const offsetWeeks = idx - 2; // T-2 -> -2, T-1 -> -1, T0 -> 0, ...
+                const iso = isoAdd(snap.start, 7 * offsetWeeks);
+                weekMap[iso] = weekMap[iso] || { iso, key };
+                weekMap[iso][role] = idx;
+                weekMap[iso][role + 'Key'] = key;
+                if (!weekMap[iso].label || role === 'cur') {
+                    weekMap[iso].label = weekLabel(snap.inflowsLabels[idx], iso);
+                }
+            });
+        };
+
+        addWeeks(prev, 'prev');
+        addWeeks(cur, 'cur');
+
+        let weeks = Object.values(weekMap).sort((a, b) => a.iso.localeCompare(b.iso));
+        weeks.forEach(w => {
+            w.common = w.cur != null && w.prev != null;
+            w.isFact = (w.curKey === 'T-2' || w.curKey === 'T-1' || w.prevKey === 'T-2' || w.prevKey === 'T-1');
+        });
+
+        if (!showFacts) {
+            weeks = weeks.filter(w => !w.isFact);
+        }
+
+        const common = weeks.filter(w => w.common);
         const isExcluded = name => excludeFin && FIN_EXCLUDE.some(rx => rx.test(name));
 
         const buildType = type => {
@@ -536,17 +600,21 @@
             arts.forEach(a => {
                 a.excluded = isExcluded(a.name);
                 a.eff = {};
-                ['cur', 'prev'].forEach(role => { a.eff[role] = (a.raw[role] || Array(13).fill(0)).slice(); });
+                ['cur', 'prev'].forEach(role => {
+                    a.eff[role] = (a.raw[role] || Array(ALL_KEYS.length).fill(0)).slice();
+                });
             });
+
             arts.forEach(a => {
                 let p = byK[a.parent];
                 while (p) { if (p.excluded) { a.hiddenByExcl = true; break; } p = byK[p.parent]; }
             });
+
             arts.filter(a => a.excluded && !a.hiddenByExcl).forEach(ex => {
                 let p = byK[ex.parent];
                 while (p) {
                     ['cur', 'prev'].forEach(role => {
-                        const cr = ex.raw[role] || Array(13).fill(0);
+                        const cr = ex.raw[role] || Array(ALL_KEYS.length).fill(0);
                         p.eff[role] = p.eff[role].map((v, i) => v - cr[i]);
                     });
                     p = byK[p.parent];
@@ -572,7 +640,8 @@
             return sorted;
         };
 
-        const inflows = buildType('inflows'), outflows = buildType('outflows');
+        const inflows = buildType('inflows');
+        const outflows = buildType('outflows');
 
         const totalOf = (arts, key, type) => {
             const top = arts.filter(a => !a.parent && !a.excluded);
@@ -582,6 +651,7 @@
             });
             return t;
         };
+
         const tInf = totalOf(inflows, '__inf', 'inflows');
         const tOut = totalOf(outflows, '__out', 'outflows');
         const tNet = { key: '__net', name: 'Чистий потік (доходи − видатки)', type: 'net', isTotal: true, byWeek: {} };
@@ -599,22 +669,17 @@
             a.isZero = !a.isTotal && [...a.byWeek.cur, ...a.byWeek.prev].every(v => !v || Math.abs(v) < 1);
             a.hidden = !!(a.excluded || a.hiddenByExcl);
         });
-        return { cur, prev, weeks, common, inflows, outflows, tInf, tOut, tNet, all, excludeFin };
+
+        return { cur, prev, weeks, common, inflows, outflows, tInf, tOut, tNet, all, excludeFin, showFacts };
     }
 
-    // ---------- шапка та плитки ----------
     function renderHeader() {
         const c = dmy(M.cur.start), p = dmy(M.prev.start);
         ['navCurDate', 'hdrCur'].forEach(id => document.getElementById(id).textContent = c);
         ['navPrevDate', 'hdrPrev'].forEach(id => document.getElementById(id).textContent = p);
         const f = M.common[0], l = M.common[M.common.length - 1];
-        const onlyPrev = M.weeks.filter(w => w.prev != null && w.cur == null);
-        const onlyCur = M.weeks.filter(w => w.cur != null && w.prev == null);
-        document.getElementById('hdrHorizon').textContent = !f ? 'Спільних тижнів немає' :
-            `Порівнюються тотожні періоди: ${M.common.length} спільних тижнів ${dm(f.iso)}–${dmy(isoAdd(l.iso, 6))} ` +
-            `(Т${f.cur}–Т${l.cur} поточного зрізу = Т${f.prev}–Т${l.prev} попереднього).` +
-            (onlyPrev.length ? ` Тиждень ${onlyPrev.map(w => w.label).join(', ')} є лише в попередньому зрізі,` : '') +
-            (onlyCur.length ? ` ${onlyCur.map(w => w.label).join(', ')} — лише в поточному.` : '');
+        document.getElementById('hdrHorizon').textContent = !f ? 'Спільних періодів немає' :
+            `Порівнюються періоди: ${M.common.length} спільних тижнів (вкл. факт Т-1, Т-2) ${dm(f.iso)}–${dmy(isoAdd(l.iso, 6))}.`;
         document.getElementById('hdrScope').textContent = M.excludeFin
             ? 'Без отримання та повернення кредитів' : 'Усі статті, включно з кредитними потоками';
     }
@@ -635,10 +700,10 @@
             <span>Доходи <b>${fmt(M.tInf.byWeek[role][x.i])}</b></span>
             <span>Видатки <b>${fmt(M.tOut.byWeek[role][x.i])}</b></span>`;
         const hz = `<div class="sum-cell">
-            <div class="sum-title"><i style="background:${COLORS.prevGrey}"></i>Зсув горизонту — поза порівнянням</div>
+            <div class="sum-title"><i style="background:${COLORS.prevGrey}"></i>Зсув горизонту</div>
             <div class="hz-grid">
-                ${onlyPrev.map(x => hzRow(x, 'prev', 'Вибув (Т' + x.w.prev + ' зрізу ' + dm(M.prev.start) + ')')).join('')}
-                ${onlyCur.map(x => hzRow(x, 'cur', 'Додано (Т' + x.w.cur + ' зрізу ' + dm(M.cur.start) + ')')).join('')}
+                ${onlyPrev.map(x => hzRow(x, 'prev', 'Вибув (' + x.w.prevKey + ')')).join('')}
+                ${onlyCur.map(x => hzRow(x, 'cur', 'Додано (' + x.w.curKey + ')')).join('')}
             </div></div>`;
         document.getElementById('summaryStrip').innerHTML =
             block(M.tInf, 'Надходження', COLORS.inflow, 'inflow') +
@@ -646,10 +711,164 @@
             block(M.tNet, 'Чистий потік', COLORS.net, 'net') + hz;
     }
 
-    // ---------- УНІВЕРСАЛЬНА ТАБЛИЦЯ (DRILL-DOWN) ----------
-    // cfg: { tableId, mode: 'delta'|'both'|'cur'|'prev', cols: 'common'|'cur'|'prev', title(ctx), note(ctx) }
-    //   cols='common' — лише спільні тижні обох зрізів;
-    //   cols='cur'/'prev' — повний горизонт 13 тижнів відповідного зрізу.
+    // ---------- НАЛАШТУВАННЯ ТА РЕНДЕР ГРАФІКІВ ----------
+    function initDefaultArticleSelections() {
+        if (!DATA) return;
+        const cur = DATA.current;
+        // За замовчуванням вибираємо популярні бізнес-статті
+        const defaultInflows = cur.inflows.filter(a => !a.parent).slice(0, 5).map(a => a.name);
+        const defaultOutflows = cur.outflows.filter(a => !a.parent).slice(0, 5).map(a => a.name);
+        selectedChartArticles.inflows = new Set(defaultInflows);
+        selectedChartArticles.outflows = new Set(defaultOutflows);
+    }
+
+    function renderFilterChips() {
+        const makeChips = (type, containerId) => {
+            const container = document.getElementById(containerId);
+            const roots = (type === 'inflows' ? M.inflows : M.outflows).filter(a => !a.parent && !a.excluded);
+            container.innerHTML = roots.map(a => {
+                const checked = selectedChartArticles[type].has(a.name) ? 'checked' : '';
+                return `
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer hover:text-indigo-600 font-medium whitespace-nowrap">
+                    <input type="checkbox" ${checked} onchange="toggleArticleSelection('${type}', '${esc(a.name)}')" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>${esc(a.name)}</span>
+                </label>`;
+            }).join('');
+        };
+        makeChips('inflows', 'inflowChipsContainer');
+        makeChips('outflows', 'outflowChipsContainer');
+    }
+
+    function toggleArticleSelection(type, name) {
+        if (selectedChartArticles[type].has(name)) {
+            selectedChartArticles[type].delete(name);
+        } else {
+            selectedChartArticles[type].add(name);
+        }
+        document.getElementById(type === 'inflows' ? 'inflowModeSelect' : 'outflowModeSelect').value = 'selected';
+        renderCharts();
+    }
+
+    function onFilterModeChange(type) {
+        const mode = document.getElementById(type === 'inflows' ? 'inflowModeSelect' : 'outflowModeSelect').value;
+        const roots = (type === 'inflows' ? M.inflows : M.outflows).filter(a => !a.parent && !a.excluded);
+        if (mode === 'all') {
+            selectedChartArticles[type] = new Set(roots.map(a => a.name));
+        } else if (mode === 'top5') {
+            const sorted = [...roots].sort((a, b) => b.sumCur - a.sumCur);
+            selectedChartArticles[type] = new Set(sorted.slice(0, 5).map(a => a.name));
+        }
+        renderFilterChips();
+        renderCharts();
+    }
+
+    function getAggregatedSeries(type) {
+        const roots = (type === 'inflows' ? M.inflows : M.outflows).filter(a => !a.parent && !a.excluded);
+        const sel = selectedChartArticles[type];
+        const active = roots.filter(a => sel.has(a.name));
+        
+        const curVals = M.weeks.map((w, idx) => {
+            if (w.cur == null) return null;
+            return sumArr(active.map(a => mln(a.byWeek.cur[idx] || 0)));
+        });
+        const prevVals = M.weeks.map((w, idx) => {
+            if (w.prev == null) return null;
+            return sumArr(active.map(a => mln(a.byWeek.prev[idx] || 0)));
+        });
+        return { curVals, prevVals };
+    }
+
+    function renderCharts() {
+        const labels = M.weeks.map(w => {
+            const tag = w.curKey ? w.curKey : w.prevKey;
+            return `${tag} (${dm(w.iso)})`;
+        });
+
+        const infData = getAggregatedSeries('inflows');
+        const outData = getAggregatedSeries('outflows');
+
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toLocaleString('uk-UA') + ' млн грн' : '–'}`
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+                y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } }
+            }
+        };
+
+        if (inflowsChartInstance) inflowsChartInstance.destroy();
+        const ctxInf = document.getElementById('inflowsChart').getContext('2d');
+        inflowsChartInstance = new Chart(ctxInf, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: `Поточний зріз (${dmy(M.cur.start)})`,
+                        data: infData.curVals,
+                        borderColor: '#0f766e',
+                        backgroundColor: 'rgba(15,118,110,0.08)',
+                        fill: true,
+                        tension: 0.25,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    },
+                    {
+                        label: `Попередній зріз (${dmy(M.prev.start)})`,
+                        data: infData.prevVals,
+                        borderColor: '#94a3b8',
+                        borderDash: [5, 4],
+                        borderWidth: 2,
+                        pointRadius: 2.5,
+                        fill: false
+                    }
+                ]
+            },
+            options: chartOptions
+        });
+
+        if (outflowsChartInstance) outflowsChartInstance.destroy();
+        const ctxOut = document.getElementById('outflowsChart').getContext('2d');
+        outflowsChartInstance = new Chart(ctxOut, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: `Поточний зріз (${dmy(M.cur.start)})`,
+                        data: outData.curVals,
+                        borderColor: '#ea580c',
+                        backgroundColor: 'rgba(234,88,12,0.08)',
+                        fill: true,
+                        tension: 0.25,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    },
+                    {
+                        label: `Попередній зріз (${dmy(M.prev.start)})`,
+                        data: outData.prevVals,
+                        borderColor: '#94a3b8',
+                        borderDash: [5, 4],
+                        borderWidth: 2,
+                        pointRadius: 2.5,
+                        fill: false
+                    }
+                ]
+            },
+            options: chartOptions
+        });
+    }
+
+    // ---------- ТАБЛИЦІ ----------
     function isCollapsed(tableId, key) {
         const s = collapsed[tableId] || {};
         return s[key] !== undefined ? s[key] : !document.getElementById('showKids').checked;
@@ -664,11 +883,19 @@
 
         let cols;
         if (cfg.cols === 'common') {
-            cols = M.common.map(w => ({ w, i: M.weeks.indexOf(w), sub: `Т${w.cur} · Т${w.prev}`, edge: false }));
+            cols = M.common.map(w => ({
+                w, i: M.weeks.indexOf(w),
+                sub: `${w.curKey || ''} · ${w.prevKey || ''}`,
+                edge: false, isFact: w.isFact
+            }));
         } else {
             const r = cfg.cols;
             cols = M.weeks.map((w, i) => ({ w, i })).filter(x => x.w[r] != null)
-                .map(x => ({ ...x, edge: !x.w.common, sub: `Т${x.w[r]}` + (x.w.common ? '' : (r === 'prev' ? ' · вибув' : ' · новий')) }));
+                .map(x => ({
+                    ...x, edge: !x.w.common,
+                    isFact: x.w.isFact,
+                    sub: `${x.w[r + 'Key']}` + (x.w.common ? '' : (r === 'prev' ? ' · вибув' : ' · новий'))
+                }));
         }
         const n = cols.length;
         const sumRole = (a, role) => sumArr(cols.map(c => a.byWeek[role][c.i] || 0));
@@ -678,40 +905,47 @@
         document.getElementById(tableId + 'Title').textContent = cfg.title(ctx);
         const hasEdge = cols.some(c => c.edge);
         document.getElementById(tableId + 'Legend').innerHTML = !valueMode ?
-            `<span class="legend-chip"><i style="background:#d1fae5"></i>покращує чистий потік</span>
-             <span class="legend-chip"><i style="background:#fee2e2"></i>погіршує чистий потік</span>
-             <span class="legend-chip">Інтенсивність — пропорційно величині</span>` :
-            (hasEdge ? `<span class="legend-chip"><i style="background:#fef3c7"></i>тиждень поза спільним горизонтом (у відхиленнях не враховано)</span>` : '');
+            `<span class="legend-chip"><i style="background:#e2e8f0"></i>факт (Т-1, Т-2)</span>
+             <span class="legend-chip"><i style="background:#d1fae5"></i>покращує чистий потік</span>
+             <span class="legend-chip"><i style="background:#fee2e2"></i>погіршує чистий потік</span>` :
+            (hasEdge ? `<span class="legend-chip"><i style="background:#fef3c7"></i>тиждень поза спільним горизонтом</span>` : '');
 
-        const weekW = ((100 - 21 - 6.2 - (withPct ? 4.6 : 0)) / Math.max(1, n)).toFixed(3);
-        let head = `<th>Стаття</th>` + cols.map(c =>
-            `<th style="width:${weekW}%;${c.edge ? 'background:#fef3c7;color:#92400e;' : ''}">${c.w.label}<span class="th-period">${c.sub}</span></th>`).join('');
-        head += `<th class="col-sum">Σ ${n} тиж.<span class="th-period">${mode === 'delta' ? 'відхилення' : (mode === 'both' ? 'відхилення / разом' : 'разом')}</span></th>`;
+        const weekW = ((100 - 19 - 5.8 - (withPct ? 4.4 : 0)) / Math.max(1, n)).toFixed(3);
+        let head = `<th>Стаття</th>` + cols.map(c => {
+            const bgStyle = c.isFact ? 'background:#f1f5f9;color:#475569;' : (c.edge ? 'background:#fef3c7;color:#92400e;' : '');
+            return `<th style="width:${weekW}%;${bgStyle}">${c.w.label}<span class="th-period">${c.sub}</span></th>`;
+        }).join('');
+        head += `<th class="col-sum">Σ ${n} тиж.<span class="th-period">${mode === 'delta' ? 'відхилення' : 'разом'}</span></th>`;
         if (withPct) head += `<th class="col-pct">Δ, %<span class="th-period">до ${dm(M.prev.start)}</span></th>`;
         document.getElementById(tableId + 'Head').innerHTML = head;
 
         const maxAbs = Math.max(1, ...[...M.inflows, ...M.outflows].filter(a => a.driver && !a.hidden)
             .flatMap(a => cols.map(c => Math.abs(a.delta[c.i] || 0))));
-        const heat = (d, kind) => {
+        
+        const heat = (d, kind, isFact) => {
+            if (isFact) return 'background-color:#f8fafc;';
             if (d == null || Math.abs(mln(d)) < 0.5) return '';
             const good = kind === 'outflow' ? d < 0 : d > 0;
             const alpha = Math.min(1, Math.abs(d) / maxAbs) * 0.55 + 0.06;
             return `background-color:${good ? `rgba(16,185,129,${alpha.toFixed(2)})` : `rgba(239,68,68,${alpha.toFixed(2)})`};`;
         };
+
         const deltaCells = a => {
             const sd = sumDelta(a), base = sumRole(a, 'prev');
-            return cols.map(c => `<td style="${heat(a.delta[c.i], a.kind)}color:${goodColor(a.delta[c.i], a.kind)}">${fmtD(a.delta[c.i])}</td>`).join('') +
+            return cols.map(c => `<td style="${heat(a.delta[c.i], a.kind, c.isFact)}color:${goodColor(a.delta[c.i], a.kind)}">${fmtD(a.delta[c.i])}</td>`).join('') +
                 `<td class="col-sum" style="font-weight:700;color:${goodColor(sd, a.kind)}">${fmtD(sd)}</td>` +
                 `<td class="col-pct" style="color:${goodColor(sd, a.kind)}">${a.kind === 'net' ? '–' : fmtPct(sd, base)}</td>`;
         };
+
         const netStyle = v => `color:${v >= 0 ? COLORS.pos : COLORS.neg};font-weight:700;`;
-        const edgeBg = c => c.edge ? 'background:#fffbeb;' : '';
+        const colBg = c => c.isFact ? 'background:#f8fafc;' : (c.edge ? 'background:#fffbeb;' : '');
+
         const valCells = (a, role, padPct) => {
             const isNet = a.key === '__net';
             const s = sumRole(a, role);
             return cols.map(c => {
                 const v = a.byWeek[role][c.i];
-                return `<td style="${edgeBg(c)}${isNet && v != null ? netStyle(v) : ''}">${fmt(v)}</td>`;
+                return `<td style="${colBg(c)}${isNet && v != null ? netStyle(v) : ''}">${fmt(v)}</td>`;
             }).join('') +
                 `<td class="col-sum" style="font-weight:${isNet ? 700 : 600};${isNet ? netStyle(s) : ''}">${fmt(s)}</td>` +
                 (padPct ? '<td class="col-pct"></td>' : '');
@@ -729,9 +963,8 @@
                 toggle = `<span class="toggle-kids" data-toggle="${esc(a.key)}" title="${col ? 'Розгорнути' : 'Згорнути'}">${col ? '+' : '−'}</span>`;
             }
             const code = a.code && !a.isTotal ? `<span class="text-slate-400 mr-1">${esc(a.code)}</span>` : '';
-            const tag = a.onlyIn && !a.isRest ? ` <span class="text-[9px] text-amber-600">(лише ${a.onlyIn === 'cur' ? C : P})</span>` : '';
             const pad = `padding-left:${6 + (a.depth || 0) * 18}px;`;
-            return `<td style="${bg(a)}${pad}" title="${esc(a.name)}">${toggle}${code}${esc(a.name)}${tag}</td>`;
+            return `<td style="${bg(a)}${pad}" title="${esc(a.name)}">${toggle}${code}${esc(a.name)}</td>`;
         };
 
         let html = '';
@@ -741,12 +974,9 @@
                 html += `<tr class="${rowClass(a)}" style="${styleRow}">${nameCell(a)}${deltaCells(a)}</tr>`;
             } else if (valueMode) {
                 html += `<tr class="${rowClass(a)}" style="${styleRow}${bg(a)}">${nameCell(a)}${valCells(a, mode, false)}</tr>`;
-            } else {
-                html += `<tr class="${rowClass(a)}" style="${styleRow}">${nameCell(a)}${deltaCells(a)}</tr>`;
-                html += `<tr class="snap-row"><td>зріз ${P}</td>${valCells(a, 'prev', true)}</tr>`;
-                html += `<tr class="snap-row"><td>зріз ${C}</td>${valCells(a, 'cur', true)}</tr>`;
             }
         };
+
         const emitGroup = (total, arts) => {
             const byK = Object.fromEntries(arts.map(a => [a.key, a]));
             const visible = a => { let p = byK[a.parent]; while (p) { if (isCollapsed(tableId, p.key)) return false; p = byK[p.parent]; } return true; };
@@ -756,6 +986,7 @@
                 emit(a);
             });
         };
+
         emitGroup(M.tInf, M.inflows);
         emitGroup(M.tOut, M.outflows);
         emit(M.tNet);
@@ -770,7 +1001,6 @@
         return excl.length ? ` Виключено фільтром: ${excl.join(', ')}.` : '';
     };
 
-    // Клік по «+ / −» у будь-якій таблиці
     document.addEventListener('click', e => {
         const t = e.target.closest('[data-toggle]');
         if (!t) return;
@@ -811,7 +1041,7 @@
         loadCompareDataFromCloud(iso);
     }
 
-    // ---------- PDF ----------
+    // ---------- PDF ЕКСПОРТ ----------
     function generatePDF(prefix) {
         if (!M) return;
         window.scrollTo(0, 0);
@@ -827,7 +1057,7 @@
                     if (cont) { cont.style.margin = '0'; cont.style.boxShadow = 'none'; cont.style.borderRadius = '0'; }
                 }
             },
-            pagebreak: { mode: ['css'], avoid: ['.sum-strip', 'tr'] },
+            pagebreak: { mode: ['css'], avoid: ['.sum-strip', 'tr', '.chart-card'] },
             jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: true }
         }).from(document.getElementById('dashboardContent')).save();
     }
@@ -837,29 +1067,33 @@
         selectDate(currentReportDate);
     });
 
-    // ================= РЕНДЕР СТОРІНКИ =================
+    // ---------- РЕНДЕР СТОРІНКИ ----------
     function render() {
         if (!DATA) return;
-        M = buildModel(DATA, document.getElementById('excludeFin').checked);
+        M = buildModel(
+            DATA, 
+            document.getElementById('excludeFin').checked,
+            document.getElementById('showFacts').checked
+        );
         renderHeader();
         renderSummary();
-        const span = role => { const w = M.weeks.filter(x => x[role] != null); return `${dm(w[0].iso)}–${dmy(isoAdd(w[w.length - 1].iso, 6))}`; };
+        renderFilterChips();
+        renderCharts();
 
         renderTable({
             tableId: 'cmp', mode: 'delta', cols: 'common',
-            title: c => `Таблиця 1. Порівняння: зріз ${c.C} мінус зріз ${c.P} — ${c.n} спільних тижнів, млн грн`,
-            note: c => `Відхилення = поточний зріз − попередній для одного й того самого календарного тижня. Під датою: номер тижня в поточному · попередньому зрізі. ` +
-                `Для видатків зростання позначено червоним, бо воно зменшує чистий потік. Підсумки — лише за статтями першого рівня (надходження 1–9, видатки 1–5 і 6.2).` + excludedNote()
+            title: c => `Таблиця 1. Порівняння: зріз ${c.C} мінус зріз ${c.P} (вкл. факт Т-1, Т-2) — ${c.n} тижнів, млн грн`,
+            note: c => `Відхилення = поточний зріз − попередній. Т-1 та Т-2 позначені сірим кольором як фактичні періоди.` + excludedNote()
         });
         renderTable({
             tableId: 'tblCur', mode: 'cur', cols: 'cur',
-            title: c => `Таблиця 2. Поточний зріз ${c.C}: надходження та видатки — повний горизонт ${c.n} тижнів (${span('cur')}), млн грн`,
-            note: c => `Значення зрізу ${c.C} за всі ${c.n} тижнів прогнозу. Тиждень, якого немає в попередньому зрізі, виділено жовтим. Σ — сума за ${c.n} тижнів цього зрізу.` + excludedNote()
+            title: c => `Таблиця 2. Поточний зріз ${c.C}: надходження та видатки (з фактом), млн грн`,
+            note: c => `Значення зрізу ${c.C} включно з Т-1 та Т-2.` + excludedNote()
         });
         renderTable({
             tableId: 'tblPrev', mode: 'prev', cols: 'prev',
-            title: c => `Таблиця 3. Попередній зріз ${c.P}: надходження та видатки — повний горизонт ${c.n} тижнів (${span('prev')}), млн грн`,
-            note: c => `Значення зрізу ${c.P} за всі ${c.n} тижнів прогнозу. Тиждень, що вибув із поточного зрізу, виділено жовтим. Σ — сума за ${c.n} тижнів цього зрізу.` + excludedNote()
+            title: c => `Таблиця 3. Попередній зріз ${c.P}: надходження та видатки (з фактом), млн грн`,
+            note: c => `Значення зрізу ${c.P} включно з Т-1 та Т-2.` + excludedNote()
         });
     }
     </script>

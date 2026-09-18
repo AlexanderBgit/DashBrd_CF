@@ -47,8 +47,9 @@
             border-bottom: 1.5px solid #94a3b8; text-align: right; background-color: #f8fafc; overflow: hidden;
         }
         .exec-table th:first-child { text-align: left; width: 19% !important; padding-left: 6px; }
-        .exec-table th.col-sum, .exec-table td.col-sum { width: 5.8%; border-left: 1.5px solid #cbd5e1; }
-        .exec-table th.col-pct, .exec-table td.col-pct { width: 4.4%; }
+        .exec-table th.col-sum, .exec-table td.col-sum { width: 5.6% !important; border-left: 1.5px solid #cbd5e1; }
+        .exec-table th.col-common, .exec-table td.col-common { width: 5.6% !important; border-left: 1px solid #e2e8f0; }
+        .exec-table th.col-pct, .exec-table td.col-pct { width: 5.6% !important; border-left: 1px solid #e2e8f0; }
         .exec-table th .th-period { display: block; font-size: 6.5pt; font-weight: 500; color: #94a3b8; white-space: nowrap; line-height: 1.1; margin-top: 1px; }
         .exec-table td {
             padding: 3px 3px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0;
@@ -111,7 +112,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
-                <button onclick="generatePDF('Таблиці_даних_та_графіки_CF')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Вивантажити в PDF">PDF</button>
+                <button onclick="generatePDF('Таблиці_даних_та_графіки_CF')" class="bg-red-600 hover:red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Вивантажити в PDF">PDF</button>
                 <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Друк звіту">Друк</button>
             </div>
             <div>
@@ -156,7 +157,6 @@
         <!-- ПАНЕЛЬ СЕЛЕКТІВ ДЛЯ ГРАФІКІВ -->
         <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200 flex flex-col gap-3 print-hide">
             <div class="flex items-center justify-between gap-4">
-                <!-- Блок доходів -->
                 <div class="flex items-center gap-3 flex-1">
                     <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">ДОХОДИ:</span>
                     <select id="inflowModeSelect" onchange="onFilterModeChange('inflows')" class="bg-white border border-slate-300 text-xs font-medium rounded-md px-2.5 py-1 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
@@ -164,12 +164,9 @@
                         <option value="all">Всі статті (разом)</option>
                         <option value="top5">Топ-5 статей</option>
                     </select>
-                    <div id="inflowChipsContainer" class="flex flex-wrap items-center gap-2.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all">
-                        <!-- чекбокси статей генеруються динамічно -->
-                    </div>
+                    <div id="inflowChipsContainer" class="flex flex-wrap items-center gap-2.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all"></div>
                 </div>
 
-                <!-- Блок видатків -->
                 <div class="flex items-center gap-3 flex-1 border-l border-slate-200 pl-4">
                     <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">ВИДАТКИ:</span>
                     <select id="outflowModeSelect" onchange="onFilterModeChange('outflows')" class="bg-white border border-slate-300 text-xs font-medium rounded-md px-2.5 py-1 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
@@ -177,9 +174,7 @@
                         <option value="all">Всі статті (разом)</option>
                         <option value="top5">Топ-5 статей</option>
                     </select>
-                    <div id="outflowChipsContainer" class="flex flex-wrap items-center gap-2.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all">
-                        <!-- чекбокси статей генеруються динамічно -->
-                    </div>
+                    <div id="outflowChipsContainer" class="flex flex-wrap items-center gap-2.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all"></div>
                 </div>
             </div>
         </div>
@@ -216,7 +211,7 @@
         <!-- ТАБЛИЦІ -->
         <div class="table-card">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="font-bold text-xs text-slate-700" id="cmpTitle">Таблиця</h3>
+                <h3 class="font-bold text-xs text-slate-700" id="cmpTitle">Таблиця 1</h3>
                 <div class="flex gap-4" id="cmpLegend"></div>
             </div>
             <table class="exec-table">
@@ -229,10 +224,10 @@
         <div class="table-card">
             <div class="flex justify-between items-center mb-2">
                 <div class="flex items-center gap-3">
-                    <h3 class="font-bold text-xs text-slate-700" id="tblCurTitle">Таблиця</h3>
+                    <h3 class="font-bold text-xs text-slate-700" id="tblCurTitle">Таблиця 2</h3>
                     <div class="flex items-center gap-1.5 print-hide">
                         <span class="text-[11px] text-slate-500 font-medium">Колонка Т-1:</span>
-                        <select id="curTm1ModeSelect" onchange="render()" class="bg-white border border-slate-300 text-[11px] font-medium rounded px-2 py-0.5 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <select id="curTm1ModeSelect" onchange="onCurTm1ModeChange()" class="bg-white border border-slate-300 text-[11px] font-semibold rounded px-2 py-0.5 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             <option value="fact" selected>Т-1 (факт)</option>
                             <option value="plan">Т-1 (план)</option>
                         </select>
@@ -249,7 +244,7 @@
 
         <div class="table-card">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="font-bold text-xs text-slate-700" id="tblPrevTitle">Таблиця</h3>
+                <h3 class="font-bold text-xs text-slate-700" id="tblPrevTitle">Таблиця 3</h3>
                 <div class="flex gap-4" id="tblPrevLegend"></div>
             </div>
             <table class="exec-table">
@@ -367,12 +362,10 @@
         el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + cls;
     }
 
-    // Т-2 ПРИБРАНО: починаємо виключно з T-1
     const ALL_KEYS = ["T-1", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
     const vals = (node, tm1Mode = 'fact') => ALL_KEYS.map(k => {
         if (!node || !node.values) return 0;
-        
         let v = 0;
         if (k === "T-1") {
             if (tm1Mode === 'plan') {
@@ -384,7 +377,6 @@
         } else {
             v = node.values[k];
         }
-        
         return typeof v === 'number' && isFinite(v) ? v : 0;
     });
 
@@ -398,7 +390,7 @@
         const parseNode = (i) => {
             if (memo.has(i)) return memo.get(i);
             const r = rows[i];
-            const own = vals(r);
+            const own = vals(r, 'fact');
             let res = { row: r, kids: [], next: i + 1, drop: r.kind === 'total' };
             if (isNonZero(own)) {
                 let k = i + 1, kids = [], cum = Array(ALL_KEYS.length).fill(0);
@@ -406,7 +398,7 @@
                     const c = parseNode(k);
                     k = c.next;
                     if (c.drop) continue;
-                    kids.push(c); cum = addVec(cum, vals(c.row));
+                    kids.push(c); cum = addVec(cum, vals(c.row, 'fact'));
                     if (sameVec(cum, own) && (kids.length >= 2 || r.kind === 'total')) {
                         res = { row: r, kids, next: k };
                         break;
@@ -440,9 +432,12 @@
                 if (done.has(p)) return;
                 done.add(p);
                 const kids = byPrefix[p];
-                res.push({ row: { code: p }, kids, virtualCode: p,
-                           virtualName: CF_GROUP_NAMES[p] || `Група ${p}`,
-                           virtualValues: kids.reduce((s, k) => addVec(s, vals(k.row)), Array(ALL_KEYS.length).fill(0)) });
+                res.push({
+                    row: { code: p }, kids, virtualCode: p,
+                    virtualName: CF_GROUP_NAMES[p] || `Група ${p}`,
+                    virtualValues: kids.reduce((s, k) => addVec(s, vals(k.row, 'fact')), Array(ALL_KEYS.length).fill(0)),
+                    virtualPlanValues: kids.reduce((s, k) => addVec(s, vals(k.row, 'plan')), Array(ALL_KEYS.length).fill(0))
+                });
             } else res.push(n);
         });
         return res;
@@ -473,8 +468,8 @@
                 const key = uniqKey(parentKey + '/' + (n.virtualCode ? 'cf:' + n.virtualCode : (r.code || name)));
                 items.push({ 
                     type, code, name, key, parent: parentKey, 
-                    values: n.virtualValues || vals(r),
-                    rawValues: r.values || {} // <-- додано для динамічного перемикання
+                    values: n.virtualValues || vals(r, 'fact'),
+                    valuesPlan: n.virtualPlanValues || vals(r, 'plan')
                 });
                 if (n.kids && n.kids.length) pushTree(n.kids, type, key, !!n.virtualCode);
             });
@@ -483,12 +478,11 @@
         const addRoot = (type, rowsList, idx, code, opts = {}) => {
             const it = rowsList[idx];
             const key = uniqKey(type + '|' + code);
-            const own = vals(it);
+            const own = vals(it, 'fact');
+            const ownPlan = vals(it, 'plan');
             items.push({ 
                 type, code, name: cleanName(it.name), key, parent: null, 
-                values: own, 
-                rawValues: it.values || {}, // <-- додано
-                driver: !opts.driverViaKids 
+                values: own, valuesPlan: ownPlan, driver: !opts.driverViaKids 
             });
 
             let grouped;
@@ -508,10 +502,13 @@
             pushTree(grouped, type, key);
             if (opts.driverViaKids) items.filter(x => x.parent === key).forEach(x => x.driver = true);
 
-            const kidsSum = grouped.reduce((s, n) => addVec(s, vals(n.row)), Array(ALL_KEYS.length).fill(0));
+            const kidsSum = grouped.reduce((s, n) => addVec(s, vals(n.row, 'fact')), Array(ALL_KEYS.length).fill(0));
             const rest = own.map((v, i) => v - kidsSum[i]);
             if (grouped.length && isNonZero(rest)) {
-                items.push({ type, code: '', name: 'Нерозподілено / розбіжність у джерелі', key: key + '/__rest', parent: key, values: rest, isRest: true });
+                items.push({ 
+                    type, code: '', name: 'Нерозподілено / розбіжність у джерелі', 
+                    key: key + '/__rest', parent: key, values: rest, valuesPlan: rest, isRest: true 
+                });
             }
         };
 
@@ -537,7 +534,7 @@
         const finIdx = outRows.findIndex(r => r.kind === 'item' && String(r.no || '').trim() === '6.2');
         if (finIdx >= 0) {
             const kids62 = outRows.filter(r => r.kind === 'item' && /^6\.2\.\d+$/.test(String(r.no || '').trim()))
-                                  .map(r => Object.assign({}, r, { code: String(r.no).trim() }));
+                                   .map(r => Object.assign({}, r, { code: String(r.no).trim() }));
             addRoot('outflows', outRows, finIdx, '6.2', { extraKids: kids62, driverViaKids: true });
         }
 
@@ -577,19 +574,15 @@
         }
     }
 
-    // ---------- МОДЕЛЬ ДАНИХ ТА ВИРІВНЮВАННЯ ВЕРТИКАЛЕЙ ----------
+    // ---------- МОДЕЛЬ ДАНИХ ----------
     function buildModel(data, excludeFin, showFacts) {
         if (!data) return null;
         const cur = data.current, prev = data.previous;
         const weekMap = {};
-        
-        const curTm1Mode = document.getElementById('curTm1ModeSelect') 
-            ? document.getElementById('curTm1ModeSelect').value 
-            : 'fact';
 
         const addWeeks = (snap, role) => {
             ALL_KEYS.forEach((key, idx) => {
-                const offsetWeeks = idx - 1; // Т-1 -> offset -1, T0 -> 0, ...
+                const offsetWeeks = idx - 1;
                 const iso = isoAdd(snap.start, 7 * offsetWeeks);
                 weekMap[iso] = weekMap[iso] || { iso };
                 weekMap[iso][role] = idx;
@@ -618,14 +611,10 @@
 
         const buildType = type => {
             const order = [], byKey = {};
-        const put = (list, role) => list.forEach(it => {
-                if (!byKey[it.key]) { byKey[it.key] = { ...it, type, raw: {} }; order.push(it.key); }
-                // Якщо це поточний зріз і доступні вихідні значення — рахуємо відповідно до обраного режиму
-                if (role === 'cur' && it.rawValues) {
-                    byKey[it.key].raw[role] = vals({ values: it.rawValues }, curTm1Mode);
-                } else {
-                    byKey[it.key].raw[role] = it.values;
-                }
+            const put = (list, role) => list.forEach(it => {
+                if (!byKey[it.key]) { byKey[it.key] = { ...it, type, raw: {}, rawPlan: {} }; order.push(it.key); }
+                byKey[it.key].raw[role] = it.values;
+                if (role === 'cur') byKey[it.key].rawPlan['cur'] = it.valuesPlan || it.values;
                 if (it.driver) byKey[it.key].driver = true;
             });
             put(cur[type], 'cur');
@@ -638,9 +627,11 @@
             arts.forEach(a => {
                 a.excluded = isExcluded(a.name);
                 a.eff = {};
+                a.effPlan = {};
                 ['cur', 'prev'].forEach(role => {
                     a.eff[role] = (a.raw[role] || Array(ALL_KEYS.length).fill(0)).slice();
                 });
+                a.effPlan.cur = (a.rawPlan.cur || Array(ALL_KEYS.length).fill(0)).slice();
             });
 
             arts.forEach(a => {
@@ -655,6 +646,8 @@
                         const cr = ex.raw[role] || Array(ALL_KEYS.length).fill(0);
                         p.eff[role] = p.eff[role].map((v, i) => v - cr[i]);
                     });
+                    const crPlan = ex.rawPlan.cur || Array(ALL_KEYS.length).fill(0);
+                    p.effPlan.cur = p.effPlan.cur.map((v, i) => v - crPlan[i]);
                     p = byK[p.parent];
                 }
             });
@@ -663,6 +656,7 @@
                 a.hasKids = arts.some(c => c.parent === a.key);
                 a.byWeek = {
                     cur: weeks.map(w => w.cur != null ? a.eff.cur[w.cur] : null),
+                    curPlan: weeks.map(w => w.cur != null ? a.effPlan.cur[w.cur] : null),
                     prev: weeks.map(w => w.prev != null ? a.eff.prev[w.prev] : null)
                 };
                 a.onlyIn = !a.raw.cur ? 'prev' : (!a.raw.prev ? 'cur' : null);
@@ -687,6 +681,7 @@
             ['cur', 'prev'].forEach(r => {
                 t.byWeek[r] = weeks.map((w, i) => w[r] == null ? null : sumArr(top.map(a => a.byWeek[r][i])));
             });
+            t.byWeek.curPlan = weeks.map((w, i) => w.cur == null ? null : sumArr(top.map(a => a.byWeek.curPlan[i])));
             return t;
         };
 
@@ -696,6 +691,7 @@
         ['cur', 'prev'].forEach(r => {
             tNet.byWeek[r] = weeks.map((w, i) => (tInf.byWeek[r][i] == null && tOut.byWeek[r][i] == null) ? null : (tInf.byWeek[r][i] || 0) - (tOut.byWeek[r][i] || 0));
         });
+        tNet.byWeek.curPlan = weeks.map((w, i) => (tInf.byWeek.curPlan[i] == null && tOut.byWeek.curPlan[i] == null) ? null : (tInf.byWeek.curPlan[i] || 0) - (tOut.byWeek.curPlan[i] || 0));
 
         const all = [tInf, ...inflows, tOut, ...outflows, tNet];
         all.forEach(a => {
@@ -749,7 +745,7 @@
             block(M.tNet, 'Чистий потік', COLORS.net, 'net') + hz;
     }
 
-    // ---------- КЕРУВАННЯ ТА РЕНДЕР ГРАФІКІВ ----------
+    // ---------- ГРАФІКИ ----------
     function initDefaultArticleSelections() {
         if (!DATA) return;
         const cur = DATA.current;
@@ -764,7 +760,6 @@
             const container = document.getElementById(containerId);
             const mode = document.getElementById(selectId).value;
 
-            // Вимога 7: ховати мультиселект, якщо обрано "Всі статті (разом)"
             if (mode === 'all') {
                 container.classList.add('hidden');
                 return;
@@ -826,8 +821,6 @@
     }
 
     function renderCharts() {
-        // Вимога 6: передача лейблів у вигляді масиву рядків [код, дата]
-        // забезпечує перенос по рядках і суворо горизонтальне розташування
         const labels = M.weeks.map(w => {
             const tag = w.curKey ? w.curKey : w.prevKey;
             return [tag, dm(w.iso)];
@@ -855,11 +848,7 @@
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: {
-                        font: { size: 9 },
-                        maxRotation: 0,
-                        minRotation: 0
-                    }
+                    ticks: { font: { size: 9 }, maxRotation: 0, minRotation: 0 }
                 },
                 y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } }
             }
@@ -928,18 +917,29 @@
         });
     }
 
-    // ---------- ТАБЛИЦІ (З ВИРІВНЮВАННЯМ ПО ВЕРТИКАЛІ ТА БІЛИМИ ПРОПУСКАМИ) ----------
+    // ---------- ТАБЛИЦІ ----------
     function isCollapsed(tableId, key) {
         const s = collapsed[tableId] || {};
         return s[key] !== undefined ? s[key] : !document.getElementById('showKids').checked;
     }
+
+    function onCurTm1ModeChange() {
+        if (!M || !TABLES['tblCur']) return;
+        renderTable(TABLES['tblCur']);
+    }
+
     function renderTable(cfg) {
         TABLES[cfg.tableId] = cfg;
         const { tableId, mode } = cfg;
         const P = dmy(M.prev.start), C = dmy(M.cur.start);
         const valueMode = mode === 'cur' || mode === 'prev';
 
-        // Усі 3 таблиці використовують єдину вісь M.weeks
+        let curRole = mode;
+        const curTm1Mode = document.getElementById('curTm1ModeSelect')?.value || 'fact';
+        if (mode === 'cur' && curTm1Mode === 'plan') {
+            curRole = 'curPlan';
+        }
+
         const cols = M.weeks.map((w, i) => {
             const hasData = (mode === 'delta') ? w.common : (w[mode] != null);
             const edge = !w.common && hasData;
@@ -947,18 +947,18 @@
             if (mode === 'delta') {
                 sub = w.common ? `${w.curKey || ''} · ${w.prevKey || ''}` : '';
             } else if (mode === 'cur' && w.curKey === 'T-1') {
-                const curMode = document.getElementById('curTm1ModeSelect')?.value || 'fact';
-                sub = curMode === 'plan' ? 'Т-1 (план)' : 'Т-1 (факт)';
+                sub = curTm1Mode === 'plan' ? 'Т-1 (план)' : 'Т-1 (факт)';
             } else {
                 sub = w[mode + 'Key'] ? `${w[mode + 'Key']}${edge ? (mode === 'prev' ? ' · вибув' : ' · новий') : ''}` : '';
             }
-            return { w, i, hasData, edge, isFact: w.isFact, sub };
+            return { w, i, hasData, edge, isFact: w.isFact, sub, common: w.common };
         });
 
         const n = cols.length;
         const sumRole = (a, role) => sumArr(cols.map(c => c.hasData ? (a.byWeek[role][c.i] || 0) : 0));
+        const sumRoleCommon = (a, role) => sumArr(cols.map(c => c.common ? (a.byWeek[role][c.i] || 0) : 0));
         const sumDelta = a => sumArr(cols.map(c => c.hasData ? (a.delta[c.i] || 0) : 0));
-        const ctx = { P, C, n, cols };
+        const ctx = { P, C, n, cols, curTm1Mode };
 
         document.getElementById(tableId + 'Title').textContent = cfg.title(ctx);
         const hasEdge = cols.some(c => c.edge);
@@ -968,8 +968,8 @@
              <span class="legend-chip"><i style="background:#fee2e2"></i>погіршує чистий потік</span>` :
             (hasEdge ? `<span class="legend-chip"><i style="background:#fef3c7"></i>тиждень поза спільним горизонтом</span>` : '');
 
-        // Єдина фіксована ширина стовпців для всіх таблиць
-        const weekW = ((100 - 19 - 5.8 - 4.4) / Math.max(1, n)).toFixed(3);
+        // 19% назва статті, 5.6% підсумок разом, 5.6% спільні (або %), решта рівномірно на тижні
+        const weekW = ((100 - 19 - 5.6 - 5.6) / Math.max(1, n)).toFixed(3);
 
         let head = `<th>Стаття</th>` + cols.map(c => {
             const bgStyle = c.isFact ? 'background:#f1f5f9;color:#475569;' : (c.edge ? 'background:#fef3c7;color:#92400e;' : '');
@@ -981,7 +981,7 @@
         if (!valueMode) {
             head += `<th class="col-pct">Δ, %<span class="th-period">до ${dm(M.prev.start)}</span></th>`;
         } else {
-            head += `<th class="col-pct"></th>`;
+            head += `<th class="col-common">Σ<span class="th-period">спільні</span></th>`;
         }
         document.getElementById(tableId + 'Head').innerHTML = head;
 
@@ -1011,14 +1011,15 @@
 
         const valCells = (a, role) => {
             const isNet = a.key === '__net';
-            const s = sumRole(a, role);
+            const sTotal = sumRole(a, role);
+            const sCommon = sumRoleCommon(a, role);
             return cols.map(c => {
                 if (!c.hasData) return `<td></td>`;
                 const v = a.byWeek[role][c.i];
                 return `<td style="${colBg(c)}${isNet && v != null ? netStyle(v) : ''}">${fmt(v)}</td>`;
             }).join('') +
-                `<td class="col-sum" style="font-weight:${isNet ? 700 : 600};${isNet ? netStyle(s) : ''}">${fmt(s)}</td>` +
-                `<td class="col-pct"></td>`;
+                `<td class="col-sum" style="font-weight:${isNet ? 700 : 600};${isNet ? netStyle(sTotal) : ''}">${fmt(sTotal)}</td>` +
+                `<td class="col-common" style="font-weight:${isNet ? 700 : 600};background:#f8fafc;${isNet ? netStyle(sCommon) : 'color:#1e293b;'}">${fmt(sCommon)}</td>`;
         };
 
         const allArts = [...M.inflows, ...M.outflows];
@@ -1043,7 +1044,7 @@
             if (mode === 'delta') {
                 html += `<tr class="${rowClass(a)}" style="${styleRow}">${nameCell(a)}${deltaCells(a)}</tr>`;
             } else if (valueMode) {
-                html += `<tr class="${rowClass(a)}" style="${styleRow}${bg(a)}">${nameCell(a)}${valCells(a, mode)}</tr>`;
+                html += `<tr class="${rowClass(a)}" style="${styleRow}${bg(a)}">${nameCell(a)}${valCells(a, curRole)}</tr>`;
             }
         };
 
@@ -1157,13 +1158,13 @@
         });
         renderTable({
             tableId: 'tblCur', mode: 'cur', cols: 'cur',
-            title: c => `Таблиця 2. Поточний зріз ${c.C}: надходження та видатки (з фактом Т-1), млн грн`,
-            note: c => `Стовпці вирівняно на єдину календарну вісь із попереднім зрізом. Періоди поза горизонтом поточного зрізу залишено пустими.` + excludedNote()
+            title: c => `Таблиця 2. Поточний зріз ${c.C}: надходження та видатки (${c.curTm1Mode === 'plan' ? 'з планом Т-1' : 'з фактом Т-1'}), млн грн`,
+            note: c => `Стовпці вирівняно на єдину календарну вісь із попереднім зрізом. Періоди поза горизонтом поточного зрізу залишено пустими. Крайній стовпець «Σ спільні» враховує лише тижні спільного горизонту.` + excludedNote()
         });
         renderTable({
             tableId: 'tblPrev', mode: 'prev', cols: 'prev',
             title: c => `Таблиця 3. Попередній зріз ${c.P}: надходження та видатки (з фактом Т-1), млн грн`,
-            note: c => `Стовпці вирівняно на єдину календарну вісь. Вибулі тижні зафіксовано на своїх вертикалях, майбутній горизонт залишено пустим.` + excludedNote()
+            note: c => `Стовпці вирівняно на єдину календарну вісь. Вибулі тижні зафіксовано на своїх вертикалях. Крайній стовпець «Σ спільні» враховує лише тижні спільного горизонту.` + excludedNote()
         });
     }
     </script>

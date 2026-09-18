@@ -3,930 +3,1172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кредити та постімпорт — помісячно</title>
+    <title>Порівняння прогнозів CF — таблиці даних та графіки</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-    * { font-style: normal !important; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { font-family: 'Helvetica', sans-serif; background: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
-    .executive-container { width: 1587px; margin: 0 auto; background: #fff; padding: 24px 30px 20px; border-radius: 8px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,.1); display: flex; flex-direction: column; gap: 14px; }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            font-style: normal !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            box-sizing: border-box;
+        }
+        body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
+        .executive-container {
+            width: 1587px; min-height: 1122px; margin: 0 auto; background-color: #ffffff;
+            padding: 24px 30px 20px 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; gap: 12px;
+        }
 
-    .m-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; font-variant-numeric: tabular-nums; }
-    .m-table th { font-weight: 600; color: #475569; padding: 5px 8px; text-align: right; border-bottom: 1px solid #cbd5e1; vertical-align: bottom; }
-    .m-table thead tr:first-child th { font-size: 10pt; color: #1e293b; border-bottom: none; padding-bottom: 1px; }
-    .m-table thead tr:last-child th { font-size: 8pt; font-weight: 500; color: #64748b; border-bottom: 1.5px solid #94a3b8; }
-    .m-table th:first-child, .m-table td:first-child { text-align: left; }
-    .m-table td { padding: 5px 8px; text-align: right; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
-    .m-table tr.lvl0 td:first-child { font-weight: 600; color: #1e293b; }
-    .m-table tr.lvl1 td { color: #64748b; font-size: 9pt; }
-    .m-table tr.lvl1 td:first-child { padding-left: 26px; }
-    .m-table tr.lvl2 td { color: #94a3b8; font-size: 8.5pt; }
-    .m-table tr.lvl2 td:first-child { padding-left: 44px; }
-    .m-table tr.sep td { border-top: 1.5px solid #cbd5e1; }
-    .m-table tr.ctrl td { color: #64748b; font-size: 8.5pt; }
-    .m-table .c-fact  { background: #f1f5f9; }
-    .m-table .c-mixed { background: repeating-linear-gradient(135deg, #f1f5f9 0 6px, #ffffff 6px 12px); }
-    .m-table .c-open  { background: #f8fafc; border-right: 1.5px solid #cbd5e1; }
-    .m-table td.warn  { color: #b45309 !important; }
-    .m-table td.bad   { color: #b91c1c !important; font-weight: 600; }
-    .m-table td.ok    { color: #047857 !important; }
-    .m-table td.na    { color: #cbd5e1; }
-    .m-table td.grp   { border-left: 1.5px solid #cbd5e1; }
-    .badge { display: inline-block; font-size: 7.5pt; font-weight: 600; padding: 1px 6px; border-radius: 9px; margin-top: 2px; }
-    .b-fact { background: #e2e8f0; color: #334155; }
-    .b-mixed { background: #e0e7ff; color: #3730a3; }
-    .b-fc { background: #ecfdf5; color: #047857; }
-    .b-part { background: #fef3c7; color: #92400e; }
+        /* ---- Плитки ---- */
+        .sum-strip { display: grid; grid-template-columns: 1fr 1fr 1fr 1.35fr; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+        .sum-cell { padding: 10px 14px; border-right: 1px solid #e2e8f0; }
+        .sum-cell:last-child { border-right: none; background: #f8fafc; }
+        .sum-title { font-size: 11px; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 6px; }
+        .sum-title i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+        .sum-main { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
+        .sum-val { font-size: 22px; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; }
+        .sum-delta { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .sum-sub { font-size: 10.5px; color: #64748b; margin-top: 2px; font-variant-numeric: tabular-nums; }
+        .hz-grid { display: grid; grid-template-columns: auto 1fr 1fr; gap: 2px 12px; font-size: 10.5px; margin-top: 5px; font-variant-numeric: tabular-nums; }
+        .hz-grid span:nth-child(3n+1) { color: #64748b; }
+        .hz-grid b { color: #1e293b; }
 
-    .w-table { border-collapse: collapse; font-size: 8pt; font-variant-numeric: tabular-nums; }
-    .w-table th, .w-table td { padding: 3px 6px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap; }
-    .w-table th { color: #475569; font-weight: 600; vertical-align: bottom; }
-    .w-table th:first-child, .w-table td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
-    .w-table .f { background: #f1f5f9; }
-    .w-table .x { background: #fffbeb; }
-    .w-table .mb { border-left: 1.5px solid #94a3b8; }
+        /* ---- Графіки ---- */
+        .chart-card { background: #fff; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
 
-    .src-tag { display: inline-block; font-size: 7pt; font-weight: 600; padding: 0 5px; border-radius: 4px; margin-left: 6px; vertical-align: 1px; }
-    .t-f13 { background: #e0e7ff; color: #3730a3; }
-    .t-cred { background: #fef3c7; color: #92400e; }
-    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #4f46e5; outline-offset: 1px; }
+        /* ---- Таблиці ---- */
+        .table-card { background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; width: 100%; overflow: hidden; }
+        .exec-table { width: 100% !important; border-collapse: collapse; font-size: 8.5pt; table-layout: fixed; }
+        .exec-table th {
+            font-size: 8.5pt; color: #64748b; font-weight: 600; padding: 4px 2px;
+            border-bottom: 1.5px solid #94a3b8; text-align: right; background-color: #f8fafc; overflow: hidden;
+        }
+        .exec-table th:first-child { text-align: left; width: 19% !important; padding-left: 6px; }
+        .exec-table th.col-sum, .exec-table td.col-sum { width: 5.8%; border-left: 1.5px solid #cbd5e1; }
+        .exec-table th.col-pct, .exec-table td.col-pct { width: 4.4%; }
+        .exec-table th .th-period { display: block; font-size: 6.5pt; font-weight: 500; color: #94a3b8; white-space: nowrap; line-height: 1.1; margin-top: 1px; }
+        .exec-table td {
+            padding: 3px 3px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.5pt; font-variant-numeric: tabular-nums;
+        }
+        .exec-table td:first-child { text-align: left; font-weight: 500; padding-left: 6px; }
+        .exec-table tr.sub td:first-child { font-weight: 600; color: #475569; }
+        .exec-table tr.child td:first-child { color: #64748b; font-size: 8pt; }
+        .exec-table tr.child td { font-size: 8pt; }
+        .exec-table tr.rest td:first-child { color: #b45309; }
+        .exec-table tr.snap-row td { border-bottom-color: #f1f5f9; }
+        .exec-table tr.snap-row td:first-child { color: #94a3b8; font-size: 7.5pt; padding-left: 42px; }
+        .exec-table tbody tr:hover td { background-color: #f8fafc; }
 
-    @media print {
-        @page { size: A3 landscape; margin: 8mm; }
-        body { background: #fff; padding: 0; }
-        .print-hide { display: none !important; }
-        .executive-container { box-shadow: none; border-radius: 0; }
-    }
-</style>
+        .toggle-kids {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; font-size: 14px; font-weight: bold; line-height: 1;
+            color: #3b82f6; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 3px;
+            cursor: pointer; user-select: none; margin-right: 6px; vertical-align: text-bottom;
+        }
+        .toggle-kids:hover { background-color: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+        .toggle-placeholder { display: inline-block; width: 22px; }
+
+        .legend-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; color: #475569; }
+        .legend-chip i { width: 14px; height: 9px; border-radius: 2px; display: inline-block; }
+
+        @media print {
+            @page { size: A3 landscape; margin: 0 !important; }
+            html, body { width: 1587px !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
+            .print-hide { display: none !important; }
+            .executive-container { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
+            .sum-strip, tr, .chart-card { break-inside: avoid; }
+            .table-card { break-inside: auto; }
+        }
+    </style>
 </head>
 <body>
-
-<nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
-    <div>
-        <h1 class="text-lg font-bold text-slate-800">Кредити та постімпорт — помісячно</h1>
-        <p class="text-xs text-slate-500 mt-0.5">Дані: <span id="navDate" class="font-semibold text-indigo-600">--</span>
-            <span id="navFile" class="ml-2 text-slate-400"></span></p>
-    </div>
-    <div class="flex items-center gap-4">
-        <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 max-w-[420px] truncate" title="">Підготовка…</span>
-        <button onclick="loadLatest()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Оновити</button>
-        <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
-            <button onclick="exportXlsx()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Excel</button>
-            <button onclick="copyTable()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Копіювати</button>
-            <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк</button>
-        </div>
-        <div id="navLinks">
-            <a href="sop-home" class="mr-3 text-xs font-semibold">CF Показники</a>
-            <a href="sop-credit" class="text-xs font-semibold">Кредити</a>
-        </div>
-    </div>
-</nav>
-
-<div class="executive-container" id="dashboardContent">
-    <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+    <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
         <div>
-            <h1 class="text-xl font-bold text-slate-800">Кредити, постімпорт</h1>
-            <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Завантаження даних…</p>
+            <h1 class="text-lg font-bold text-slate-800">Порівняння прогнозів CF — таблиці даних та графіки</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Поточний зріз: <span id="navCurDate" class="font-semibold text-indigo-600">--</span>
+                · попередній: <span id="navPrevDate" class="font-semibold text-slate-700">--</span></p>
         </div>
-        <div class="text-right text-[10.5px] text-slate-500" id="hdrUnit">--</div>
-    </div>
-
-    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-center print-hide">
-        <div class="flex items-center gap-2">
-            <label for="unitSel" class="text-xs font-bold text-slate-600">Одиниці:</label>
-            <select id="unitSel" onchange="render()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
-                <option value="mln">млн грн</option>
-                <option value="mln1">млн грн, 0,0</option>
-                <option value="th">тис. грн</option>
-                <option value="uah">грн</option>
-            </select>
-        </div>
-        <div class="flex items-center gap-2">
-            <label for="ruleSel" class="text-xs font-bold text-slate-600">Тижні кредитів у місяці:</label>
-            <select id="ruleSel" onchange="rebuild()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
-                <option value="days" selected>частками — за календарними днями</option>
-                <option value="wed">цілком — за місяцем</option>
-            </select>
-        </div>
-        <div class="flex items-center gap-2">
-            <label for="horSel" class="text-xs font-bold text-slate-600">Горизонт:</label>
-            <select id="horSel" onchange="rebuild()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
-                <option value="13" selected>13 тижнів</option>
-                <option value="26">26 тижнів</option>
-                <option value="0">усі дані CRED</option>
-            </select>
-        </div>
-        <div class="flex items-center gap-2">
-            <label for="factSel" class="text-xs font-bold text-slate-600">Закритих місяців:</label>
-            <select id="factSel" onchange="rebuild()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
-                <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
-            </select>
-        </div>
-        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-            <input type="checkbox" id="showBanks" onchange="render()"> Розбивка за банками
-        </label>
-        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-            <input type="checkbox" id="showCtrl" checked onchange="render()"> Контроль боргу
-        </label>
-        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-            <input type="checkbox" id="showWeeks" onchange="render()"> Тижнева розбивка
-        </label>
-    </div>
-
-    <div class="flex flex-wrap gap-5 text-[10.5px] text-slate-600">
-        <span><span class="badge b-fact">факт</span> усі дні місяця — фактичні дані</span>
-        <span><span class="badge b-mixed">факт + прогноз</span> частина днів уже фактична</span>
-        <span><span class="badge b-fc">прогноз</span> дні після дати зрізу</span>
-        <span><span class="badge b-part">неповний</span> горизонт закінчується раніше кінця місяця</span>
-        <span><span class="src-tag t-f13">F13</span> тижневі зрізи прогнозу руху коштів</span>
-        <span><span class="src-tag t-cred">CRED</span> денний зріз «План 13 недель»</span>
-    </div>
-
-    <div id="warnBox" class="hidden bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2 text-[11px]"></div>
-
-    <div class="overflow-x-auto"><table class="m-table" id="monthTable"></table></div>
-
-    <div id="weekSection" class="hidden">
-        <h3 class="font-bold text-xs text-slate-700 mb-2">Тижнева розбивка (пн–нд)</h3>
-        <div class="overflow-x-auto border border-slate-200 rounded-lg"><table class="w-table" id="weekTable"></table></div>
-        <p class="text-[10px] text-slate-500 mt-1">Кредити — значення тижня зі зрізів F13 (факт — колонка Tm1_fact зрізу наступного понеділка, прогноз — T0…T12).
-            Постімпорт — сума денних значень CRED за тиждень. Жовтим позначено тижні, що перетинають межу місяців.</p>
-    </div>
-
-    <details class="border border-slate-200 rounded-lg px-4 py-2 text-[11px] text-slate-600 leading-relaxed" id="helpBox">
-        <summary class="font-bold text-xs text-slate-700 cursor-pointer">Довідка: як рахуються показники</summary>
-        <div class="mt-2 space-y-2 max-w-[1100px]">
-            <p><b>Два джерела.</b></p>
-            <ul class="list-disc pl-5 space-y-1">
-                <li><span class="src-tag t-f13" style="margin-left:0">F13</span> <b>Кредити</b> — тижневі зрізи «ПРОГНОЗ РУХУ КОШТІВ 13 тижнів»: чисте залучення = 6.1.1 «Отримано кредитних коштів» − 6.2.1 «Повернення кредиту»;<br>
-                    відсотки та комісії = 6.2.2 «Відсотки за корист. кредитами» + 6.2.11 «Комісія за обслуговування кредитів»;<br>
-                    заборгованість — рядок «Заборгованність по кредитн. лініям». Факт тижня — <span id="helpFactKey">Tm1_fact</span>, прогноз — T0–T12 даних на <span id="helpDate">--</span>.</li>
-                <li><span class="src-tag t-cred" style="margin-left:0">CRED</span> <b>Пост-імпорт</b> — останній файл CRED_*.json: чисте залучення = «Отримано постімпортне фінансування» − «Оплата по постімпорту»;<br>
-                    комісії = 3.2.02.11; заборгованість — рядки «Заборгованість постімпорт …».<br>
-                    Дані денні, тож місяць рахується точно за датами платежів.</li>
-            </ul>
-            <div>
-                <div class="font-semibold text-slate-700">Як тижні кредитів потрапляють у місяць</div>
-                <ul class="list-disc pl-5 space-y-1">
-                    <li><b>частками — за календарними днями</b>: потоки тижня діляться пропорційно дням у місяці; <span class="whitespace-nowrap">заборгованість на останній день = борг на кінець попереднього тижня + чисте залучення тижня × (днів до кінця місяця / 7).</span></li>
-                    <li><b>цілком — за місяцем</b>: тиждень належить місяцю, на який припадає його середина тижня; заборгованість — на кінець останнього такого тижня.</li>
-                </ul>
+        <div class="flex items-center gap-4">
+            <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
+            <div class="relative">
+                <button onclick="toggleCalendarDropdown()" id="btnCalendarTrigger" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm">
+                    <span id="lblSelectedDate">Обрати дату</span>
+                </button>
+                <div id="calendarDropdown" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&larr;</button>
+                        <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase">Вересень 2026</span>
+                        <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&rarr;</button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+                        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
+                    </div>
+                    <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                </div>
             </div>
-            <p>Дата даних береться з CRED-файлу (понеділок); для неї та попередніх понеділків завантажуються дані F13.</p>
-            <p>Контроль: рядок «зміна боргу − чисте залучення» має сходитися в усіх місяцях.<br>
-               Помаранчевим позначено клітинки з неповними даними.</p>
-            <p><b>Важливо:</b> у прогнозі F13 дат платежів немає, тому кредити на межових тижнях розподіляються за правилом вище; постімпорт розподілено за фактичними датами платежів.</p>
+            <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+                <button onclick="generatePDF('Таблиці_даних_та_графіки_CF')" class="bg-red-600 hover:red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Вивантажити в PDF">PDF</button>
+                <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Друк звіту">Друк</button>
+            </div>
+            <div>
+                <a href="index.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Головна</a>
+                <a href="analytics.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Аналітика</a>
+                <a href="compare.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Порівняння</a>
+                <span class="text-gray-800 font-semibold text-xs mr-4">Таблиці даних</span>
+            </div>
         </div>
-    </details>
-</div>
+    </nav>
 
-<script>
-// =====================================================================
-// Джерела
-//  • Get_CRED_Latest     — останній CRED_*.json (пост-імпорт, денні дані)
-//  • Get_CashFlow_Metrics — зрізи PRK13W за датою (кредити, тижневі дані)
-// =====================================================================
-const CRED_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/01/workflows/d4c4e8fdf2ff4593a36836b3c5434c43/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=yyyFwxCC6UXV90I6t9f-n1NKFdTdNJRd8jneEF8d5lQ";
-const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
-const FETCH_CONCURRENCY = 4;
-const FORECAST_KEYS = ["T0","T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
-const CTRL_TOL = 1000;   // грн
-const MAX_FACT_MONTHS = 3;
+    <div class="executive-container" id="dashboardContent">
+        <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Прогноз руху коштів: зріз <span id="hdrCur">--</span> проти зрізу <span id="hdrPrev">--</span> (з фактом Т-1)</h1>
+                <p class="text-xs text-slate-500 mt-0.5" id="hdrHorizon">--</p>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-slate-400 font-medium">Формат А3 · млн грн</div>
+                <div class="text-[10.5px] text-slate-500 mt-0.5" id="hdrScope">--</div>
+            </div>
+        </div>
 
-// рядки F13 для кредитів
-const SPECS = [
-    { id: 'crIn',   title: 'Отримано кредитних коштів', no: '6.1.1', code: '3.1.02.02', tests: [/^отримано\s+кредитн/iu], bankPrefix: /^отримано\s+кредитних\s+коштів\s*/iu },
-    { id: 'crOut',  title: 'Повернення кредиту',         no: '6.2.1', code: '3.2.02.04', tests: [/^повернення\s+кредит/iu],  bankPrefix: /^повернення\s+кредиту\s*/iu },
-    { id: 'intCr',  title: 'Відсотки за корист. кредитами', no: '6.2.2', code: '3.2.02.03', tests: [/^відсотки\s+за\s+корист/iu] },
-    { id: 'comCr',  title: 'Комісія за обслуговування кредитів', no: '6.2.11', code: '3.2.02.10', tests: [/^комісія\s+за\s+обслуговування\s+кредит/iu], optional: true },
-    { id: 'debtCr', title: 'Заборгованність по кредитн. лініям', bal: true, tests: [/^заборгован\p{L}*\s+по\s+кредитн/iu], bankPrefix: /^заборгованість\s+кредити\s*/iu }
-];
+        <!-- Головна панель опцій -->
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-6 items-center print-hide">
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" id="excludeFin" checked onchange="render()">
+                Без кредитних потоків (отримання та повернення кредитів)
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" id="showKids" onchange="collapsed = {}; render()">
+                Розгорнути всі субстатті (у всіх таблицях)
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" id="showFacts" checked onchange="render()">
+                Відображати факт (Т-1)
+            </label>
+        </div>
 
-const ROWS = [
-    { id: 'netTotal', label: 'Чисте залучення (+) / повернення (−), всього', type: 'flow', lvl: 0 },
-    { id: 'netCr',    label: 'кредити',     type: 'flow', lvl: 1, bank: 'cr', src: 'f13' },
-    { id: 'netPi',    label: 'пост-імпорт', type: 'flow', lvl: 1, bank: 'pi', src: 'cred' },
-    { id: 'intTotal', label: 'Сплата відсотків та комісій, всього', type: 'flow', lvl: 0, sep: true },
-    { id: 'intCr',    label: 'кредити',     type: 'flow', lvl: 1, src: 'f13' },
-    { id: 'intPi',    label: 'пост-імпорт', type: 'flow', lvl: 1, src: 'cred' },
-    { id: 'debtTotal', label: 'Заборгованість на кінець місяця, всього (тіло)', type: 'bal', lvl: 0, sep: true },
-    { id: 'debtCr',   label: 'кредити',     type: 'bal', lvl: 1, bank: 'cr', src: 'f13' },
-    { id: 'debtPi',   label: 'пост-імпорт', type: 'bal', lvl: 1, bank: 'pi', src: 'cred' }
-];
-const CTRL_ROWS = [
-    { id: 'ctrlCr', label: 'контроль кредити: Δ боргу − чисте залучення', src: 'f13' },
-    { id: 'ctrlPi', label: 'контроль пост-імпорт: Δ боргу − чисте залучення', src: 'cred' }
-];
-const SRC_TAG = { f13: '<span class="src-tag t-f13">F13</span>', cred: '<span class="src-tag t-cred">CRED</span>' };
-const WLABEL = { netTotal: 'Чисте залучення, всього', netCr: 'Чисте залучення — кредити (F13)', netPi: 'Чисте залучення — пост-імпорт (CRED)',
-                 crIn: '   отримано кредитів', crOut: '   повернено кредитів', piIn: '   отримано постімпорту', piOut: '   сплачено постімпорту',
-                 intTotal: 'Відсотки та комісії, всього', intCr: 'Відсотки та комісії — кредити (F13)', intPi: 'Відсотки та комісії — пост-імпорт (CRED)',
-                 debtTotal: 'Заборгованість, всього', debtCr: 'Заборгованість — кредити (F13)', debtPi: 'Заборгованість — пост-імпорт (CRED)' };
+        <div class="sum-strip" id="summaryStrip"></div>
 
-const CRED_FLOW_MAP = { pi_in: ['netPi', 1], pi_out: ['netPi', -1], pi_fee: ['intPi', 1] };
-const CRED_REQUIRED = ['pi_in', 'pi_out', 'pi_fee', 'pi_debt'];
-const UNITS = { uah: { k: 1, dec: 0, lbl: 'грн' }, th: { k: 1e3, dec: 0, lbl: 'тис. грн' },
-                mln: { k: 1e6, dec: 0, lbl: 'млн грн' }, mln1: { k: 1e6, dec: 1, lbl: 'млн грн' } };
-const MONTHS = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
+        <!-- ПАНЕЛЬ СЕЛЕКТІВ ДЛЯ ГРАФІКІВ -->
+        <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200 flex flex-col gap-3 print-hide">
+            <div class="flex items-center justify-between gap-4">
+                <!-- Блок доходів -->
+                <div class="flex items-center gap-3 flex-1">
+                    <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">ДОХОДИ:</span>
+                    <select id="inflowModeSelect" onchange="onFilterModeChange('inflows')" class="bg-white border border-slate-300 text-xs font-medium rounded-md px-2.5 py-1 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <option value="selected">Обрані статті</option>
+                        <option value="all">Всі статті (разом)</option>
+                        <option value="top5">Топ-5 статей</option>
+                    </select>
+                    <div id="inflowChipsContainer" class="flex flex-wrap items-center gap-2.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all"></div>
+                </div>
 
-// ---------- дати ----------
-const DAY = 86400000;
-const isoAdd = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * DAY).toISOString().slice(0, 10);
-const dow = iso => new Date(iso + 'T00:00:00Z').getUTCDay();
-const toMonday = iso => isoAdd(iso, -((dow(iso) + 6) % 7));
-const dmy = iso => iso ? iso.split('-').reverse().join('.') : '--';
-const dm = iso => { const [, m, d] = iso.split('-'); return `${d}.${m}`; };
-const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / DAY) + 1;
-const ym = (y, m) => { const d = new Date(Date.UTC(y, m, 1)); return { y: d.getUTCFullYear(), m: d.getUTCMonth() }; };
-const ymOf = iso => ym(+iso.slice(0, 4), +iso.slice(5, 7) - 1);
-const firstDay = a => `${a.y}-${String(a.m + 1).padStart(2, '0')}-01`;
-const lastDay = a => new Date(Date.UTC(a.y, a.m + 1, 0)).toISOString().slice(0, 10);
-const maxIso = (a, b) => a > b ? a : b, minIso = (a, b) => a < b ? a : b;
-const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim();
-function normDate(s) {
-    if (!s) return null;
-    s = String(s).trim();
-    let m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})/); if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-    m = s.match(/^(\d{4}-\d{2}-\d{2})/); return m ? m[1] : null;
-}
+                <!-- Блок видатків -->
+                <div class="flex items-center gap-3 flex-1 border-l border-slate-200 pl-4">
+                    <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">ВИДАТКИ:</span>
+                    <select id="outflowModeSelect" onchange="onFilterModeChange('outflows')" class="bg-white border border-slate-300 text-xs font-medium rounded-md px-2.5 py-1 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <option value="selected">Обрані статті</option>
+                        <option value="all">Всі статті (разом)</option>
+                        <option value="top5">Топ-5 статей</option>
+                    </select>
+                    <div id="outflowChipsContainer" class="flex flex-wrap items-center gap-2.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all"></div>
+                </div>
+            </div>
+        </div>
 
-// ---------- розпаковка відповідей потоків ----------
-function b64json(obj) {
-    if (obj && typeof obj['$content'] === 'string') {
-        try { return JSON.parse(new TextDecoder('utf-8').decode(Uint8Array.from(atob(obj['$content']), c => c.charCodeAt(0)))); }
-        catch { return null; }
-    }
-    return null;
-}
-function unwrapBy(test) {
-    const f = (obj, depth = 0) => {
-        if (obj == null || depth > 6) return null;
-        if (typeof obj === 'string') { try { return f(JSON.parse(obj), depth + 1); } catch { return null; } }
-        if (Array.isArray(obj)) { for (const x of obj) { const r = f(x, depth + 1); if (r) return r; } return null; }
-        if (typeof obj !== 'object') return null;
-        if (test(obj)) return obj;
-        const dec = b64json(obj); if (dec) { const r = f(dec, depth + 1); if (r) return r; }
-        for (const k of ['snapshot', 'body', 'data', 'content', 'value', 'result']) {
-            if (obj[k] != null) { const r = f(obj[k], depth + 1); if (r) return r; }
-        }
-        return null;
+        <!-- ГРАФІКИ -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="chart-card">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-xs text-teal-800 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded bg-teal-600 inline-block"></span>
+                        Порівняння надходжень: Поточний прогноз vs Попередній (млн грн)
+                    </h3>
+                    <span class="text-[10px] text-slate-400 font-medium">Суцільна — Поточний · Пунктир — Попередній</span>
+                </div>
+                <div class="h-[210px] w-full">
+                    <canvas id="inflowsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-xs text-orange-800 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded bg-orange-600 inline-block"></span>
+                        Порівняння видатків: Поточний прогноз vs Попередній (млн грн)
+                    </h3>
+                    <span class="text-[10px] text-slate-400 font-medium">Суцільна — Поточний · Пунктир — Попередній</span>
+                </div>
+                <div class="h-[210px] w-full">
+                    <canvas id="outflowsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ТАБЛИЦІ -->
+        <div class="table-card">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold text-xs text-slate-700" id="cmpTitle">Таблиця</h3>
+                <div class="flex gap-4" id="cmpLegend"></div>
+            </div>
+            <table class="exec-table">
+                <thead><tr id="cmpHead"></tr></thead>
+                <tbody id="cmpBody" data-table="cmp"></tbody>
+            </table>
+            <p class="text-[10px] text-slate-400 mt-2" id="cmpNote"></p>
+        </div>
+
+        <!-- ТАБЛИЦЯ 2 (З селектором вибору Т-1 Факт / План) -->
+        <div class="table-card">
+            <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center gap-3">
+                    <h3 class="font-bold text-xs text-slate-700" id="tblCurTitle">Таблиця</h3>
+                    <div class="flex items-center gap-1.5 print-hide">
+                        <span class="text-[11px] text-slate-500 font-medium">Колонка Т-1:</span>
+                        <select id="curTm1ModeSelect" onchange="onCurTm1ModeChange()" class="bg-white border border-slate-300 text-[11px] font-semibold rounded px-2 py-0.5 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option value="fact" selected>Т-1 (факт)</option>
+                            <option value="plan">Т-1 (план)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-4" id="tblCurLegend"></div>
+            </div>
+            <table class="exec-table">
+                <thead><tr id="tblCurHead"></tr></thead>
+                <tbody id="tblCurBody" data-table="tblCur"></tbody>
+            </table>
+            <p class="text-[10px] text-slate-400 mt-2" id="tblCurNote"></p>
+        </div>
+
+        <!-- ТАБЛИЦЯ 3 (Завжди з фактом) -->
+        <div class="table-card">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold text-xs text-slate-700" id="tblPrevTitle">Таблиця</h3>
+                <div class="flex gap-4" id="tblPrevLegend"></div>
+            </div>
+            <table class="exec-table">
+                <thead><tr id="tblPrevHead"></tr></thead>
+                <tbody id="tblPrevBody" data-table="tblPrev"></tbody>
+            </table>
+            <p class="text-[10px] text-slate-400 mt-2" id="tblPrevNote"></p>
+        </div>
+    </div>
+
+    <script>
+    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+
+    let DATA = null;
+    let M = null;
+    let collapsed = {};
+    const TABLES = {};
+
+    let currentReportDate = "2026-09-07";
+    let calViewDate = new Date(2026, 8, 7);
+
+    let inflowsChartInstance = null;
+    let outflowsChartInstance = null;
+
+    let selectedChartArticles = {
+        inflows: new Set(),
+        outflows: new Set()
     };
-    return f;
-}
-const unwrapCred = unwrapBy(o => Array.isArray(o.rows) && o.meta && o.meta.schema === 'cred_daily');
-const unwrapPrk = unwrapBy(o => Array.isArray(o.tree));
 
-async function postJson(url, body) {
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (!res.ok) {
-        let msg = '';
-        try { const e = await res.json(); msg = e.message || e.error || ''; } catch { /* порожнє тіло */ }
-        const err = new Error(`HTTP ${res.status}${msg ? ' — ' + msg : ''}`); err.status = res.status; throw err;
-    }
-    const txt = await res.text();
-    if (!txt.trim()) throw new Error('порожня відповідь потоку');
-    try { return JSON.parse(txt); } catch { throw new Error('відповідь потоку не є JSON'); }
-}
-
-// ---------- CRED (пост-імпорт) ----------
-async function fetchCred() {
-    let raw;
-    try { raw = await postJson(CRED_FLOW_URL, { kind: 'cred', latest: true }); }
-    catch (e) { if (e.status === 404) throw new Error('у теці snapshots_cred немає файлів CRED_*.json'); throw e; }
-    const snap = unwrapCred(raw);
-    if (!snap) throw new Error('відповідь Get_CRED_Latest не схожа на CRED-snapshot (meta.schema = "cred_daily")');
-    snap.__file = raw && raw.fileName ? { name: raw.fileName, modified: raw.modified, count: raw.filesInFolder } : null;
-    return snap;
-}
-
-function indexCred(snap) {
-    const dates = (snap.dates || []).slice().sort();
-    const pos = new Map(dates.map((d, i) => [d, i]));
-    const n = dates.length;
-    const zero = () => new Float64Array(n);
-    const flow = { netPi: zero(), intPi: zero(), piIn: zero(), piOut: zero() };
-    const debtPi = zero();
-    const banks = new Map();
-    const used = {}, rowsByType = {};
-    const bankOf = r => {
-        const key = r.bank_key || (r.bank || '').toLowerCase();
-        if (!key) return null;
-        let b = banks.get(key);
-        if (!b) banks.set(key, b = { key, name: r.bank, net: zero(), debt: zero() });
-        if (r.type === 'pi_debt' && r.bank) b.name = r.bank;
-        return b;
+    const COLORS = {
+        inflow: '#0f766e', outflow: '#ea580c', net: '#334155',
+        pos: '#047857', neg: '#b91c1c', prevGrey: '#cbd5e1'
     };
-    (snap.rows || []).forEach(r => {
-        (rowsByType[r.type] = rowsByType[r.type] || []).push(r);
-        if (r.kind !== 'item') return;
-        const vals = r.values || {};
-        if (CRED_FLOW_MAP[r.type]) {
-            const [id, sign] = CRED_FLOW_MAP[r.type];
-            used[r.type] = (used[r.type] || 0) + 1;
-            const b = r.type !== 'pi_fee' ? bankOf(r) : null;
-            for (const [d, v] of Object.entries(vals)) {
-                const i = pos.get(d); if (i == null) continue;
-                flow[id][i] += sign * v;
-                if (r.type === 'pi_in') flow.piIn[i] += v;
-                if (r.type === 'pi_out') flow.piOut[i] += v;
-                if (b) b.net[i] += sign * v;
+    const FIN_EXCLUDE = [/отримано\s+кредитн/i, /повернення\s+кредиту/i];
+
+    const INFLOW_ROOTS = ['1', '2', '3', '4', '5', '6', '7', '8'];
+    const OUTFLOW_ROOTS = ['1', '2', '3', '4', '5'];
+    const SEGMENT_STOP = /^(всього|грошовий потік|чистий|доступні|залишки|контроль)/i;
+
+    const CF_GROUP_NAMES = {
+        "2.1.01": "Надходження від реалізації продукції/товарів",
+        "2.1.02": "Надходження від наданих послуг",
+        "2.1.03": "Інші операційні надходження",
+        "2.1.04": "Внутрішні надходження",
+        "1.1.01": "Надходження від інвестиційної діяльності",
+        "3.1.02": "Отримання кредитів",
+        "3.1.04": "Відсотки на залишки",
+        "3.1.06": "Оплата по вимозі (гарантія)",
+        "2.2.01": "Державні податки та збори",
+        "2.2.02": "Місцеві податки",
+        "2.2.03": "Заробітна плата та нарахування",
+        "2.2.04": "Придбання сировини, матеріалів та товарів",
+        "2.2.05": "Роботи та послуги (операційні)",
+        "2.2.06": "Витрати на збут",
+        "2.2.07": "Інші операційні витрати",
+        "2.2.08": "Інші витрати",
+        "1.2.01": "Обладнання виробниче",
+        "1.2.02": "Транспортні засоби",
+        "1.2.03": "Електрообладнання",
+        "1.2.04": "Інструменти",
+        "1.2.05": "Прилади та системи керування",
+        "1.2.06": "Засоби безпеки та контролю",
+        "1.2.07": "ІТ обладнання та ПЗ",
+        "1.2.08": "Матеріали для будівництва та ремонту",
+        "1.2.09": "Паливо-мастильні матеріали",
+        "1.2.10": "Господарський інвентар та меблі",
+        "1.2.11": "Засоби захисту та медицина",
+        "1.2.12": "Роботи та послуги (капітальні)",
+        "1.2.13": "Будівництво та ремонт (капітальні)",
+        "1.2.14": "Охорона праці та безпека",
+        "1.2.15": "Корпоративні права",
+        "3.2.01": "Повернення кредитів",
+        "3.2.02": "Відсотки за кредитами",
+        "3.2.03": "Комісії за кредитами/гарантіями"
+    };
+
+    const DAY = 86400000;
+    const isoAdd = (iso, days) => new Date(Date.parse(iso + 'T00:00:00Z') + days * DAY).toISOString().slice(0, 10);
+    const dmy = iso => iso.split('-').reverse().join('.');
+    const dm = iso => { const [y, m, d] = iso.split('-'); return `${d}.${m}`; };
+    const weekLabel = (lbl, iso) => {
+        const s = String(lbl || '').replace(/\.\d{2,4}$/, '').replace('-', '–');
+        return /^\d/.test(s) ? s : `${dm(iso)}–${dm(isoAdd(iso, 6))}`;
+    };
+    const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const mln = v => (v || 0) / 1e6;
+    const sp = s => s.replace(/[\u202F\u00A0]/g, ' ');
+
+    function fmt(v) {
+        if (v == null || isNaN(v)) return '–';
+        const r = Math.round(mln(v));
+        return (r < 0 ? '−' : '') + sp(Math.abs(r).toLocaleString('uk-UA'));
+    }
+    function fmtD(v) {
+        if (v == null || isNaN(v)) return '–';
+        const r = Math.round(mln(v));
+        if (r === 0) return '0';
+        return (r > 0 ? '+' : '−') + sp(Math.abs(r).toLocaleString('uk-UA'));
+    }
+    function fmtPct(d, base) {
+        if (!base || Math.abs(base) < 1) return '–';
+        const p = d / Math.abs(base) * 100;
+        if (Math.abs(p) < 0.05) return '0%';
+        return (p > 0 ? '+' : '−') + sp(Math.abs(p).toLocaleString('uk-UA', { minimumFractionDigits: 1, maximumFractionDigits: 1 })) + '%';
+    }
+    const sumArr = a => a.reduce((s, v) => s + (v || 0), 0);
+    const addVec = (a, b) => a.map((v, i) => v + (b[i] || 0));
+    const goodColor = (d, kind) => {
+        if (d == null || Math.abs(mln(d)) < 0.5) return '#64748b';
+        return (kind === 'outflow' ? d < 0 : d > 0) ? COLORS.pos : COLORS.neg;
+    };
+    function setStatus(text, cls) {
+        const el = document.getElementById('dataStatus');
+        el.textContent = text;
+        el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + cls;
+    }
+
+    const ALL_KEYS = ["T-1", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+
+    // Вибірка значень: факт або план
+    const vals = (node, tm1Mode = 'fact') => ALL_KEYS.map(k => {
+        if (!node || !node.values) return 0;
+        let v = 0;
+        if (k === "T-1") {
+            if (tm1Mode === 'plan') {
+                v = node.values["Tm1_forecast"] !== undefined ? node.values["Tm1_forecast"] : node.values["T-1"];
+            } else {
+                v = node.values["Tm1_fact"] !== undefined ? node.values["Tm1_fact"] :
+                    (node.values["Tm1_forecast"] !== undefined ? node.values["Tm1_forecast"] : node.values["T-1"]);
             }
-        } else if (r.type === 'pi_debt') {
-            used.pi_debt = (used.pi_debt || 0) + 1;
-            const b = bankOf(r);
-            for (const [d, v] of Object.entries(vals)) {
-                const i = pos.get(d); if (i == null) continue;
-                debtPi[i] += v; if (b) b.debt[i] += v;
-            }
-        }
-    });
-    const cumOf = arr => { const c = new Float64Array(n + 1); for (let i = 0; i < n; i++) c[i + 1] = c[i] + arr[i]; return c; };
-    const cum = {}; Object.entries(flow).forEach(([k, a]) => cum[k] = cumOf(a));
-    banks.forEach(b => b.cum = cumOf(b.net));
-    return { dates, pos, n, cum, debtPi, banks, used, rowsByType };
-}
-function lowerBound(a, x) { let l = 0, h = a.length; while (l < h) { const m = (l + h) >> 1; if (a[m] < x) l = m + 1; else h = m; } return l; }
-function upperBound(a, x) { let l = 0, h = a.length; while (l < h) { const m = (l + h) >> 1; if (a[m] <= x) l = m + 1; else h = m; } return l; }
-const credSum = (c, a, b) => { const i0 = lowerBound(IDX.dates, a), i1 = upperBound(IDX.dates, b); return i1 <= i0 ? 0 : c[i1] - c[i0]; };
-const credAt = (arr, d) => { const i = IDX.pos.get(d); return i == null ? null : arr[i]; };
-
-// ---------- F13 (кредити) ----------
-const nonZeroCount = n => Object.values(n.values || {}).filter(v => typeof v === 'number' && Math.abs(v) >= 1).length;
-const bankKey = s => cleanName(s).toLowerCase().replace(/[\s()\-]/g, '');
-function flattenTree(tree) {
-    const out = [];
-    const walk = (nodes, path) => (nodes || []).forEach(n => {
-        out.push({ node: n, path, name: cleanName(n.name), no: String(n.no ?? '').trim(), code: cleanName(n.code), kind: n.kind || '' });
-        if (n.children && n.children.length) walk(n.children, path.concat(cleanName(n.name)));
-    });
-    walk(tree, []);
-    return out;
-}
-function resolveNodes(flat) {
-    const res = {};
-    SPECS.forEach(s => {
-        let cands = [], how = '';
-        if (s.no) { cands = flat.filter(e => e.no === s.no && e.kind === 'item'); how = `№ ${s.no}`; }
-        if (!cands.length && s.code) { cands = flat.filter(e => e.code === s.code); how = `код ${s.code}`; }
-        if (!cands.length) for (const rx of s.tests) {
-            cands = flat.filter(e => rx.test(e.name) && (s.bal ? e.kind === 'total' : e.kind !== 'child'));
-            if (cands.length) { how = 'за назвою'; break; }
-        }
-        if (!cands.length) { res[s.id] = null; return; }
-        const best = cands.slice().sort((x, y) => nonZeroCount(y.node) - nonZeroCount(x.node))[0];
-        let banks = [];
-        if (s.bankPrefix) {
-            const pool = s.bal ? flat : (best.node.children || []).map(n => ({ node: n, code: cleanName(n.code), name: cleanName(n.name) }));
-            banks = pool.filter(e => s.bankPrefix.test(e.code)).map(e => ({
-                key: bankKey(e.code.replace(s.bankPrefix, '')),
-                name: e.name.replace(/\s*\((?=[^)]*(%|USD|UAH|кінець|обнулення))[^)]*\)/iu, ''), node: e.node }));
-        }
-        res[s.id] = Object.assign({}, best, { how, alt: cands.length - 1, banks });
-    });
-    return res;
-}
-function detectFactKey(snap) {
-    const keys = Object.keys(snap.columns || {});
-    return keys.find(k => /^tm1[_\s-]*fact/i.test(k)) || keys.find(k => /m1.*fact/i.test(k)) || 'Tm1_fact';
-}
-function detectForecastKeys(snap) {
-    const map = [];
-    Object.entries(snap.columns || {}).forEach(([k, c]) => {
-        const n = typeof c.code === 'number' ? c.code : (/^-?\d+$/.test(String(c.code ?? '').trim()) ? Number(c.code) : null);
-        if (n != null && n >= 0 && n < FORECAST_KEYS.length && !/fact|plan|forecast|dev/i.test(k)) map[n] = k;
-    });
-    return FORECAST_KEYS.map((k, i) => map[i] || k);
-}
-function cell(node, key) {
-    if (!node || !node.values || !(key in node.values)) return 0;
-    const v = node.values[key];
-    if (typeof v === 'number') return isFinite(v) ? v : 0;
-    const n = parseFloat(String(v ?? '').replace(/[\s\u00A0]/g, '').replace(',', '.'));
-    return isFinite(n) ? n : 0;
-}
-async function getPrk(iso) {
-    if (PRK[iso]) return PRK[iso];
-    let r;
-    try {
-        const raw = await postJson(GET_METRICS_FLOW_URL, { reportDate: iso, reportDateDot: dmy(iso) });
-        const snap = unwrapPrk(raw);
-        if (!snap) throw new Error('у відповіді немає зрізу (tree)');
-        const date = normDate(snap.meta && (snap.meta.forecast_date || snap.meta.report_date));
-        r = { requested: iso, date, dateOk: !date || date === iso, meta: snap.meta || {},
-              factKey: detectFactKey(snap), fcKeys: detectForecastKeys(snap), nodes: resolveNodes(flattenTree(snap.tree)) };
-    } catch (e) { r = { requested: iso, error: e.message }; }
-    return (PRK[iso] = r);
-}
-function prkWeekValues(ps, col) {
-    const N = ps.nodes, g = id => N[id] ? cell(N[id].node, col) : 0;
-    const v = { crIn: g('crIn'), crOut: g('crOut'), intCr: g('intCr') + g('comCr'), debtCr: N.debtCr ? cell(N.debtCr.node, col) : null, banks: {} };
-    v.netCr = v.crIn - v.crOut;
-    const add = (specId, fn) => (N[specId] ? N[specId].banks : []).forEach(b => {
-        const o = v.banks[b.key] || (v.banks[b.key] = { name: b.name, net: 0, debt: null });
-        fn(o, cell(b.node, col), b);
-    });
-    add('crIn', (o, x) => o.net += x);
-    add('crOut', (o, x) => o.net -= x);
-    add('debtCr', (o, x, b) => { o.debt = x; o.name = b.name; });
-    return v;
-}
-function crWeek(mon) {
-    if (CRW[mon]) return CRW[mon];
-    const D = CAL.D;
-    let r;
-    if (mon < D) {
-        const s = PRK[isoAdd(mon, 7)];
-        if (!s) r = { ok: false, why: 'зріз F13 не завантажено' };
-        else if (s.error) r = { ok: false, why: `зріз F13 ${dmy(s.requested)}: ${s.error}` };
-        else if (!s.dateOk) r = { ok: false, why: `зріз F13 ${dmy(s.requested)} має дату ${dmy(s.date)}` };
-        else r = { ok: true, src: 'fact', label: `факт, зріз ${dm(s.requested)}`, v: prkWeekValues(s, s.factKey) };
-    } else {
-        const t = Math.round((Date.parse(mon) - Date.parse(D)) / DAY / 7);
-        const s = PRK[D];
-        if (t >= FORECAST_KEYS.length) r = { ok: false, out: true, why: 'поза горизонтом F13 (T12)' };
-        else if (!s || s.error) r = { ok: false, why: `зріз F13 ${dmy(D)}: ${s ? s.error : 'не завантажено'}` };
-        else if (!s.dateOk) r = { ok: false, why: `зріз F13 ${dmy(D)} має дату ${dmy(s.date)}` };
-        else r = { ok: true, src: 'forecast', t, label: `прогноз T${t}`, v: prkWeekValues(s, s.fcKeys[t]) };
-    }
-    return (CRW[mon] = Object.assign({ mon }, r));
-}
-
-// ---------- стан ----------
-let SNAP = null, IDX = null, CAL = null, AGG = null, PRK = {}, CRW = {}, loadToken = 0;
-
-function setStatus(text, cls) {
-    const el = document.getElementById('dataStatus');
-    el.textContent = text; el.title = text;
-    el.className = 'text-xs font-medium px-2.5 py-1 rounded-full max-w-[420px] truncate ' + cls;
-}
-async function pool(items, n, fn) {
-    let i = 0;
-    await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
-        while (i < items.length) { const k = i++; await fn(items[k]); }
-    }));
-}
-
-async function loadLatest() {
-    const token = ++loadToken;
-    PRK = {};
-    setStatus('Завантаження останнього CRED-зрізу…', 'bg-indigo-100 text-indigo-800');
-    try {
-        const snap = await fetchCred();
-        if (token !== loadToken) return;
-        SNAP = snap; IDX = indexCred(snap);
-        await rebuild(token);
-    } catch (e) {
-        if (token !== loadToken) return;
-        setStatus('Зріз не завантажено: ' + e.message, 'bg-red-100 text-red-800');
-        document.getElementById('hdrSub').textContent = 'Не вдалося отримати CRED-snapshot: ' + e.message;
-    }
-}
-
-function neededMondays() {
-    const first = CAL.months[0];
-    const openMon = toMonday(isoAdd(first.cs, -1));
-    const from = isoAdd(openMon, -7);
-    const list = [];
-    for (let s = isoAdd(from, 7); s <= CAL.D; s = isoAdd(s, 7)) list.push(s);
-    return list;
-}
-
-async function rebuild(token) {
-    if (!SNAP) return;
-    token = token || loadToken;
-    CAL = buildCalendar();
-    if (!CAL.months.length) { setStatus('У файлі CRED немає даних для обраного горизонту', 'bg-red-100 text-red-800'); return; }
-    const need = neededMondays().filter(d => !PRK[d]);
-    if (need.length) {
-        let done = 0;
-        setStatus(`Завантаження зрізів F13: 0 з ${need.length}…`, 'bg-indigo-100 text-indigo-800');
-        await pool(need, FETCH_CONCURRENCY, async d => {
-            await getPrk(d);
-            done++;
-            if (token === loadToken) setStatus(`Завантаження зрізів F13: ${done} з ${need.length}…`, 'bg-indigo-100 text-indigo-800');
-        });
-        if (token !== loadToken) return;
-    }
-    CRW = {};
-    AGG = aggregate();
-    render();
-    const warn = collectWarnings();
-    if (warn.length) setStatus('Увага: ' + warn.join('; '), 'bg-amber-100 text-amber-800');
-    else setStatus('Сформовано: кредити — F13, пост-імпорт — CRED; контроль боргу ОК', 'bg-emerald-100 text-emerald-800');
-}
-
-// ---------- календар ----------
-function buildCalendar() {
-    const m = SNAP.meta;
-    const D = toMonday(m.forecast_date);
-    const factUntil = m.fact_until || isoAdd(D, -1);
-    const dataFrom = IDX.dates[0], dataTo = IDX.dates[IDX.n - 1];
-    const hor = Number(document.getElementById('horSel').value);
-    const horizonEnd = hor ? minIso(isoAdd(D, hor * 7 - 1), dataTo) : dataTo;
-    const rule = document.getElementById('ruleSel').value;
-    let a = ymOf(D);
-    for (let i = 0; i < Number(document.getElementById('factSel').value); i++) a = ym(a.y, a.m - 1);
-    const months = [];
-    while (firstDay(a) <= horizonEnd) {
-        const cs = firstDay(a), ce = lastDay(a);
-        const start = cs, end = minIso(ce, horizonEnd);
-        const factDays = factUntil < start ? 0 : days(start, minIso(end, factUntil));
-        const all = days(start, end);
-        const notes = [];
-        if (end < ce) notes.push(`горизонт — до ${dmy(end)}`);
-        let wedWeeks = [];
-        for (let w = toMonday(cs); w <= ce; w = isoAdd(w, 7)) {
-            const wed = isoAdd(w, 2);
-            if (wed >= cs && wed <= ce && isoAdd(w, 6) <= maxIso(horizonEnd, end) && w <= end) wedWeeks.push(w);
-        }
-        months.push({ a, label: `${MONTHS[a.m]} ${a.y}`, cs, ce, start, end, partial: notes.length > 0, notes,
-                      factDays, fcDays: all - factDays, wedWeeks,
-                      status: factDays === all ? 'fact' : factDays === 0 ? 'forecast' : 'mixed' });
-        a = ym(a.y, a.m + 1);
-    }
-    return { D, rule, factUntil, dataFrom, dataTo, horizonEnd, months, openDay: months.length ? isoAdd(months[0].start, -1) : null };
-}
-
-function crFlowDays(s, e, pick) {
-    let sum = 0; const miss = [];
-    for (let w = toMonday(s); w <= e; w = isoAdd(w, 7)) {
-        const k = days(maxIso(s, w), minIso(e, isoAdd(w, 6)));
-        if (k <= 0) continue;
-        const cw = crWeek(w);
-        if (!cw.ok) { miss.push(cw); continue; }
-        sum += pick(cw.v) * k / 7;
-    }
-    return { v: sum, miss };
-}
-function crDebtDays(x, pickDebt, pickNet) {
-    const w = toMonday(x), k = days(w, x);
-    const cw = crWeek(w);
-    if (k === 7) return cw.ok ? { v: pickDebt(cw.v), miss: [] } : { v: null, miss: [cw] };
-    const pw = crWeek(isoAdd(w, -7));
-    const miss = [pw, cw].filter(z => !z.ok);
-    if (miss.length) return { v: null, miss };
-    const pd = pickDebt(pw.v);
-    return { v: pd == null ? null : pd + pickNet(cw.v) * k / 7, miss };
-}
-function crFlowWeeks(weeks, pick) {
-    let sum = 0; const miss = [];
-    weeks.forEach(w => { const cw = crWeek(w); if (cw.ok) sum += pick(cw.v); else miss.push(cw); });
-    return { v: sum, miss };
-}
-function crDebtWeek(w, pickDebt) {
-    const cw = crWeek(w);
-    return cw.ok ? { v: pickDebt(cw.v), miss: [] } : { v: null, miss: [cw] };
-}
-const finalize = r => (r.miss.some(z => z.out) ? { v: null, miss: r.miss } : r);
-
-function aggregate() {
-    const rule = CAL.rule;
-    const bankKeys = new Map();
-    const collectBanks = cw => { if (cw.ok) Object.entries(cw.v.banks).forEach(([k, b]) => { if (!bankKeys.has(k) || b.debt != null) bankKeys.set(k, b.name); }); };
-    for (let w = toMonday(CAL.openDay); w <= CAL.months[CAL.months.length - 1].end; w = isoAdd(w, 7)) collectBanks(crWeek(w));
-
-    const crMonth = m => {
-        const pickNet = v => v.netCr, pickInt = v => v.intCr, pickDebt = v => v.debtCr;
-        const o = {};
-        if (rule === 'days') {
-            o.netCr = finalize(crFlowDays(m.start, m.end, pickNet));
-            o.intCr = finalize(crFlowDays(m.start, m.end, pickInt));
-            o.debtCr = finalize(crDebtDays(m.end, pickDebt, pickNet));
         } else {
-            const ws = m.wedWeeks;
-            o.netCr = finalize(crFlowWeeks(ws, pickNet));
-            o.intCr = finalize(crFlowWeeks(ws, pickInt));
-            o.debtCr = ws.length ? finalize(crDebtWeek(ws[ws.length - 1], pickDebt)) : { v: null, miss: [] };
-            o.weeksTxt = ws.length ? `тижні ${dm(ws[0])}–${dm(isoAdd(ws[ws.length - 1], 6))}` : '';
+            v = node.values[k];
         }
-        o.bankCr = {};
-        bankKeys.forEach((name, k) => {
-            const pn = v => (v.banks[k] ? v.banks[k].net : 0), pd = v => (v.banks[k] ? v.banks[k].debt : null);
-            o.bankCr[k] = rule === 'days'
-                ? { net: crFlowDays(m.start, m.end, pn).v, debt: crDebtDays(m.end, pd, pn).v }
-                : { net: crFlowWeeks(m.wedWeeks, pn).v, debt: m.wedWeeks.length ? crDebtWeek(m.wedWeeks[m.wedWeeks.length - 1], pd).v : null };
-        });
-        return o;
-    };
-
-    let openCr;
-    if (rule === 'days') openCr = crDebtDays(CAL.openDay, v => v.debtCr, v => v.netCr);
-    else { const fw = CAL.months[0].wedWeeks[0]; openCr = fw ? crDebtWeek(isoAdd(fw, -7), v => v.debtCr) : { v: null, miss: [] }; }
-    const openPi = credAt(IDX.debtPi, CAL.openDay);
-    const open = { debtCr: openCr.v, debtPi: openPi, missCr: openCr.miss };
-    open.debtTotal = open.debtCr == null || open.debtPi == null ? null : open.debtCr + open.debtPi;
-    const openBanks = { cr: {}, pi: {} };
-    bankKeys.forEach((n, k) => {
-        const pn = v => (v.banks[k] ? v.banks[k].net : 0), pd = v => (v.banks[k] ? v.banks[k].debt : null);
-        openBanks.cr[k] = rule === 'days' ? crDebtDays(CAL.openDay, pd, pn).v
-            : (CAL.months[0].wedWeeks[0] ? crDebtWeek(isoAdd(CAL.months[0].wedWeeks[0], -7), pd).v : null);
+        return typeof v === 'number' && isFinite(v) ? v : 0;
     });
-    IDX.banks.forEach((b, k) => openBanks.pi[k] = credAt(b.debt, CAL.openDay));
 
-    let prev = open;
-    const months = CAL.months.map(m => {
-        const c = crMonth(m);
-        const o = { miss: {}, weeksTxt: c.weeksTxt || '' };
-        o.netCr = c.netCr.v; o.miss.netCr = c.netCr.miss;
-        o.intCr = c.intCr.v; o.miss.intCr = c.intCr.miss;
-        o.debtCr = c.debtCr.v; o.miss.debtCr = c.debtCr.miss;
-        const inData = m.start >= CAL.dataFrom;
-        o.netPi = inData ? credSum(IDX.cum.netPi, m.start, m.end) : null;
-        o.intPi = inData ? credSum(IDX.cum.intPi, m.start, m.end) : null;
-        o.debtPi = credAt(IDX.debtPi, m.end);
-        if (!inData) o.miss.netPi = o.miss.intPi = [{ why: `дані CRED починаються з ${dmy(CAL.dataFrom)}` }];
-        const add = (x, y) => x == null || y == null ? null : x + y;
-        o.netTotal = add(o.netCr, o.netPi);
-        o.intTotal = add(o.intCr, o.intPi);
-        o.debtTotal = add(o.debtCr, o.debtPi);
-        ['netTotal', 'intTotal', 'debtTotal'].forEach((t, i) => {
-            const cr = ['netCr', 'intCr', 'debtCr'][i], pi = ['netPi', 'intPi', 'debtPi'][i];
-            o.miss[t] = [...(o.miss[cr] || []), ...(o.miss[pi] || [])];
-        });
-        o.ctrlCr = prev && prev.debtCr != null && o.debtCr != null && o.netCr != null && !o.miss.netCr.length ? (o.debtCr - prev.debtCr) - o.netCr : null;
-        o.ctrlPi = prev && prev.debtPi != null && o.debtPi != null && o.netPi != null ? (o.debtPi - prev.debtPi) - o.netPi : null;
-        o.banks = { cr: c.bankCr, pi: {} };
-        IDX.banks.forEach((b, k) => o.banks.pi[k] = { net: credSum(b.cum, m.start, m.end), debt: credAt(b.debt, m.end) });
-        prev = o;
-        return o;
-    });
-    return { open, openBanks, months, bankNames: { cr: bankKeys, pi: new Map([...IDX.banks].map(([k, b]) => [k, b.name])) } };
-}
+    const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim();
+    const isCfCode = c => /^\d+(\.\d+)+$/.test(String(c || '').trim());
+    const sameVec = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1);
+    const isNonZero = v => v.some(x => Math.abs(x) >= 1);
 
-function collectWarnings() {
-    const w = [];
-    const cur = PRK[CAL.D];
-    if (!cur || cur.error) w.push(`немає зрізу F13 на ${dmy(CAL.D)} — кредити не розраховано`);
-    else SPECS.forEach(s => { if (!cur.nodes[s.id] && !s.optional) w.push(`F13: не знайдено «${s.title}»`); });
-    const missWeeks = new Set();
-    AGG.months.forEach(m => Object.values(m.miss).flat().forEach(z => { if (z.mon && !z.out) missWeeks.add(z.mon); }));
-    (AGG.open.missCr || []).forEach(z => { if (z.mon && !z.out) missWeeks.add(z.mon); });
-    if (missWeeks.size) w.push(`немає даних F13 за тижні ${[...missWeeks].sort().map(dm).join(', ')}`);
-    const missing = CRED_REQUIRED.filter(t => !IDX.used[t]);
-    if (missing.length) w.push(`у CRED немає рядків: ${missing.join(', ')}`);
-    const bad = AGG.months.filter(m => [m.ctrlCr, m.ctrlPi].some(x => x != null && Math.abs(x) >= CTRL_TOL)).length;
-    if (bad) w.push(`контроль боргу не сходиться у ${bad} міс.`);
-    if (Math.floor((Date.now() - Date.parse(SNAP.meta.forecast_date)) / DAY) > 13) w.push(`CRED-зріз від ${dmy(SNAP.meta.forecast_date)} — понад 2 тижні тому`);
-    return w;
-}
-
-// ---------- форматування ----------
-const unit = () => UNITS[document.getElementById('unitSel').value];
-function shown(v) {
-    if (v == null) return null;
-    const u = unit();
-    return Math.round(v / u.k * 10 ** u.dec) / 10 ** u.dec;
-}
-function fmtNum(x, dec) {
-    if (x == null) return '–';
-    dec = dec == null ? unit().dec : dec;
-    if (Object.is(x, -0) || x === 0) return '0';
-    return (x < 0 ? '−' : '') + Math.abs(x).toLocaleString('uk-UA', { minimumFractionDigits: dec, maximumFractionDigits: dec }).replace(/[\u202F\u00A0]/g, ' ');
-}
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const statusBadge = m => (m.partial ? `<span class="badge b-part">неповний</span> ` : '') +
-    (m.status === 'fact' ? `<span class="badge b-fact">факт</span>`
-     : m.status === 'mixed' ? `<span class="badge b-mixed">факт ${m.factDays} + прогноз ${m.fcDays} дн.</span>`
-     : `<span class="badge b-fc">прогноз</span>`);
-const colCls = m => m.status === 'fact' ? 'c-fact' : m.status === 'mixed' ? 'c-mixed' : '';
-const periodOf = m => `${dm(m.start)}–${dmy(m.end)}`;
-const missTip = miss => [...new Map((miss || []).map(z => [(z.mon || '') + z.why, z])).values()]
-    .map(z => (z.mon ? `${dm(z.mon)}–${dm(isoAdd(z.mon, 6))}: ` : '') + z.why).join('; ');
-
-function bankRows(grp, isBal) {
-    const out = [];
-    AGG.bankNames[grp].forEach((name, k) => {
-        const any = AGG.months.some(a => { const b = a.banks[grp][k]; return b && (Math.abs(b.net || 0) >= 1 || (isBal && Math.abs(b.debt || 0) >= 1)); });
-        if (any) out.push({ k, name: name || k });
-    });
-    return out.sort((x, y) => x.name.localeCompare(y.name, 'uk'));
-}
-
-// ---------- рендер ----------
-function render() {
-    if (!CAL || !AGG) return;
-    const u = unit(), m0 = SNAP.meta, cur = PRK[CAL.D];
-    const showCtrl = document.getElementById('showCtrl').checked;
-    const showBanks = document.getElementById('showBanks').checked;
-    document.getElementById('navDate').textContent = dmy(CAL.D);
-    
-    // Формування скороченого імені файлу CRED (CRED_YYYY-MM-DD_HHMMSS)
-    let credCleanName = 'CRED';
-    if (SNAP.__file && SNAP.__file.name) {
-        const m = SNAP.__file.name.match(/(CRED_\d{4}-\d{2}-\d{2}_\d+)/i);
-        credCleanName = m ? m[1] : SNAP.__file.name.replace(/\.json$/i, '');
+    function groupRows(rows) {
+        const memo = new Map();
+        const parseNode = (i) => {
+            if (memo.has(i)) return memo.get(i);
+            const r = rows[i];
+            const own = vals(r, 'fact');
+            let res = { row: r, kids: [], next: i + 1, drop: r.kind === 'total' };
+            if (isNonZero(own)) {
+                let k = i + 1, kids = [], cum = Array(ALL_KEYS.length).fill(0);
+                while (k < rows.length) {
+                    const c = parseNode(k);
+                    k = c.next;
+                    if (c.drop) continue;
+                    kids.push(c); cum = addVec(cum, vals(c.row, 'fact'));
+                    if (sameVec(cum, own) && (kids.length >= 2 || r.kind === 'total')) {
+                        res = { row: r, kids, next: k };
+                        break;
+                    }
+                }
+            }
+            memo.set(i, res);
+            return res;
+        };
+        const out = [];
+        let i = 0;
+        while (i < rows.length) { const n = parseNode(i); if (!n.drop) out.push(n); i = n.next; }
+        return out;
     }
 
-    const created = m0.created_utc ? new Date(m0.created_utc).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) : '';
-    const fileTxt = `CRED: ${credCleanName}`;
-    
-    document.getElementById('navFile').textContent = '· ' + [
-        fileTxt, 
-        created ? `сформовано ${created}` : '',
-        cur && !cur.error ? `F13: дані ${dmy(CAL.D)}` : 'F13: дані відсутні'
-    ].filter(Boolean).join(' · ');
-    
-    document.getElementById('navFile').title = SNAP.__file && SNAP.__file.modified ? `CRED змінено в SharePoint: ${SNAP.__file.modified}` : '';
-    
-    document.getElementById('hdrSub').textContent =
-        `Дані ${dmy(CAL.D)}. Факт — по ${dmy(CAL.factUntil)}, прогноз — ${dmy(isoAdd(CAL.factUntil, 1))}–${dmy(CAL.horizonEnd)}. ` +
-        `Кредити — F13 (${CAL.rule === 'days' ? 'тижні за днями' : 'тиждень цілком'}), пост-імпорт — CRED за датами платежів.`;
+    function maybeVirtualGroup(nodes) {
+        if (nodes.length <= 10) return nodes;
+        const prefixOf = n => {
+            if (n.kids.length || !isCfCode(n.row.code)) return null;
+            const m = String(n.row.code).match(/^(\d+\.\d+\.\d+)\./);
+            return m ? m[1] : null;
+        };
+        const byPrefix = {};
+        nodes.forEach(n => { const p = prefixOf(n); if (p) (byPrefix[p] = byPrefix[p] || []).push(n); });
+        const groups = Object.values(byPrefix).filter(g => g.length >= 2);
+        if (!groups.length || (groups.length === 1 && groups[0].length === nodes.length)) return nodes;
+        const res = [], done = new Set();
+        nodes.forEach(n => {
+            const p = prefixOf(n);
+            if (p && byPrefix[p].length >= 2) {
+                if (done.has(p)) return;
+                done.add(p);
+                const kids = byPrefix[p];
+                res.push({
+                    row: { code: p }, kids, virtualCode: p,
+                    virtualName: CF_GROUP_NAMES[p] || `Група ${p}`,
+                    virtualValues: kids.reduce((s, k) => addVec(s, vals(k.row, 'fact')), Array(ALL_KEYS.length).fill(0)),
+                    virtualPlanValues: kids.reduce((s, k) => addVec(s, vals(k.row, 'plan')), Array(ALL_KEYS.length).fill(0))
+                });
+            } else res.push(n);
+        });
+        return res;
+    }
+
+    function extractSnapshot(jsonObj, requestedIso) {
+        const snap = jsonObj.snapshot || jsonObj;
+        if (!snap || !snap.tree) throw new Error("Не знайдено дерево даних у JSON");
+
+        const cols = snap.columns || {};
+        const labels = ALL_KEYS.map(k => cols[k] && cols[k].date_range ? cols[k].date_range : '');
+        const start = (snap.meta && snap.meta.forecast_date) || requestedIso;
+
+        const infBlock = snap.tree.find(n => cleanName(n.name) === 'Надходження' && n.children);
+        const outBlock = snap.tree.find(n => cleanName(n.name) === 'Видатки' && n.children);
+        if (!infBlock || !outBlock) throw new Error("Не знайдено блоки «Надходження» / «Видатки»");
+        const infRows = infBlock.children, outRows = outBlock.children;
+
+        const items = [];
+        const usedKeys = new Set();
+        const uniqKey = k => { let key = k, n = 2; while (usedKeys.has(key)) key = k + '#' + (n++); usedKeys.add(key); return key; };
+
+        const pushTree = (nodes, type, parentKey, noGroup) => {
+            (noGroup ? nodes : maybeVirtualGroup(nodes)).forEach(n => {
+                const r = n.row;
+                const code = n.virtualCode || (isCfCode(r.code) ? String(r.code) : '');
+                const name = n.virtualName || cleanName(r.name) || String(r.code || '');
+                const key = uniqKey(parentKey + '/' + (n.virtualCode ? 'cf:' + n.virtualCode : (r.code || name)));
+                items.push({ 
+                    type, code, name, key, parent: parentKey, 
+                    values: n.virtualValues || vals(r, 'fact'),
+                    valuesPlan: n.virtualPlanValues || vals(r, 'plan')
+                });
+                if (n.kids && n.kids.length) pushTree(n.kids, type, key, !!n.virtualCode);
+            });
+        };
+
+        const addRoot = (type, rowsList, idx, code, opts = {}) => {
+            const it = rowsList[idx];
+            const key = uniqKey(type + '|' + code);
+            const own = vals(it, 'fact');
+            const ownPlan = vals(it, 'plan');
+            items.push({ 
+                type, code, name: cleanName(it.name), key, parent: null, 
+                values: own, valuesPlan: ownPlan, driver: !opts.driverViaKids 
+            });
+
+            let grouped;
+            if (opts.extraKids) {
+                grouped = opts.extraKids.map(r => ({ row: r, kids: groupRows(r.children || []) }));
+            } else {
+                const detail = (it.children || []).slice();
+                if (opts.takeSiblings) {
+                    for (let j = idx + 1; j < rowsList.length; j++) {
+                        const r = rowsList[j];
+                        if (r.kind === 'item' || r.kind === 'block' || (r.kind === 'total' && SEGMENT_STOP.test(cleanName(r.name)))) break;
+                        if (r.kind === 'child' || r.kind === 'total') detail.push(r);
+                    }
+                }
+                grouped = groupRows(detail);
+            }
+            pushTree(grouped, type, key);
+            if (opts.driverViaKids) items.filter(x => x.parent === key).forEach(x => x.driver = true);
+
+            const kidsSum = grouped.reduce((s, n) => addVec(s, vals(n.row, 'fact')), Array(ALL_KEYS.length).fill(0));
+            const rest = own.map((v, i) => v - kidsSum[i]);
+            if (grouped.length && isNonZero(rest)) {
+                items.push({ 
+                    type, code: '', name: 'Нерозподілено / розбіжність у джерелі', 
+                    key: key + '/__rest', parent: key, values: rest, valuesPlan: rest, isRest: true 
+                });
+            }
+        };
+
+        const seenInf = new Set();
+        infRows.forEach((r, idx) => {
+            const no = String(r.no || '').trim();
+            if (r.kind === 'item' && INFLOW_ROOTS.includes(no) && !seenInf.has(no)) {
+                seenInf.add(no);
+                addRoot('inflows', infRows, idx, no, { takeSiblings: true });
+            }
+        });
+        const credIdx = outRows.findIndex(r => r.kind === 'item' && String(r.no || '').trim() === '6.1.1');
+        if (credIdx >= 0) addRoot('inflows', outRows, credIdx, '9');
+
+        const seenOut = new Set();
+        outRows.forEach((r, idx) => {
+            const no = String(r.no || '').trim();
+            if (r.kind !== 'item' || !OUTFLOW_ROOTS.includes(no) || seenOut.has(no)) return;
+            if (/з\s+СП\s+УКО/i.test(r.name || '')) return;
+            seenOut.add(no);
+            addRoot('outflows', outRows, idx, no, { takeSiblings: true });
+        });
+        const finIdx = outRows.findIndex(r => r.kind === 'item' && String(r.no || '').trim() === '6.2');
+        if (finIdx >= 0) {
+            const kids62 = outRows.filter(r => r.kind === 'item' && /^6\.2\.\d+$/.test(String(r.no || '').trim()))
+                                   .map(r => Object.assign({}, r, { code: String(r.no).trim() }));
+            addRoot('outflows', outRows, finIdx, '6.2', { extraKids: kids62, driverViaKids: true });
+        }
+
+        return {
+            start, checks: [],
+            inflows: items.filter(i => i.type === 'inflows'),
+            inflowsLabels: labels,
+            outflows: items.filter(i => i.type === 'outflows'),
+            outflowsLabels: labels
+        };
+    }
+
+    async function fetchSnapshot(iso) {
+        const res = await fetch(GET_METRICS_FLOW_URL, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
+        });
+        if (!res.ok) throw new Error(`зріз ${dmy(iso)}: HTTP ${res.status}`);
+        return res.json();
+    }
+
+    async function loadCompareDataFromCloud(curDateIso) {
+        setStatus('Завантаження з хмари...', 'bg-indigo-100 text-indigo-800');
+        const prevDateIso = isoAdd(curDateIso, -7);
+        try {
+            const [jsonCur, jsonPrev] = await Promise.all([fetchSnapshot(curDateIso), fetchSnapshot(prevDateIso)]);
+            const cur = extractSnapshot(jsonCur, curDateIso);
+            const prev = extractSnapshot(jsonPrev, prevDateIso);
+            DATA = { current: cur, previous: prev };
+            collapsed = {};
+            initDefaultArticleSelections();
+            render();
+            setStatus(`Дані оновлено (${dmy(cur.start)} vs ${dmy(prev.start)})`, 'bg-emerald-100 text-emerald-800');
+        } catch (err) {
+            console.error(err);
+            setStatus('Помилка: ' + err.message, 'bg-red-100 text-red-800');
+        }
+    }
+
+    // ---------- МОДЕЛЬ ДАНИХ ТА ВИРІВНЮВАННЯ ВЕРТИКАЛЕЙ ----------
+    function buildModel(data, excludeFin, showFacts) {
+        if (!data) return null;
+        const cur = data.current, prev = data.previous;
+        const weekMap = {};
+
+        const addWeeks = (snap, role) => {
+            ALL_KEYS.forEach((key, idx) => {
+                const offsetWeeks = idx - 1; // Т-1 -> offset -1, T0 -> 0, ...
+                const iso = isoAdd(snap.start, 7 * offsetWeeks);
+                weekMap[iso] = weekMap[iso] || { iso };
+                weekMap[iso][role] = idx;
+                weekMap[iso][role + 'Key'] = key;
+                if (!weekMap[iso].label || role === 'cur') {
+                    weekMap[iso].label = weekLabel(snap.inflowsLabels[idx], iso);
+                }
+            });
+        };
+
+        addWeeks(prev, 'prev');
+        addWeeks(cur, 'cur');
+
+        let weeks = Object.values(weekMap).sort((a, b) => a.iso.localeCompare(b.iso));
+        weeks.forEach(w => {
+            w.common = w.cur != null && w.prev != null;
+            w.isFact = (w.curKey === 'T-1' || (w.curKey == null && w.prevKey === 'T-1'));
+        });
+
+        if (!showFacts) {
+            weeks = weeks.filter(w => !w.isFact);
+        }
+
+        const common = weeks.filter(w => w.common);
+        const isExcluded = name => excludeFin && FIN_EXCLUDE.some(rx => rx.test(name));
+
+        const buildType = type => {
+            const order = [], byKey = {};
+            const put = (list, role) => list.forEach(it => {
+                if (!byKey[it.key]) { byKey[it.key] = { ...it, type, raw: {}, rawPlan: {} }; order.push(it.key); }
+                byKey[it.key].raw[role] = it.values; // Завжди факт за замовчуванням
+                if (role === 'cur') byKey[it.key].rawPlan['cur'] = it.valuesPlan || it.values;
+                if (it.driver) byKey[it.key].driver = true;
+            });
+            put(cur[type], 'cur');
+            put(prev[type], 'prev'); // prev (Таблиця 3) завжди факт
+
+            const arts = order.map(k => byKey[k]);
+            const byK = Object.fromEntries(arts.map(a => [a.key, a]));
+            arts.forEach((a, i) => a._idx = i);
+
+            arts.forEach(a => {
+                a.excluded = isExcluded(a.name);
+                a.eff = {};
+                a.effPlan = {};
+                ['cur', 'prev'].forEach(role => {
+                    a.eff[role] = (a.raw[role] || Array(ALL_KEYS.length).fill(0)).slice();
+                });
+                a.effPlan.cur = (a.rawPlan.cur || Array(ALL_KEYS.length).fill(0)).slice();
+            });
+
+            arts.forEach(a => {
+                let p = byK[a.parent];
+                while (p) { if (p.excluded) { a.hiddenByExcl = true; break; } p = byK[p.parent]; }
+            });
+
+            arts.filter(a => a.excluded && !a.hiddenByExcl).forEach(ex => {
+                let p = byK[ex.parent];
+                while (p) {
+                    ['cur', 'prev'].forEach(role => {
+                        const cr = ex.raw[role] || Array(ALL_KEYS.length).fill(0);
+                        p.eff[role] = p.eff[role].map((v, i) => v - cr[i]);
+                    });
+                    const crPlan = ex.rawPlan.cur || Array(ALL_KEYS.length).fill(0);
+                    p.effPlan.cur = p.effPlan.cur.map((v, i) => v - crPlan[i]);
+                    p = byK[p.parent];
+                }
+            });
+
+            arts.forEach(a => {
+                a.hasKids = arts.some(c => c.parent === a.key);
+                a.byWeek = {
+                    cur: weeks.map(w => w.cur != null ? a.eff.cur[w.cur] : null),
+                    curPlan: weeks.map(w => w.cur != null ? a.effPlan.cur[w.cur] : null),
+                    prev: weeks.map(w => w.prev != null ? a.eff.prev[w.prev] : null)
+                };
+                a.onlyIn = !a.raw.cur ? 'prev' : (!a.raw.prev ? 'cur' : null);
+                let depth = 0, p = byK[a.parent];
+                while (p) { depth++; p = byK[p.parent]; }
+                a.depth = depth;
+            });
+
+            const sorted = [];
+            const addChildren = pk => arts.filter(a => a.parent === pk).sort((a, b) => a._idx - b._idx)
+                .forEach(k => { sorted.push(k); addChildren(k.key); });
+            arts.filter(a => !a.parent).sort((a, b) => a._idx - b._idx).forEach(r => { sorted.push(r); addChildren(r.key); });
+            return sorted;
+        };
+
+        const inflows = buildType('inflows');
+        const outflows = buildType('outflows');
+
+        const totalOf = (arts, key, type) => {
+            const top = arts.filter(a => !a.parent && !a.excluded);
+            const t = { key, name: key === '__inf' ? 'Надходження всього' : 'Видатки всього', type, isTotal: true, byWeek: {} };
+            ['cur', 'prev'].forEach(r => {
+                t.byWeek[r] = weeks.map((w, i) => w[r] == null ? null : sumArr(top.map(a => a.byWeek[r][i])));
+            });
+            t.byWeek.curPlan = weeks.map((w, i) => w.cur == null ? null : sumArr(top.map(a => a.byWeek.curPlan[i])));
+            return t;
+        };
+
+        const tInf = totalOf(inflows, '__inf', 'inflows');
+        const tOut = totalOf(outflows, '__out', 'outflows');
+        const tNet = { key: '__net', name: 'Чистий потік (доходи − видатки)', type: 'net', isTotal: true, byWeek: {} };
+        ['cur', 'prev'].forEach(r => {
+            tNet.byWeek[r] = weeks.map((w, i) => (tInf.byWeek[r][i] == null && tOut.byWeek[r][i] == null) ? null : (tInf.byWeek[r][i] || 0) - (tOut.byWeek[r][i] || 0));
+        });
+        tNet.byWeek.curPlan = weeks.map((w, i) => (tInf.byWeek.curPlan[i] == null && tOut.byWeek.curPlan[i] == null) ? null : (tInf.byWeek.curPlan[i] || 0) - (tOut.byWeek.curPlan[i] || 0));
+
+        const all = [tInf, ...inflows, tOut, ...outflows, tNet];
+        all.forEach(a => {
+            a.delta = weeks.map((w, i) => w.common ? a.byWeek.cur[i] - a.byWeek.prev[i] : null);
+            a.sumCur = sumArr(weeks.map((w, i) => a.byWeek.cur[i] || 0));
+            a.sumPrev = sumArr(weeks.map((w, i) => a.byWeek.prev[i] || 0));
+            a.sumDelta = sumArr(weeks.map((w, i) => w.common ? a.delta[i] : 0));
+            a.kind = a.type === 'inflows' ? 'inflow' : (a.type === 'outflows' ? 'outflow' : 'net');
+            a.isZero = !a.isTotal && [...a.byWeek.cur, ...a.byWeek.prev].every(v => !v || Math.abs(v) < 1);
+            a.hidden = !!(a.excluded || a.hiddenByExcl);
+        });
+
+        return { cur, prev, weeks, common, inflows, outflows, tInf, tOut, tNet, all, excludeFin, showFacts };
+    }
+
+    function renderHeader() {
+        const c = dmy(M.cur.start), p = dmy(M.prev.start);
+        ['navCurDate', 'hdrCur'].forEach(id => document.getElementById(id).textContent = c);
+        ['navPrevDate', 'hdrPrev'].forEach(id => document.getElementById(id).textContent = p);
+        const f = M.common[0], l = M.common[M.common.length - 1];
+        document.getElementById('hdrHorizon').textContent = !f ? 'Спільних періодів немає' :
+            `Порівнюються періоди: ${M.common.length} спільних тижнів (вкл. факт Т-1) ${dm(f.iso)}–${dmy(isoAdd(l.iso, 6))}.`;
+        document.getElementById('hdrScope').textContent = M.excludeFin
+            ? 'Без отримання та повернення кредитів' : 'Усі статті, включно з кредитними потоками';
+    }
+
+    function renderSummary() {
+        const block = (t, title, color, kind) => {
+            const d = t.sumDelta;
+            return `<div class="sum-cell">
+                <div class="sum-title"><i style="background:${color}"></i>${title} за ${M.common.length} тижнів</div>
+                <div class="sum-main"><span class="sum-val">${fmt(t.sumCur)}</span>
+                    <span class="sum-delta" style="color:${goodColor(d, kind)}">${fmtD(d)}${kind === 'net' ? '' : ' · ' + fmtPct(d, t.sumPrev)}</span></div>
+                <div class="sum-sub">Зріз ${dmy(M.prev.start)}: ${fmt(t.sumPrev)} → зріз ${dmy(M.cur.start)}: ${fmt(t.sumCur)}</div>
+            </div>`;
+        };
+        const onlyPrev = M.weeks.map((w, i) => ({ w, i })).filter(x => x.w.prev != null && x.w.cur == null);
+        const onlyCur = M.weeks.map((w, i) => ({ w, i })).filter(x => x.w.cur != null && x.w.prev == null);
+        const hzRow = (x, role, text) => `<span>${text} ${x.w.label}</span>
+            <span>Доходи <b>${fmt(M.tInf.byWeek[role][x.i])}</b></span>
+            <span>Видатки <b>${fmt(M.tOut.byWeek[role][x.i])}</b></span>`;
+        const hz = `<div class="sum-cell">
+            <div class="sum-title"><i style="background:${COLORS.prevGrey}"></i>Зсув горизонту</div>
+            <div class="hz-grid">
+                ${onlyPrev.map(x => hzRow(x, 'prev', 'Вибув (' + x.w.prevKey + ')')).join('')}
+                ${onlyCur.map(x => hzRow(x, 'cur', 'Додано (' + x.w.curKey + ')')).join('')}
+            </div></div>`;
+        document.getElementById('summaryStrip').innerHTML =
+            block(M.tInf, 'Надходження', COLORS.inflow, 'inflow') +
+            block(M.tOut, 'Видатки', COLORS.outflow, 'outflow') +
+            block(M.tNet, 'Чистий потік', COLORS.net, 'net') + hz;
+    }
+
+    // ---------- КЕРУВАННЯ ТА РЕНДЕР ГРАФІКІВ ----------
+    function initDefaultArticleSelections() {
+        if (!DATA) return;
+        const cur = DATA.current;
+        const defaultInflows = cur.inflows.filter(a => !a.parent).slice(0, 5).map(a => a.name);
+        const defaultOutflows = cur.outflows.filter(a => !a.parent).slice(0, 5).map(a => a.name);
+        selectedChartArticles.inflows = new Set(defaultInflows);
+        selectedChartArticles.outflows = new Set(defaultOutflows);
+    }
+
+    function renderFilterChips() {
+        const makeChips = (type, containerId, selectId) => {
+            const container = document.getElementById(containerId);
+            const mode = document.getElementById(selectId).value;
+
+            if (mode === 'all') {
+                container.classList.add('hidden');
+                return;
+            } else {
+                container.classList.remove('hidden');
+            }
+
+            const roots = (type === 'inflows' ? M.inflows : M.outflows).filter(a => !a.parent && !a.excluded);
+            container.innerHTML = roots.map(a => {
+                const checked = selectedChartArticles[type].has(a.name) ? 'checked' : '';
+                return `
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer hover:text-indigo-600 font-medium whitespace-nowrap">
+                    <input type="checkbox" ${checked} onchange="toggleArticleSelection('${type}', '${esc(a.name)}')" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>${esc(a.name)}</span>
+                </label>`;
+            }).join('');
+        };
+        makeChips('inflows', 'inflowChipsContainer', 'inflowModeSelect');
+        makeChips('outflows', 'outflowChipsContainer', 'outflowModeSelect');
+    }
+
+    function toggleArticleSelection(type, name) {
+        if (selectedChartArticles[type].has(name)) {
+            selectedChartArticles[type].delete(name);
+        } else {
+            selectedChartArticles[type].add(name);
+        }
+        document.getElementById(type === 'inflows' ? 'inflowModeSelect' : 'outflowModeSelect').value = 'selected';
+        renderCharts();
+    }
+
+    function onFilterModeChange(type) {
+        const mode = document.getElementById(type === 'inflows' ? 'inflowModeSelect' : 'outflowModeSelect').value;
+        const roots = (type === 'inflows' ? M.inflows : M.outflows).filter(a => !a.parent && !a.excluded);
+        if (mode === 'all') {
+            selectedChartArticles[type] = new Set(roots.map(a => a.name));
+        } else if (mode === 'top5') {
+            const sorted = [...roots].sort((a, b) => b.sumCur - a.sumCur);
+            selectedChartArticles[type] = new Set(sorted.slice(0, 5).map(a => a.name));
+        }
+        renderFilterChips();
+        renderCharts();
+    }
+
+    function getAggregatedSeries(type) {
+        const roots = (type === 'inflows' ? M.inflows : M.outflows).filter(a => !a.parent && !a.excluded);
+        const sel = selectedChartArticles[type];
+        const active = roots.filter(a => sel.has(a.name));
         
-    document.getElementById('hdrUnit').innerHTML = `${u.lbl}<br>залучення «+», повернення «−»`;
-    document.getElementById('helpDate').textContent = dmy(CAL.D);
-    document.getElementById('helpFactKey').textContent = cur && cur.factKey ? cur.factKey : 'Tm1_fact';
-
-    const wb = document.getElementById('warnBox');
-    const w = (m0.warnings || []).filter(x => !/допоміжну таблицю/.test(x));
-    wb.classList.toggle('hidden', !w.length);
-    wb.innerHTML = w.length ? '<b>Попередження у CRED-snapshot:</b> ' + w.map(esc).join('; ') : '';
-
-    let h = `<thead><tr><th>Показник</th><th class="c-open">Початок</th>` +
-        CAL.months.map(m => `<th class="${colCls(m)}">${m.label}<br>${statusBadge(m)}</th>`).join('') + `</tr>` +
-        `<tr><th></th><th class="c-open">на ${dmy(CAL.openDay)}</th>` +
-        CAL.months.map(m => `<th class="${colCls(m)}">${periodOf(m)}${m.partial ? `<br>${esc(m.notes[0])}` : ''}</th>`).join('') + `</tr></thead><tbody>`;
-
-    const cellHtml = (m, a, id, v, extraTip) => {
-        const miss = (a.miss && a.miss[id]) || [];
-        const warn = miss.length ? ' warn' : '';
-        const tips = [miss.length ? 'Неповні дані: ' + missTip(miss) : '', extraTip || ''].filter(Boolean).join(' | ');
-        return `<td class="${colCls(m)} ${v == null ? 'na' : ''}${warn}"${tips ? ` title="${esc(tips)}"` : ''}>${fmtNum(shown(v))}</td>`;
-    };
-    ROWS.forEach(r => {
-        const isBal = r.type === 'bal';
-        const openVal = isBal ? AGG.open[r.id] : null;
-        const openTip = isBal && r.id !== 'debtPi' && AGG.open.missCr.length ? ` title="${esc('Неповні дані: ' + missTip(AGG.open.missCr))}"` : '';
-        h += `<tr class="lvl${r.lvl} ${r.sep ? 'sep' : ''}"><td>${esc(r.label)}${r.src ? SRC_TAG[r.src] : ''}</td>` +
-             `<td class="c-open ${isBal && openVal == null ? 'na' : ''}"${openTip}>${isBal ? fmtNum(shown(openVal)) : ''}</td>`;
-        AGG.months.forEach((a, i) => h += cellHtml(CAL.months[i], a, r.id, a[r.id], r.src === 'f13' && a.weeksTxt ? a.weeksTxt : ''));
-        h += '</tr>';
-        if (showBanks && r.bank) bankRows(r.bank, isBal).forEach(b => {
-            const ov = isBal ? AGG.openBanks[r.bank][b.k] : null;
-            h += `<tr class="lvl2"><td>${esc(b.name)}</td><td class="c-open ${isBal && ov == null ? 'na' : ''}">${isBal ? fmtNum(shown(ov)) : ''}</td>` +
-                 AGG.months.map((a, i) => {
-                     const x = a.banks[r.bank][b.k];
-                     const v = x ? (isBal ? x.debt : x.net) : (isBal ? null : 0);
-                     return `<td class="${colCls(CAL.months[i])} ${v == null ? 'na' : ''}">${fmtNum(shown(v))}</td>`;
-                 }).join('') + '</tr>';
+        const curVals = M.weeks.map((w, idx) => {
+            if (w.cur == null) return null;
+            return sumArr(active.map(a => mln(a.byWeek.cur[idx] || 0)));
         });
-    });
-    if (showCtrl) CTRL_ROWS.forEach((r, j) => {
-        h += `<tr class="ctrl ${j === 0 ? 'sep' : ''}"><td>${r.label}${SRC_TAG[r.src]}</td><td class="c-open"></td>`;
-        AGG.months.forEach((a, i) => {
-            const v = a[r.id], m = CAL.months[i];
-            const cls = v == null ? 'na' : Math.abs(v) >= CTRL_TOL ? 'bad' : 'ok';
-            const tip = v == null ? 'недостатньо даних для контролю' : Math.abs(v) >= CTRL_TOL ? 'зміна боргу не дорівнює чистому залученню' : 'сходиться';
-            h += `<td class="${colCls(m)} ${cls}" title="${tip}">${v == null ? '–' : Math.abs(v) < CTRL_TOL ? '✓' : fmtNum(shown(v))}</td>`;
+        const prevVals = M.weeks.map((w, idx) => {
+            if (w.prev == null) return null;
+            return sumArr(active.map(a => mln(a.byWeek.prev[idx] || 0)));
         });
-        h += '</tr>';
-    });
-    document.getElementById('monthTable').innerHTML = h + '</tbody>';
-
-    const showW = document.getElementById('showWeeks').checked;
-    document.getElementById('weekSection').classList.toggle('hidden', !showW);
-    if (showW) renderWeeks();
-}
-
-// ---------- тижні ----------
-function weekList() {
-    const list = [];
-    const from = CAL.months[0].start, to = CAL.months[CAL.months.length - 1].end;
-    const mStarts = new Set(CAL.months.map(m => toMonday(m.start)));
-    for (let w = toMonday(from); w <= to; w = isoAdd(w, 7)) {
-        list.push({ mon: w, sun: isoAdd(w, 6), t: Math.round((Date.parse(w) - Date.parse(CAL.D)) / DAY / 7),
-                    fact: isoAdd(w, 6) <= CAL.factUntil, cross: ymOf(w).m !== ymOf(isoAdd(w, 6)).m, mb: mStarts.has(w) && w !== toMonday(from) });
+        return { curVals, prevVals };
     }
-    return list;
-}
-function weekVal(w, id) {
-    const cw = crWeek(w.mon);
-    const cr = f => cw.ok ? f(cw.v) : null;
-    const piOk = w.mon >= CAL.dataFrom && w.sun <= CAL.dataTo;
-    const pi = key => piOk ? credSum(IDX.cum[key], w.mon, w.sun) : null;
-    const add = (x, y) => x == null || y == null ? null : x + y;
-    switch (id) {
-        case 'netCr': return cr(v => v.netCr);
-        case 'crIn': return cr(v => v.crIn);
-        case 'crOut': return cr(v => v.crOut);
-        case 'intCr': return cr(v => v.intCr);
-        case 'debtCr': return cr(v => v.debtCr);
-        case 'netPi': return pi('netPi');
-        case 'piIn': return pi('piIn');
-        case 'piOut': return pi('piOut');
-        case 'intPi': return pi('intPi');
-        case 'debtPi': return credAt(IDX.debtPi, w.sun);
-        case 'netTotal': return add(weekVal(w, 'netCr'), weekVal(w, 'netPi'));
-        case 'intTotal': return add(weekVal(w, 'intCr'), weekVal(w, 'intPi'));
-        case 'debtTotal': return add(weekVal(w, 'debtCr'), weekVal(w, 'debtPi'));
+
+    function renderCharts() {
+        const labels = M.weeks.map(w => {
+            const tag = w.curKey ? w.curKey : w.prevKey;
+            return [tag, dm(w.iso)];
+        });
+
+        const infData = getAggregatedSeries('inflows');
+        const outData = getAggregatedSeries('outflows');
+
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+                tooltip: {
+                    callbacks: {
+                        title: ctx => {
+                            const raw = ctx[0].label;
+                            return Array.isArray(raw) ? `${raw[0]} (${raw[1]})` : raw;
+                        },
+                        label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toLocaleString('uk-UA') + ' млн грн' : '–'}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 9 }, maxRotation: 0, minRotation: 0 }
+                },
+                y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } }
+            }
+        };
+
+        if (inflowsChartInstance) inflowsChartInstance.destroy();
+        const ctxInf = document.getElementById('inflowsChart').getContext('2d');
+        inflowsChartInstance = new Chart(ctxInf, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: `Поточний зріз (${dmy(M.cur.start)})`,
+                        data: infData.curVals,
+                        borderColor: '#0f766e',
+                        backgroundColor: 'rgba(15,118,110,0.08)',
+                        fill: true,
+                        tension: 0.2,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    },
+                    {
+                        label: `Попередній зріз (${dmy(M.prev.start)})`,
+                        data: infData.prevVals,
+                        borderColor: '#94a3b8',
+                        borderDash: [5, 4],
+                        borderWidth: 2,
+                        pointRadius: 2.5,
+                        fill: false
+                    }
+                ]
+            },
+            options: chartOptions
+        });
+
+        if (outflowsChartInstance) outflowsChartInstance.destroy();
+        const ctxOut = document.getElementById('outflowsChart').getContext('2d');
+        outflowsChartInstance = new Chart(ctxOut, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: `Поточний зріз (${dmy(M.cur.start)})`,
+                        data: outData.curVals,
+                        borderColor: '#ea580c',
+                        backgroundColor: 'rgba(234,88,12,0.08)',
+                        fill: true,
+                        tension: 0.2,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    },
+                    {
+                        label: `Попередній зріз (${dmy(M.prev.start)})`,
+                        data: outData.prevVals,
+                        borderColor: '#94a3b8',
+                        borderDash: [5, 4],
+                        borderWidth: 2,
+                        pointRadius: 2.5,
+                        fill: false
+                    }
+                ]
+            },
+            options: chartOptions
+        });
     }
-    return null;
-}
-const WEEK_IDS = ['netTotal', 'netCr', 'crIn', 'crOut', 'netPi', 'piIn', 'piOut', 'intTotal', 'intCr', 'intPi', 'debtTotal', 'debtCr', 'debtPi'];
-function renderWeeks() {
-    const list = weekList();
-    const cls = w => `${w.fact ? 'f' : ''} ${w.cross ? 'x' : ''} ${w.mb ? 'mb' : ''}`;
-    let h = `<thead><tr><th>Показник</th>` + list.map(w => {
-        const cw = crWeek(w.mon);
-        return `<th class="${cls(w)}">${dm(w.mon)}–${dm(w.sun)}<br><span class="font-normal text-slate-400">${w.t < 0 ? 'факт' : 'T' + w.t}</span>` +
-               `<br><span class="font-normal text-slate-400">F13: ${cw.ok ? esc(cw.label) : 'немає'}</span></th>`;
-    }).join('') + `</tr></thead><tbody>`;
-    WEEK_IDS.forEach(id => {
-        const lvl0 = /Total$/.test(id);
-        h += `<tr><td class="${lvl0 ? 'font-semibold' : 'text-slate-500 pl-4'}">${esc(WLABEL[id])}</td>` +
-             list.map(w => {
-                 const cw = crWeek(w.mon);
-                 const tip = /Cr$|crIn|crOut/.test(id) && !cw.ok ? ` title="${esc(cw.why)}"` : '';
-                 return `<td class="${cls(w)}"${tip}>${fmtNum(shown(weekVal(w, id)))}</td>`;
-             }).join('') + `</tr>`;
-    });
-    document.getElementById('weekTable').innerHTML = h + '</tbody>';
-}
 
-// ---------- вивантаження ----------
-function tableAoa() {
-    const hdr1 = ['Показник', 'Джерело', 'Початок', ...CAL.months.map(m => m.label)];
-    const hdr2 = ['', '', `на ${dmy(CAL.openDay)}`, ...CAL.months.map(periodOf)];
-    const hdr3 = ['Тип даних', '', 'факт', ...CAL.months.map(m => (m.partial ? 'неповний, ' : '') +
-        (m.status === 'fact' ? 'факт' : m.status === 'mixed' ? `факт ${m.factDays} + прогноз ${m.fcDays} дн.` : 'прогноз'))];
-    const body = [];
-    const showBanks = document.getElementById('showBanks').checked;
-    ROWS.forEach(r => {
-        const isBal = r.type === 'bal';
-        body.push([r.lvl ? '   ' + r.label : r.label, r.src ? r.src.toUpperCase() : '', isBal ? shown(AGG.open[r.id]) : null, ...AGG.months.map(a => shown(a[r.id]))]);
-        if (showBanks && r.bank) bankRows(r.bank, isBal).forEach(b => body.push(['      ' + b.name, r.src.toUpperCase(),
-            isBal ? shown(AGG.openBanks[r.bank][b.k]) : null,
-            ...AGG.months.map(a => { const x = a.banks[r.bank][b.k]; return x ? shown(isBal ? x.debt : x.net) : null; })]));
-    });
-    return [hdr1, hdr2, hdr3, ...body];
-}
+    // ---------- ТАБЛИЦІ ----------
+    function isCollapsed(tableId, key) {
+        const s = collapsed[tableId] || {};
+        return s[key] !== undefined ? s[key] : !document.getElementById('showKids').checked;
+    }
 
-function exportXlsx() {
-    if (!AGG) return;
-    if (!window.XLSX) { setStatus('Бібліотека Excel не завантажилась — скористайтесь «Копіювати»', 'bg-red-100 text-red-800'); return; }
-    const u = unit(), m = SNAP.meta;
-    const wb = XLSX.utils.book_new();
-    const aoa = [[`Кредити, постімпорт, ${u.lbl}`],
-                 [`Дані ${dmy(CAL.D)}; факт по ${dmy(CAL.factUntil)}; горизонт до ${dmy(CAL.horizonEnd)}; кредити — F13 (${CAL.rule === 'days' ? 'тижні за днями' : 'тиждень цілком'}), пост-імпорт — CRED (${SNAP.__file ? SNAP.__file.name : m.source_file || ''})`], [],
-                 ...tableAoa()];
-    const ws1 = XLSX.utils.aoa_to_sheet(aoa);
-    ws1['!cols'] = [{ wch: 50 }, { wch: 8 }, ...aoa[3].slice(2).map(() => ({ wch: 20 }))];
-    XLSX.utils.book_append_sheet(wb, ws1, 'Помісячно');
+    function onCurTm1ModeChange() {
+        if (!M || !TABLES['tblCur']) return;
+        renderTable(TABLES['tblCur']);
+    }
 
-    const list = weekList();
-    const aoaW = [['Показник', ...list.map(w => `${dmy(w.mon)}–${dmy(w.sun)}`)],
-                  ['Тиждень', ...list.map(w => w.t < 0 ? 'факт' : 'T' + w.t)],
-                  ['Джерело F13', ...list.map(w => { const cw = crWeek(w.mon); return cw.ok ? cw.label : 'немає: ' + cw.why; })],
-                  ...WEEK_IDS.map(id => [WLABEL[id], ...list.map(w => shown(weekVal(w, id)))])];
-    const ws2 = XLSX.utils.aoa_to_sheet(aoaW);
-    ws2['!cols'] = [{ wch: 44 }, ...list.map(() => ({ wch: 16 }))];
-    XLSX.utils.book_append_sheet(wb, ws2, 'Тижні');
+    function renderTable(cfg) {
+        TABLES[cfg.tableId] = cfg;
+        const { tableId, mode } = cfg;
+        const P = dmy(M.prev.start), C = dmy(M.cur.start);
+        const valueMode = mode === 'cur' || mode === 'prev';
 
-    XLSX.writeFile(wb, `Кредити_постімпорт_${dmy(CAL.D)}.xlsx`);
-}
-
-async function copyTable() {
-    if (!AGG) return;
-    const tsv = tableAoa().map(r => r.map(v => v == null ? '' : typeof v === 'number' ? String(v).replace('.', ',') : v).join('\t')).join('\n');
-    try { await navigator.clipboard.writeText(tsv); setStatus('Таблицю скопійовано — вставте в Excel', 'bg-emerald-100 text-emerald-800'); }
-    catch { setStatus('Браузер заборонив доступ до буфера обміну', 'bg-red-100 text-red-800'); }
-}
-
-function highlightActiveNav() {
-    const currentPath = window.location.pathname.toLowerCase();
-    const links = document.querySelectorAll('#navLinks a');
-
-    // Визначаємо, яка вкладка є поточною для цієї сторінки (sop-home)
-    const isHome = currentPath.includes('sop-home') || 
-                   currentPath.includes('monthly') || 
-                   currentPath.endsWith('/') || 
-                   currentPath.endsWith('/dashbrd_cf');
-
-    links.forEach(a => {
-        const href = (a.getAttribute('href') || '').toLowerCase();
-        const matchesThis = href.includes('sop-home') ? isHome : (!isHome && currentPath.includes('sop-credit'));
-
-        if (matchesThis) {
-            // Поточна активна сторінка — чорний текст, без переходу
-            a.className = 'text-slate-800 font-bold text-xs cursor-default pointer-events-none';
-            if (href.includes('sop-home')) a.classList.add('mr-3');
-            a.removeAttribute('href');
-        } else {
-            // Сторінка для переходу — синій текст з підкресленням
-            a.className = 'text-blue-600 hover:underline text-xs font-semibold';
-            if (href.includes('sop-home')) a.classList.add('mr-3');
+        // Визначаємо джерело значень і підпис для колонки T-1
+        let curRole = mode;
+        const curTm1Mode = document.getElementById('curTm1ModeSelect')?.value || 'fact';
+        if (mode === 'cur' && curTm1Mode === 'plan') {
+            curRole = 'curPlan';
         }
+
+        const cols = M.weeks.map((w, i) => {
+            const hasData = (mode === 'delta') ? w.common : (w[mode] != null);
+            const edge = !w.common && hasData;
+            let sub = '';
+            if (mode === 'delta') {
+                sub = w.common ? `${w.curKey || ''} · ${w.prevKey || ''}` : '';
+            } else if (mode === 'cur' && w.curKey === 'T-1') {
+                sub = curTm1Mode === 'plan' ? 'Т-1 (план)' : 'Т-1 (факт)';
+            } else {
+                sub = w[mode + 'Key'] ? `${w[mode + 'Key']}${edge ? (mode === 'prev' ? ' · вибув' : ' · новий') : ''}` : '';
+            }
+            return { w, i, hasData, edge, isFact: w.isFact, sub };
+        });
+
+        const n = cols.length;
+        const sumRole = (a, role) => sumArr(cols.map(c => c.hasData ? (a.byWeek[role][c.i] || 0) : 0));
+        const sumDelta = a => sumArr(cols.map(c => c.hasData ? (a.delta[c.i] || 0) : 0));
+        const ctx = { P, C, n, cols, curTm1Mode };
+
+        document.getElementById(tableId + 'Title').textContent = cfg.title(ctx);
+        const hasEdge = cols.some(c => c.edge);
+        document.getElementById(tableId + 'Legend').innerHTML = !valueMode ?
+            `<span class="legend-chip"><i style="background:#e2e8f0"></i>факт (Т-1)</span>
+             <span class="legend-chip"><i style="background:#d1fae5"></i>покращує чистий потік</span>
+             <span class="legend-chip"><i style="background:#fee2e2"></i>погіршує чистий потік</span>` :
+            (hasEdge ? `<span class="legend-chip"><i style="background:#fef3c7"></i>тиждень поза спільним горизонтом</span>` : '');
+
+        const weekW = ((100 - 19 - 5.8 - 4.4) / Math.max(1, n)).toFixed(3);
+
+        let head = `<th>Стаття</th>` + cols.map(c => {
+            const bgStyle = c.isFact ? 'background:#f1f5f9;color:#475569;' : (c.edge ? 'background:#fef3c7;color:#92400e;' : '');
+            return `<th style="width:${weekW}%;${bgStyle}">${c.w.label}<span class="th-period">${c.sub}</span></th>`;
+        }).join('');
+
+        head += `<th class="col-sum">Σ<span class="th-period">${mode === 'delta' ? 'відхилення' : 'разом'}</span></th>`;
+
+        if (!valueMode) {
+            head += `<th class="col-pct">Δ, %<span class="th-period">до ${dm(M.prev.start)}</span></th>`;
+        } else {
+            head += `<th class="col-pct"></th>`;
+        }
+        document.getElementById(tableId + 'Head').innerHTML = head;
+
+        const maxAbs = Math.max(1, ...[...M.inflows, ...M.outflows].filter(a => a.driver && !a.hidden)
+            .flatMap(a => cols.map(c => Math.abs(a.delta[c.i] || 0))));
+        
+        const heat = (d, kind, isFact) => {
+            if (isFact) return 'background-color:#f8fafc;';
+            if (d == null || Math.abs(mln(d)) < 0.5) return '';
+            const good = kind === 'outflow' ? d < 0 : d > 0;
+            const alpha = Math.min(1, Math.abs(d) / maxAbs) * 0.55 + 0.06;
+            return `background-color:${good ? `rgba(16,185,129,${alpha.toFixed(2)})` : `rgba(239,68,68,${alpha.toFixed(2)})`};`;
+        };
+
+        const deltaCells = a => {
+            const sd = sumDelta(a), base = sumRole(a, 'prev');
+            return cols.map(c => {
+                if (!c.hasData) return `<td></td>`;
+                return `<td style="${heat(a.delta[c.i], a.kind, c.isFact)}color:${goodColor(a.delta[c.i], a.kind)}">${fmtD(a.delta[c.i])}</td>`;
+            }).join('') +
+                `<td class="col-sum" style="font-weight:700;color:${goodColor(sd, a.kind)}">${fmtD(sd)}</td>` +
+                `<td class="col-pct" style="color:${goodColor(sd, a.kind)}">${a.kind === 'net' ? '–' : fmtPct(sd, base)}</td>`;
+        };
+
+        const netStyle = v => `color:${v >= 0 ? COLORS.pos : COLORS.neg};font-weight:700;`;
+        const colBg = c => c.isFact ? 'background:#f8fafc;' : (c.edge ? 'background:#fffbeb;' : '');
+
+        const valCells = (a, role) => {
+            const isNet = a.key === '__net';
+            const s = sumRole(a, role);
+            return cols.map(c => {
+                if (!c.hasData) return `<td></td>`;
+                const v = a.byWeek[role][c.i];
+                return `<td style="${colBg(c)}${isNet && v != null ? netStyle(v) : ''}">${fmt(v)}</td>`;
+            }).join('') +
+                `<td class="col-sum" style="font-weight:${isNet ? 700 : 600};${isNet ? netStyle(s) : ''}">${fmt(s)}</td>` +
+                `<td class="col-pct"></td>`;
+        };
+
+        const allArts = [...M.inflows, ...M.outflows];
+        const hasVisibleKids = a => a.hasKids && allArts.some(c => c.parent === a.key && !c.hidden && !c.isZero);
+        const rowClass = a => [a.isTotal ? 'font-bold' : (a.depth === 0 ? 'sub' : 'child'), a.isRest ? 'rest' : ''].join(' ');
+        const bg = a => a.key === '__inf' ? 'background:#ecfdf5;' : a.key === '__out' ? 'background:#fff7ed;' : a.key === '__net' ? 'background:#e2e8f0;' : '';
+
+        const nameCell = a => {
+            const col = isCollapsed(tableId, a.key);
+            let toggle = a.isTotal ? '' : `<span class="toggle-placeholder"></span>`;
+            if (!a.isTotal && hasVisibleKids(a)) {
+                toggle = `<span class="toggle-kids" data-toggle="${esc(a.key)}" title="${col ? 'Розгорнути' : 'Згорнути'}">${col ? '+' : '−'}</span>`;
+            }
+            const code = a.code && !a.isTotal ? `<span class="text-slate-400 mr-1">${esc(a.code)}</span>` : '';
+            const pad = `padding-left:${6 + (a.depth || 0) * 18}px;`;
+            return `<td style="${bg(a)}${pad}" title="${esc(a.name)}">${toggle}${code}${esc(a.name)}</td>`;
+        };
+
+        let html = '';
+        const emit = a => {
+            const styleRow = a.key === '__net' ? 'border-top:2px solid #94a3b8;' : (a.key === '__out' ? 'border-top:2px solid #cbd5e1;' : '');
+            if (mode === 'delta') {
+                html += `<tr class="${rowClass(a)}" style="${styleRow}">${nameCell(a)}${deltaCells(a)}</tr>`;
+            } else if (valueMode) {
+                html += `<tr class="${rowClass(a)}" style="${styleRow}${bg(a)}">${nameCell(a)}${valCells(a, curRole)}</tr>`;
+            }
+        };
+
+        const emitGroup = (total, arts) => {
+            const byK = Object.fromEntries(arts.map(a => [a.key, a]));
+            const visible = a => { let p = byK[a.parent]; while (p) { if (isCollapsed(tableId, p.key)) return false; p = byK[p.parent]; } return true; };
+            emit(total);
+            arts.forEach(a => {
+                if (a.hidden || (a.parent && a.isZero) || !visible(a)) return;
+                emit(a);
+            });
+        };
+
+        emitGroup(M.tInf, M.inflows);
+        emitGroup(M.tOut, M.outflows);
+        emit(M.tNet);
+        document.getElementById(tableId + 'Body').innerHTML = html;
+
+        const noteEl = document.getElementById(tableId + 'Note');
+        if (noteEl) noteEl.textContent = cfg.note ? cfg.note(ctx) : '';
+    }
+
+    const excludedNote = () => {
+        const excl = [...new Set([...M.inflows, ...M.outflows].filter(a => a.excluded).map(a => a.name))];
+        return excl.length ? ` Виключено фільтром: ${excl.join(', ')}.` : '';
+    };
+
+    document.addEventListener('click', e => {
+        const t = e.target.closest('[data-toggle]');
+        if (!t) return;
+        const tbody = t.closest('tbody');
+        const tableId = tbody && tbody.dataset.table;
+        if (!tableId || !TABLES[tableId]) return;
+        const key = t.dataset.toggle;
+        const s = (collapsed[tableId] = collapsed[tableId] || {});
+        s[key] = !isCollapsed(tableId, key);
+        renderTable(TABLES[tableId]);
     });
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-    highlightActiveNav(); // <-- обов'язковий виклик підсвічування
-    const t = new Date();
-    const today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-    loadReport(today);
-});
+    // ---------- КАЛЕНДАР ----------
+    function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
+    function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
 
-document.addEventListener('DOMContentLoaded', loadLatest);
-</script>
+    function renderCalendar() {
+        const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
+        const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+        document.getElementById('calendarMonthYear').innerText = `${monthNames[m]} ${y}`;
+        const grid = document.getElementById('calendarDaysGrid');
+        let firstDay = new Date(y, m, 1).getDay() - 1; if (firstDay === -1) firstDay = 6;
+        const daysCount = new Date(y, m + 1, 0).getDate();
+        let h = '';
+        for (let i = 0; i < firstDay; i++) h += `<span></span>`;
+        for (let day = 1; day <= daysCount; day++) {
+            const dateKey = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isSel = currentReportDate === dateKey;
+            h += `<button onclick="selectDate('${dateKey}')" class="py-1 rounded text-xs font-semibold ${isSel ? 'bg-indigo-600 text-white' : 'hover:bg-slate-100'}">${day}</button>`;
+        }
+        grid.innerHTML = h;
+    }
+
+    function selectDate(iso) {
+        currentReportDate = iso;
+        document.getElementById('lblSelectedDate').innerText = dmy(iso);
+        document.getElementById('calendarDropdown').classList.add('hidden');
+        loadCompareDataFromCloud(iso);
+    }
+
+    // ---------- PDF ЕКСПОРТ ----------
+    function generatePDF(prefix) {
+        if (!M) return;
+        window.scrollTo(0, 0);
+        html2pdf().set({
+            margin: 0,
+            filename: `${prefix}_${dmy(M.cur.start)}_vs_${dmy(M.prev.start)}.pdf`,
+            image: { type: 'png' },
+            html2canvas: {
+                scale: 2.5, useCORS: true, logging: false, backgroundColor: '#ffffff',
+                onclone: doc => {
+                    doc.querySelectorAll('.print-hide').forEach(el => el.remove());
+                    const cont = doc.getElementById('dashboardContent');
+                    if (cont) { cont.style.margin = '0'; cont.style.boxShadow = 'none'; cont.style.borderRadius = '0'; }
+                }
+            },
+            pagebreak: { mode: ['css'], avoid: ['.sum-strip', 'tr', '.chart-card'] },
+            jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: true }
+        }).from(document.getElementById('dashboardContent')).save();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('showKids').checked = false;
+        selectDate(currentReportDate);
+    });
+
+    // ---------- ГОЛОВНИЙ РЕНДЕР ----------
+    function render() {
+        if (!DATA) return;
+        M = buildModel(
+            DATA, 
+            document.getElementById('excludeFin').checked,
+            document.getElementById('showFacts').checked
+        );
+        renderHeader();
+        renderSummary();
+        renderFilterChips();
+        renderCharts();
+
+        renderTable({
+            tableId: 'cmp', mode: 'delta', cols: 'common',
+            title: c => `Таблиця 1. Порівняння: зріз ${c.C} мінус зріз ${c.P} (вкл. факт Т-1) — спільні періоди, млн грн`,
+            note: c => `Відхилення = поточний зріз − попередній для одного й того ж календарного періоду. Т-1 виділено як факт.` + excludedNote()
+        });
+        renderTable({
+            tableId: 'tblCur', mode: 'cur', cols: 'cur',
+            title: c => `Таблиця 2. Поточний зріз ${c.C}: надходження та видатки (${c.curTm1Mode === 'plan' ? 'з планом Т-1' : 'з фактом Т-1'}), млн грн`,
+            note: c => `Стовпці вирівняно на єдину календарну вісь із попереднім зрізом. Періоди поза горизонтом поточного зрізу залишено пустими.` + excludedNote()
+        });
+        renderTable({
+            tableId: 'tblPrev', mode: 'prev', cols: 'prev',
+            title: c => `Таблиця 3. Попередній зріз ${c.P}: надходження та видатки (з фактом Т-1), млн грн`,
+            note: c => `Стовпці вирівняно на єдину календарну вісь. Вибулі тижні зафіксовано на своїх вертикалях, майбутній горизонт залишено пустим.` + excludedNote()
+        });
+    }
+    </script>
 </body>
 </html>

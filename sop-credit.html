@@ -47,8 +47,9 @@
             border-bottom: 1.5px solid #94a3b8; text-align: right; background-color: #f8fafc; overflow: hidden;
         }
         .exec-table th:first-child { text-align: left; width: 19% !important; padding-left: 6px; }
-        .exec-table th.col-sum, .exec-table td.col-sum { width: 5.5%; border-left: 1.5px solid #cbd5e1; }
-        .exec-table th.col-pct, .exec-table td.col-pct { width: 5.5%; }
+        .exec-table th.col-sum, .exec-table td.col-sum { width: 5.6% !important; border-left: 1.5px solid #cbd5e1; }
+        .exec-table th.col-common, .exec-table td.col-common { width: 5.6% !important; border-left: 1px solid #e2e8f0; }
+        .exec-table th.col-pct, .exec-table td.col-pct { width: 5.6% !important; border-left: 1px solid #e2e8f0; }
         .exec-table th .th-period { display: block; font-size: 6.5pt; font-weight: 500; color: #94a3b8; white-space: nowrap; line-height: 1.1; margin-top: 1px; }
         .exec-table td {
             padding: 3px 3px; text-align: right; color: #334155; border-bottom: 1px solid #e2e8f0;
@@ -156,7 +157,6 @@
         <!-- ПАНЕЛЬ СЕЛЕКТІВ ДЛЯ ГРАФІКІВ -->
         <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200 flex flex-col gap-3 print-hide">
             <div class="flex items-center justify-between gap-4">
-                <!-- Блок доходів -->
                 <div class="flex items-center gap-3 flex-1">
                     <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">ДОХОДИ:</span>
                     <select id="inflowModeSelect" onchange="onFilterModeChange('inflows')" class="bg-white border border-slate-300 text-xs font-medium rounded-md px-2.5 py-1 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
@@ -167,7 +167,6 @@
                     <div id="inflowChipsContainer" class="flex flex-wrap items-center gap-2.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all"></div>
                 </div>
 
-                <!-- Блок видатків -->
                 <div class="flex items-center gap-3 flex-1 border-l border-slate-200 pl-4">
                     <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">ВИДАТКИ:</span>
                     <select id="outflowModeSelect" onchange="onFilterModeChange('outflows')" class="bg-white border border-slate-300 text-xs font-medium rounded-md px-2.5 py-1 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
@@ -212,7 +211,7 @@
         <!-- ТАБЛИЦІ -->
         <div class="table-card">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="font-bold text-xs text-slate-700" id="cmpTitle">Таблиця</h3>
+                <h3 class="font-bold text-xs text-slate-700" id="cmpTitle">Таблиця 1</h3>
                 <div class="flex gap-4" id="cmpLegend"></div>
             </div>
             <table class="exec-table">
@@ -222,11 +221,10 @@
             <p class="text-[10px] text-slate-400 mt-2" id="cmpNote"></p>
         </div>
 
-        <!-- ТАБЛИЦЯ 2 (З селектором вибору Т-1 Факт / План) -->
         <div class="table-card">
             <div class="flex justify-between items-center mb-2">
                 <div class="flex items-center gap-3">
-                    <h3 class="font-bold text-xs text-slate-700" id="tblCurTitle">Таблиця</h3>
+                    <h3 class="font-bold text-xs text-slate-700" id="tblCurTitle">Таблиця 2</h3>
                     <div class="flex items-center gap-1.5 print-hide">
                         <span class="text-[11px] text-slate-500 font-medium">Колонка Т-1:</span>
                         <select id="curTm1ModeSelect" onchange="onCurTm1ModeChange()" class="bg-white border border-slate-300 text-[11px] font-semibold rounded px-2 py-0.5 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
@@ -244,10 +242,9 @@
             <p class="text-[10px] text-slate-400 mt-2" id="tblCurNote"></p>
         </div>
 
-        <!-- ТАБЛИЦЯ 3 (Завжди з фактом) -->
         <div class="table-card">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="font-bold text-xs text-slate-700" id="tblPrevTitle">Таблиця</h3>
+                <h3 class="font-bold text-xs text-slate-700" id="tblPrevTitle">Таблиця 3</h3>
                 <div class="flex gap-4" id="tblPrevLegend"></div>
             </div>
             <table class="exec-table">
@@ -367,7 +364,6 @@
 
     const ALL_KEYS = ["T-1", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
-    // Вибірка значень: факт або план
     const vals = (node, tm1Mode = 'fact') => ALL_KEYS.map(k => {
         if (!node || !node.values) return 0;
         let v = 0;
@@ -578,7 +574,7 @@
         }
     }
 
-    // ---------- МОДЕЛЬ ДАНИХ ТА ВИРІВНЮВАННЯ ВЕРТИКАЛЕЙ ----------
+    // ---------- МОДЕЛЬ ДАНИХ ----------
     function buildModel(data, excludeFin, showFacts) {
         if (!data) return null;
         const cur = data.current, prev = data.previous;
@@ -749,7 +745,7 @@
             block(M.tNet, 'Чистий потік', COLORS.net, 'net') + hz;
     }
 
-    // ---------- КЕРУВАННЯ ТА РЕНДЕР ГРАФІКІВ ----------
+    // ---------- ГРАФІКИ ----------
     function initDefaultArticleSelections() {
         if (!DATA) return;
         const cur = DATA.current;
@@ -972,8 +968,8 @@
              <span class="legend-chip"><i style="background:#fee2e2"></i>погіршує чистий потік</span>` :
             (hasEdge ? `<span class="legend-chip"><i style="background:#fef3c7"></i>тиждень поза спільним горизонтом</span>` : '');
 
-        // 100% - 19% (стаття) - 5.5% (Σ разом) - 5.5% (Σ спільні / Δ, %)
-        const weekW = ((100 - 19 - 5.5 - 5.5) / Math.max(1, n)).toFixed(3);
+        // 19% назва статті, 5.6% підсумок разом, 5.6% спільні (або %), решта рівномірно на тижні
+        const weekW = ((100 - 19 - 5.6 - 5.6) / Math.max(1, n)).toFixed(3);
 
         let head = `<th>Стаття</th>` + cols.map(c => {
             const bgStyle = c.isFact ? 'background:#f1f5f9;color:#475569;' : (c.edge ? 'background:#fef3c7;color:#92400e;' : '');
@@ -985,7 +981,7 @@
         if (!valueMode) {
             head += `<th class="col-pct">Δ, %<span class="th-period">до ${dm(M.prev.start)}</span></th>`;
         } else {
-            head += `<th class="col-pct border-l border-slate-200">Σ<span class="th-period">спільні</span></th>`;
+            head += `<th class="col-common">Σ<span class="th-period">спільні</span></th>`;
         }
         document.getElementById(tableId + 'Head').innerHTML = head;
 
@@ -1023,7 +1019,7 @@
                 return `<td style="${colBg(c)}${isNet && v != null ? netStyle(v) : ''}">${fmt(v)}</td>`;
             }).join('') +
                 `<td class="col-sum" style="font-weight:${isNet ? 700 : 600};${isNet ? netStyle(sTotal) : ''}">${fmt(sTotal)}</td>` +
-                `<td class="col-pct border-l border-slate-200" style="font-weight:${isNet ? 700 : 600};background:#f8fafc;${isNet ? netStyle(sCommon) : 'color:#1e293b;'}">${fmt(sCommon)}</td>`;
+                `<td class="col-common" style="font-weight:${isNet ? 700 : 600};background:#f8fafc;${isNet ? netStyle(sCommon) : 'color:#1e293b;'}">${fmt(sCommon)}</td>`;
         };
 
         const allArts = [...M.inflows, ...M.outflows];

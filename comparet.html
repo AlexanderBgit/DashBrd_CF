@@ -228,7 +228,16 @@
 
         <div class="table-card">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="font-bold text-xs text-slate-700" id="tblCurTitle">Таблиця</h3>
+                <div class="flex items-center gap-3">
+                    <h3 class="font-bold text-xs text-slate-700" id="tblCurTitle">Таблиця</h3>
+                    <div class="flex items-center gap-1.5 print-hide">
+                        <span class="text-[11px] text-slate-500 font-medium">Колонка Т-1:</span>
+                        <select id="curTm1ModeSelect" onchange="render()" class="bg-white border border-slate-300 text-[11px] font-medium rounded px-2 py-0.5 text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option value="fact" selected>Т-1 (факт)</option>
+                            <option value="plan">Т-1 (план)</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="flex gap-4" id="tblCurLegend"></div>
             </div>
             <table class="exec-table">
@@ -361,14 +370,17 @@
     // Т-2 ПРИБРАНО: починаємо виключно з T-1
     const ALL_KEYS = ["T-1", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
-    const vals = node => ALL_KEYS.map(k => {
+    const vals = (node, tm1Mode = 'fact') => ALL_KEYS.map(k => {
         if (!node || !node.values) return 0;
         
         let v = 0;
         if (k === "T-1") {
-            // Беремо факт за Т-1, якщо він є, інакше прогноз або прямий ключ T-1
-            v = node.values["Tm1_fact"] !== undefined ? node.values["Tm1_fact"] :
-                (node.values["Tm1_forecast"] !== undefined ? node.values["Tm1_forecast"] : node.values["T-1"]);
+            if (tm1Mode === 'plan') {
+                v = node.values["Tm1_forecast"] !== undefined ? node.values["Tm1_forecast"] : node.values["T-1"];
+            } else {
+                v = node.values["Tm1_fact"] !== undefined ? node.values["Tm1_fact"] :
+                    (node.values["Tm1_forecast"] !== undefined ? node.values["Tm1_forecast"] : node.values["T-1"]);
+            }
         } else {
             v = node.values[k];
         }
@@ -459,7 +471,11 @@
                 const code = n.virtualCode || (isCfCode(r.code) ? String(r.code) : '');
                 const name = n.virtualName || cleanName(r.name) || String(r.code || '');
                 const key = uniqKey(parentKey + '/' + (n.virtualCode ? 'cf:' + n.virtualCode : (r.code || name)));
-                items.push({ type, code, name, key, parent: parentKey, values: n.virtualValues || vals(r) });
+                items.push({ 
+                    type, code, name, key, parent: parentKey, 
+                    values: n.virtualValues || vals(r),
+                    rawValues: r.values || {} // <-- додано для динамічного перемикання
+                });
                 if (n.kids && n.kids.length) pushTree(n.kids, type, key, !!n.virtualCode);
             });
         };
@@ -468,7 +484,12 @@
             const it = rowsList[idx];
             const key = uniqKey(type + '|' + code);
             const own = vals(it);
-            items.push({ type, code, name: cleanName(it.name), key, parent: null, values: own, driver: !opts.driverViaKids });
+            items.push({ 
+                type, code, name: cleanName(it.name), key, parent: null, 
+                values: own, 
+                rawValues: it.values || {}, // <-- додано
+                driver: !opts.driverViaKids 
+            });
 
             let grouped;
             if (opts.extraKids) {
@@ -561,6 +582,10 @@
         if (!data) return null;
         const cur = data.current, prev = data.previous;
         const weekMap = {};
+        
+        const curTm1Mode = document.getElementById('curTm1ModeSelect') 
+            ? document.getElementById('curTm1ModeSelect').value 
+            : 'fact';
 
         const addWeeks = (snap, role) => {
             ALL_KEYS.forEach((key, idx) => {
@@ -593,9 +618,14 @@
 
         const buildType = type => {
             const order = [], byKey = {};
-            const put = (list, role) => list.forEach(it => {
+        const put = (list, role) => list.forEach(it => {
                 if (!byKey[it.key]) { byKey[it.key] = { ...it, type, raw: {} }; order.push(it.key); }
-                byKey[it.key].raw[role] = it.values;
+                // Якщо це поточний зріз і доступні вихідні значення — рахуємо відповідно до обраного режиму
+                if (role === 'cur' && it.rawValues) {
+                    byKey[it.key].raw[role] = vals({ values: it.rawValues }, curTm1Mode);
+                } else {
+                    byKey[it.key].raw[role] = it.values;
+                }
                 if (it.driver) byKey[it.key].driver = true;
             });
             put(cur[type], 'cur');
@@ -916,6 +946,9 @@
             let sub = '';
             if (mode === 'delta') {
                 sub = w.common ? `${w.curKey || ''} · ${w.prevKey || ''}` : '';
+            } else if (mode === 'cur' && w.curKey === 'T-1') {
+                const curMode = document.getElementById('curTm1ModeSelect')?.value || 'fact';
+                sub = curMode === 'plan' ? 'Т-1 (план)' : 'Т-1 (факт)';
             } else {
                 sub = w[mode + 'Key'] ? `${w[mode + 'Key']}${edge ? (mode === 'prev' ? ' · вибув' : ' · новий') : ''}` : '';
             }

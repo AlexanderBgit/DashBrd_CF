@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>РК-презентація 11-25 — Рух коштів (з бази прогнозів)</title>
+<style>
+  :root{
+    --bg:#f3f4f6; --panel:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#d1d5db;
+    --neg:#dc2626; --pos:#059669; --accent:#1f3864; --warn:#b45309; --warn-bg:#fef3c7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;padding:18px;background:var(--bg);color:#334155;
+       font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.25;}
+  .wrap{max-width:1760px;margin:0 auto;}
+
+  header.page{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:12px;}
+  h1{font-size:20px;font-weight:700;color:var(--ink);margin:0 0 2px;letter-spacing:-.2px;}
+  .sub{font-size:12px;color:var(--muted);}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+           background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-bottom:10px;}
+  .toolbar label{font-size:11px;color:var(--muted);font-weight:600;margin-right:2px;}
+  select,button{font-family:inherit;font-size:12px;padding:4px 8px;border:1px solid var(--line);
+                border-radius:4px;background:#fff;color:var(--ink);cursor:pointer;}
+  button:hover{background:#f1f5f9;}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  button.primary:hover{background:#2c4f8f;}
+  .spacer{flex:1;}
+
+  .banner{display:none;padding:8px 12px;border-radius:6px;margin-bottom:10px;font-size:12px;font-weight:600;}
+  .banner.show{display:block;}
+  .banner.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
+  .banner.info{background:#e0f2fe;color:#075985;border:1px solid #bae6fd;}
+  .banner.ok{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:0;overflow:auto;}
+
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  thead th{position:sticky;top:0;z-index:3;background:#f8fafc;color:var(--muted);font-weight:600;
+           padding:6px 7px;border-bottom:1.5px solid #94a3b8;text-align:right;white-space:nowrap;}
+  thead th .rng{display:block;font-size:9px;font-weight:500;color:#94a3b8;margin-top:1px;}
+  thead th.lcode,thead th.lname{text-align:left;}
+  th.lcode,td.code{position:sticky;left:0;z-index:2;background:#f8fafc;width:132px;min-width:132px;max-width:132px;}
+  th.lname,td.name{position:sticky;left:132px;z-index:2;background:var(--panel);min-width:330px;}
+  thead th.lname{background:#f8fafc;}
+
+  tbody td{padding:3px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid #f1f5f9;}
+  td.code{text-align:left;font-size:9.5px;color:#94a3b8;letter-spacing:-.2px;overflow:hidden;
+          text-overflow:ellipsis;font-family:"SF Mono",Consolas,monospace;}
+  td.name{text-align:left;font-weight:500;color:#334155;}
+  td.num.negative{color:var(--neg);}
+  td.num.zero{color:#cbd5e1;}
+
+  tr.section td{background:#e8edf6;font-weight:700;color:var(--accent);
+                border-top:1.5px solid #c7d2e5;border-bottom:1.5px solid #c7d2e5;
+                text-transform:none;padding-top:5px;padding-bottom:5px;}
+  tr.section td.code,tr.section td.name{background:#e8edf6;}
+  tr.subtotal td{font-weight:700;color:var(--ink);background:#f8fafc;}
+  tr.subtotal td.code,tr.subtotal td.name{background:#f8fafc;}
+  tr.calc td{font-weight:700;color:var(--ink);border-top:1.5px solid #94a3b8;background:#f1f5f9;}
+  tr.calc td.code,tr.calc td.name{background:#f1f5f9;}
+  tr.balance_open td{font-weight:700;color:var(--ink);background:#f1f5f9;}
+  tr.balance_open td.code,tr.balance_open td.name{background:#f1f5f9;}
+  tr.detail_sub td.name{padding-left:24px;font-weight:400;color:var(--muted);font-size:11.5px;}
+  tr.detail_sub td{font-size:11.5px;color:var(--muted);}
+  tr.unmapped td.name{color:#94a3b8;}
+  tr:hover td{background:#f8fafc;}
+  tr.unmapped:hover td{background:#fffbeb;}
+
+  .tag{display:inline-block;margin-left:8px;padding:0 6px;border-radius:9px;font-size:9.5px;
+       font-weight:700;letter-spacing:.2px;vertical-align:1px;white-space:nowrap;}
+  .tag.nomap{background:var(--warn-bg);color:var(--warn);border:1px solid #fcd34d;}
+  .tag.calcd{background:#e2e8f0;color:#475569;border:1px solid #cbd5e1;}
+  .tag.recon{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
+
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:9px 12px;}
+  .card .k{font-size:10.5px;color:var(--muted);font-weight:600;}
+  .card .v{font-size:22px;font-weight:700;color:var(--ink);line-height:1.15;}
+  .card .n{font-size:10px;color:#94a3b8;}
+
+  details.gaps{margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:9px 12px;}
+  details.gaps summary{cursor:pointer;font-weight:700;color:var(--warn);font-size:12px;}
+  details.gaps table{margin-top:8px;font-size:11px;}
+  details.gaps td{text-align:left;border-bottom:1px solid #f1f5f9;padding:2px 6px;}
+
+  footer.note{margin-top:12px;font-size:10.5px;color:#94a3b8;line-height:1.5;}
+
+  @media print{
+    @page{size:A3 landscape;margin:8mm;}
+    body{background:#fff;padding:0;}
+    .toolbar,.banner,details.gaps{display:none !important;}
+    .panel{border:none;overflow:visible;}
+    thead th{position:static;}
+    td.code,td.name,th.lcode,th.lname{position:static;}
+    tbody td{font-size:9px;padding:1.5px 4px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div>
+      <h1>Звіт про рух грошових коштів — формат «РК-презентація 11-25»</h1>
+      <div class="sub" id="subtitle">Джерело: база прогнозів руху коштів (13 тижнів) · мапінг статей ЕРП → РК</div>
+    </div>
+    <div class="sub" id="stamp"></div>
+  </header>
+
+  <div class="toolbar">
+    <label for="dateSel">Дата прогнозу</label>
+    <select id="dateSel"><option>—</option></select>
+    <label for="unitSel">Одиниці</label>
+    <select id="unitSel">
+      <option value="1000000" selected>млн грн</option>
+      <option value="1000">тис. грн</option>
+      <option value="1">грн</option>
+    </select>
+    <label for="viewSel">Періоди</label>
+    <select id="viewSel">
+      <option value="weeks" selected>Тижні Т0–Т12</option>
+      <option value="months">Місяці М1–М3</option>
+      <option value="all">Усі колонки</option>
+    </select>
+    <label style="margin-left:6px"><input type="checkbox" id="chkZero"> ховати порожні рядки</label>
+    <label><input type="checkbox" id="chkUnmapped" checked> показувати рядки без мапінгу</label>
+    <div class="spacer"></div>
+    <button id="btnReload">Оновити дані</button>
+    <button id="btnCsv">Експорт CSV</button>
+    <button class="primary" id="btnPrint">Друк / PDF</button>
+  </div>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="grid" id="kpis"></div>
+
+  <div class="panel">
+    <table id="tbl">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <details class="gaps" id="gaps">
+    <summary>Статті прогнозу без мапінгу на РК-презентацію</summary>
+    <div id="gapsBody"></div>
+  </details>
+
+  <footer class="note">
+    Рядки, позначені <span class="tag nomap">немає мапінгу</span>, не мають відповідності у довіднику CF_Dictionary
+    (колонка «РК-презентація 11-25» порожня або ключ прогнозу відсутній у довіднику). Значення таких рядків не
+    підсумовуються у проміжні та чисті потоки. Рядки <span class="tag calcd">розрахунок</span> обчислюються за формулою
+    зі скелета РК. Позначка <span class="tag recon">частина без розшифровки</span> означає, що частина суми статті
+    змаплена напряму на батьківський рядок і не деталізована під-рядками. У прогнозі суми зберігаються додатними; знак «мінус» присвоюється за блоком «Видатки».
+  </footer>
+</div>
+
+<script>
+/* ──────────────────────────────────────────────────────────────────────────
+   КОНФІГУРАЦІЯ
+   ────────────────────────────────────────────────────────────────────────── */
+const CONFIG = {
+  // Потік Power Automate Get_CashFlow_Metrics_v2 (див. інструкцію до пакета).
+  // Порожній рядок => сторінка працює лише на вбудованому знімку EMBEDDED.
+  FLOW_URL: "",
+  // Якщо потік повертає сирий snapshot + довідник, сторінка рахує мапінг у браузері.
+  // Якщо потік повертає вже агрегований rkPresentation — він використовується напряму.
+};
+
+const PERIOD_GROUPS = {
+  weeks:  ['Tm1_fact','T0','T1','T2','T3','M1','T4','T5','T6','T7','M2','T8','T9','T10','T11','T12','M3','TT0_12'],
+  months: ['Tm1_fact','M1','M2','M3','TT0_12'],
+  all:    null
+};
+
+/* Скелет рядків РК-презентації 11-25 (порядок, тип, формули) */
+const RK_ROWS = [
+{
+"id": "S1",
+"label": "І. Рух коштів від операційної діяльності",
+"short": "",
+"type": "section",
+"group": "",
+"formula": ""
+},
+{
+"id": "OP_IN",
+"label": "Надходження від операційної діяльності",
+"short": "",
+"type": "subtotal",
+"group": "OP_IN",
+"formula": ""
+},
+{
+"id": "r_neft",
+"label": "Нафта з конденсатом",
+"short": "Нафта",
+"type": "detail",
+"group": "OP_IN",
+"formula": ""
+},
+{
+"id": "r_np",
+"label": "Нафтопродукти",
+"short": "Нафтопродукти",
+"type": "detail",
+"group": "OP_IN",
+"formula": ""
+},
+{
+"id": "r_np_gurt",
+"label": "Гурт",
+"short": "Нафтопродукти (Гурт)",
+"type": "detail_sub",
+"group": "r_np",
+"formula": ""
+},
+{
+"id": "r_np_aoz",
+"label": "АОЗ / МОУ",
+"short": "Нафтопродукти (АОЗ / МОУ)",
+"type": "detail_sub",
+"group": "r_np",
+"formula": ""
+},
+{
+"id": "r_np_b2c",
+"label": "В2С Роздріб",
+"short": "Нафтопродукти (роздріб B2C)",
+"type": "detail_sub",
+"group": "r_np",
+"formula": ""
+},
+{
+"id": "r_np_b2b",
+"label": "В2В Роздріб (Укрнафта-Постач)",
+"short": "Нафтопродукти (роздріб B2B)",
+"type": "detail_sub",
+"group": "r_np",
+"formula": ""
+},
+{
+"id": "r_np_inshe",
+"label": "Інше",
+"short": "Нафтопродукти (Інше, в .т.ч. повернення)",
+"type": "detail_sub",
+"group": "r_np",
+"formula": ""
+},
+{
+"id": "r_gas",
+"label": "Природний газ",
+"short": "Газ",
+"type": "detail",
+"group": "OP_IN",
+"formula": ""
+},
+{
+"id": "r_gas_pso",
+"label": "Природний газ (НАК ПСО)",
+"short": "Газ (ПСО)",
+"type": "detail_sub",
+"group": "r_gas",
+"formula": ""
+},
+{
+"id": "r_gas_nak",
+"label": "Природний газ (Група НАК без ПСО)",
+"short": "Газ (група НАК без ПСО)",
+"type": "detail_sub",
+"group": "r_gas",
+"formula": ""
+},
+{
+"id": "r_gas_gurt",
+"label": "Природний ГАЗ гурт",
+"short": "ГАЗ гурт",
+"type": "detail_sub",
+"group": "r_gas",
+"formula": ""
+},
+{
+"id": "r_in_other",
+"label": "Інші надходження (операційна діяльність)",
+"short": "Інші надходження",
+"type": "detail",
+"group": "OP_IN",
+"formula": ""
+},
+{
+"id": "OP_OUT",
+"label": "Витрачання на операційну діяльність",
+"short": "",
+"type": "subtotal",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_budget",
+"label": "Розрахунки з бюджетом",
+"short": "",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_pnp",
+"label": "Податки. Податок на прибуток",
+"short": "Податки. ПнП",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_pdv",
+"label": "Податки. ПДВ",
+"short": "Податки. Операційні",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_rent_oil",
+"label": "Податки. Рента нафта та конденсат",
+"short": "Податки. Операційні",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_rent_gas",
+"label": "Податки. Рента газ",
+"short": "Податки. Операційні",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_akciz",
+"label": "Податки. Акциз",
+"short": "Податки. Операційні",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_rent_oth",
+"label": "Податки. Рента інша",
+"short": "Податки. Операційні",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_mytni",
+"label": "Податки. Митні платежі",
+"short": "Нафтопродукти (закупівля, митні платежі)",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_other",
+"label": "Податки. Інші податки",
+"short": "Податки. Операційні",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_fines",
+"label": "Податки. Штрафи та пені",
+"short": "Податки. Операційні",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_tax_vat_ref",
+"label": "Податки. ПДВ. Відшкодування з бюджету",
+"short": "Податки. Операційні",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_zp",
+"label": "ЗП. Виплата",
+"short": "ЗП з податками",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_zp_esv",
+"label": "ЗП. ЄСВ",
+"short": "ЗП з податками",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_zp_pdfo",
+"label": "ЗП. ПДФО",
+"short": "ЗП з податками",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_zp_vz",
+"label": "ЗП. ВЗ",
+"short": "ЗП з податками",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_energy",
+"label": "Електроенергія",
+"short": "Операційні витрати",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_opex",
+"label": "Операційні витрати",
+"short": "Операційні витрати",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_transp_np",
+"label": "Транспортування НП та сировини",
+"short": "Логістичні витрати",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_transp_gas",
+"label": "Транспортування газу",
+"short": "Логістичні витрати",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_refining",
+"label": "Послуги з переробки",
+"short": "Переробка (послуги, акциз, сировина)",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_raw_oil",
+"label": "Нафта і кондесат (сировина)",
+"short": "Переробка (послуги, акциз, сировина)",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_np_buy",
+"label": "Нафтопродукти (закупівля)",
+"short": "Нафтопродукти (закупівля, митні платежі)",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_charity",
+"label": "Благодійність",
+"short": "Операційні витрати",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "r_op_other",
+"label": "Інші витрачання (операційна діяльність)",
+"short": "Операційні витрати",
+"type": "detail",
+"group": "OP_OUT",
+"formula": ""
+},
+{
+"id": "NCF_OP",
+"label": "Чистий рух коштів від операційної діяльності",
+"short": "",
+"type": "calc",
+"group": "",
+"formula": "OP_IN+OP_OUT"
+},
+{
+"id": "S2",
+"label": "II. Рух коштів у результаті інвестиційної діяльності",
+"short": "",
+"type": "section",
+"group": "",
+"formula": ""
+},
+{
+"id": "INV_IN",
+"label": "Надходження від інвестиційної діяльності",
+"short": "",
+"type": "subtotal",
+"group": "INV_IN",
+"formula": ""
+},
+{
+"id": "r_ovdp_ret",
+"label": "Повернення тіла ОВДП та купонний дохід",
+"short": "ОВДП",
+"type": "detail",
+"group": "INV_IN",
+"formula": ""
+},
+{
+"id": "r_deposit",
+"label": "Дохід від поточних та депозитних вкладів та ін",
+"short": "Відсотки на залишки",
+"type": "detail",
+"group": "INV_IN",
+"formula": ""
+},
+{
+"id": "r_inv_other_in",
+"label": "Інші надходження (інвестиційна діяльність)",
+"short": "",
+"type": "detail",
+"group": "INV_IN",
+"formula": ""
+},
+{
+"id": "INV_OUT",
+"label": "Витрачання грошових коштів від інвестиційної діяльності",
+"short": "",
+"type": "subtotal",
+"group": "INV_OUT",
+"formula": ""
+},
+{
+"id": "r_capex",
+"label": "CAPEX",
+"short": "CAPEX",
+"type": "detail",
+"group": "INV_OUT",
+"formula": ""
+},
+{
+"id": "r_fin_inv",
+"label": "Фінансові інвестиції",
+"short": "CAPEX_FIN",
+"type": "detail",
+"group": "INV_OUT",
+"formula": ""
+},
+{
+"id": "r_ovdp_buy",
+"label": "Купівля ОВДП",
+"short": "ОВДП",
+"type": "detail",
+"group": "INV_OUT",
+"formula": ""
+},
+{
+"id": "NCF_INV",
+"label": "Чистий рух коштів від інвестиційної діяльності",
+"short": "",
+"type": "calc",
+"group": "",
+"formula": "INV_IN+INV_OUT"
+},
+{
+"id": "S3",
+"label": "III. Рух коштів у результаті фінансової діяльності",
+"short": "",
+"type": "section",
+"group": "",
+"formula": ""
+},
+{
+"id": "FIN_IN",
+"label": "Надходження грошових коштів від фінансової діяльності",
+"short": "",
+"type": "subtotal",
+"group": "FIN_IN",
+"formula": ""
+},
+{
+"id": "r_cred_short_in",
+"label": "Залучення короткострокових кредитних коштів",
+"short": "Нафтопродукти (постімпорт)",
+"type": "detail",
+"group": "FIN_IN",
+"formula": ""
+},
+{
+"id": "r_cred_long_in",
+"label": "Залучення довгострокових кредитних коштів",
+"short": "Довгострокові кредити",
+"type": "detail",
+"group": "FIN_IN",
+"formula": ""
+},
+{
+"id": "r_bonds_in",
+"label": "Надходження коштів від продажу облігацій",
+"short": "",
+"type": "detail",
+"group": "FIN_IN",
+"formula": ""
+},
+{
+"id": "r_fin_other_in",
+"label": "Інші надходження (фінансова діяльність)",
+"short": "",
+"type": "detail",
+"group": "FIN_IN",
+"formula": ""
+},
+{
+"id": "FIN_OUT",
+"label": "Витрачання грошових коштів від фінансової діяльності",
+"short": "",
+"type": "subtotal",
+"group": "FIN_OUT",
+"formula": ""
+},
+{
+"id": "r_div",
+"label": "Сплата дивідендів",
+"short": "Дивіденди",
+"type": "detail",
+"group": "FIN_OUT",
+"formula": ""
+},
+{
+"id": "r_cred_short_out",
+"label": "Повернення короткострокових кредитних коштів",
+"short": "Нафтопродукти (постімпорт)",
+"type": "detail",
+"group": "FIN_OUT",
+"formula": ""
+},
+{
+"id": "r_cred_long_out",
+"label": "Повернення довгострокових кредитних коштів",
+"short": "Довгострокові кредити",
+"type": "detail",
+"group": "FIN_OUT",
+"formula": ""
+},
+{
+"id": "r_bonds_out",
+"label": "Виплати по облігаціям",
+"short": "",
+"type": "detail",
+"group": "FIN_OUT",
+"formula": ""
+},
+{
+"id": "r_interest",
+"label": "Відсотки, комісії та інше",
+"short": "Відсотки, комісії та інше",
+"type": "detail",
+"group": "FIN_OUT",
+"formula": ""
+},
+{
+"id": "NCF_FIN",
+"label": "Чистий рух коштів від фінансової діяльності",
+"short": "",
+"type": "calc",
+"group": "",
+"formula": "FIN_IN+FIN_OUT"
+},
+{
+"id": "BAL_OPEN",
+"label": "Залишок ГК на початок",
+"short": "Залишок на початок",
+"type": "balance_open",
+"group": "",
+"formula": ""
+},
+{
+"id": "r_fx",
+"label": "Вплив зміни валютних курсів на залишок коштів",
+"short": "Відсотки, комісії та інше",
+"type": "detail",
+"group": "FX",
+"formula": ""
+},
+{
+"id": "NCF_TOTAL",
+"label": "Чистий рух коштів за період",
+"short": "Чистий рух коштів",
+"type": "calc",
+"group": "",
+"formula": "NCF_OP+NCF_INV+NCF_FIN+r_fx"
+},
+{
+"id": "BAL_CLOSE",
+"label": "Залишок ГК на кінець",
+"short": "Залишок на кінець",
+"type": "calc",
+"group": "",
+"formula": "BAL_OPEN+NCF_TOTAL"
+}
+];
+
+/* Вбудований знімок — щоб сторінка відкривалась і без мережі */
+const EMBEDDED = {"meta":{"forecast_date":"2026-09-07","plan_fact_date":"2026-09-07","source_file":"ПРОГНОЗ РУХУ КОШТІВ 13 ТИЖНІВ (07.09.2026) ПЛАН_ФАКТ (07.09.2026).xlsm","generated_utc":"2026-09-17T23:13:02.767331+00:00","currency_unit":"грн","display_unit":"млн грн"},"periods":[{"key":"Tm1_plan","label":"Т -1 (план)","range":"31.08-06.09.26"},{"key":"Tm1_forecast","label":"Т -1 (прогноз)","range":"31.08-06.09.26"},{"key":"Tm1_fact","label":"Т -1 (факт)","range":"31.08-06.09.26"},{"key":"T0","label":"Т 0","range":"07-13.09.26"},{"key":"T1","label":"Т 1","range":"14-20.09.26"},{"key":"T2","label":"Т 2","range":"21-27.09.26"},{"key":"T3","label":"Т 3","range":"28.09-04.10.26"},{"key":"M1","label":"М 1 Т0+Т1+Т2+Т3","range":"07.09-04.10.26"},{"key":"T4","label":"Т 4","range":"05-11.10.26"},{"key":"T5","label":"Т 5","range":"12-18.10.26"},{"key":"T6","label":"Т 6","range":"19-25.10.26"},{"key":"T7","label":"Т 7","range":"26.10-01.11.26"},{"key":"M2","label":"М 2 Т4+Т5+Т6+Т7","range":"05.10-01.11.26"},{"key":"T8","label":"Т 8","range":"02.11-08.11.26"},{"key":"T9","label":"Т 9","range":"09.11-15.11.26"},{"key":"T10","label":"Т 10","range":"16.11-22.11.26"},{"key":"T11","label":"Т 11","range":"23.11-29.11.26"},{"key":"T12","label":"Т 12","range":"30.11-06.12.26"},{"key":"M3","label":"М 3 Т8+Т9+Т10+Т11+Т12","range":"02.11-06.12.26"},{"key":"TT0_12","label":"ТТ 0 - 12","range":"07.09-06.12.26"}],"rows":[{"id":"S1","label":"І. Рух коштів від операційної діяльності","short":"","type":"section","group":"","formula":"","codes":[],"values":{},"mapped":false},{"id":"OP_IN","label":"Надходження від операційної діяльності","short":"","type":"subtotal","group":"OP_IN","formula":"","codes":["2.1.01.01","2.1.01.02","2.1.01.07","2.1.01.08","2.1.01.12.01","2.1.01.12.02","2.1.01.12.04","2.1.01.12.05","2.1.01.20","2.1.01.28","2.1.02.12","2.1.02.14","2.1.02.26","2.1.03.12","2.2.07.23","3.1.06","Альянс Холдинг","ГЛУСКО","ДП ДОТ МОУ","ДП ДОТ МОУ ДКУ","НАК \"Нафтогаз України\" (ПСО)","Непаливні продажі","Укрнафта-Постач"],"values":{"Tm1_plan":4619267813.85,"Tm1_forecast":4449609174.41,"Tm1_fact":5104418198.37,"T0":4500848299.12,"T1":4046846222.25,"T2":3691066474.47,"T3":4256014351.42,"M1":16494775347.24,"T4":4290174761.65,"T5":4795228390.78,"T6":4376858605.46,"T7":4736613769.12,"M2":18198875527.01,"T8":4633229027.2,"T9":4540830448.36,"T10":4622137619.86,"T11":4403887346.53,"T12":4360416185.53,"M3":22560500627.44,"TT0_12":57254151501.7},"mapped":true},{"id":"r_neft","label":"Нафта з конденсатом","short":"Нафта","type":"detail","group":"OP_IN","formula":"","codes":["2.1.01.12.01","2.1.01.12.02","2.1.01.12.04","2.1.01.12.05"],"values":{"Tm1_plan":920407915.0,"Tm1_forecast":994096228.96,"Tm1_fact":1773251432.4,"T0":567450710.67,"T1":397099216.58,"T2":92398578.83,"T3":635072516.67,"M1":1692021022.75,"T4":136943101.83,"T5":578005437.0,"T6":272812841.67,"T7":632568005.33,"M2":1620329385.83,"T8":272812841.67,"T9":180414262.83,"T10":261721434.33,"T11":43471161.0,"T12":0.0,"M3":758419699.83,"TT0_12":4070770108.42},"mapped":true},{"id":"r_np","label":"Нафтопродукти","short":"Нафтопродукти","type":"detail","group":"OP_IN","formula":"","codes":["2.1.01.01","2.1.01.02","2.1.01.08","2.1.01.20","2.1.01.28","2.2.07.23","Альянс Холдинг","ГЛУСКО","ДП ДОТ МОУ","ДП ДОТ МОУ ДКУ","Непаливні продажі","Укрнафта-Постач"],"values":{"Tm1_plan":3547621725.67,"Tm1_forecast":3304248372.27,"Tm1_fact":3177320326.87,"T0":3263397588.45,"T1":3638105765.06,"T2":3598372987.8,"T3":3598072906.04,"M1":14097949247.33,"T4":3854045763.79,"T5":3854045763.79,"T6":3854045763.79,"T7":3854045763.79,"M2":15416183055.16,"T8":4110416185.53,"T9":4110416185.53,"T10":4110416185.53,"T11":4110416185.53,"T12":4110416185.53,"M3":20552080927.61,"TT0_12":50066213230.1},"mapped":true,"has_breakdown":true,"breakdown_mapped":4,"own_values":{"Tm1_plan":1388005430.26,"Tm1_forecast":1545309490.38,"Tm1_fact":1374566308.74,"T0":1353048047.87,"T1":1627756224.48,"T2":1588023447.22,"T3":1598129091.59,"M1":6166956811.17,"T4":1707846009.07,"T5":1707846009.07,"T6":1707846009.07,"T7":1707846009.07,"M2":6831384036.29,"T8":1702610556.31,"T9":1702610556.31,"T10":1702610556.31,"T11":1702610556.31,"T12":1702610556.31,"M3":8513052781.56,"TT0_12":21511393629.02},"has_residual":true},{"id":"r_np_gurt","label":"Гурт","short":"Нафтопродукти (Гурт)","type":"detail_sub","group":"r_np","formula":"","codes":["Альянс Холдинг","ГЛУСКО"],"values":{"Tm1_plan":375196047.16,"Tm1_forecast":357223627.02,"Tm1_fact":513353292.54,"T0":396617561.23,"T1":396617561.23,"T2":396617561.23,"T3":387079420.14,"M1":1576932103.8,"T4":386831146.17,"T5":386831146.17,"T6":386831146.17,"T7":386831146.17,"M2":1547324584.65,"T8":386831146.17,"T9":386831146.17,"T10":386831146.17,"T11":386831146.17,"T12":386831146.17,"M3":1934155730.82,"TT0_12":5058412419.27},"mapped":true},{"id":"r_np_aoz","label":"АОЗ / МОУ","short":"Нафтопродукти (АОЗ / МОУ)","type":"detail_sub","group":"r_np","formula":"","codes":["ДП ДОТ МОУ","ДП ДОТ МОУ ДКУ"],"values":{"Tm1_plan":621505215.67,"Tm1_forecast":392201933.7,"Tm1_fact":433608874.79,"T0":650731979.35,"T1":650731979.35,"T2":650731979.35,"T3":662364394.31,"M1":2614560332.36,"T4":808868608.55,"T5":808868608.55,"T6":808868608.55,"T7":808868608.55,"M2":3235474434.22,"T8":1070474483.05,"T9":1070474483.05,"T10":1070474483.05,"T11":1070474483.05,"T12":1070474483.05,"M3":5352372415.23,"TT0_12":11202407181.81},"mapped":true},{"id":"r_np_b2c","label":"В2С Роздріб","short":"Нафтопродукти (роздріб B2C)","type":"detail_sub","group":"r_np","formula":"","codes":["Непаливні продажі"],"values":{"Tm1_plan":63616690.36,"Tm1_forecast":59513321.17,"Tm1_fact":55791850.8,"T0":63000000.0,"T1":63000000.0,"T2":63000000.0,"T3":63000000.0,"M1":252000000.0,"T4":63000000.0,"T5":63000000.0,"T6":63000000.0,"T7":63000000.0,"M2":252000000.0,"T8":63000000.0,"T9":63000000.0,"T10":63000000.0,"T11":63000000.0,"T12":63000000.0,"M3":315000000.0,"TT0_12":819000000.0},"mapped":true},{"id":"r_np_b2b","label":"В2В Роздріб (Укрнафта-Постач)","short":"Нафтопродукти (роздріб B2B)","type":"detail_sub","group":"r_np","formula":"","codes":["Укрнафта-Постач"],"values":{"Tm1_plan":1099298342.22,"Tm1_forecast":950000000.0,"Tm1_fact":800000000.0,"T0":800000000.0,"T1":900000000.0,"T2":900000000.0,"T3":887500000.0,"M1":3487500000.0,"T4":887500000.0,"T5":887500000.0,"T6":887500000.0,"T7":887500000.0,"M2":3550000000.0,"T8":887500000.0,"T9":887500000.0,"T10":887500000.0,"T11":887500000.0,"T12":887500000.0,"M3":4437500000.0,"TT0_12":11475000000.0},"mapped":true},{"id":"r_np_inshe","label":"Інше","short":"Нафтопродукти (Інше, в .т.ч. повернення)","type":"detail_sub","group":"r_np","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_gas","label":"Природний газ","short":"Газ","type":"detail","group":"OP_IN","formula":"","codes":["2.1.01.07","НАК \"Нафтогаз України\" (ПСО)"],"values":{"Tm1_plan":150300000.0,"Tm1_forecast":150326400.0,"Tm1_fact":150326400.0,"T0":670000000.0,"T1":0,"T2":0,"T3":0,"M1":670000000.0,"T4":250000000.0,"T5":250000000.0,"T6":250000000.0,"T7":250000000.0,"M2":1000000000.0,"T8":250000000.0,"T9":250000000.0,"T10":250000000.0,"T11":250000000.0,"T12":250000000.0,"M3":1250000000.0,"TT0_12":2920000000.0},"mapped":true,"has_breakdown":true,"breakdown_mapped":1,"own_values":{"Tm1_plan":150300000.0,"Tm1_forecast":150326400.0,"Tm1_fact":150326400.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"has_residual":true},{"id":"r_gas_pso","label":"Природний газ (НАК ПСО)","short":"Газ (ПСО)","type":"detail_sub","group":"r_gas","formula":"","codes":["НАК \"Нафтогаз України\" (ПСО)"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":670000000.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":670000000.0,"T4":250000000.0,"T5":250000000.0,"T6":250000000.0,"T7":250000000.0,"M2":1000000000.0,"T8":250000000.0,"T9":250000000.0,"T10":250000000.0,"T11":250000000.0,"T12":250000000.0,"M3":1250000000.0,"TT0_12":2920000000.0},"mapped":true},{"id":"r_gas_nak","label":"Природний газ (Група НАК без ПСО)","short":"Газ (група НАК без ПСО)","type":"detail_sub","group":"r_gas","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_gas_gurt","label":"Природний ГАЗ гурт","short":"ГАЗ гурт","type":"detail_sub","group":"r_gas","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_in_other","label":"Інші надходження (операційна діяльність)","short":"Інші надходження","type":"detail","group":"OP_IN","formula":"","codes":["2.1.02.12","2.1.02.14","2.1.02.26","2.1.03.12","3.1.06"],"values":{"Tm1_plan":938173.18,"Tm1_forecast":938173.18,"Tm1_fact":3520039.1,"T0":0.0,"T1":11641240.61,"T2":294907.84,"T3":22868928.71,"M1":34805077.16,"T4":49185896.03,"T5":113177189.99,"T6":0.0,"T7":0.0,"M2":162363086.02,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":197168163.18},"mapped":true},{"id":"OP_OUT","label":"Витрачання на операційну діяльність","short":"","type":"subtotal","group":"OP_OUT","formula":"","codes":["2.1.03.15","2.1.04.01","2.2.01.01","2.2.01.02","2.2.01.03","2.2.01.04","2.2.01.06","2.2.01.08","2.2.01.09","2.2.01.10","2.2.01.11","2.2.01.12","2.2.01.13","2.2.01.14","2.2.01.15","2.2.01.16","2.2.01.17","2.2.01.99","2.2.02.01","2.2.02.02","2.2.02.03","2.2.02.04","2.2.02.05","2.2.02.06","2.2.03.01","2.2.03.02","2.2.03.03","2.2.03.04","2.2.04.01","2.2.04.02","2.2.04.03","2.2.04.07","2.2.04.08.01","2.2.04.08.02","2.2.04.08.03","2.2.04.08.04","2.2.04.08.05","2.2.04.08.06","2.2.04.08.07","2.2.04.08.08","2.2.04.08.09","2.2.04.08.10","2.2.04.08.11","2.2.04.08.12","2.2.04.09.01","2.2.04.09.02","2.2.04.09.03","2.2.04.09.04","2.2.04.10.01","2.2.04.10.02","2.2.04.10.03","2.2.04.10.04","2.2.04.10.05","2.2.04.10.06","2.2.04.11.01","2.2.04.12.01","2.2.04.12.02","2.2.04.12.03","2.2.04.12.04","2.2.04.12.05","2.2.04.12.06","2.2.04.12.07","2.2.04.12.08","2.2.04.13.01","2.2.04.13.02","2.2.04.13.03","2.2.04.13.04","2.2.04.13.05","2.2.04.13.06","2.2.04.14.01","2.2.04.14.02","2.2.04.15.01","2.2.04.15.02","2.2.04.15.03","2.2.04.15.04","2.2.04.15.05","2.2.04.15.06","2.2.04.15.07","2.2.04.15.08","2.2.04.15.09","2.2.04.16.01","2.2.04.16.02","2.2.04.16.03","2.2.04.16.04","2.2.04.16.05","2.2.04.16.06","2.2.04.16.07","2.2.04.16.08","2.2.04.16.09","2.2.04.16.10","2.2.04.16.11","2.2.04.16.12","2.2.04.16.13","2.2.04.16.14","2.2.04.16.15","2.2.04.16.16","2.2.04.16.17","2.2.04.16.18","2.2.04.16.19","2.2.04.16.20","2.2.04.17.01","2.2.04.17.02","2.2.04.17.03","2.2.04.17.04","2.2.04.17.05","2.2.04.17.06","2.2.04.17.07","2.2.04.17.08","2.2.04.17.09","2.2.04.18.01","2.2.04.18.02","2.2.04.19.01","2.2.04.19.02","2.2.04.19.03","2.2.04.19.04","2.2.04.19.05","2.2.04.20.01","2.2.04.20.02","2.2.04.20.03","2.2.04.20.04","2.2.04.21","2.2.04.22","2.2.04.23","2.2.05.10.01","2.2.05.10.02","2.2.05.10.03","2.2.05.10.04","2.2.05.10.05","2.2.05.10.06","2.2.05.10.07","2.2.05.10.08","2.2.05.10.10","2.2.05.10.11","2.2.05.10.12","2.2.05.10.13","2.2.05.10.14","2.2.05.10.15","2.2.05.10.16","2.2.05.10.17","2.2.05.10.18","2.2.05.10.19","2.2.05.10.20","2.2.05.10.21","2.2.05.10.22","2.2.05.10.23","2.2.05.10.24","2.2.05.10.25","2.2.05.10.26","2.2.05.10.27","2.2.05.10.28","2.2.05.10.29","2.2.05.10.30","2.2.05.10.31","2.2.05.10.32","2.2.05.10.33","2.2.05.10.34","2.2.05.10.35","2.2.05.10.36","2.2.05.10.37","2.2.05.10.38","2.2.05.10.39","2.2.05.10.40","2.2.05.10.42","2.2.05.10.43","2.2.05.10.44","2.2.05.10.45","2.2.05.10.46","2.2.05.10.47","2.2.05.11.01","2.2.05.11.02","2.2.05.11.03","2.2.05.11.04","2.2.05.11.05","2.2.05.11.06","2.2.05.12.01","2.2.05.12.02","2.2.05.12.03","2.2.05.12.04","2.2.05.12.05","2.2.05.12.06","2.2.05.12.07","2.2.05.12.08","2.2.05.12.10","2.2.05.12.12","2.2.05.12.14","2.2.05.12.15","2.2.05.12.16","2.2.05.12.17","2.2.05.12.18","2.2.05.12.19","2.2.05.12.20","2.2.05.12.21","2.2.05.12.22","2.2.05.12.23","2.2.05.12.26","2.2.07.01","2.2.07.02","2.2.07.03","2.2.07.04","2.2.07.05","2.2.07.06","2.2.07.07","2.2.07.08","2.2.07.09","2.2.07.10","2.2.07.11","2.2.07.12","2.2.07.13","2.2.07.14","2.2.07.15","2.2.07.16","2.2.07.17","2.2.07.18","2.2.07.19","2.2.07.20","2.2.07.21","2.2.07.22","2.2.07.98","2.2.07.99","2.2.08.01"],"values":{"Tm1_plan":-5344735693.79,"Tm1_forecast":-5818974323.54,"Tm1_fact":-6144630275.72,"T0":-8307394482.68,"T1":-4137304354.35,"T2":-2452609713.01,"T3":-3399984849.19,"M1":-18297293399.25,"T4":-2234435889.07,"T5":-1587762892.53,"T6":-3739114021.41,"T7":-4638485414.63,"M2":-12199798217.65,"T8":-3352933081.74,"T9":-2835498879.15,"T10":-4790907816.61,"T11":-1769938008.87,"T12":-4383145693.07,"M3":-17132423479.46,"TT0_12":-47629515096.35},"mapped":true},{"id":"r_budget","label":"Розрахунки з бюджетом","short":"","type":"detail","group":"OP_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_tax_pnp","label":"Податки. Податок на прибуток","short":"Податки. ПнП","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.06"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":-35000000.0,"T2":0.0,"T3":0.0,"M1":-35000000.0,"T4":0.0,"T5":0.0,"T6":-39000000.0,"T7":0.0,"M2":-39000000.0,"T8":0.0,"T9":0.0,"T10":-1000000000.0,"T11":0.0,"T12":0.0,"M3":-1000000000.0,"TT0_12":-1074000000.0},"mapped":true},{"id":"r_tax_pdv","label":"Податки. ПДВ","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.17"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_tax_rent_oil","label":"Податки. Рента нафта та конденсат","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.02","2.2.01.04"],"values":{"Tm1_plan":-891192098.15,"Tm1_forecast":-891192098.15,"Tm1_fact":-891192098.15,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-860000000.0,"M1":-860000000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-860000000.0,"M2":-860000000.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":-860000000.0,"M3":-860000000.0,"TT0_12":-2580000000.0},"mapped":true},{"id":"r_tax_rent_gas","label":"Податки. Рента газ","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.03"],"values":{"Tm1_plan":-387288405.04,"Tm1_forecast":-387288405.04,"Tm1_fact":-387288405.04,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-350000000.0,"M1":-350000000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-350000000.0,"M2":-350000000.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":-350000000.0,"M3":-350000000.0,"TT0_12":-1050000000.0},"mapped":true},{"id":"r_tax_akciz","label":"Податки. Акциз","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.01","2.2.01.09"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":-50000000.0,"T1":0.0,"T2":-55000000.0,"T3":-400000.0,"M1":-105400000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-50400000.0,"M2":-50400000.0,"T8":0.0,"T9":0.0,"T10":-50000000.0,"T11":0.0,"T12":-70400000.0,"M3":-120400000.0,"TT0_12":-276200000.0},"mapped":true},{"id":"r_tax_rent_oth","label":"Податки. Рента інша","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.08","2.2.01.10","2.2.01.13","2.2.01.14"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-25000.0,"M1":-25000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-25000.0,"M2":-25000.0,"T8":0.0,"T9":0.0,"T10":-20350000.0,"T11":0.0,"T12":-25000.0,"M3":-20375000.0,"TT0_12":-20425000.0},"mapped":true},{"id":"r_tax_mytni","label":"Податки. Митні платежі","short":"Нафтопродукти (закупівля, митні платежі)","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.04.15.09"],"values":{"Tm1_plan":-600000000.0,"Tm1_forecast":-570000000.0,"Tm1_fact":-700000000.0,"T0":-580000000.0,"T1":-580000000.0,"T2":-580000000.0,"T3":-580000000.0,"M1":-2320000000.0,"T4":-580000000.0,"T5":-580000000.0,"T6":-580000000.0,"T7":-580000000.0,"M2":-2320000000.0,"T8":-580000000.0,"T9":-580000000.0,"T10":-580000000.0,"T11":-580000000.0,"T12":-580000000.0,"M3":-2900000000.0,"TT0_12":-7540000000.0},"mapped":true},{"id":"r_tax_other","label":"Податки. Інші податки","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.11","2.2.01.12","2.2.01.15","2.2.01.99","2.2.02.01","2.2.02.02","2.2.02.03","2.2.02.04","2.2.02.06"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-38500000.0,"M1":-38500000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-43200000.0,"M2":-43200000.0,"T8":0.0,"T9":0.0,"T10":-6000000.0,"T11":0.0,"T12":-38500000.0,"M3":-44500000.0,"TT0_12":-126200000.0},"mapped":true},{"id":"r_tax_fines","label":"Податки. Штрафи та пені","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.16","2.2.02.05"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-1626127.78,"M1":-1626127.78,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":-1626127.78},"mapped":true},{"id":"r_tax_vat_ref","label":"Податки. ПДВ. Відшкодування з бюджету","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_zp","label":"ЗП. Виплата","short":"ЗП з податками","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.03.01"],"values":{"Tm1_plan":-43493000.0,"Tm1_forecast":-43493000.0,"Tm1_fact":-23349628.51,"T0":-597510227.03,"T1":-43493000.0,"T2":-461929427.62,"T3":-43493000.0,"M1":-1146425654.65,"T4":-657290227.03,"T5":-43493000.0,"T6":-430832930.39,"T7":-43493000.0,"M2":-1175109157.42,"T8":-767241809.73,"T9":-43493000.0,"T10":-430832930.39,"T11":-43493000.0,"T12":-43493000.0,"M3":-1328553740.12,"TT0_12":-3650088552.18},"mapped":true},{"id":"r_zp_esv","label":"ЗП. ЄСВ","short":"ЗП з податками","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.03.03"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-5632910.1,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_zp_pdfo","label":"ЗП. ПДФО","short":"ЗП з податками","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.03.04","2.2.05.10.43","2.2.05.10.45","2.2.07.08"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-5605842.07,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_zp_vz","label":"ЗП. ВЗ","short":"ЗП з податками","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.03.02","2.2.05.10.44","2.2.05.10.46","2.2.07.09"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-1531285.88,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_energy","label":"Електроенергія","short":"Операційні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.05.10.27","2.2.07.17"],"values":{"Tm1_plan":-188689094.88,"Tm1_forecast":-188946263.74,"Tm1_fact":-188485916.56,"T0":-11792502.36,"T1":-15084613.56,"T2":-26505575.06,"T3":-260729603.65,"M1":-314112294.63,"T4":-12205952.23,"T5":-10643143.68,"T6":-23056824.16,"T7":-276088305.75,"M2":-321994225.82,"T8":-1821858.84,"T9":-22295180.2,"T10":-8442356.53,"T11":-44849842.65,"T12":-250706718.46,"M3":-328115956.68,"TT0_12":-964222477.13},"mapped":true},{"id":"r_opex","label":"Операційні витрати","short":"Операційні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.04.03","2.2.04.08.01","2.2.04.08.02","2.2.04.08.03","2.2.04.08.04","2.2.04.08.05","2.2.04.08.06","2.2.04.08.07","2.2.04.08.08","2.2.04.08.09","2.2.04.08.10","2.2.04.08.11","2.2.04.08.12","2.2.04.09.01","2.2.04.09.02","2.2.04.09.03","2.2.04.09.04","2.2.04.10.01","2.2.04.10.02","2.2.04.10.03","2.2.04.10.04","2.2.04.10.05","2.2.04.10.06","2.2.04.11.01","2.2.04.12.01","2.2.04.12.02","2.2.04.12.03","2.2.04.12.04","2.2.04.12.05","2.2.04.12.06","2.2.04.12.07","2.2.04.12.08","2.2.04.13.01","2.2.04.13.02","2.2.04.13.03","2.2.04.13.04","2.2.04.13.05","2.2.04.13.06","2.2.04.14.01","2.2.04.14.02","2.2.04.15.01","2.2.04.15.03","2.2.04.15.04","2.2.04.15.05","2.2.04.16.01","2.2.04.16.02","2.2.04.16.03","2.2.04.16.04","2.2.04.16.05","2.2.04.16.06","2.2.04.16.07","2.2.04.16.08","2.2.04.16.09","2.2.04.16.10","2.2.04.16.11","2.2.04.16.12","2.2.04.16.13","2.2.04.16.14","2.2.04.16.15","2.2.04.16.16","2.2.04.16.17","2.2.04.16.18","2.2.04.16.19","2.2.04.16.20","2.2.04.17.01","2.2.04.17.02","2.2.04.17.03","2.2.04.17.04","2.2.04.17.05","2.2.04.17.06","2.2.04.17.07","2.2.04.17.08","2.2.04.17.09","2.2.04.18.01","2.2.04.18.02","2.2.04.19.01","2.2.04.19.02","2.2.04.19.03","2.2.04.19.04","2.2.04.19.05","2.2.04.20.01","2.2.04.20.02","2.2.04.20.03","2.2.04.20.04","2.2.04.21","2.2.05.10.01","2.2.05.10.02","2.2.05.10.03","2.2.05.10.04","2.2.05.10.05","2.2.05.10.06","2.2.05.10.07","2.2.05.10.12","2.2.05.10.14","2.2.05.10.15","2.2.05.10.16","2.2.05.10.17","2.2.05.10.18","2.2.05.10.19","2.2.05.10.20","2.2.05.10.21","2.2.05.10.22","2.2.05.10.23","2.2.05.10.29","2.2.05.10.30","2.2.05.10.31","2.2.05.10.32","2.2.05.10.33","2.2.05.10.34","2.2.05.10.35","2.2.05.10.36","2.2.05.10.37","2.2.05.10.38","2.2.05.10.39","2.2.05.10.42","2.2.05.10.47","2.2.05.11.06","2.2.05.12.04","2.2.05.12.12","2.2.05.12.21","2.2.05.12.26","2.2.07.03","2.2.07.04","2.2.07.10","2.2.07.11","2.2.07.20","2.2.07.21"],"values":{"Tm1_plan":-124389463.24,"Tm1_forecast":-118383118.75,"Tm1_fact":-121342460.22,"T0":-131547809.04,"T1":-176190286.96,"T2":-232210998.39,"T3":-156436658.23,"M1":-696385752.63,"T4":-91932218.23,"T5":-127477277.72,"T6":-138818277.37,"T7":-182422718.07,"M2":-540650491.39,"T8":-113480434.17,"T9":-168940018.21,"T10":-115620661.19,"T11":-146895153.66,"T12":-85124603.85,"M3":-630060871.08,"TT0_12":-1867097115.1},"mapped":true},{"id":"r_transp_np","label":"Транспортування НП та сировини","short":"Логістичні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.05.10.08","2.2.05.10.28","2.2.05.10.40","2.2.05.12.01","2.2.05.12.02","2.2.05.12.05","2.2.05.12.07","2.2.05.12.15","2.2.05.12.20","2.2.05.12.22","2.2.05.12.23"],"values":{"Tm1_plan":-145368097.55,"Tm1_forecast":-202623472.63,"Tm1_fact":-190340855.6,"T0":-157508533.78,"T1":-141571056.49,"T2":-162310623.35,"T3":-151602198.78,"M1":-612992412.4,"T4":-141854184.09,"T5":-148169751.89,"T6":-163808800.09,"T7":-165294338.2,"M2":-619127074.29,"T8":-140577224.09,"T9":-147269393.37,"T10":-163675144.09,"T11":-156839654.27,"T12":-140532824.09,"M3":-748894239.93,"TT0_12":-1981013726.62},"mapped":true},{"id":"r_transp_gas","label":"Транспортування газу","short":"Логістичні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.05.12.14"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-7813.32,"T0":-103151.11,"T1":-22958379.27,"T2":-49557617.97,"T3":-749888.48,"M1":-73369036.83,"T4":-2283889.47,"T5":-13849493.14,"T6":-67585877.09,"T7":-198092.3,"M2":-83917352.0,"T8":-2283889.47,"T9":-11442364.0,"T10":-66716491.8,"T11":-406322.62,"T12":0.0,"M3":-80849067.89,"TT0_12":-238135456.72},"mapped":true},{"id":"r_refining","label":"Послуги з переробки","short":"Переробка (послуги, акциз, сировина)","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.05.12.10","2.2.05.12.17","2.2.05.12.18"],"values":{"Tm1_plan":-321703000.0,"Tm1_forecast":-352192913.2,"Tm1_fact":-352192913.2,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_raw_oil","label":"Нафта і кондесат (сировина)","short":"Переробка (послуги, акциз, сировина)","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.04.01","2.2.04.02","2.2.04.22","2.2.07.18"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-829203334.12,"T0":-77000.0,"T1":0.0,"T2":-77000.0,"T3":0.0,"M1":-154000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":-154000.0},"mapped":true},{"id":"r_np_buy","label":"Нафтопродукти (закупівля)","short":"Нафтопродукти (закупівля, митні платежі)","type":"detail","group":"OP_OUT","formula":"","codes":["2.1.03.15","2.2.04.07","2.2.04.15.02","2.2.04.15.06","2.2.04.15.07","2.2.04.15.08","2.2.04.23"],"values":{"Tm1_plan":-2600097201.01,"Tm1_forecast":-3018370449.12,"Tm1_fact":-2410998302.62,"T0":-6757760983.38,"T1":-3097172242.46,"T2":-859199715.03,"T3":-886442242.46,"M1":-11600575183.34,"T4":-700523775.0,"T5":-641398549.12,"T6":-2275614428.13,"T7":-2054068002.45,"M2":-5671604754.69,"T8":-1731641221.56,"T9":-1804747156.08,"T10":-2333489082.79,"T11":-744808111.13,"T12":-1951417414.27,"M3":-8566102985.83,"TT0_12":-25838282923.86},"mapped":true},{"id":"r_charity","label":"Благодійність","short":"Операційні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.07.22"],"values":{"Tm1_plan":-7500000.0,"Tm1_forecast":-7500000.0,"Tm1_fact":-2878497.8,"T0":-7500000.0,"T1":-7500000.0,"T2":-7500000.0,"T3":-7500001.0,"M1":-30000001.0,"T4":-7500000.0,"T5":-7500000.0,"T6":-7500000.0,"T7":-7500000.0,"M2":-30000000.0,"T8":-7500000.0,"T9":-7500000.0,"T10":-7500000.0,"T11":-7500000.0,"T12":-7500000.0,"M3":-37500000.0,"TT0_12":-97500001.0},"mapped":true},{"id":"r_op_other","label":"Інші витрачання (операційна діяльність)","short":"Операційні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.1.04.01","2.2.05.10.10","2.2.05.10.11","2.2.05.10.13","2.2.05.10.24","2.2.05.10.25","2.2.05.10.26","2.2.05.11.01","2.2.05.11.02","2.2.05.11.03","2.2.05.11.04","2.2.05.11.05","2.2.05.12.03","2.2.05.12.06","2.2.05.12.08","2.2.05.12.16","2.2.05.12.19","2.2.07.01","2.2.07.02","2.2.07.05","2.2.07.06","2.2.07.07","2.2.07.12","2.2.07.13","2.2.07.14","2.2.07.15","2.2.07.16","2.2.07.19","2.2.07.98","2.2.07.99","2.2.08.01"],"values":{"Tm1_plan":-35015333.92,"Tm1_forecast":-38984602.91,"Tm1_fact":-34580012.53,"T0":-13594275.98,"T1":-18334775.61,"T2":-18318755.59,"T3":-62480128.81,"M1":-112727935.99,"T4":-40845643.02,"T5":-15231676.98,"T6":-12896884.18,"T7":-25795957.86,"M2":-94770162.04,"T8":-8386643.88,"T9":-49811767.29,"T10":-8281149.82,"T11":-45145924.54,"T12":-5446132.4,"M3":-117071617.93,"TT0_12":-324569715.96},"mapped":true},{"id":"NCF_OP","label":"Чистий рух коштів від операційної діяльності","short":"","type":"calc","group":"","formula":"OP_IN+OP_OUT","codes":[],"values":{"Tm1_plan":-725467879.94,"Tm1_forecast":-1369365149.13,"Tm1_fact":-1040212077.35,"T0":-3806546183.56,"T1":-90458132.1,"T2":1238456761.46,"T3":856029502.23,"M1":-1802518052.01,"T4":2055738872.58,"T5":3207465498.25,"T6":637744584.05,"T7":98128354.49,"M2":5999077309.36,"T8":1280295945.46,"T9":1705331569.21,"T10":-168770196.75,"T11":2633949337.66,"T12":-22729507.54,"M3":5428077147.98,"TT0_12":9624636405.35},"mapped":true},{"id":"S2","label":"II. Рух коштів у результаті інвестиційної діяльності","short":"","type":"section","group":"","formula":"","codes":[],"values":{},"mapped":false},{"id":"INV_IN","label":"Надходження від інвестиційної діяльності","short":"","type":"subtotal","group":"INV_IN","formula":"","codes":["1.1.01.02","3.1.04"],"values":{"Tm1_plan":29000000.0,"Tm1_forecast":0,"Tm1_fact":60792333.49,"T0":0,"T1":0,"T2":0,"T3":29000000.0,"M1":29000000.0,"T4":0,"T5":0,"T6":0,"T7":4000000.0,"M2":4000000.0,"T8":25000000.0,"T9":0,"T10":0,"T11":0,"T12":29000000.0,"M3":54000000.0,"TT0_12":87000000.0},"mapped":true},{"id":"r_ovdp_ret","label":"Повернення тіла ОВДП та купонний дохід","short":"ОВДП","type":"detail","group":"INV_IN","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_deposit","label":"Дохід від поточних та депозитних вкладів та ін","short":"Відсотки на залишки","type":"detail","group":"INV_IN","formula":"","codes":["3.1.04"],"values":{"Tm1_plan":29000000.0,"Tm1_forecast":0.0,"Tm1_fact":60792333.49,"T0":0.0,"T1":0.0,"T2":0.0,"T3":29000000.0,"M1":29000000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":4000000.0,"M2":4000000.0,"T8":25000000.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":29000000.0,"M3":54000000.0,"TT0_12":87000000.0},"mapped":true},{"id":"r_inv_other_in","label":"Інші надходження (інвестиційна діяльність)","short":"","type":"detail","group":"INV_IN","formula":"","codes":["1.1.01.02"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"INV_OUT","label":"Витрачання грошових коштів від інвестиційної діяльності","short":"","type":"subtotal","group":"INV_OUT","formula":"","codes":["1.2.01.02","1.2.01.03","1.2.01.04","1.2.01.05","1.2.01.06","1.2.01.07","1.2.01.08","1.2.01.09","1.2.01.10","1.2.01.11","1.2.01.12","1.2.01.13","1.2.02.02","1.2.02.03","1.2.02.04","1.2.02.05","1.2.03.02","1.2.03.03","1.2.03.04","1.2.03.05","1.2.03.06","1.2.03.07","1.2.04.01","1.2.05.02","1.2.05.03","1.2.05.04","1.2.05.05","1.2.05.06","1.2.05.07","1.2.05.08","1.2.05.09","1.2.06.02","1.2.06.03","1.2.06.04","1.2.06.05","1.2.06.06","1.2.06.07","1.2.07.02","1.2.07.03","1.2.08.02","1.2.08.03","1.2.08.04","1.2.08.05","1.2.08.06","1.2.08.07","1.2.08.08","1.2.08.09","1.2.08.10","1.2.08.11","1.2.08.12","1.2.08.13","1.2.08.14","1.2.08.15","1.2.08.16","1.2.08.17","1.2.08.18","1.2.08.19","1.2.08.20","1.2.08.21","1.2.09.01","1.2.09.02","1.2.09.03","1.2.09.04","1.2.09.05","1.2.10.02","1.2.10.03","1.2.10.04","1.2.10.05","1.2.10.06","1.2.10.07","1.2.10.08","1.2.10.09","1.2.10.10","1.2.11.02","1.2.11.03","1.2.11.04","1.2.12.02","1.2.12.03","1.2.12.04","1.2.12.05","1.2.12.06","1.2.12.07","1.2.12.08","1.2.12.09","1.2.12.10","1.2.12.11","1.2.12.12","1.2.12.13","1.2.12.14","1.2.12.15","1.2.12.16","1.2.12.17","1.2.12.18","1.2.12.19","1.2.12.20","1.2.12.21","1.2.12.22","1.2.12.23","1.2.12.24","1.2.12.25","1.2.12.26","1.2.12.27","1.2.12.28","1.2.12.29","1.2.12.30","1.2.12.31","1.2.12.32","1.2.12.33","1.2.12.34","1.2.12.35","1.2.12.36","1.2.12.37","1.2.12.38","1.2.12.39","1.2.12.40","1.2.12.41","1.2.13.02","1.2.13.03","1.2.13.04","1.2.13.05","1.2.13.06","1.2.13.07","1.2.14.01","1.2.14.02","1.2.14.03","1.2.14.04","1.2.14.05","1.2.15.01"],"values":{"Tm1_plan":-135604952.1,"Tm1_forecast":-111509937.35,"Tm1_fact":-113727883.08,"T0":-115769928.2,"T1":-308765407.28,"T2":-221683575.63,"T3":-173856235.59,"M1":-820075146.7,"T4":-92288517.44,"T5":-122038972.72,"T6":-120608846.27,"T7":-315952932.82,"M2":-650889269.25,"T8":-100848773.12,"T9":-265097566.06,"T10":-170778760.38,"T11":-335613778.65,"T12":-21647703.95,"M3":-893986582.16,"TT0_12":-2364950998.11},"mapped":true},{"id":"r_capex","label":"CAPEX","short":"CAPEX","type":"detail","group":"INV_OUT","formula":"","codes":["1.2.01.02","1.2.01.03","1.2.01.04","1.2.01.05","1.2.01.06","1.2.01.07","1.2.01.08","1.2.01.09","1.2.01.10","1.2.01.11","1.2.01.12","1.2.01.13","1.2.02.02","1.2.02.03","1.2.02.04","1.2.02.05","1.2.03.02","1.2.03.03","1.2.03.04","1.2.03.05","1.2.03.06","1.2.03.07","1.2.04.01","1.2.05.02","1.2.05.03","1.2.05.04","1.2.05.05","1.2.05.06","1.2.05.07","1.2.05.08","1.2.05.09","1.2.06.02","1.2.06.03","1.2.06.04","1.2.06.05","1.2.06.06","1.2.06.07","1.2.07.02","1.2.07.03","1.2.08.02","1.2.08.03","1.2.08.04","1.2.08.05","1.2.08.06","1.2.08.07","1.2.08.08","1.2.08.09","1.2.08.10","1.2.08.11","1.2.08.12","1.2.08.13","1.2.08.14","1.2.08.15","1.2.08.16","1.2.08.17","1.2.08.18","1.2.08.19","1.2.08.20","1.2.08.21","1.2.09.01","1.2.09.02","1.2.09.03","1.2.09.04","1.2.09.05","1.2.10.02","1.2.10.03","1.2.10.04","1.2.10.05","1.2.10.06","1.2.10.07","1.2.10.08","1.2.10.09","1.2.10.10","1.2.11.02","1.2.11.03","1.2.11.04","1.2.12.02","1.2.12.03","1.2.12.04","1.2.12.05","1.2.12.06","1.2.12.07","1.2.12.08","1.2.12.09","1.2.12.10","1.2.12.11","1.2.12.12","1.2.12.13","1.2.12.14","1.2.12.15","1.2.12.16","1.2.12.17","1.2.12.18","1.2.12.19","1.2.12.20","1.2.12.21","1.2.12.22","1.2.12.23","1.2.12.24","1.2.12.25","1.2.12.26","1.2.12.27","1.2.12.28","1.2.12.29","1.2.12.30","1.2.12.31","1.2.12.32","1.2.12.33","1.2.12.34","1.2.12.35","1.2.12.36","1.2.12.37","1.2.12.38","1.2.12.39","1.2.12.40","1.2.12.41","1.2.13.02","1.2.13.03","1.2.13.04","1.2.13.05","1.2.13.06","1.2.13.07","1.2.14.01","1.2.14.02","1.2.14.03","1.2.14.04","1.2.14.05"],"values":{"Tm1_plan":-135604952.1,"Tm1_forecast":-111509937.35,"Tm1_fact":-113727883.08,"T0":-115769928.2,"T1":-308765407.28,"T2":-221683575.63,"T3":-173856235.59,"M1":-820075146.7,"T4":-92288517.44,"T5":-122038972.72,"T6":-120608846.27,"T7":-315952932.82,"M2":-650889269.25,"T8":-100848773.12,"T9":-265097566.06,"T10":-170778760.38,"T11":-335613778.65,"T12":-21647703.95,"M3":-893986582.16,"TT0_12":-2364950998.11},"mapped":true},{"id":"r_fin_inv","label":"Фінансові інвестиції","short":"CAPEX_FIN","type":"detail","group":"INV_OUT","formula":"","codes":["1.2.15.01"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_ovdp_buy","label":"Купівля ОВДП","short":"ОВДП","type":"detail","group":"INV_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"NCF_INV","label":"Чистий рух коштів від інвестиційної діяльності","short":"","type":"calc","group":"","formula":"INV_IN+INV_OUT","codes":[],"values":{"Tm1_plan":-106604952.1,"Tm1_forecast":-111509937.35,"Tm1_fact":-52935549.59,"T0":-115769928.2,"T1":-308765407.28,"T2":-221683575.63,"T3":-144856235.59,"M1":-791075146.7,"T4":-92288517.44,"T5":-122038972.72,"T6":-120608846.27,"T7":-311952932.82,"M2":-646889269.25,"T8":-75848773.12,"T9":-265097566.06,"T10":-170778760.38,"T11":-335613778.65,"T12":7352296.05,"M3":-839986582.16,"TT0_12":-2277950998.11},"mapped":true},{"id":"S3","label":"III. Рух коштів у результаті фінансової діяльності","short":"","type":"section","group":"","formula":"","codes":[],"values":{},"mapped":false},{"id":"FIN_IN","label":"Надходження грошових коштів від фінансової діяльності","short":"","type":"subtotal","group":"FIN_IN","formula":"","codes":["Отримано кредитних коштів Кредит Дніпро","Отримано кредитних коштів КредоБанк","Отримано кредитних коштів МТБ","Отримано кредитних коштів ОТП Банк","Отримано кредитних коштів ПУМБ","Отримано кредитних коштів Сенс Банк","Отримано кредитних коштів УГБ","Отримано постімпортне фінансування МТБ","Отримано постімпортне фінансування Ощадбанк","Отримано постімпортне фінансування ПУМБ","Отримано постімпортне фінансування Приват Банк","Отримано постімпортне фінансування Сенс Банк","Отримано постімпортне фінансування Укргазбанк","Отримано постімпортне фінансування Укргазбанк (субліміт НАК)","Отримано постімпортне фінансування Укрексімбанк"],"values":{"Tm1_plan":310899000.0,"Tm1_forecast":2877939552.09,"Tm1_fact":306225617.94,"T0":1832838031.98,"T1":0,"T2":2159148016.49,"T3":1255337352.07,"M1":5247323400.54,"T4":2000000000.0,"T5":507577988.45,"T6":424909346.87,"T7":694177930.25,"M2":3626665265.58,"T8":898960678.44,"T9":837134743.92,"T10":297748217.21,"T11":1929401155.56,"T12":679184485.73,"M3":4642429280.86,"TT0_12":13516417946.98},"mapped":true},{"id":"r_cred_short_in","label":"Залучення короткострокових кредитних коштів","short":"Нафтопродукти (постімпорт)","type":"detail","group":"FIN_IN","formula":"","codes":["Отримано кредитних коштів Кредит Дніпро","Отримано кредитних коштів КредоБанк","Отримано кредитних коштів МТБ","Отримано кредитних коштів ОТП Банк","Отримано кредитних коштів ПУМБ","Отримано кредитних коштів Сенс Банк","Отримано кредитних коштів УГБ","Отримано постімпортне фінансування МТБ","Отримано постімпортне фінансування Ощадбанк","Отримано постімпортне фінансування ПУМБ","Отримано постімпортне фінансування Приват Банк","Отримано постімпортне фінансування Сенс Банк","Отримано постімпортне фінансування Укргазбанк","Отримано постімпортне фінансування Укргазбанк (субліміт НАК)","Отримано постімпортне фінансування Укрексімбанк"],"values":{"Tm1_plan":310899000.0,"Tm1_forecast":2877939552.09,"Tm1_fact":306225617.94,"T0":1832838031.98,"T1":0.0,"T2":2159148016.49,"T3":1255337352.07,"M1":5247323400.54,"T4":2000000000.0,"T5":507577988.45,"T6":424909346.87,"T7":694177930.25,"M2":3626665265.58,"T8":898960678.44,"T9":837134743.92,"T10":297748217.21,"T11":1929401155.56,"T12":679184485.73,"M3":4642429280.86,"TT0_12":13516417946.98},"mapped":true},{"id":"r_cred_long_in","label":"Залучення довгострокових кредитних коштів","short":"Довгострокові кредити","type":"detail","group":"FIN_IN","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_bonds_in","label":"Надходження коштів від продажу облігацій","short":"","type":"detail","group":"FIN_IN","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_fin_other_in","label":"Інші надходження (фінансова діяльність)","short":"","type":"detail","group":"FIN_IN","formula":"","codes":[],"values":{},"mapped":false},{"id":"FIN_OUT","label":"Витрачання грошових коштів від фінансової діяльності","short":"","type":"subtotal","group":"FIN_OUT","formula":"","codes":["3.2.02.03","3.2.02.05","3.2.02.06","3.2.02.08","3.2.02.09","3.2.02.10","3.2.02.11","3.2.02.12","3.2.03.01","3.2.03.02","3.2.03.03","Оплата по постімпорту МТБ","Оплата по постімпорту Ощадбанк","Оплата по постімпорту ПУМБ","Оплата по постімпорту Приват Банк","Оплата по постімпорту Сенс Банк","Оплата по постімпорту Укргазбанк","Оплата по постімпорту Укргазбанк (субліміт НАК)","Оплата по постімпорту Укрексімбанк","Повернення кредиту Кредит Дніпро","Повернення кредиту КредоБанк","Повернення кредиту МТБ","Повернення кредиту ОТП Банк","Повернення кредиту ПУМБ","Повернення кредиту Сенс Банк","Повернення кредиту УГБ"],"values":{"Tm1_plan":-1514541225.98,"Tm1_forecast":-22997575.34,"Tm1_fact":-1031811660.37,"T0":-804672291.26,"T1":-556647.0,"T2":-2055032063.99,"T3":-1292674426.78,"M1":-4152935429.01,"T4":-5168592.06,"T5":-510450972.38,"T6":-429744854.29,"T7":-691296761.4,"M2":-1636661180.13,"T8":-901558862.86,"T9":-842022110.52,"T10":-298306969.21,"T11":-1906350773.29,"T12":-683529650.84,"M3":-4631768366.71,"TT0_12":-10421364975.88},"mapped":true},{"id":"r_div","label":"Сплата дивідендів","short":"Дивіденди","type":"detail","group":"FIN_OUT","formula":"","codes":["3.2.03.01","3.2.03.02","3.2.03.03"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_cred_short_out","label":"Повернення короткострокових кредитних коштів","short":"Нафтопродукти (постімпорт)","type":"detail","group":"FIN_OUT","formula":"","codes":["Оплата по постімпорту МТБ","Оплата по постімпорту Ощадбанк","Оплата по постімпорту ПУМБ","Оплата по постімпорту Приват Банк","Оплата по постімпорту Сенс Банк","Оплата по постімпорту Укргазбанк","Оплата по постімпорту Укргазбанк (субліміт НАК)","Оплата по постімпорту Укрексімбанк","Повернення кредиту Кредит Дніпро","Повернення кредиту КредоБанк","Повернення кредиту МТБ","Повернення кредиту ОТП Банк","Повернення кредиту ПУМБ","Повернення кредиту Сенс Банк","Повернення кредиту УГБ"],"values":{"Tm1_plan":-1489471354.11,"Tm1_forecast":-22997575.34,"Tm1_fact":-1010035912.64,"T0":-803600728.55,"T1":0.0,"T2":-2007214895.95,"T3":-1255337352.07,"M1":-4066152976.57,"T4":0.0,"T5":-507577988.45,"T6":-424909346.87,"T7":-688798183.63,"M2":-1621285518.95,"T8":-898960678.44,"T9":-837134743.92,"T10":-297748217.21,"T11":-1900848928.87,"T12":-679841076.65,"M3":-4614533645.09,"TT0_12":-10301972140.63},"mapped":true},{"id":"r_cred_long_out","label":"Повернення довгострокових кредитних коштів","short":"Довгострокові кредити","type":"detail","group":"FIN_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_bonds_out","label":"Виплати по облігаціям","short":"","type":"detail","group":"FIN_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_interest","label":"Відсотки, комісії та інше","short":"Відсотки, комісії та інше","type":"detail","group":"FIN_OUT","formula":"","codes":["3.2.02.03","3.2.02.05","3.2.02.06","3.2.02.08","3.2.02.09","3.2.02.10","3.2.02.11","3.2.02.12"],"values":{"Tm1_plan":-25069871.87,"Tm1_forecast":0.0,"Tm1_fact":-21775747.73,"T0":-1071562.71,"T1":-556647.0,"T2":-47817168.04,"T3":-37337074.71,"M1":-86782452.44,"T4":-5168592.06,"T5":-2872983.93,"T6":-4835507.42,"T7":-2498577.77,"M2":-15375661.18,"T8":-2598184.42,"T9":-4887366.6,"T10":-558752.0,"T11":-5501844.42,"T12":-3688574.19,"M3":-17234721.62,"TT0_12":-119392835.25},"mapped":true},{"id":"NCF_FIN","label":"Чистий рух коштів від фінансової діяльності","short":"","type":"calc","group":"","formula":"FIN_IN+FIN_OUT","codes":[],"values":{"Tm1_plan":-1203642225.98,"Tm1_forecast":2854941976.75,"Tm1_fact":-725586042.43,"T0":1028165740.72,"T1":-556647.0,"T2":104115952.5,"T3":-37337074.71,"M1":1094387971.53,"T4":1994831407.94,"T5":-2872983.93,"T6":-4835507.42,"T7":2881168.85,"M2":1990004085.45,"T8":-2598184.42,"T9":-4887366.6,"T10":-558752.0,"T11":23050382.27,"T12":-4345165.11,"M3":10660914.15,"TT0_12":3095052971.1},"mapped":true},{"id":"BAL_OPEN","label":"Залишок ГК на початок","short":"Залишок на початок","type":"balance_open","group":"","formula":"","codes":[],"values":{"Tm1_plan":6441872347.28,"Tm1_forecast":6441872347.28,"Tm1_fact":6441872347.28,"T0":4634505175.07,"T1":922456799.31,"T2":518676612.92,"T3":-373582265.24,"M1":4634505175.07,"T4":-960167131.2,"T5":994114631.88,"T6":3564090185.03,"T7":3646481068.52,"M2":-960167131.2,"T8":2734359728.78,"T9":3017248038.25,"T10":3610461130.88,"T11":2967605204.53,"T12":3344589990.24,"M3":2734359728.78,"TT0_12":4634505175.07},"mapped":true},{"id":"r_fx","label":"Вплив зміни валютних курсів на залишок коштів","short":"Відсотки, комісії та інше","type":"detail","group":"FX","formula":"","codes":["3.1.01.01","3.1.01.02","3.1.01.03","3.2.01.01","3.2.01.02"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-3423829.32,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"NCF_TOTAL","label":"Чистий рух коштів за період","short":"Чистий рух коштів","type":"calc","group":"","formula":"NCF_OP+NCF_INV+NCF_FIN+r_fx","codes":[],"values":{"Tm1_plan":-2035715058.02,"Tm1_forecast":1374066890.27,"Tm1_fact":-1822157498.69,"T0":-2894150371.04,"T1":-399780186.38,"T2":1120889138.33,"T3":673836191.93,"M1":-1499205227.18,"T4":3958281763.08,"T5":3082553541.6,"T6":512300230.36,"T7":-210943409.48,"M2":7342192125.56,"T8":1201848987.92,"T9":1435346636.55,"T10":-340107709.13,"T11":2321385941.28,"T12":-19722376.6,"M3":4598751479.97,"TT0_12":10441738378.34},"mapped":true},{"id":"BAL_CLOSE","label":"Залишок ГК на кінець","short":"Залишок на кінець","type":"calc","group":"","formula":"BAL_OPEN+NCF_TOTAL","codes":[],"values":{"Tm1_plan":4406157289.26,"Tm1_forecast":7815939237.55,"Tm1_fact":4619714848.59,"T0":1740354804.03,"T1":522676612.93,"T2":1639565751.25,"T3":300253926.69,"M1":3135299947.89,"T4":2998114631.88,"T5":4076668173.48,"T6":4076390415.39,"T7":3435537659.04,"M2":6382024994.36,"T8":3936208716.7,"T9":4452594674.8,"T10":3270353421.75,"T11":5288991145.81,"T12":3324867613.64,"M3":7333111208.75,"TT0_12":15076243553.41},"mapped":true}],"coverage":{"nodes_total":457,"nodes_matched":419,"nodes_unmatched":38,"unmatched":[{"key":"Повернення покриття банківські гарантії","name":"банківські гарантії","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття кредити","name":"кредит","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття акредитиви","name":"акредитиви","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття податкові векселі","name":"податкові векселі","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Укргазбанк","name":"Укргазбанк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Укргазбанк (субліміт НАК)","name":"Укргазбанк (субліміт НАК)","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Ощадбанк","name":"Ощадбанк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Сенс Банк","name":"Сенс Банк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Укрексімбанк","name":"Укрексімбанк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт МТБ","name":"МТБ","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт ПУМБ","name":"ПУМБ","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт курсові","name":"курсові","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Приватбанк","name":"Приват Банк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"2.2.01.05","name":"Заборгованість по рентній платі за нафту, газ та ГК","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.01.07","name":"Заборгованність по Податку на прибуток","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.01.18","name":"Задолженность по ПДВ","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.05.12.25","name":"Транспортування нафти трубопроводом","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.05.12.13","name":"Послуги зберігання природного газу","block":"Видатки","reason":"немає у довіднику"},{"key":"Розміщення покриття постімпорт","name":"Розміщення покриття постімпорт","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Укргазбанк","name":"Укргазбанк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Ощадбанк","name":"Ощадбанк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Сенс Банк","name":"Сенс Банк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Укрексімбанк","name":"Укрексімбанк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт МТБ","name":"МТБ","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Укргазбанк (субліміт НАК)","name":"Укргазбанк (субліміт НАК)","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт ПУМБ","name":"ПУМБ","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Приватбанк","name":"Приват Банк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт курсові різниці","name":"курсові різниці","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Покриття під податкові векселі","name":"Покриття під податкові векселі","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"2.2.05.12.27","name":"Брокерські послуги","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.05.12.24","name":"Перевезення нафти та НП морським транспортом","block":"Видатки","reason":"немає у довіднику"},{"key":"митне оформлення обладнання","name":"митне оформлення обладнання","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"2.2.05.10.48","name":"Послуги оренди нерухомості (АЗС)","block":"Видатки","reason":"немає у довіднику"},{"key":"Розміщення покриття під банківські гарантії","name":"Покриття під банківські гарантії","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття під акредитиви","name":"Покриття під акредитиви","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"2.2.05.10.41","name":"Енергія (ТОВ \"НЬЮ ЕНЕРДЖІ ЮКРЕЙН\")","block":"Видатки","reason":"немає у довіднику"},{"key":"3.2.02.01","name":"Повернення фінансової допомоги","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"3.2.02.02","name":"Повернення позики","block":"Видатки","reason":"немає статті РК-презентації"}],"rows_total":67,"rows_mapped":52,"rows_unmapped":["Інше","Природний газ (Група НАК без ПСО)","Природний ГАЗ гурт","Розрахунки з бюджетом","Податки. ПДВ. Відшкодування з бюджету","Повернення тіла ОВДП та купонний дохід","Купівля ОВДП","Залучення довгострокових кредитних коштів","Надходження коштів від продажу облігацій","Інші надходження (фінансова діяльність)","Повернення довгострокових кредитних коштів","Виплати по облігаціям"]}};
+
+/* ──────────────────────────────────────────────────────────────────────────
+   МАПІНГ: агрегація сирого snapshot + довідника у формат РК
+   (та сама логіка, що і в build_cf_mapping.py — використовується, якщо потік
+    повертає snapshot та cfDictionary замість готового rkPresentation)
+   ────────────────────────────────────────────────────────────────────────── */
+const ERP_RE = /^\d+(\.\d+)+$/;
+const ALL_PERIODS = ['Tm1_plan','Tm1_forecast','Tm1_fact','T0','T1','T2','T3','M1',
+                     'T4','T5','T6','T7','M2','T8','T9','T10','T11','T12','M3','TT0_12'];
+
+function walkTree(node, path, out, rootName){
+  out.push({node, path, rootName});
+  (node.children || []).forEach(ch => walkTree(ch, path.concat([node.name || '']), out, rootName));
+}
+function hasValues(n){
+  const v = n.values || {};
+  return Object.keys(v).some(k => typeof v[k] === 'number' && v[k] !== 0);
+}
+/* Лист виміру: без дітей, або діти порожні, а значення є у батька */
+function isMeasureLeaf(n){
+  const kids = n.children || [];
+  if (!kids.length) return true;
+  return !kids.some(k => hasValues(k) || (k.children||[]).length);
+}
+/* src_row, після якого починається інформаційна частина аркуша */
+function flowCutoff(snapshot){
+  const m = (snapshot.rows || [])
+    .filter(r => (r.name||'').startsWith('Залишки на кінець періоду') && r.src_row)
+    .map(r => r.src_row);
+  return m.length ? Math.min.apply(null, m) : Infinity;
+}
+/* Аркуш частково «пласкій»: знак секції визначаємо за маркерами у порядку рядків */
+function signMarkers(snapshot){
+  const marks = [];
+  (snapshot.rows || []).forEach(r => {
+    const nm = (r.name || '').trim();
+    if (!r.src_row) return;
+    if (nm === 'Надходження') marks.push([r.src_row, 1]);
+    else if (nm === 'Видатки') marks.push([r.src_row, -1]);
+  });
+  return marks.sort((a,b) => a[0]-b[0]);
+}
+function signFor(markers, srcRow, rootName){
+  let cur = rootName === 'Надходження' ? 1 : -1;
+  if (!srcRow) return cur;
+  for (const [sr, sg] of markers){ if (sr <= srcRow) cur = sg; else break; }
+  return cur;
+}
+function collectMeasureNodes(snapshot){
+  const cut = flowCutoff(snapshot), markers = signMarkers(snapshot), out = [];
+  (snapshot.tree || []).forEach(root => {
+    const flat = [];
+    walkTree(root, [], flat, root.name || '');
+    flat.forEach(({node, path, rootName}) => {
+      if (node.name === 'КОНТРОЛЬ витрат по напрямках' || path.includes('КОНТРОЛЬ витрат по напрямках')) return;
+      if (node.src_row && node.src_row >= cut) return;
+      if (node.kind !== 'child' && node.kind !== 'item') return;
+      const code = String(node.code || '').trim();
+      if (!code) return;
+      if (!isMeasureLeaf(node)) return;
+      out.push({key: code, sign: signFor(markers, node.src_row, rootName),
+                name: node.name || '', block: rootName, values: node.values || {}});
+    });
+  });
+  return out;
+}
+function buildRk(snapshot, dictionary){
+  const dict = {};
+  (dictionary || []).forEach(d => {
+    const k = (d.MatchKey || d.Title || '').trim();
+    if (k && String(d.IsActive ?? 'Так') !== 'Ні') dict[k] = d;
+  });
+  const nodes = collectMeasureNodes(snapshot);
+  const agg = {}, codesBy = {}, unmatched = [];
+  let matched = 0;
+  nodes.forEach(nd => {
+    const rec = dict[nd.key];
+    const rk = rec ? (rec.RK_Item || '') : '';
+    if (!rec){ unmatched.push({key: nd.key, name: nd.name, block: nd.block, reason: 'немає у довіднику'}); return; }
+    if (!rk){ unmatched.push({key: nd.key, name: nd.name, block: nd.block, reason: 'немає статті РК-презентації'}); return; }
+    matched++;
+    (codesBy[rk] = codesBy[rk] || new Set()).add(nd.key);
+    const a = agg[rk] = agg[rk] || {};
+    ALL_PERIODS.forEach(p => { const v = nd.values[p]; if (typeof v === 'number') a[p] = (a[p]||0) + v*nd.sign; });
+  });
+
+  let openBal = {};
+  (snapshot.tree||[]).forEach(root => {
+    const flat = []; walkTree(root, [], flat, root.name||'');
+    flat.forEach(({node}) => {
+      if (node.name === 'Залишки на початок періоду всього' && !Object.keys(openBal).length) openBal = node.values||{};
+    });
+  });
+
+  const rows = [], byId = {};
+  RK_ROWS.forEach(r => {
+    const row = {id:r.id, label:r.label, short:r.short, type:r.type, group:r.group,
+                 formula:r.formula, codes:[], values:{}, mapped:false};
+    if (r.type === 'detail' || r.type === 'detail_sub'){
+      if (agg[r.label]){ row.mapped = true;
+                         ALL_PERIODS.forEach(p => row.values[p] = agg[r.label][p] || 0);
+                         row.codes = Array.from(codesBy[r.label]||[]).sort(); }
+      else ALL_PERIODS.forEach(p => row.values[p] = 0);
+    } else if (r.type === 'balance_open'){
+      row.mapped = Object.keys(openBal).length > 0;
+      ALL_PERIODS.forEach(p => row.values[p] = openBal[p]);
+    }
+    rows.push(row); byId[r.id] = row;
+  });
+
+  /* батьківський рядок = власний мапінг + розшифровка (коди не перетинаються) */
+  rows.forEach(row => {
+    const kids = rows.filter(k => k.type === 'detail_sub' && k.group === row.id);
+    if (!kids.length) return;
+    const own = Object.assign({}, row.values);
+    row.has_breakdown = true;
+    row.own_values = own;
+    row.breakdown_mapped = kids.filter(k => k.mapped).length;
+    row.has_residual = ALL_PERIODS.some(p => Math.abs(own[p] || 0) > 0.005);
+    row.mapped = row.mapped || kids.some(k => k.mapped);
+    ALL_PERIODS.forEach(p => row.values[p] = (own[p]||0) + kids.reduce((s,k)=>s+(k.values[p]||0),0));
+    row.codes = Array.from(new Set(row.codes.concat(kids.flatMap(k => k.codes)))).sort();
+  });
+
+  rows.forEach(row => {
+    if (row.type !== 'subtotal') return;
+    const members = rows.filter(m => m.group === row.id && m.type === 'detail');
+    row.mapped = members.some(m => m.mapped);
+    row.codes = Array.from(new Set(members.flatMap(m => m.codes))).sort();
+    ALL_PERIODS.forEach(p => row.values[p] = members.reduce((s,m)=>s+(m.values[p]||0),0));
+  });
+  rows.forEach(row => {
+    if (row.type !== 'calc') return;
+    const parts = (row.formula||'').split('+').filter(x => byId[x]);
+    row.mapped = parts.some(x => byId[x].mapped);
+    ALL_PERIODS.forEach(p => row.values[p] = parts.reduce((s,x)=>s+(byId[x].values[p]||0),0));
+  });
+
+  const cols = snapshot.columns || {};
+  return {
+    meta: {forecast_date: (snapshot.meta||{}).forecast_date,
+           plan_fact_date: (snapshot.meta||{}).plan_fact_date,
+           source_file: (snapshot.meta||{}).source_file},
+    periods: ALL_PERIODS.map(p => ({key:p, label:(cols[p]||{}).label || p, range:(cols[p]||{}).date_range || null})),
+    rows,
+    coverage: {nodes_total: nodes.length, nodes_matched: matched,
+               nodes_unmatched: unmatched.length, unmatched,
+               rows_total: rows.length, rows_mapped: rows.filter(r=>r.mapped).length,
+               rows_unmapped: rows.filter(r=>!r.mapped && (r.type==='detail'||r.type==='detail_sub')).map(r=>r.label)}
+  };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   РЕНДЕР
+   ────────────────────────────────────────────────────────────────────────── */
+let DATA = EMBEDDED;
+
+const $ = s => document.querySelector(s);
+const banner = (msg, cls) => { const b = $('#banner'); b.className = 'banner show ' + cls; b.textContent = msg; };
+const hideBanner = () => { $('#banner').className = 'banner'; };
+
+function fmt(v, div){
+  if (v === null || v === undefined || v === '') return '';
+  const x = v / div;
+  if (Math.abs(x) < 0.005) return '0';
+  const d = div >= 1000000 ? 1 : 0;
+  return x.toLocaleString('uk-UA', {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+
+function activePeriods(){
+  const g = PERIOD_GROUPS[$('#viewSel').value];
+  const all = DATA.periods || [];
+  return g ? all.filter(p => g.includes(p.key)) : all;
+}
+
+function render(){
+  const div = Number($('#unitSel').value);
+  const periods = activePeriods();
+  const hideZero = $('#chkZero').checked;
+  const showUnmapped = $('#chkUnmapped').checked;
+
+  $('#thead').innerHTML = '<tr>' +
+    '<th class="lcode">Коди ЕРП ПАТ «Укрнафта»</th>' +
+    '<th class="lname">Стаття РК-презентації 11-25</th>' +
+    periods.map(p => `<th>${p.label}${p.range ? `<span class="rng">${p.range}</span>` : ''}</th>`).join('') +
+    '</tr>';
+
+  const body = [];
+  (DATA.rows || []).forEach(r => {
+    const isData = r.type !== 'section';
+    const empty = isData && periods.every(p => !r.values[p.key]);
+    if (hideZero && isData && empty && r.mapped) return;
+    if (!showUnmapped && !r.mapped && (r.type === 'detail' || r.type === 'detail_sub')) return;
+
+    const cls = [r.type];
+    if (!r.mapped && (r.type === 'detail' || r.type === 'detail_sub')) cls.push('unmapped');
+
+    let tags = '';
+    if (!r.mapped && (r.type === 'detail' || r.type === 'detail_sub')) tags += '<span class="tag nomap">немає мапінгу</span>';
+    if (r.type === 'calc') tags += '<span class="tag calcd">розрахунок</span>';
+    if (r.has_breakdown && r.has_residual) tags += '<span class="tag recon">частина без розшифровки</span>';
+
+    const codes = (r.codes || []);
+    const codeTxt = codes.length ? codes.join(', ') : '';
+    const codeTitle = codes.length ? `${codes.length} стат.: ${codes.join(', ')}` : '';
+
+    const cells = r.type === 'section'
+      ? `<td colspan="${periods.length}"></td>`
+      : periods.map(p => {
+          const v = r.values[p.key];
+          const c = (v === undefined || v === null) ? 'zero' : (v < -0.004 ? 'negative' : (Math.abs(v) < 0.005 ? 'zero' : ''));
+          return `<td class="num ${c}">${fmt(v, div)}</td>`;
+        }).join('');
+
+    body.push(
+      `<tr class="${cls.join(' ')}">` +
+      `<td class="code" title="${codeTitle}">${codeTxt}</td>` +
+      `<td class="name">${r.label}${tags}</td>` + cells + '</tr>'
+    );
+  });
+  $('#tbody').innerHTML = body.join('');
+
+  renderKpis(div);
+  renderGaps();
+
+  const m = DATA.meta || {};
+  $('#subtitle').textContent =
+    `Джерело: прогноз руху коштів 13 тижнів${m.forecast_date ? ' від ' + m.forecast_date : ''}` +
+    ` · мапінг статей ЕРП → РК-презентація${m.source_file ? ' · ' + m.source_file : ''}`;
+  $('#stamp').textContent = `Одиниці: ${$('#unitSel').selectedOptions[0].text}`;
+}
+
+function renderKpis(div){
+  const by = {};
+  (DATA.rows||[]).forEach(r => by[r.id] = r);
+  const c = DATA.coverage || {};
+  const k = (id, per) => (by[id] && by[id].values[per] !== undefined) ? fmt(by[id].values[per], div) : '—';
+  $('#kpis').innerHTML = [
+    ['Залишок ГК на початок (Т0)', k('BAL_OPEN','T0'), 'станом на початок горизонту'],
+    ['Чистий рух коштів, ТТ 0–12', k('NCF_TOTAL','TT0_12'), 'операційний + інвест. + фін.'],
+    ['Залишок ГК на кінець, ТТ 0–12', k('BAL_CLOSE','TT0_12'), 'розрахунковий'],
+    ['Покриття мапінгом', `${c.nodes_matched ?? 0} / ${c.nodes_total ?? 0}`,
+     `рядків РК заповнено ${c.rows_mapped ?? 0} з ${c.rows_total ?? 0}`]
+  ].map(([kk,v,n]) => `<div class="card"><div class="k">${kk}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join('');
+}
+
+function renderGaps(){
+  const u = (DATA.coverage || {}).unmatched || [];
+  $('#gaps').style.display = u.length ? '' : 'none';
+  $('#gaps').querySelector('summary').textContent =
+    `Статті прогнозу без мапінгу на РК-презентацію — ${u.length}`;
+  $('#gapsBody').innerHTML = '<table><tbody>' + u.map(x =>
+    `<tr><td style="width:44%">${x.key}</td><td style="width:30%">${x.name||''}</td>` +
+    `<td style="width:12%">${x.block||''}</td><td style="width:14%">${x.reason}</td></tr>`).join('') + '</tbody></table>';
+}
+
+/* ── завантаження з бази прогнозів ─────────────────────────────────────── */
+async function callFlow(payload){
+  if (!CONFIG.FLOW_URL) throw new Error('FLOW_URL не налаштовано');
+  const r = await fetch(CONFIG.FLOW_URL, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+  });
+  if (!r.ok) throw new Error('Потік повернув ' + r.status);
+  return r.json();
+}
+function unwrapSnapshot(res){
+  let s = res.snapshot ?? res.Snapshot ?? res.body ?? res;
+  if (typeof s === 'string'){ try { s = JSON.parse(s); } catch(e){ return null; } }
+  if (s && s.$content && typeof s.$content === 'string'){
+    try { s = JSON.parse(decodeURIComponent(escape(atob(s.$content)))); } catch(e){ return null; }
+  }
+  return (s && s.tree) ? s : null;
+}
+async function loadDates(){
+  try{
+    const res = await callFlow({reportDate: ''});
+    const dates = (res.availableDates || []).filter(Boolean).sort().reverse();
+    if (dates.length){
+      $('#dateSel').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+      return dates[0];
+    }
+  }catch(e){ /* мовчки — працюємо на вбудованих даних */ }
+  const d = (EMBEDDED.meta || {}).forecast_date;
+  if (d) $('#dateSel').innerHTML = `<option value="${d}">${d} (вбудований знімок)</option>`;
+  return null;
+}
+async function loadDate(dateStr){
+  if (!CONFIG.FLOW_URL){ banner('Потік не налаштовано — показано вбудований знімок.', 'info'); return; }
+  banner('Завантаження даних…', 'info');
+  try{
+    const res = await callFlow({reportDate: dateStr, includeDictionary: true});
+    if (res.rkPresentation){
+      DATA = res.rkPresentation;
+    } else {
+      const snap = unwrapSnapshot(res);
+      const dict = res.cfDictionary || res.dictionary || [];
+      if (!snap) throw new Error('у відповіді немає snapshot');
+      if (!dict.length) throw new Error('у відповіді немає довідника CF');
+      DATA = buildRk(snap, dict);
+    }
+    render();
+    banner(`Дані оновлено: ${dateStr}. Змаплено ${DATA.coverage.nodes_matched} з ${DATA.coverage.nodes_total} статей прогнозу.`, 'ok');
+    setTimeout(hideBanner, 4000);
+  }catch(e){
+    banner('Не вдалося завантажити дані: ' + e.message + '. Показано вбудований знімок.', 'err');
+  }
+}
+
+function exportCsv(){
+  const div = Number($('#unitSel').value);
+  const periods = activePeriods();
+  const rows = [['Коди ЕРП','Стаття РК-презентації 11-25','Тип','Мапінг', ...periods.map(p=>p.label)]];
+  (DATA.rows||[]).forEach(r => rows.push([
+    (r.codes||[]).join(' '), r.label, r.type,
+    r.mapped ? 'так' : 'ні',
+    ...periods.map(p => r.type==='section' ? '' : (r.values[p.key]==null ? '' : (r.values[p.key]/div).toFixed(2)))
+  ]));
+  const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `RK_presentation_${(DATA.meta||{}).forecast_date||'data'}.csv`;
+  a.click();
+}
+
+['unitSel','viewSel'].forEach(id => $('#'+id).addEventListener('change', render));
+['chkZero','chkUnmapped'].forEach(id => $('#'+id).addEventListener('change', render));
+$('#dateSel').addEventListener('change', e => loadDate(e.target.value));
+$('#btnReload').addEventListener('click', () => loadDate($('#dateSel').value));
+$('#btnCsv').addEventListener('click', exportCsv);
+$('#btnPrint').addEventListener('click', () => window.print());
+
+(async function init(){
+  render();
+  const d = await loadDates();
+  if (d) loadDate(d);
+})();
+</script>
+</body>
+</html>

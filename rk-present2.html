@@ -1007,6 +1007,79 @@ window.dictReport = function(){
   return info;
 };
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   НАДБУДОВА до dict_patch.js — вставити ОДРАЗУ ПІСЛЯ нього,
+   перед «function buildRk(».
+
+   Дає три речі, яких бракує старій версії патча:
+     DICT_NORM        — нормалізований довідник для панелі зворотного мапінгу
+     dictSource()     — джерело для buildReverse / orphanKeys
+     unmatchedReason()— точна причина, чому ключ не змапився
+   Сам dict_patch.js міняти не треба: надбудова обгортає buildDictIndex.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+let DICT_NORM = [];
+const DICT_OFF = new Map();
+
+function dictSource(){
+  if (DICT_NORM && DICT_NORM.length) return DICT_NORM.concat(Array.from(DICT_OFF.values()));
+  return (typeof DICT !== 'undefined' && DICT) || [];
+}
+
+function unmatchedReason(key){
+  const off = DICT_OFF.get(normKey(key));
+  if (off) return off.RK_Item
+    ? 'вимкнено в довіднику (IsActive = Ні) · стаття РК: ' + off.RK_Item
+    : 'вимкнено в довіднику (IsActive = Ні)';
+  return 'немає у довіднику';
+}
+
+/* Обгортка: після штатного індексування збираємо DICT_NORM і DICT_OFF. */
+(function(){
+  const orig = buildDictIndex;
+
+  buildDictIndex = function(dictionary, snapshotKeys){
+    const dict = orig(dictionary, snapshotKeys);
+
+    /* нормалізований масив без дублів */
+    const seen = new Set();
+    DICT_NORM = [];
+    Object.keys(dict).forEach(k => {
+      const r = dict[k];
+      if (seen.has(r)) return;
+      seen.add(r);
+      DICT_NORM.push(r);
+    });
+
+    /* вимкнені записи — щоб відрізняти їх від справді відсутніх */
+    const fKey = DICT_STATS.keyField, fRk = DICT_STATS.rkField, fAct = DICT_STATS.actField;
+    DICT_OFF.clear();
+    (dictionary || []).forEach(d => {
+      const a = normKey(fAct && d[fAct] != null ? d[fAct] : pick(d, ['IsActive', 'Активна'])).toLowerCase();
+      if (!(a === 'ні' || a === 'хибність' || a === 'false' || a === '0' || a === 'no')) return;
+      const k = normKey(fKey && d[fKey] != null ? d[fKey] : pick(d, ['MatchKey']))
+             || normKey(pick(d, ['ERPCode', 'Title']));
+      if (!k) return;
+      DICT_OFF.set(k, {
+        MatchKey:  k,
+        ERPCode:   normKey(pick(d, ['ERPCode', 'Title'])),
+        ERPName:   pick(d, ['ERPName']),
+        CF_NAK:    pick(d, ['CF_NAK']),
+        CF_ME:     pick(d, ['CF_ME']),
+        RK_Item:   normKey(fRk && d[fRk] != null ? d[fRk] : pick(d, ['RK_Item'])),
+        MatchType: pick(d, ['MatchType']) || 'key',
+        MapStatus: pick(d, ['MapStatus']),
+        IsActive:  'Ні'
+      });
+    });
+
+    if (window.console) console.log('CF_Dictionary: нормалізовано', DICT_NORM.length,
+                                    '· вимкнених', DICT_OFF.size);
+    return dict;
+  };
+})();
+
+
 function buildRk(snapshot, dictionary){
   // ПЕРЕНЕСЕНО ВИЩЕ: збираємо вузли зрізу спочатку, щоб патч знав ключі
   const nodes = collectMeasureNodes(snapshot);

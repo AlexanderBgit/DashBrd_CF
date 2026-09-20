@@ -846,10 +846,6 @@
     <!-- ═══════════════════════════════════════════════════════════════════════════
          ЗВОРОТНИЙ МАПІНГ НА РК-ПРЕЗЕНТАЦІЮ 11-25 — лейбли на рядках прогнозу.
          ═══════════════════════════════════════════════════════════════════════ -->
-    <script>
-    (function () {
-      'use strict';
-
         var CF_DICT = {};
         var d = (window.DYNAMIC_CF_DICT || CF_DICT)[code];
       
@@ -907,7 +903,7 @@
         if (String(n.name || '').indexOf('КОНТРОЛЬ витрат по напрямках') === 0) return null;
         if (!isLeaf(n)) return { kind: 'parent', code: code };
 
-        var d = CF_DICT[code];
+        var d = (window.DYNAMIC_CF_DICT || CF_DICT)[code];
         if (!d) return { kind: 'missing', code: code };
         if (!d[0]) return { kind: 'nomap', code: code, status: d[1] };
         return { kind: 'ok', code: code, rk: d[0], status: d[1] };

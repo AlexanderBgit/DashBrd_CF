@@ -160,7 +160,7 @@
         </div>
 
         <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide">
-            <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="REV_ON ? renderReverse() : render()"
+            <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="window.REV_ON ? renderReverse() : render()"
                    class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 w-72">
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer" title="Ховає технічні та довідкові рядки аркуша, залишаючи статті звіту">
                 <input type="checkbox" id="onlyKeep" checked onchange="render()"> Показувати лише статті звіту
@@ -175,9 +175,9 @@
             <span class="flex items-center gap-2 border-l pl-4 border-slate-200" id="mapControlsBlock">
                 <span class="text-xs text-slate-600">РК-мапінг:</span>
                 <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-                    <input type="checkbox" id="mapShow" checked> показувати</label>
+                    <input type="checkbox" id="mapShow" checked onchange="decorate()"> показувати</label>
                 <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer" title="Залишає лише статті, яким не призначено статтю РК-презентації або яких немає в довіднику">
-                    <input type="checkbox" id="mapOnlyGaps"> лише без мапінгу</label>
+                    <input type="checkbox" id="mapOnlyGaps" onchange="decorate()"> лише без мапінгу</label>
                 <span class="map-legend" id="mapStats"></span>
             </span>
 
@@ -234,6 +234,9 @@
     };
 
     window.DYNAMIC_CF_DICT = null;
+    window.CF_DICT_ARRAY = [];
+    window.REV_ON = false;
+
     let SNAP = null, NODES = [], TREE = null, expanded = {}, UNIT = 'ths';
     let monthOpen = { M1: true, M2: false, M3: false };
     const DAY = 86400000;
@@ -412,17 +415,31 @@
         el.textContent = text;
     }
 
-    function extractSnapshotObject(obj) {
-        if (!obj || typeof obj !== 'object') return null;
+    function b64json(obj){
+        if (obj && typeof obj['$content'] === 'string'){
+            try {
+                return JSON.parse(new TextDecoder('utf-8')
+                    .decode(Uint8Array.from(atob(obj['$content']), c => c.charCodeAt(0))));
+            } catch(e){ return null; }
+        }
+        return null;
+    }
+
+    function extractSnapshotObject(obj, depth = 0) {
+        if (!obj || typeof obj !== 'object' || depth > 8) return null;
         if (obj.tree && obj.meta) return obj;
+        
+        const dec = b64json(obj);
+        if (dec) { const r = extractSnapshotObject(dec, depth + 1); if (r) return r; }
+
         const cand = [obj.snapshot, obj.content, obj.body, obj.value, obj.data, obj.result, obj.json];
         for (const c of cand) {
             if (!c) continue;
-            if (typeof c === 'string') { try { const r = extractSnapshotObject(JSON.parse(c)); if (r) return r; } catch (e) {} continue; }
-            const r = extractSnapshotObject(c);
+            if (typeof c === 'string') { try { const r = extractSnapshotObject(JSON.parse(c), depth + 1); if (r) return r; } catch (e) {} continue; }
+            const r = extractSnapshotObject(c, depth + 1);
             if (r) return r;
         }
-        if (Array.isArray(obj)) for (const it of obj) { const r = extractSnapshotObject(it); if (r) return r; }
+        if (Array.isArray(obj)) for (const it of obj) { const r = extractSnapshotObject(it, depth + 1); if (r) return r; }
         return null;
     }
 
@@ -431,7 +448,6 @@
     const nNonZero = v => v.some(x => Math.abs(x) >= 1);
     const nSame = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1);
     const nAdd = (a, b) => a.map((v, i) => v + b[i]);
-    const clean = s => String(s == null ? '' : s).replace(/\s+/g, ' ').replace(/[’']/g, "'").trim();
     const SUMMARY_RE = /^(Всього|КОНТРОЛЬ|Контроль|Грошовий потік|Чистий грошовий|Доступн|Залишки|Заборгован|Різниця|Надходження \(|Видатки \(|\*Інформаційно|Придбання МЗНН)/;
 
     const LEVEL_HINTS = {
@@ -570,12 +586,7 @@
         document.getElementById('hdrRange').textContent =
             ((c.T0 && c.T0.date_range) || '') + ' – ' + ((c.T12 && c.T12.date_range) || '');
         
-        if (window.__rkMap && window.__rkMap.decorate) {
-            render();
-            window.__rkMap.decorate();
-        } else {
-            render();
-        }
+        render();
     }
 
     async function loadDictionary() {
@@ -589,7 +600,7 @@
             const dictArray = data.cfDictionary || data.dictionary;
             if (Array.isArray(dictArray) && dictArray.length > 0) {
                 window.DYNAMIC_CF_DICT = {}; 
-                window.CF_DICT_ARRAY = dictArray; // Зберігаємо масив для Зворотного мапінгу
+                window.CF_DICT_ARRAY = dictArray;
                 dictArray.forEach(d => {
                     const k = (d.MatchKey || d.Title || '').trim();
                     if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
@@ -611,7 +622,7 @@
         const dictArray = data.cfDictionary || data.dictionary;
         if (Array.isArray(dictArray) && dictArray.length > 0) {
             window.DYNAMIC_CF_DICT = {};
-            window.CF_DICT_ARRAY = dictArray; // Зберігаємо масив для Зворотного мапінгу
+            window.CF_DICT_ARRAY = dictArray;
             dictArray.forEach(d => {
                 const k = (d.MatchKey || d.Title || '').trim();
                 if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
@@ -757,7 +768,10 @@
         const pane = document.getElementById('pane');
         if (!SNAP) { pane.innerHTML = '<div class="text-xs text-slate-400 p-3">Дані ще не завантажені. Оберіть дату зрізу або відкрийте локальний файл.</div>'; return; }
         
-        if (window.REV_ON) return; // Якщо відкритий Зворотний мапінг, не малюємо головну таблицю
+        if (window.REV_ON) {
+            renderReverse();
+            return;
+        }
 
         const cols = SNAP.columns || {}, keys = activeColumns();
 
@@ -804,23 +818,17 @@
             ? `<table class="an-table"><thead>${head}</thead><tbody>${body}</tbody></table>`
             : '<div class="text-xs text-slate-400 p-3">Оберіть хоча б одну групу колонок.</div>';
 
-        if (window.__rkMap && window.__rkMap.decorate) window.__rkMap.decorate();
+        decorate();
     }
 
-    // Зворотний мапінг (кнопка)
-    window.REV_ON = false;
     function toggleRev() {
         window.REV_ON = !window.REV_ON;
         document.getElementById('btnRev').className = 'ctl' + (window.REV_ON ? ' active' : '');
         document.getElementById('revPane').classList.toggle('hidden', !window.REV_ON);
         document.getElementById('pane').classList.toggle('hidden', window.REV_ON);
-        document.getElementById('mapControlsBlock').style.display = window.REV_ON ? 'none' : 'flex';
-        
-        if (window.REV_ON) {
-            renderReverse();
-        } else {
-            render();
-        }
+        const mapBlock = document.getElementById('mapControlsBlock');
+        if(mapBlock) mapBlock.style.display = window.REV_ON ? 'none' : 'flex';
+        render();
     }
 
     function renderReverse() {
@@ -858,73 +866,58 @@
         document.getElementById('revPane').innerHTML = html;
     }
 
-    async function init() {
-        document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
-        setViewMode('fluid');
-        renderCalendar();
-        render();
-        setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
-        await loadDictionary();
-        if (typeof fetch === 'function') loadLatestMonday();
+    function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
+    function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
+    function renderCalendar() {
+        const NAMES = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+        const y = calViewDate.getFullYear(), mo = calViewDate.getMonth();
+        document.getElementById('calendarMonthYear').textContent = `${NAMES[mo]} ${y}`;
+        const first = new Date(y, mo, 1), days = new Date(y, mo + 1, 0).getDate();
+        let html = '<span></span>'.repeat((first.getDay() + 6) % 7);
+        for (let d = 1; d <= days; d++) {
+            const iso = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const cur = iso === currentReportDate, known = availableDates.has(iso);
+            html += `<button onclick="selectDate('${iso}')" class="p-1 rounded-md ${cur ? 'bg-indigo-600 text-white font-bold' : known ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-100 text-slate-700'}">${d}</button>`;
+        }
+        document.getElementById('calendarDaysGrid').innerHTML = html;
     }
-    window.addEventListener('DOMContentLoaded', init);
-    </script>
+    function selectDate(iso) {
+        currentReportDate = iso;
+        calViewDate = new Date(iso + 'T00:00:00');
+        document.getElementById('lblSelectedDate').textContent = dmy(iso);
+        document.getElementById('calendarDropdown').classList.add('hidden');
+        loadFromCloud(iso);
+    }
 
-    <!-- ═══════════════════════════════════════════════════════════════════════════
-         ЗВОРОТНИЙ МАПІНГ НА РК-ПРЕЗЕНТАЦІЮ 11-25 — лейбли на рядках прогнозу.
-         ═══════════════════════════════════════════════════════════════════════ -->
-    <script>
-    (function () {
-      'use strict';
-      
-      var CF_DICT = {};
-      
-      var esc = function (s) {
-        return String(s == null ? '' : s)
-          .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-          .replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      };
-
-      var LAST_ERROR = null;
-
-      function g(name) {
-        try { return (0, eval)(name); } catch (e) { return undefined; }
-      }
-      function getRows() {
-        var f = g('visibleRows');
-        if (typeof f !== 'function') return null;
-        try { return f(); } catch (e) { return null; }
-      }
-
-      function nodeHasValues(n) {
+    /* --- РОЗФАРБОВКА МАПІНГУ --- */
+    function nodeHasValues(n) {
         var v = (n && n.values) || {}, k;
         for (k in v) if (typeof v[k] === 'number' && v[k] !== 0) return true;
         return false;
-      }
+    }
 
-      function isLeaf(n) {
+    function isLeaf(n) {
         var kids = (n && n.children) || [];
         if (!kids.length) return true;
         for (var i = 0; i < kids.length; i++) {
-          if (nodeHasValues(kids[i]) || ((kids[i].children || []).length)) return false;
+            if (nodeHasValues(kids[i]) || ((kids[i].children || []).length)) return false;
         }
         return true;
-      }
+    }
 
-      function cutoff() {
-        var snap = g('SNAP');
-        var rows = (snap && snap.rows) || [];
+    function cutoff() {
+        var rows = (SNAP && SNAP.rows) || [];
         var min = Infinity;
         for (var i = 0; i < rows.length; i++) {
-          var r = rows[i];
-          if (r && r.src_row && String(r.name || '').indexOf('Залишки на кінець періоду') === 0) {
-            if (r.src_row < min) min = r.src_row;
-          }
+            var r = rows[i];
+            if (r && r.src_row && String(r.name || '').indexOf('Залишки на кінець періоду') === 0) {
+                if (r.src_row < min) min = r.src_row;
+            }
         }
         return min;
-      }
+    }
 
-      function classify(rec, cut) {
+    function classify(rec, cut) {
         var n = (rec && rec.node) || {};
         var code = String(n.code == null ? '' : n.code).trim();
         if (!code) return null;
@@ -933,41 +926,40 @@
         if (String(n.name || '').indexOf('КОНТРОЛЬ витрат по напрямках') === 0) return null;
         if (!isLeaf(n)) return { kind: 'parent', code: code };
 
-        var d = (window.DYNAMIC_CF_DICT || CF_DICT)[code];
+        var d = (window.DYNAMIC_CF_DICT || {})[code];
         if (!d) return { kind: 'missing', code: code };
         if (!d[0]) return { kind: 'nomap', code: code, status: d[1] };
         return { kind: 'ok', code: code, rk: d[0], status: d[1] };
-      }
+    }
 
-      function tagHtml(c) {
+    function tagHtml(c) {
         if (c.kind === 'ok') {
-          var sug = c.status === 'ПРОПОЗИЦІЯ';
-          return '<span class="map-tag ' + (sug ? 'map-sug' : 'map-ok') + '" title="Стаття РК-презентації 11-25' +
-                 (sug ? ' (пропозиція — потребує підтвердження)' : '') + '">' + esc(c.rk) + (sug ? ' ?' : '') + '</span>';
+            var sug = c.status === 'ПРОПОЗИЦІЯ';
+            return '<span class="map-tag ' + (sug ? 'map-sug' : 'map-ok') + '" title="Стаття РК-презентації 11-25' +
+                   (sug ? ' (пропозиція — потребує підтвердження)' : '') + '">' + esc(c.rk) + (sug ? ' ?' : '') + '</span>';
         }
         if (c.kind === 'nomap') {
-          return '<span class="map-tag map-none" title="Ключ ' + esc(c.code) +
-                 ' є в довіднику CF_Dictionary, але статтю РК-презентації йому не призначено">немає мапінгу</span>';
+            return '<span class="map-tag map-none" title="Ключ ' + esc(c.code) +
+                   ' є в довіднику CF_Dictionary, але статтю РК-презентації йому не призначено">немає мапінгу</span>';
         }
         if (c.kind === 'missing') {
-          return '<span class="map-tag map-miss" title="Ключа ' + esc(c.code) +
-                 ' немає в довіднику CF_Dictionary — його треба додати">немає в довіднику</span>';
+            return '<span class="map-tag map-miss" title="Ключа ' + esc(c.code) +
+                   ' немає в довіднику CF_Dictionary — його треба додати">немає в довіднику</span>';
         }
         return '';
-      }
+    }
 
-      function decorate() {
+    function decorate() {
         if (window.REV_ON) return;
-        
         var showBox = document.getElementById('mapShow');
         if (!showBox) return;
         var stats = document.getElementById('mapStats');
 
         var trs = document.querySelectorAll('#pane table tbody tr');
-        var recs = getRows();
+        var recs = visibleRows();
         if (!trs.length || !recs || recs.length !== trs.length) {
-          if (stats && !trs.length) stats.textContent = '';
-          return;
+            if (stats) stats.textContent = '';
+            return;
         }
 
         var cut = cutoff();
@@ -976,20 +968,19 @@
         var onlyGaps = gapsBox && gapsBox.checked;
         var ok = 0, nomap = 0, missing = 0;
 
-        try {
-          for (var i = 0; i < trs.length; i++) {
+        for (var i = 0; i < trs.length; i++) {
             var tr = trs[i];
             tr.classList.remove('map-unmapped');
             tr.style.removeProperty('display');
 
             var old = tr.querySelector('.map-tag');
-            if (old && old.parentNode) old.parentNode.removeChild(old);
+            if (old) old.remove();
 
             var c = classify(recs[i], cut);
             if (c) {
-              if (c.kind === 'ok') ok++;
-              else if (c.kind === 'nomap') nomap++;
-              else if (c.kind === 'missing') missing++;
+                if (c.kind === 'ok') ok++;
+                else if (c.kind === 'nomap') nomap++;
+                else if (c.kind === 'missing') missing++;
             }
 
             var isGap = !!(c && (c.kind === 'nomap' || c.kind === 'missing'));
@@ -1000,31 +991,30 @@
             var html = tagHtml(c);
             if (cell && html) cell.insertAdjacentHTML('beforeend', html);
             if (isGap) tr.classList.add('map-unmapped');
-          }
+        }
 
-          if (stats) {
+        if (stats) {
             var tot = ok + nomap + missing;
             stats.textContent = tot
-              ? 'змаплено ' + ok + ' з ' + tot +
-                (nomap ? ' · без статті РК ' + nomap : '') +
-                (missing ? ' · немає в довіднику ' + missing : '')
-              : '';
+                ? 'змаплено ' + ok + ' з ' + tot +
+                  (nomap ? ' · без статті РК ' + nomap : '') +
+                  (missing ? ' · немає в довіднику ' + missing : '')
+                : '';
             stats.className = 'map-legend' + ((nomap + missing) ? ' text-amber-700 font-semibold' : '');
-          }
-        } catch (e) {
-          LAST_ERROR = e;
-          if (window.console) console.warn('РК-мапінг:', e);
         }
-      }
+    }
 
-      window.__rkMap = {
-        decorate: function () { decorate(); }
-      };
+    async function init() {
+        document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
+        setViewMode('fluid');
+        renderCalendar();
+        render();
+        setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
+        await loadDictionary();
+        if (typeof fetch === 'function') loadLatestMonday();
+    }
 
-      document.getElementById('mapShow').addEventListener('change', decorate);
-      document.getElementById('mapOnlyGaps').addEventListener('change', decorate);
-
-    })();
+    window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>

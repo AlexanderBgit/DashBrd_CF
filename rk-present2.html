@@ -1352,6 +1352,18 @@ async function postJson(url, body){
   try { return JSON.parse(txt); } catch(e){ throw new Error('відповідь потоку не є JSON'); }
 }
 
+async function callFlow(payload){
+  if (!CONFIG.FLOW_URL) throw new Error('FLOW_URL не налаштовано');
+  return postJson(CONFIG.FLOW_URL, payload);
+}
+
+async function pool(items, n, fn){
+  let i = 0;
+  await Promise.all(Array.from({length: Math.min(n, items.length)}, async () => {
+    while (i < items.length){ const k = i++; await fn(items[k], k); }
+  }));
+}
+
 /* довідник CF: завантаження онлайн з SharePoint XML (query.iqy) */
 /* довідник CF: завантаження через Power Automate */
 async function loadDictionary(){

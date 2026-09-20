@@ -1019,7 +1019,8 @@ function buildRk(snapshot, dictionary){
   nodes.forEach(nd => {
     const rec = dict[nd.key];
     const rk = rec ? (rec.RK_Item || '') : '';
-    if (!rec){ unmatched.push({key:nd.key, name:nd.name, block:nd.block, reason:'немає у довіднику'}); return; }
+    if (!rec){ unmatched.push({key:nd.key, name:nd.name, block:nd.block,
+                           reason: unmatchedReason(nd.key)}); return; }
     if (!rk){ unmatched.push({key:nd.key, name:nd.name, block:nd.block, reason:'немає статті РК-презентації'}); return; }
     matched++;
     (codesBy[rk] = codesBy[rk] || new Set()).add(nd.key);
@@ -1688,7 +1689,7 @@ function buildReverse(){
   const rev = new Map();
   
   // Використовуємо весь DICT (включно з виключеними), щоб побачити їх у зворотному мапінгу
-  (DICT || []).forEach(d => {
+  dictSource().forEach(d => {
     const rk = (d.RK_Item || '').trim() || '— БЕЗ МАПІНГУ —';
     if (!rev.has(rk)) rev.set(rk, []);
     rev.get(rk).push(d);
@@ -1705,7 +1706,7 @@ function buildReverse(){
 }
 /* ключі прогнозу, яких немає в довіднику взагалі — з поточного зрізу */
 function orphanKeys(){
-  const known = new Set((DICT||[]).map(d => (d.MatchKey || d.Title || '').trim()));
+  const known = new Set(dictSource().map(d => normKey(d.MatchKey || d.Title)));
   return ((DATA.coverage||{}).unmatched || []).filter(u => !known.has(u.key));
 }
 function renderReverse(){

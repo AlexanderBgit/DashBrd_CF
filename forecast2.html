@@ -1,603 +1,668 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» на 13 тижнів</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
-        .executive-container {
-            width: 1587px; min-height: 900px; margin: 0 auto; background-color: #fff;
-            padding: 20px 26px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1);
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        .card { background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>РК-презентація 11-25 — Рух коштів АТ «Укрнафта»</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+  body{font-family:Helvetica,Arial,sans-serif;background:#f3f4f6;color:#334155;margin:0;padding:10px;
+       height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  nav{flex-shrink:0;}
+  .shell{flex:1 1 0%;min-height:0;display:flex;flex-direction:column;gap:8px;
+         background:#fff;border-radius:8px;padding:12px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);}
+  .pane{flex:1 1 0%;min-height:0;overflow:auto;border:1px solid #e2e8f0;border-radius:6px;}
 
-        .an-wrap { overflow: auto; max-height: 780px; }
-        .an-table { width: 100%; border-collapse: collapse; font-size: 9pt; font-variant-numeric: tabular-nums; }
-        .an-table th { font-size: 8.5pt; color: #475569; font-weight: 600; padding: 5px 5px; border-bottom: 1.5px solid #94a3b8;
-                       text-align: right; background: #f8fafc; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
-        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 420px; position: sticky; left: 0; background: #fff; z-index: 1; }
-        .an-table th.nm-col { z-index: 3; background: #f8fafc; }
-        .an-table th .th-period { display: block; font-size: 7pt; font-weight: 500; color: #94a3b8; line-height: 1.15; margin-top: 1px; }
-        .an-table td { padding: 3px 5px; text-align: right; color: #334155; border-bottom: 1px solid #eef2f6; white-space: nowrap; }
-        .an-table tbody tr:hover td { background-color: #f8fafc; }
+  table.rk{width:100%;border-collapse:collapse;font-size:9.5pt;font-variant-numeric:tabular-nums;}
+  table.rk th{font-size:8.5pt;color:#475569;font-weight:600;padding:5px 6px;background:#f8fafc;
+              border-bottom:1.5px solid #94a3b8;text-align:right;white-space:nowrap;position:sticky;top:0;z-index:3;}
+  table.rk th .sub{display:block;font-size:7pt;font-weight:500;color:#94a3b8;margin-top:1px;}
+  th.c-code,td.c-code{position:sticky;left:0;z-index:2;background:#f8fafc;text-align:left;
+                      width:128px;min-width:128px;max-width:128px;overflow:hidden;text-overflow:ellipsis;
+                      font-family:"SF Mono",Consolas,monospace;font-size:8pt;color:#94a3b8;}
+  th.c-code{z-index:5;}
+  th.c-name,td.c-name{position:sticky;left:128px;z-index:2;background:#fff;text-align:left;
+                      min-width:330px;font-weight:500;}
+  th.c-name{background:#f8fafc;z-index:5;}
+  table.rk td{padding:3px 6px;text-align:right;border-bottom:1px solid #f1f5f9;white-space:nowrap;}
+  table.rk tbody tr:hover td{background:#f8fafc;}
 
-        tr.lvl-block td { background: #e0e7ff; font-weight: 700; color: #312e81; }
-        tr.lvl-item  td { font-weight: 700; color: #1e293b; background: #f8fafc; }
-        tr.lvl-sub   td { font-weight: 600; color: #334155; }
-        tr.lvl-leaf  td { color: #475569; }
-        tr.row-key   td { background: #dbeafe !important; color: #1e3a8a; font-weight: 700; border-top: 1px solid #93c5fd; border-bottom: 1px solid #93c5fd; }
-        tr.row-cover td { color: #047857; }
-        tr.row-blue td { color: #1d4ed8; font-weight: 600; }
-        tr.row-blue td.nm-col .nm-txt { color: #1d4ed8; }
-        tr.row-cover td.nm-col .nm-txt { color: #047857; font-weight: 600; }
+  th.g-fact,td.g-fact{background:#fafafa;}
+  th.g-mon,td.g-mon{background:#fafaff;color:#4338ca;}
+  th.g-sum,td.g-sum{border-left:1.5px solid #cbd5e1;font-weight:700;}
+  td.neg{color:#dc2626;}
+  td.zero{color:#cbd5e1;}
 
-        td.col-mon, th.col-mon { background: #fafaff; color: #4338ca; font-weight: 600; }
-        td.col-sum, th.col-sum { border-left: 1.5px solid #cbd5e1; font-weight: 700; }
-        td.col-prev, th.col-prev { background: #fafafa; }
-        .an-table tbody td.neg { color: #dc2626 !important; }
-        .an-table tbody td.col-dev.pos { color: #047857 !important; font-weight: 600; }
-        .an-table tbody td.col-dev.neg { font-weight: 600; }
-        td.zero { color: #cbd5e1; }
+  tr.section td{background:#e0e7ff !important;color:#312e81;font-weight:700;}
+  tr.subtotal td{background:#f8fafc;font-weight:700;color:#0f172a;}
+  tr.calc td{background:#dbeafe !important;font-weight:700;color:#1e3a8a;
+             border-top:1px solid #93c5fd;border-bottom:1px solid #93c5fd;}
+  tr.balance_open td{background:#f1f5f9;font-weight:700;color:#0f172a;}
+  tr.detail_sub td{font-size:8.8pt;color:#64748b;}
+  tr.detail_sub td.c-name{padding-left:28px;font-weight:400;}
+  tr.unmapped td.c-name{color:#b45309;}
 
-        .toggle-kids { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
-            font-size: 13px; font-weight: bold; line-height: 1; color: #3b82f6; background: #eff6ff; border: 1px solid #bfdbfe;
-            border-radius: 3px; cursor: pointer; user-select: none; flex: 0 0 auto; margin-right: 5px; }
-        .toggle-kids:hover { background: #dbeafe; color: #1d4ed8; }
-        .toggle-placeholder { display: inline-block; width: 20px; }
-        .mon-toggle { display: inline-block; margin-left: 5px; padding: 0 4px; border: 1px solid #c7d2fe; border-radius: 3px;
-            background: #eef2ff; color: #4338ca; cursor: pointer; font-size: 8pt; }
-        .mon-toggle:hover { background: #e0e7ff; }
-        .an-code { color: #64748b; font-size: 8pt; margin-right: 5px; }
-        .ctl { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; }
-        .ctl.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+  .tag{display:inline-block;margin-left:7px;padding:0 5px;border-radius:9px;font-size:8pt;font-weight:700;vertical-align:1px;}
+  .tag.nomap{background:#fef3c7;color:#b45309;border:1px solid #fcd34d;}
+  .tag.calcd{background:#e2e8f0;color:#475569;border:1px solid #cbd5e1;}
+  .tag.resid{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
+  .tag.taxrule{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;cursor:help;}
 
-        /* ---------- режими перегляду ---------- */
-        .view-a3 .executive-container, .view-a3 nav { width: 1587px !important; max-width: 1587px !important; }
-        .view-a3 .an-wrap { max-height: 780px; }
-        body.view-fluid { height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 10px; }
-        .view-fluid nav { width: 100% !important; max-width: 100% !important; margin-bottom: 8px !important; flex-shrink: 0; }
-        .view-fluid .executive-container { width: 100% !important; max-width: 100% !important; min-height: 0 !important;
-            flex: 1 1 0%; overflow: hidden; display: flex; flex-direction: column; padding: 14px 18px; }
-        .view-fluid .card { flex: 1 1 0%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; padding: 4px; }
-        .view-fluid .an-wrap { max-height: none !important; height: 100%; flex: 1 1 0%; }
+  .ctl{font-size:11px;font-weight:600;padding:4px 9px;border-radius:6px;cursor:pointer;
+       border:1px solid #e2e8f0;background:#fff;color:#475569;}
+  .ctl.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+  select.inp,input.inp{font-size:11px;border:1px solid #cbd5e1;border-radius:6px;padding:4px 7px;background:#fff;color:#0f172a;}
 
-        /* ---------- ДРУК ---------- */
-        #printRoot { display: none; }
-        #printMeasure { position: absolute; left: -30000px; top: 0; visibility: hidden; }
-        .print-page { position: relative; overflow: hidden; background: #fff; }
-        .print-scale { transform-origin: top left; }
-        .print-table { table-layout: fixed !important; }
-        .print-title { font-weight: 700; color: #0f172a; margin-bottom: 6px; }
-        .print-title .sub { font-weight: 400; color: #475569; }
-
-        .print-table { width: auto !important; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 8.5pt; }
-        .print-table th, .print-table td { position: static !important; white-space: nowrap; }
-        .print-table th.nm-col, .print-table td.nm-col { min-width: 0 !important; max-width: 520px; white-space: normal; }
-        .print-table th { font-size: 8pt; padding: 3px 4px; border-bottom: 1.5px solid #475569; background: #f1f5f9 !important; }
-        .print-table td { padding: 2px 4px; border-bottom: 1px solid #e5e7eb; }
-        .print-table .toggle-kids, .print-table .toggle-placeholder, .print-table .mon-toggle { display: none !important; }
-        .print-table tr.lvl-block td { background: #e2e8f0 !important; color: #0f172a !important; }
-        .print-table tr.row-key td { background: #dbeafe !important; }
-
-        .preview-sheet { background: #fff; box-shadow: 0 25px 50px -12px rgba(0,0,0,.5); margin: 0 auto 18px auto;
-                         transform-origin: top center; transition: transform .15s ease-out; }
-
-        @page { size: A3 landscape; margin: 8mm; }
-        @media print {
-            html, body { width: auto !important; height: auto !important; overflow: visible !important;
-                         background: #fff !important; padding: 0 !important; margin: 0 !important; display: block !important; }
-            body > *:not(#printRoot) { display: none !important; }
-            #printRoot { display: block !important; }
-            .print-page { page-break-after: always; break-after: page; }
-            .print-page:last-child { page-break-after: auto; break-after: auto; }
-        }
-
-        /* Стилі РК-мапінгу */
-        .map-tag{display:inline-block;margin-left:8px;padding:0 6px;border-radius:9px;
-                 font-size:7.5pt;font-weight:700;letter-spacing:.1px;vertical-align:1px;
-                 white-space:nowrap;line-height:1.5;}
-        .map-ok{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
-        .map-sug{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe;}
-        .map-none{background:#fef3c7;color:#b45309;border:1px solid #fcd34d;}
-        .map-miss{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
-        tr.map-unmapped td.nm-col .nm-txt{color:#b45309;}
-        .map-legend{font-size:10px;color:#94a3b8;}
-        @media print{ .map-tag{border:none !important;padding:0 3px;font-size:6.5pt;} }
-    </style>
+  @page{size:A3 landscape;margin:8mm;}
+  @media print{
+    body{height:auto;overflow:visible;background:#fff;padding:0;display:block;}
+    .print-hide{display:none !important;}
+    .shell{box-shadow:none;padding:0;}
+    .pane{overflow:visible;border:none;max-height:none;}
+    table.rk th{position:static;}
+    th.c-code,td.c-code,th.c-name,td.c-name{position:static;}
+    table.rk td,table.rk th{font-size:7.5pt;padding:1.5px 4px;}
+  }
+</style>
 </head>
-<body class="view-fluid">
-    <nav class="bg-white shadow p-3 mb-4 rounded-lg mx-auto flex justify-between items-center print-hide">
-        <div>
-            <h1 class="text-lg font-bold text-slate-800">ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» на 13 тижнів</h1>
-            <p class="text-xs text-slate-500 mt-0.5">станом на <span id="navCurDate" class="font-semibold text-indigo-600">--</span></p>
-        </div>
-        <div class="flex items-center gap-4">
-            <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
-                <button id="btnViewFluid" onclick="setViewMode('fluid')" class="ctl active border-none !py-1 !px-2.5 text-xs">На весь екран</button>
-                <button id="btnViewA3" onclick="setViewMode('a3')" class="ctl border-none !py-1 !px-2.5 text-xs">Формат А3</button>
-            </div>
-            <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
-            <div class="relative">
-                <button onclick="toggleCalendarDropdown()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm">
-                    <span id="lblSelectedDate">Обрати дату</span>
-                </button>
-                <div id="calendarDropdown" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
-                    <div class="flex justify-between items-center mb-3">
-                        <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&larr;</button>
-                        <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase">Вересень 2026</span>
-                        <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&rarr;</button>
-                    </div>
-                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
-                        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
-                    </div>
-                    <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
-                </div>
-            </div>
-            <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
-                <button onclick="document.getElementById('fileInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Завантажити JSON</button>
-                <input type="file" id="fileInput" accept=".json,application/json" class="hidden" onchange="loadLocalFile(this)">
-                <button onclick="openPrintPreview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Перегляд у пропорціях аркуша А3">Перегляд А3</button>
-                <button onclick="triggerDirectPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
-            </div>
-        </div>
-    </nav>
+<body>
 
-    <div class="executive-container">
-        <div class="flex justify-between items-end border-b border-slate-200 pb-2">
-            <div>
-                <h1 class="text-xl font-bold text-slate-800">ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» 13 тижнів станом на <span id="hdrCur">--</span></h1>
-                <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Горизонт прогнозу: <span id="hdrRange">--</span></p>
-            </div>
-            <div class="text-right">
-                <div class="text-xs font-semibold text-slate-600" id="hdrUnit">тис. грн</div>
-                <div class="text-[10.5px] text-slate-400 mt-0.5" id="hdrCreated">--</div>
-            </div>
+<nav class="bg-white shadow p-3 mb-2 rounded-lg flex justify-between items-center print-hide">
+  <div>
+    <h1 class="text-base font-bold text-slate-800">Звіт про рух грошових коштів — формат «РК-презентація 11-25»</h1>
+    <p class="text-xs text-slate-500 mt-0.5">зріз прогнозу на <span id="navDate" class="font-semibold text-indigo-600">--</span> · <span id="navSource">—</span></p>
+  </div>
+  <div class="flex items-center gap-3">
+    <span id="status" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
+    <div class="relative">
+      <button onclick="toggleCal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">
+        <span id="lblDate">Обрати дату</span>
+      </button>
+      <div id="calDrop" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
+        <div class="flex justify-between items-center mb-3">
+          <button onclick="calMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&larr;</button>
+          <span id="calTitle" class="font-bold text-xs text-slate-800 uppercase"></span>
+          <button onclick="calMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&rarr;</button>
         </div>
-
-        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide">
-            <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="render()"
-                   class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 w-72">
-            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer" title="Ховає технічні та довідкові рядки аркуша, залишаючи статті звіту">
-                <input type="checkbox" id="onlyKeep" checked onchange="render()"> Показувати лише статті звіту
-            </label>
-            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                <input type="checkbox" id="hideZero" onchange="render()"> Приховати нульові рядки
-            </label>
-            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                <input type="checkbox" id="expandAll" onchange="toggleExpandAll(this.checked)"> Розгорнути всі рівні
-            </label>
-            <span class="flex items-center gap-2 border-l pl-4 border-slate-200">
-                <span class="text-xs text-slate-600">Тиждень −1:</span>
-                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_plan" checked onchange="render()"> план</label>
-                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_forecast" onchange="render()"> прогноз</label>
-                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="coldev_forecast" onchange="render()"> Δ прогноз − план</label>
-                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_fact" checked onchange="render()"> факт</label>
-                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="coldev_fact" checked onchange="render()"> Δ факт − план</label>
-                <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="grpTotal" checked onchange="render()"> Разом 13 тижнів</label>
-            </span>
-            <span class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
-                <span class="text-xs text-slate-600">Одиниці:</span>
-                <button class="ctl active" id="unitThs" onclick="setUnit('ths')">тис. грн</button>
-                <button class="ctl" id="unitMln" onclick="setUnit('mln')">млн грн</button>
-            </span>
+        <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+          <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
         </div>
-
-        <div class="card">
-            <div class="an-wrap" id="pane"></div>
-        </div>
+        <div id="calGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+        <p class="text-[10px] text-slate-400 mt-2">Підсвічені дати — зрізи, вже завантажені в цьому сеансі.</p>
+      </div>
     </div>
-
-    <div id="printRoot"></div>
-    <div id="printMeasure"></div>
-
-    <div id="printPreviewModal" class="fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-50 hidden flex-col print-hide">
-        <div class="bg-slate-900 border-b border-slate-700 text-white px-5 py-3 flex justify-between items-center shrink-0">
-            <div class="flex items-center gap-3">
-                <span class="font-bold text-sm text-slate-200">Попередній перегляд A3 landscape</span>
-                <span class="text-xs bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded font-mono" id="previewInfo">--</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="zoomPreview(-0.1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-bold border border-slate-700">−</button>
-                <button onclick="autoFitPreview()" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-semibold border border-slate-700">Вписати</button>
-                <button onclick="setPreviewZoom(1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-semibold border border-slate-700">100%</button>
-                <button onclick="zoomPreview(0.1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-bold border border-slate-700">+</button>
-                <div class="w-px h-5 bg-slate-700 mx-1"></div>
-                <button onclick="triggerDirectPrint()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs shadow-sm">Друкувати</button>
-                <button onclick="closePrintPreview()" class="bg-slate-700 hover:bg-red-600 text-white px-3 py-1 rounded-lg font-semibold text-xs transition-colors">Закрити (Esc)</button>
-            </div>
-        </div>
-        <div id="previewScrollArea" class="flex-1 overflow-auto p-6 bg-slate-950/60"></div>
+    <div class="flex items-center gap-1.5 border-l pl-3 border-slate-200">
+      <button onclick="document.getElementById('fileInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Завантажити JSON</button>
+      <input type="file" id="fileInput" accept=".json,application/json" class="hidden" onchange="loadLocalFile(this)">
+      <button onclick="toggleRev()" class="ctl" id="btnRev">Зворотний мапінг</button>
+      <button onclick="exportCsv()" class="ctl">Експорт CSV</button>
+      <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк A3</button>
     </div>
+  </div>
+</nav>
 
-    <script>
-    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
-    
-    const CONFIG = {
-        FLOW_URL: GET_METRICS_FLOW_URL,
-        DICT_FLOW_URL: GET_METRICS_FLOW_URL
-    };
+<div class="shell">
+  <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+    <div>
+      <h2 class="text-lg font-bold text-slate-800">ЗВІТ ПРО РУХ ГРОШОВИХ КОШТІВ</h2>
+      <p class="text-xs text-slate-500 mt-0.5">Горизонт прогнозу: <span id="hdrRange">--</span></p>
+    </div>
+    <div class="text-right">
+      <div class="text-xs font-semibold text-slate-600" id="hdrUnit">млн грн</div>
+      <div class="text-[10.5px] text-slate-400 mt-0.5" id="hdrCov">--</div>
+    </div>
+  </div>
 
-    window.DYNAMIC_CF_DICT = null;
-    let SNAP = null, NODES = [], TREE = null, expanded = {}, UNIT = 'ths';
-    let monthOpen = { M1: true, M2: false, M3: false };
-    const DAY = 86400000;
-    const isoOf = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    const mondayOf = d => { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return isoOf(x); };
-    const isoShift = (iso, days) => isoOf(new Date(Date.parse(iso + 'T12:00:00') + days * DAY));
+  <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-x-5 gap-y-2 items-center print-hide text-xs">
+    <input id="search" class="inp w-60" placeholder="Пошук статті або коду ЕРП…" oninput="REV_ON ? renderReverse() : render()">
 
-    let currentReportDate = mondayOf(new Date());
-    let calViewDate = new Date(currentReportDate + 'T12:00:00');
-    const availableDates = new Set();
+    <span class="flex items-center gap-1.5">
+      <span class="text-slate-600">Факт назад:</span>
+      <select id="factMonths" class="inp" onchange="onFactMonthsChange()">
+        <option value="0" selected>немає</option>
+        <option value="1">1 місяць</option>
+        <option value="2">2 місяці</option>
+        <option value="3">3 місяці</option>
+        <option value="6">6 місяців</option>
+      </select>
+    </span>
 
-    const dmy = iso => String(iso || '').split('-').reverse().join('.');
-    const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const sp = s => s.replace(/[\u202F\u00A0]/g, ' ');
+    <span class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+      <span class="text-slate-600">Прогноз вперед:</span>
+      <select id="fcstMode" class="inp" onchange="render()">
+        <option value="cal" selected>календарні місяці</option>
+        <option value="weeks">тижні Т0–Т12</option>
+        <option value="mix">місяці + тижні</option>
+        <option value="mperiod">періоди М1–М3 (рухомі)</option>
+      </select>
+    </span>
 
-    function setViewMode(mode) {
-        const a3 = mode === 'a3';
-        document.body.classList.toggle('view-a3', a3);
-        document.body.classList.toggle('view-fluid', !a3);
-        document.getElementById('btnViewA3').classList.toggle('active', a3);
-        document.getElementById('btnViewFluid').classList.toggle('active', !a3);
+    <label class="flex items-center gap-1.5 text-slate-700 cursor-pointer border-l pl-4 border-slate-200">
+      <input type="checkbox" id="colTm1" checked onchange="render()"> тиждень −1 (факт)
+    </label>
+    <label class="flex items-center gap-1.5 text-slate-700 cursor-pointer">
+      <input type="checkbox" id="colTotal" checked onchange="render()"> разом 13 тижнів
+    </label>
+    <label class="flex items-center gap-1.5 text-slate-700 cursor-pointer">
+      <input type="checkbox" id="hideZero" onchange="render()"> приховати нульові
+    </label>
+    <label class="flex items-center gap-1.5 text-slate-700 cursor-pointer">
+      <input type="checkbox" id="showUnmapped" checked onchange="render()"> рядки без мапінгу
+    </label>
+
+    <span class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+      <span class="text-slate-600">Одиниці:</span>
+      <button class="ctl" id="uThs" onclick="setUnit('ths')">тис. грн</button>
+      <button class="ctl active" id="uMln" onclick="setUnit('mln')">млн грн</button>
+    </span>
+  </div>
+
+  <div class="pane" id="pane"></div>
+
+  <div class="pane hidden" id="revPane" style="flex:1 1 0%"></div>
+
+  <details class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 print-hide">
+    <summary class="cursor-pointer font-bold text-amber-700" id="gapsTitle">Статті прогнозу без мапінгу</summary>
+    <div id="gapsBody" class="mt-2 max-h-52 overflow-auto"></div>
+  </details>
+
+  <p class="text-[10px] text-slate-400 leading-relaxed print-hide">
+    <span class="tag nomap">немає мапінгу</span> — стаття відсутня в довіднику CF_Dictionary або не має статті РК-презентації; у підсумки не входить.
+    <span class="tag calcd">розрахунок</span> — рядок обчислюється за формулою.
+    <span class="tag resid">частина без розшифровки</span> — частина суми змаплена на батьківський рядок.
+    <span class="tag taxrule">податок</span> — тиждень, розірваний між місяцями, відноситься повністю на місяць, останній день якого припадає на цей тиждень (податки сплачуються останнім днем місяця). Решта статей розподіляється пропорційно календарним дням.
+  </p>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   КОНФІГУРАЦІЯ ТА ДАНІ
+   ═══════════════════════════════════════════════════════════════════════════ */
+const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+
+const CONFIG = {
+  FLOW_URL: GET_METRICS_FLOW_URL,
+  DICT_FLOW_URL: GET_METRICS_FLOW_URL,
+  FETCH_CONCURRENCY: 4,
+  LATEST_LOOKBACK_WEEKS: 8
+};
+
+window.DYNAMIC_CF_DICT = null;
+
+const TAX_ROW_RE = /^Податки\./;
+const TAX_EXTRA_IDS = [];
+
+const RK_ROWS = [
+{"id": "S1", "label": "І. Рух коштів від операційної діяльності", "type": "section"},
+{"id": "OP_IN", "label": "Надходження від операційної діяльності", "type": "subtotal", "group": "OP_IN"},
+{"id": "r_neft", "label": "Нафта з конденсатом", "type": "detail", "group": "OP_IN"},
+{"id": "r_np", "label": "Нафтопродукти", "type": "detail", "group": "OP_IN"},
+{"id": "r_np_gurt", "label": "Гурт", "type": "detail_sub", "group": "r_np"},
+{"id": "r_np_aoz", "label": "АОЗ / МОУ", "type": "detail_sub", "group": "r_np"},
+{"id": "r_np_b2c", "label": "В2С Роздріб", "type": "detail_sub", "group": "r_np"},
+{"id": "r_np_b2b", "label": "В2В Роздріб (Укрнафта-Постач)", "type": "detail_sub", "group": "r_np"},
+{"id": "r_np_inshe", "label": "Інше", "type": "detail_sub", "group": "r_np"},
+{"id": "r_gas", "label": "Природний газ", "type": "detail", "group": "OP_IN"},
+{"id": "r_gas_pso", "label": "Природний газ (НАК ПСО)", "type": "detail_sub", "group": "r_gas"},
+{"id": "r_gas_nak", "label": "Природний газ (Група НАК без ПСО)", "type": "detail_sub", "group": "r_gas"},
+{"id": "r_gas_gurt", "label": "Природний ГАЗ гурт", "type": "detail_sub", "group": "r_gas"},
+{"id": "r_in_other", "label": "Інші надходження (операційна діяльність)", "type": "detail", "group": "OP_IN"},
+{"id": "OP_OUT", "label": "Витрачання на операційну діяльність", "type": "subtotal", "group": "OP_OUT"},
+{"id": "r_budget", "label": "Розрахунки з бюджетом", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_pnp", "label": "Податки. Податок на прибуток", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_pdv", "label": "Податки. ПДВ", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_rent_oil", "label": "Податки. Рента нафта та конденсат", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_rent_gas", "label": "Податки. Рента газ", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_akciz", "label": "Податки. Акциз", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_rent_oth", "label": "Податки. Рента інша", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_mytni", "label": "Податки. Митні платежі", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_other", "label": "Податки. Інші податки", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_fines", "label": "Податки. Штрафи та пені", "type": "detail", "group": "OP_OUT"},
+{"id": "r_tax_vat_ref", "label": "Податки. ПДВ. Відшкодування з бюджету", "type": "detail", "group": "OP_OUT"},
+{"id": "r_zp", "label": "ЗП. Виплата", "type": "detail", "group": "OP_OUT"},
+{"id": "r_zp_esv", "label": "ЗП. ЄСВ", "type": "detail", "group": "OP_OUT"},
+{"id": "r_zp_pdfo", "label": "ЗП. ПДФО", "type": "detail", "group": "OP_OUT"},
+{"id": "r_zp_vz", "label": "ЗП. ВЗ", "type": "detail", "group": "OP_OUT"},
+{"id": "r_energy", "label": "Електроенергія", "type": "detail", "group": "OP_OUT"},
+{"id": "r_opex", "label": "Операційні витрати", "type": "detail", "group": "OP_OUT"},
+{"id": "r_transp_np", "label": "Транспортування НП та сировини", "type": "detail", "group": "OP_OUT"},
+{"id": "r_transp_gas", "label": "Транспортування газу", "type": "detail", "group": "OP_OUT"},
+{"id": "r_refining", "label": "Послуги з переробки", "type": "detail", "group": "OP_OUT"},
+{"id": "r_raw_oil", "label": "Нафта і кондесат (сировина)", "type": "detail", "group": "OP_OUT"},
+{"id": "r_np_buy", "label": "Нафтопродукти (закупівля)", "type": "detail", "group": "OP_OUT"},
+{"id": "r_charity", "label": "Благодійність", "type": "detail", "group": "OP_OUT"},
+{"id": "r_op_other", "label": "Інші витрачання (операційна діяльність)", "type": "detail", "group": "OP_OUT"},
+{"id": "NCF_OP", "label": "Чистий рух коштів від операційної діяльності", "type": "calc", "formula": "OP_IN+OP_OUT"},
+{"id": "S2", "label": "II. Рух коштів у результаті інвестиційної діяльності", "type": "section"},
+{"id": "INV_IN", "label": "Надходження від інвестиційної діяльності", "type": "subtotal", "group": "INV_IN"},
+{"id": "r_ovdp_ret", "label": "Повернення тіла ОВДП та купонний дохід", "type": "detail", "group": "INV_IN"},
+{"id": "r_deposit", "label": "Дохід від поточних та депозитних вкладів та ін", "type": "detail", "group": "INV_IN"},
+{"id": "r_inv_other_in", "label": "Інші надходження (інвестиційна діяльність)", "type": "detail", "group": "INV_IN"},
+{"id": "INV_OUT", "label": "Витрачання грошових коштів від інвестиційної діяльності", "type": "subtotal", "group": "INV_OUT"},
+{"id": "r_capex", "label": "CAPEX", "type": "detail", "group": "INV_OUT"},
+{"id": "r_fin_inv", "label": "Фінансові інвестиції", "type": "detail", "group": "INV_OUT"},
+{"id": "r_ovdp_buy", "label": "Купівля ОВДП", "type": "detail", "group": "INV_OUT"},
+{"id": "NCF_INV", "label": "Чистий рух коштів від інвестиційної діяльності", "type": "calc", "formula": "INV_IN+INV_OUT"},
+{"id": "S3", "label": "III. Рух коштів у результаті фінансової діяльності", "type": "section"},
+{"id": "FIN_IN", "label": "Надходження грошових коштів від фінансової діяльності", "type": "subtotal", "group": "FIN_IN"},
+{"id": "r_cred_short_in", "label": "Залучення короткострокових кредитних коштів", "type": "detail", "group": "FIN_IN"},
+{"id": "r_cred_long_in", "label": "Залучення довгострокових кредитних коштів", "type": "detail", "group": "FIN_IN"},
+{"id": "r_bonds_in", "label": "Надходження коштів від продажу облігацій", "type": "detail", "group": "FIN_IN"},
+{"id": "r_fin_other_in", "label": "Інші надходження (фінансова діяльність)", "type": "detail", "group": "FIN_IN"},
+{"id": "FIN_OUT", "label": "Витрачання грошових коштів від фінансової діяльності", "type": "subtotal", "group": "FIN_OUT"},
+{"id": "r_div", "label": "Сплата дивідендів", "type": "detail", "group": "FIN_OUT"},
+{"id": "r_cred_short_out", "label": "Повернення короткострокових кредитних коштів", "type": "detail", "group": "FIN_OUT"},
+{"id": "r_cred_long_out", "label": "Повернення довгострокових кредитних коштів", "type": "detail", "group": "FIN_OUT"},
+{"id": "r_bonds_out", "label": "Виплати по облігаціям", "type": "detail", "group": "FIN_OUT"},
+{"id": "r_interest", "label": "Відсотки, комісії та інше", "type": "detail", "group": "FIN_OUT"},
+{"id": "NCF_FIN", "label": "Чистий рух коштів від фінансової діяльності", "type": "calc", "formula": "FIN_IN+FIN_OUT"},
+{"id": "BAL_OPEN", "label": "Залишок ГК на початок", "type": "balance_open"},
+{"id": "r_fx", "label": "Вплив зміни валютних курсів на залишок коштів", "type": "detail", "group": "FX"},
+{"id": "NCF_TOTAL", "label": "Чистий рух коштів за період", "type": "calc", "formula": "NCF_OP+NCF_INV+NCF_FIN+r_fx"},
+{"id": "BAL_CLOSE", "label": "Залишок ГК на кінець", "type": "calc", "formula": "BAL_OPEN+NCF_TOTAL"}
+];
+
+const EMBEDDED = {"meta":{"forecast_date":"2026-09-07","plan_fact_date":"2026-09-07","source_file":"ПРОГНОЗ РУХУ КОШТІВ 13 ТИЖНІВ (07.09.2026) ПЛАН_ФАКТ (07.09.2026).xlsm","generated_utc":"2026-09-20T11:13:34.994718+00:00","currency_unit":"грн","display_unit":"млн грн"},"periods":[{"key":"Tm1_plan","label":"Т -1 (план)","range":"31.08-06.09.26"},{"key":"Tm1_forecast","label":"Т -1 (прогноз)","range":"31.08-06.09.26"},{"key":"Tm1_fact","label":"Т -1 (факт)","range":"31.08-06.09.26"},{"key":"T0","label":"Т 0","range":"07-13.09.26"},{"key":"T1","label":"Т 1","range":"14-20.09.26"},{"key":"T2","label":"Т 2","range":"21-27.09.26"},{"key":"T3","label":"Т 3","range":"28.09-04.10.26"},{"key":"M1","label":"М 1 Т0+Т1+Т2+Т3","range":"07.09-04.10.26"},{"key":"T4","label":"Т 4","range":"05-11.10.26"},{"key":"T5","label":"Т 5","range":"12-18.10.26"},{"key":"T6","label":"Т 6","range":"19-25.10.26"},{"key":"T7","label":"Т 7","range":"26.10-01.11.26"},{"key":"M2","label":"М 2 Т4+Т5+Т6+Т7","range":"05.10-01.11.26"},{"key":"T8","label":"Т 8","range":"02.11-08.11.26"},{"key":"T9","label":"Т 9","range":"09.11-15.11.26"},{"key":"T10","label":"Т 10","range":"16.11-22.11.26"},{"key":"T11","label":"Т 11","range":"23.11-29.11.26"},{"key":"T12","label":"Т 12","range":"30.11-06.12.26"},{"key":"M3","label":"М 3 Т8+Т9+Т10+Т11+Т12","range":"02.11-06.12.26"},{"key":"TT0_12","label":"ТТ 0 - 12","range":"07.09-06.12.26"}],"rows":[{"id":"S1","label":"І. Рух коштів від операційної діяльності","short":"","type":"section","group":"","formula":"","codes":[],"values":{},"mapped":false},{"id":"OP_IN","label":"Надходження від операційної діяльності","short":"","type":"subtotal","group":"OP_IN","formula":"","codes":["2.1.01.01","2.1.01.02","2.1.01.07","2.1.01.08","2.1.01.12.01","2.1.01.12.02","2.1.01.12.04","2.1.01.12.05","2.1.01.20","2.1.01.28","2.1.02.12","2.1.02.14","2.1.02.26","2.1.03.12","2.2.07.23","3.1.06","Альянс Холдинг","ГЛУСКО","ДП ДОТ МОУ","ДП ДОТ МОУ ДКУ","НАК \"Нафтогаз України\" (ПСО)","Непаливні продажі","Укрнафта-Постач"],"values":{"Tm1_plan":4619267813.85,"Tm1_forecast":4449609174.41,"Tm1_fact":5104418198.37,"T0":4500848299.12,"T1":4046846222.25,"T2":3691066474.47,"T3":4256014351.42,"M1":16494775347.24,"T4":4290174761.65,"T5":4795228390.78,"T6":4376858605.46,"T7":4736613769.12,"M2":18198875527.01,"T8":4633229027.2,"T9":4540830448.36,"T10":4622137619.86,"T11":4403887346.53,"T12":4360416185.53,"M3":22560500627.44,"TT0_12":57254151501.7},"mapped":true},{"id":"r_neft","label":"Нафта з конденсатом","short":"Нафта","type":"detail","group":"OP_IN","formula":"","codes":["2.1.01.12.01","2.1.01.12.02","2.1.01.12.04","2.1.01.12.05"],"values":{"Tm1_plan":920407915.0,"Tm1_forecast":994096228.96,"Tm1_fact":1773251432.4,"T0":567450710.67,"T1":397099216.58,"T2":92398578.83,"T3":635072516.67,"M1":1692021022.75,"T4":136943101.83,"T5":578005437.0,"T6":272812841.67,"T7":632568005.33,"M2":1620329385.83,"T8":272812841.67,"T9":180414262.83,"T10":261721434.33,"T11":43471161.0,"T12":0.0,"M3":758419699.83,"TT0_12":4070770108.42},"mapped":true},{"id":"r_np","label":"Нафтопродукти","short":"Нафтопродукти","type":"detail","group":"OP_IN","formula":"","codes":["2.1.01.01","2.1.01.02","2.1.01.08","2.1.01.20","2.1.01.28","2.2.07.23","Альянс Холдинг","ГЛУСКО","ДП ДОТ МОУ","ДП ДОТ МОУ ДКУ","Непаливні продажі","Укрнафта-Постач"],"values":{"Tm1_plan":3547621725.67,"Tm1_forecast":3304248372.27,"Tm1_fact":3177320326.87,"T0":3263397588.45,"T1":3638105765.06,"T2":3598372987.8,"T3":3598072906.04,"M1":14097949247.33,"T4":3854045763.79,"T5":3854045763.79,"T6":3854045763.79,"T7":3854045763.79,"M2":15416183055.16,"T8":4110416185.53,"T9":4110416185.53,"T10":4110416185.53,"T11":4110416185.53,"T12":4110416185.53,"M3":20552080927.61,"TT0_12":50066213230.1},"mapped":true,"has_breakdown":true,"breakdown_mapped":4,"own_values":{"Tm1_plan":1388005430.26,"Tm1_forecast":1545309490.38,"Tm1_fact":1374566308.74,"T0":1353048047.87,"T1":1627756224.48,"T2":1588023447.22,"T3":1598129091.59,"M1":6166956811.17,"T4":1707846009.07,"T5":1707846009.07,"T6":1707846009.07,"T7":1707846009.07,"M2":6831384036.29,"T8":1702610556.31,"T9":1702610556.31,"T10":1702610556.31,"T11":1702610556.31,"T12":1702610556.31,"M3":8513052781.56,"TT0_12":21511393629.02},"has_residual":true},{"id":"r_np_gurt","label":"Гурт","short":"Нафтопродукти (Гурт)","type":"detail_sub","group":"r_np","formula":"","codes":["Альянс Холдинг","ГЛУСКО"],"values":{"Tm1_plan":375196047.16,"Tm1_forecast":357223627.02,"Tm1_fact":513353292.54,"T0":396617561.23,"T1":396617561.23,"T2":396617561.23,"T3":387079420.14,"M1":1576932103.8,"T4":386831146.17,"T5":386831146.17,"T6":386831146.17,"T7":386831146.17,"M2":1547324584.65,"T8":386831146.17,"T9":386831146.17,"T10":386831146.17,"T11":386831146.17,"T12":386831146.17,"M3":1934155730.82,"TT0_12":5058412419.27},"mapped":true},{"id":"r_np_aoz","label":"АОЗ / МОУ","short":"Нафтопродукти (АОЗ / МОУ)","type":"detail_sub","group":"r_np","formula":"","codes":["ДП ДОТ МОУ","ДП ДОТ МОУ ДКУ"],"values":{"Tm1_plan":621505215.67,"Tm1_forecast":392201933.7,"Tm1_fact":433608874.79,"T0":650731979.35,"T1":650731979.35,"T2":650731979.35,"T3":662364394.31,"M1":2614560332.36,"T4":808868608.55,"T5":808868608.55,"T6":808868608.55,"T7":808868608.55,"M2":3235474434.22,"T8":1070474483.05,"T9":1070474483.05,"T10":1070474483.05,"T11":1070474483.05,"T12":1070474483.05,"M3":5352372415.23,"TT0_12":11202407181.81},"mapped":true},{"id":"r_np_b2c","label":"В2С Роздріб","short":"Нафтопродукти (роздріб B2C)","type":"detail_sub","group":"r_np","formula":"","codes":["Непаливні продажі"],"values":{"Tm1_plan":63616690.36,"Tm1_forecast":59513321.17,"Tm1_fact":55791850.8,"T0":63000000.0,"T1":63000000.0,"T2":63000000.0,"T3":63000000.0,"M1":252000000.0,"T4":63000000.0,"T5":63000000.0,"T6":63000000.0,"T7":63000000.0,"M2":252000000.0,"T8":63000000.0,"T9":63000000.0,"T10":63000000.0,"T11":63000000.0,"T12":63000000.0,"M3":315000000.0,"TT0_12":819000000.0},"mapped":true},{"id":"r_np_b2b","label":"В2В Роздріб (Укрнафта-Постач)","short":"Нафтопродукти (роздріб B2B)","type":"detail_sub","group":"r_np","formula":"","codes":["Укрнафта-Постач"],"values":{"Tm1_plan":1099298342.22,"Tm1_forecast":950000000.0,"Tm1_fact":800000000.0,"T0":800000000.0,"T1":900000000.0,"T2":900000000.0,"T3":887500000.0,"M1":3487500000.0,"T4":887500000.0,"T5":887500000.0,"T6":887500000.0,"T7":887500000.0,"M2":3550000000.0,"T8":887500000.0,"T9":887500000.0,"T10":887500000.0,"T11":887500000.0,"T12":887500000.0,"M3":4437500000.0,"TT0_12":11475000000.0},"mapped":true},{"id":"r_np_inshe","label":"Інше","short":"Нафтопродукти (Інше, в .т.ч. повернення)","type":"detail_sub","group":"r_np","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_gas","label":"Природний газ","short":"Газ","type":"detail","group":"OP_IN","formula":"","codes":["2.1.01.07","НАК \"Нафтогаз України\" (ПСО)"],"values":{"Tm1_plan":150300000.0,"Tm1_forecast":150326400.0,"Tm1_fact":150326400.0,"T0":670000000.0,"T1":0,"T2":0,"T3":0,"M1":670000000.0,"T4":250000000.0,"T5":250000000.0,"T6":250000000.0,"T7":250000000.0,"M2":1000000000.0,"T8":250000000.0,"T9":250000000.0,"T10":250000000.0,"T11":250000000.0,"T12":250000000.0,"M3":1250000000.0,"TT0_12":2920000000.0},"mapped":true,"has_breakdown":true,"breakdown_mapped":1,"own_values":{"Tm1_plan":150300000.0,"Tm1_forecast":150326400.0,"Tm1_fact":150326400.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"has_residual":true},{"id":"r_gas_pso","label":"Природний газ (НАК ПСО)","short":"Газ (ПСО)","type":"detail_sub","group":"r_gas","formula":"","codes":["НАК \"Нафтогаз України\" (ПСО)"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":670000000.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":670000000.0,"T4":250000000.0,"T5":250000000.0,"T6":250000000.0,"T7":250000000.0,"M2":1000000000.0,"T8":250000000.0,"T9":250000000.0,"T10":250000000.0,"T11":250000000.0,"T12":250000000.0,"M3":1250000000.0,"TT0_12":2920000000.0},"mapped":true},{"id":"r_gas_nak","label":"Природний газ (Група НАК без ПСО)","short":"Газ (група НАК без ПСО)","type":"detail_sub","group":"r_gas","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_gas_gurt","label":"Природний ГАЗ гурт","short":"ГАЗ гурт","type":"detail_sub","group":"r_gas","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_in_other","label":"Інші надходження (операційна діяльність)","short":"Інші надходження","type":"detail","group":"OP_IN","formula":"","codes":["2.1.02.12","2.1.02.14","2.1.02.26","2.1.03.12","3.1.06"],"values":{"Tm1_plan":938173.18,"Tm1_forecast":938173.18,"Tm1_fact":3520039.1,"T0":0.0,"T1":11641240.61,"T2":294907.84,"T3":22868928.71,"M1":34805077.16,"T4":49185896.03,"T5":113177189.99,"T6":0.0,"T7":0.0,"M2":162363086.02,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":197168163.18},"mapped":true},{"id":"OP_OUT","label":"Витрачання на операційну діяльність","short":"","type":"subtotal","group":"OP_OUT","formula":"","codes":["2.1.03.15","2.1.04.01","2.2.01.01","2.2.01.02","2.2.01.03","2.2.01.04","2.2.01.06","2.2.01.08","2.2.01.09","2.2.01.10","2.2.01.11","2.2.01.12","2.2.01.13","2.2.01.14","2.2.01.15","2.2.01.16","2.2.01.17","2.2.01.99","2.2.02.01","2.2.02.02","2.2.02.03","2.2.02.04","2.2.02.05","2.2.02.06","2.2.03.01","2.2.03.02","2.2.03.03","2.2.03.04","2.2.04.01","2.2.04.02","2.2.04.03","2.2.04.07","2.2.04.08.01","2.2.04.08.02","2.2.04.08.03","2.2.04.08.04","2.2.04.08.05","2.2.04.08.06","2.2.04.08.07","2.2.04.08.08","2.2.04.08.09","2.2.04.08.10","2.2.04.08.11","2.2.04.08.12","2.2.04.09.01","2.2.04.09.02","2.2.04.09.03","2.2.04.09.04","2.2.04.10.01","2.2.04.10.02","2.2.04.10.03","2.2.04.10.04","2.2.04.10.05","2.2.04.10.06","2.2.04.11.01","2.2.04.12.01","2.2.04.12.02","2.2.04.12.03","2.2.04.12.04","2.2.04.12.05","2.2.04.12.06","2.2.04.12.07","2.2.04.12.08","2.2.04.13.01","2.2.04.13.02","2.2.04.13.03","2.2.04.13.04","2.2.04.13.05","2.2.04.13.06","2.2.04.14.01","2.2.04.14.02","2.2.04.15.01","2.2.04.15.02","2.2.04.15.03","2.2.04.15.04","2.2.04.15.05","2.2.04.15.06","2.2.04.15.07","2.2.04.15.08","2.2.04.15.09","2.2.04.16.01","2.2.04.16.02","2.2.04.16.03","2.2.04.16.04","2.2.04.16.05","2.2.04.16.06","2.2.04.16.07","2.2.04.16.08","2.2.04.16.09","2.2.04.16.10","2.2.04.16.11","2.2.04.16.12","2.2.04.16.13","2.2.04.16.14","2.2.04.16.15","2.2.04.16.16","2.2.04.16.17","2.2.04.16.18","2.2.04.16.19","2.2.04.16.20","2.2.04.17.01","2.2.04.17.02","2.2.04.17.03","2.2.04.17.04","2.2.04.17.05","2.2.04.17.06","2.2.04.17.07","2.2.04.17.08","2.2.04.17.09","2.2.04.18.01","2.2.04.18.02","2.2.04.19.01","2.2.04.19.02","2.2.04.19.03","2.2.04.19.04","2.2.04.19.05","2.2.04.20.01","2.2.04.20.02","2.2.04.20.03","2.2.04.20.04","2.2.04.21","2.2.04.22","2.2.04.23","2.2.05.10.01","2.2.05.10.02","2.2.05.10.03","2.2.05.10.04","2.2.05.10.05","2.2.05.10.06","2.2.05.10.07","2.2.05.10.08","2.2.05.10.10","2.2.05.10.11","2.2.05.10.12","2.2.05.10.13","2.2.05.10.14","2.2.05.10.15","2.2.05.10.16","2.2.05.10.17","2.2.05.10.18","2.2.05.10.19","2.2.05.10.20","2.2.05.10.21","2.2.05.10.22","2.2.05.10.23","2.2.05.10.24","2.2.05.10.25","2.2.05.10.26","2.2.05.10.27","2.2.05.10.28","2.2.05.10.29","2.2.05.10.30","2.2.05.10.31","2.2.05.10.32","2.2.05.10.33","2.2.05.10.34","2.2.05.10.35","2.2.05.10.36","2.2.05.10.37","2.2.05.10.38","2.2.05.10.39","2.2.05.10.40","2.2.05.10.42","2.2.05.10.43","2.2.05.10.44","2.2.05.10.45","2.2.05.10.46","2.2.05.10.47","2.2.05.11.01","2.2.05.11.02","2.2.05.11.03","2.2.05.11.04","2.2.05.11.05","2.2.05.11.06","2.2.05.12.01","2.2.05.12.02","2.2.05.12.03","2.2.05.12.04","2.2.05.12.05","2.2.05.12.06","2.2.05.12.07","2.2.05.12.08","2.2.05.12.10","2.2.05.12.12","2.2.05.12.14","2.2.05.12.15","2.2.05.12.16","2.2.05.12.17","2.2.05.12.18","2.2.05.12.19","2.2.05.12.20","2.2.05.12.21","2.2.05.12.22","2.2.05.12.23","2.2.05.12.26","2.2.07.01","2.2.07.02","2.2.07.03","2.2.07.04","2.2.07.05","2.2.07.06","2.2.07.07","2.2.07.08","2.2.07.09","2.2.07.10","2.2.07.11","2.2.07.12","2.2.07.13","2.2.07.14","2.2.07.15","2.2.07.16","2.2.07.17","2.2.07.18","2.2.07.19","2.2.07.20","2.2.07.21","2.2.07.22","2.2.07.98","2.2.07.99","2.2.08.01"],"values":{"Tm1_plan":-5344735693.79,"Tm1_forecast":-5818974323.54,"Tm1_fact":-6144630275.72,"T0":-8307394482.68,"T1":-4137304354.35,"T2":-2452609713.01,"T3":-3399984849.19,"M1":-18297293399.25,"T4":-2234435889.07,"T5":-1587762892.53,"T6":-3739114021.41,"T7":-4638485414.63,"M2":-12199798217.65,"T8":-3352933081.74,"T9":-2835498879.15,"T10":-4790907816.61,"T11":-1769938008.87,"T12":-4383145693.07,"M3":-17132423479.46,"TT0_12":-47629515096.35},"mapped":true},{"id":"r_budget","label":"Розрахунки з бюджетом","short":"","type":"detail","group":"OP_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_tax_pnp","label":"Податки. Податок на прибуток","short":"Податки. ПнП","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.06"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":-35000000.0,"T2":0.0,"T3":0.0,"M1":-35000000.0,"T4":0.0,"T5":0.0,"T6":-39000000.0,"T7":0.0,"M2":-39000000.0,"T8":0.0,"T9":0.0,"T10":-1000000000.0,"T11":0.0,"T12":0.0,"M3":-1000000000.0,"TT0_12":-1074000000.0},"mapped":true},{"id":"r_tax_pdv","label":"Податки. ПДВ","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.17"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_tax_rent_oil","label":"Податки. Рента нафта та конденсат","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.02","2.2.01.04"],"values":{"Tm1_plan":-891192098.15,"Tm1_forecast":-891192098.15,"Tm1_fact":-891192098.15,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-860000000.0,"M1":-860000000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-860000000.0,"M2":-860000000.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":-860000000.0,"M3":-860000000.0,"TT0_12":-2580000000.0},"mapped":true},{"id":"r_tax_rent_gas","label":"Податки. Рента газ","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.03"],"values":{"Tm1_plan":-387288405.04,"Tm1_forecast":-387288405.04,"Tm1_fact":-387288405.04,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-350000000.0,"M1":-350000000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-350000000.0,"M2":-350000000.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":-350000000.0,"M3":-350000000.0,"TT0_12":-1050000000.0},"mapped":true},{"id":"r_tax_akciz","label":"Податки. Акциз","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.01","2.2.01.09"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":-50000000.0,"T1":0.0,"T2":-55000000.0,"T3":-400000.0,"M1":-105400000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-50400000.0,"M2":-50400000.0,"T8":0.0,"T9":0.0,"T10":-50000000.0,"T11":0.0,"T12":-70400000.0,"M3":-120400000.0,"TT0_12":-276200000.0},"mapped":true},{"id":"r_tax_rent_oth","label":"Податки. Рента інша","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.08","2.2.01.10","2.2.01.13","2.2.01.14"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-25000.0,"M1":-25000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-25000.0,"M2":-25000.0,"T8":0.0,"T9":0.0,"T10":-20350000.0,"T11":0.0,"T12":-25000.0,"M3":-20375000.0,"TT0_12":-20425000.0},"mapped":true},{"id":"r_tax_mytni","label":"Податки. Митні платежі","short":"Нафтопродукти (закупівля, митні платежі)","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.04.15.09"],"values":{"Tm1_plan":-600000000.0,"Tm1_forecast":-570000000.0,"Tm1_fact":-700000000.0,"T0":-580000000.0,"T1":-580000000.0,"T2":-580000000.0,"T3":-580000000.0,"M1":-2320000000.0,"T4":-580000000.0,"T5":-580000000.0,"T6":-580000000.0,"T7":-580000000.0,"M2":-2320000000.0,"T8":-580000000.0,"T9":-580000000.0,"T10":-580000000.0,"T11":-580000000.0,"T12":-580000000.0,"M3":-2900000000.0,"TT0_12":-7540000000.0},"mapped":true},{"id":"r_tax_other","label":"Податки. Інші податки","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.11","2.2.01.12","2.2.01.15","2.2.01.99","2.2.02.01","2.2.02.02","2.2.02.03","2.2.02.04","2.2.02.06"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-38500000.0,"M1":-38500000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":-43200000.0,"M2":-43200000.0,"T8":0.0,"T9":0.0,"T10":-6000000.0,"T11":0.0,"T12":-38500000.0,"M3":-44500000.0,"TT0_12":-126200000.0},"mapped":true},{"id":"r_tax_fines","label":"Податки. Штрафи та пені","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.01.16","2.2.02.05"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":-1626127.78,"M1":-1626127.78,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":-1626127.78},"mapped":true},{"id":"r_tax_vat_ref","label":"Податки. ПДВ. Відшкодування з бюджету","short":"Податки. Операційні","type":"detail","group":"OP_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_zp","label":"ЗП. Виплата","short":"ЗП з податками","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.03.01"],"values":{"Tm1_plan":-43493000.0,"Tm1_forecast":-43493000.0,"Tm1_fact":-23349628.51,"T0":-597510227.03,"T1":-43493000.0,"T2":-461929427.62,"T3":-43493000.0,"M1":-1146425654.65,"T4":-657290227.03,"T5":-43493000.0,"T6":-430832930.39,"T7":-43493000.0,"M2":-1175109157.42,"T8":-767241809.73,"T9":-43493000.0,"T10":-430832930.39,"T11":-43493000.0,"T12":-43493000.0,"M3":-1328553740.12,"TT0_12":-3650088552.18},"mapped":true},{"id":"r_zp_esv","label":"ЗП. ЄСВ","short":"ЗП з податками","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.03.03"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-5632910.1,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_zp_pdfo","label":"ЗП. ПДФО","short":"ЗП з податками","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.03.04","2.2.05.10.43","2.2.05.10.45","2.2.07.08"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-5605842.07,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_zp_vz","label":"ЗП. ВЗ","short":"ЗП з податками","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.03.02","2.2.05.10.44","2.2.05.10.46","2.2.07.09"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-1531285.88,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_energy","label":"Електроенергія","short":"Операційні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.05.10.27","2.2.07.17"],"values":{"Tm1_plan":-188689094.88,"Tm1_forecast":-188946263.74,"Tm1_fact":-188485916.56,"T0":-11792502.36,"T1":-15084613.56,"T2":-26505575.06,"T3":-260729603.65,"M1":-314112294.63,"T4":-12205952.23,"T5":-10643143.68,"T6":-23056824.16,"T7":-276088305.75,"M2":-321994225.82,"T8":-1821858.84,"T9":-22295180.2,"T10":-8442356.53,"T11":-44849842.65,"T12":-250706718.46,"M3":-328115956.68,"TT0_12":-964222477.13},"mapped":true},{"id":"r_opex","label":"Операційні витрати","short":"Операційні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.04.03","2.2.04.08.01","2.2.04.08.02","2.2.04.08.03","2.2.04.08.04","2.2.04.08.05","2.2.04.08.06","2.2.04.08.07","2.2.04.08.08","2.2.04.08.09","2.2.04.08.10","2.2.04.08.11","2.2.04.08.12","2.2.04.09.01","2.2.04.09.02","2.2.04.09.03","2.2.04.09.04","2.2.04.10.01","2.2.04.10.02","2.2.04.10.03","2.2.04.10.04","2.2.04.10.05","2.2.04.10.06","2.2.04.11.01","2.2.04.12.01","2.2.04.12.02","2.2.04.12.03","2.2.04.12.04","2.2.04.12.05","2.2.04.12.06","2.2.04.12.07","2.2.04.12.08","2.2.04.13.01","2.2.04.13.02","2.2.04.13.03","2.2.04.13.04","2.2.04.13.05","2.2.04.13.06","2.2.04.14.01","2.2.04.14.02","2.2.04.15.01","2.2.04.15.03","2.2.04.15.04","2.2.04.15.05","2.2.04.16.01","2.2.04.16.02","2.2.04.16.03","2.2.04.16.04","2.2.04.16.05","2.2.04.16.06","2.2.04.16.07","2.2.04.16.08","2.2.04.16.09","2.2.04.16.10","2.2.04.16.11","2.2.04.16.12","2.2.04.16.13","2.2.04.16.14","2.2.04.16.15","2.2.04.16.16","2.2.04.16.17","2.2.04.16.18","2.2.04.16.19","2.2.04.16.20","2.2.04.17.01","2.2.04.17.02","2.2.04.17.03","2.2.04.17.04","2.2.04.17.05","2.2.04.17.06","2.2.04.17.07","2.2.04.17.08","2.2.04.17.09","2.2.04.18.01","2.2.04.18.02","2.2.04.19.01","2.2.04.19.02","2.2.04.19.03","2.2.04.19.04","2.2.04.19.05","2.2.04.20.01","2.2.04.20.02","2.2.04.20.03","2.2.04.20.04","2.2.04.21","2.2.05.10.01","2.2.05.10.02","2.2.05.10.03","2.2.05.10.04","2.2.05.10.05","2.2.05.10.06","2.2.05.10.07","2.2.05.10.12","2.2.05.10.14","2.2.05.10.15","2.2.05.10.16","2.2.05.10.17","2.2.05.10.18","2.2.05.10.19","2.2.05.10.20","2.2.05.10.21","2.2.05.10.22","2.2.05.10.23","2.2.05.10.29","2.2.05.10.30","2.2.05.10.31","2.2.05.10.32","2.2.05.10.33","2.2.05.10.34","2.2.05.10.35","2.2.05.10.36","2.2.05.10.37","2.2.05.10.38","2.2.05.10.39","2.2.05.10.42","2.2.05.10.47","2.2.05.11.06","2.2.05.12.04","2.2.05.12.12","2.2.05.12.21","2.2.05.12.26","2.2.07.03","2.2.07.04","2.2.07.10","2.2.07.11","2.2.07.20","2.2.07.21"],"values":{"Tm1_plan":-124389463.24,"Tm1_forecast":-118383118.75,"Tm1_fact":-121342460.22,"T0":-131547809.04,"T1":-176190286.96,"T2":-232210998.39,"T3":-156436658.23,"M1":-696385752.63,"T4":-91932218.23,"T5":-127477277.72,"T6":-138818277.37,"T7":-182422718.07,"M2":-540650491.39,"T8":-113480434.17,"T9":-168940018.21,"T10":-115620661.19,"T11":-146895153.66,"T12":-85124603.85,"M3":-630060871.08,"TT0_12":-1867097115.1},"mapped":true},{"id":"r_transp_np","label":"Транспортування НП та сировини","short":"Логістичні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.05.10.08","2.2.05.10.28","2.2.05.10.40","2.2.05.12.01","2.2.05.12.02","2.2.05.12.05","2.2.05.12.07","2.2.05.12.15","2.2.05.12.20","2.2.05.12.22","2.2.05.12.23"],"values":{"Tm1_plan":-145368097.55,"Tm1_forecast":-202623472.63,"Tm1_fact":-190340855.6,"T0":-157508533.78,"T1":-141571056.49,"T2":-162310623.35,"T3":-151602198.78,"M1":-612992412.4,"T4":-141854184.09,"T5":-148169751.89,"T6":-163808800.09,"T7":-165294338.2,"M2":-619127074.29,"T8":-140577224.09,"T9":-147269393.37,"T10":-163675144.09,"T11":-156839654.27,"T12":-140532824.09,"M3":-748894239.93,"TT0_12":-1981013726.62},"mapped":true},{"id":"r_transp_gas","label":"Транспортування газу","short":"Логістичні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.05.12.14"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-7813.32,"T0":-103151.11,"T1":-22958379.27,"T2":-49557617.97,"T3":-749888.48,"M1":-73369036.83,"T4":-2283889.47,"T5":-13849493.14,"T6":-67585877.09,"T7":-198092.3,"M2":-83917352.0,"T8":-2283889.47,"T9":-11442364.0,"T10":-66716491.8,"T11":-406322.62,"T12":0.0,"M3":-80849067.89,"TT0_12":-238135456.72},"mapped":true},{"id":"r_refining","label":"Послуги з переробки","short":"Переробка (послуги, акциз, сировина)","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.05.12.10","2.2.05.12.17","2.2.05.12.18"],"values":{"Tm1_plan":-321703000.0,"Tm1_forecast":-352192913.2,"Tm1_fact":-352192913.2,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_raw_oil","label":"Нафта і кондесат (сировина)","short":"Переробка (послуги, акциз, сировина)","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.04.01","2.2.04.02","2.2.04.22","2.2.07.18"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-829203334.12,"T0":-77000.0,"T1":0.0,"T2":-77000.0,"T3":0.0,"M1":-154000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":-154000.0},"mapped":true},{"id":"r_np_buy","label":"Нафтопродукти (закупівля)","short":"Нафтопродукти (закупівля, митні платежі)","type":"detail","group":"OP_OUT","formula":"","codes":["2.1.03.15","2.2.04.07","2.2.04.15.02","2.2.04.15.06","2.2.04.15.07","2.2.04.15.08","2.2.04.23"],"values":{"Tm1_plan":-2600097201.01,"Tm1_forecast":-3018370449.12,"Tm1_fact":-2410998302.62,"T0":-6757760983.38,"T1":-3097172242.46,"T2":-859199715.03,"T3":-886442242.46,"M1":-11600575183.34,"T4":-700523775.0,"T5":-641398549.12,"T6":-2275614428.13,"T7":-2054068002.45,"M2":-5671604754.69,"T8":-1731641221.56,"T9":-1804747156.08,"T10":-2333489082.79,"T11":-744808111.13,"T12":-1951417414.27,"M3":-8566102985.83,"TT0_12":-25838282923.86},"mapped":true},{"id":"r_charity","label":"Благодійність","short":"Операційні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.2.07.22"],"values":{"Tm1_plan":-7500000.0,"Tm1_forecast":-7500000.0,"Tm1_fact":-2878497.8,"T0":-7500000.0,"T1":-7500000.0,"T2":-7500000.0,"T3":-7500001.0,"M1":-30000001.0,"T4":-7500000.0,"T5":-7500000.0,"T6":-7500000.0,"T7":-7500000.0,"M2":-30000000.0,"T8":-7500000.0,"T9":-7500000.0,"T10":-7500000.0,"T11":-7500000.0,"T12":-7500000.0,"M3":-37500000.0,"TT0_12":-97500001.0},"mapped":true},{"id":"r_op_other","label":"Інші витрачання (операційна діяльність)","short":"Операційні витрати","type":"detail","group":"OP_OUT","formula":"","codes":["2.1.04.01","2.2.05.10.10","2.2.05.10.11","2.2.05.10.13","2.2.05.10.24","2.2.05.10.25","2.2.05.10.26","2.2.05.11.01","2.2.05.11.02","2.2.05.11.03","2.2.05.11.04","2.2.05.11.05","2.2.05.12.03","2.2.05.12.06","2.2.05.12.08","2.2.05.12.16","2.2.05.12.19","2.2.07.01","2.2.07.02","2.2.07.05","2.2.07.06","2.2.07.07","2.2.07.12","2.2.07.13","2.2.07.14","2.2.07.15","2.2.07.16","2.2.07.19","2.2.07.98","2.2.07.99","2.2.08.01"],"values":{"Tm1_plan":-35015333.92,"Tm1_forecast":-38984602.91,"Tm1_fact":-34580012.53,"T0":-13594275.98,"T1":-18334775.61,"T2":-18318755.59,"T3":-62480128.81,"M1":-112727935.99,"T4":-40845643.02,"T5":-15231676.98,"T6":-12896884.18,"T7":-25795957.86,"M2":-94770162.04,"T8":-8386643.88,"T9":-49811767.29,"T10":-8281149.82,"T11":-45145924.54,"T12":-5446132.4,"M3":-117071617.93,"TT0_12":-324569715.96},"mapped":true},{"id":"NCF_OP","label":"Чистий рух коштів від операційної діяльності","short":"","type":"calc","group":"","formula":"OP_IN+OP_OUT","codes":[],"values":{"Tm1_plan":-725467879.94,"Tm1_forecast":-1369365149.13,"Tm1_fact":-1040212077.35,"T0":-3806546183.56,"T1":-90458132.1,"T2":1238456761.46,"T3":856029502.23,"M1":-1802518052.01,"T4":2055738872.58,"T5":3207465498.25,"T6":637744584.05,"T7":98128354.49,"M2":5999077309.36,"T8":1280295945.46,"T9":1705331569.21,"T10":-168770196.75,"T11":2633949337.66,"T12":-22729507.54,"M3":5428077147.98,"TT0_12":9624636405.35},"mapped":true},{"id":"S2","label":"II. Рух коштів у результаті інвестиційної діяльності","short":"","type":"section","group":"","formula":"","codes":[],"values":{},"mapped":false},{"id":"INV_IN","label":"Надходження від інвестиційної діяльності","short":"","type":"subtotal","group":"INV_IN","formula":"","codes":["1.1.01.02","3.1.04"],"values":{"Tm1_plan":29000000.0,"Tm1_forecast":0,"Tm1_fact":60792333.49,"T0":0,"T1":0,"T2":0,"T3":29000000.0,"M1":29000000.0,"T4":0,"T5":0,"T6":0,"T7":4000000.0,"M2":4000000.0,"T8":25000000.0,"T9":0,"T10":0,"T11":0,"T12":29000000.0,"M3":54000000.0,"TT0_12":87000000.0},"mapped":true},{"id":"r_ovdp_ret","label":"Повернення тіла ОВДП та купонний дохід","short":"ОВДП","type":"detail","group":"INV_IN","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_deposit","label":"Дохід від поточних та депозитних вкладів та ін","short":"Відсотки на залишки","type":"detail","group":"INV_IN","formula":"","codes":["3.1.04"],"values":{"Tm1_plan":29000000.0,"Tm1_forecast":0.0,"Tm1_fact":60792333.49,"T0":0.0,"T1":0.0,"T2":0.0,"T3":29000000.0,"M1":29000000.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":4000000.0,"M2":4000000.0,"T8":25000000.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":29000000.0,"M3":54000000.0,"TT0_12":87000000.0},"mapped":true},{"id":"r_inv_other_in","label":"Інші надходження (інвестиційна діяльність)","short":"","type":"detail","group":"INV_IN","formula":"","codes":["1.1.01.02"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"INV_OUT","label":"Витрачання грошових коштів від інвестиційної діяльності","short":"","type":"subtotal","group":"INV_OUT","formula":"","codes":["1.2.01.02","1.2.01.03","1.2.01.04","1.2.01.05","1.2.01.06","1.2.01.07","1.2.01.08","1.2.01.09","1.2.01.10","1.2.01.11","1.2.01.12","1.2.01.13","1.2.02.02","1.2.02.03","1.2.02.04","1.2.02.05","1.2.03.02","1.2.03.03","1.2.03.04","1.2.03.05","1.2.03.06","1.2.03.07","1.2.04.01","1.2.05.02","1.2.05.03","1.2.05.04","1.2.05.05","1.2.05.06","1.2.05.07","1.2.05.08","1.2.05.09","1.2.06.02","1.2.06.03","1.2.06.04","1.2.06.05","1.2.06.06","1.2.06.07","1.2.07.02","1.2.07.03","1.2.08.02","1.2.08.03","1.2.08.04","1.2.08.05","1.2.08.06","1.2.08.07","1.2.08.08","1.2.08.09","1.2.08.10","1.2.08.11","1.2.08.12","1.2.08.13","1.2.08.14","1.2.08.15","1.2.08.16","1.2.08.17","1.2.08.18","1.2.08.19","1.2.08.20","1.2.08.21","1.2.09.01","1.2.09.02","1.2.09.03","1.2.09.04","1.2.09.05","1.2.10.02","1.2.10.03","1.2.10.04","1.2.10.05","1.2.10.06","1.2.10.07","1.2.10.08","1.2.10.09","1.2.10.10","1.2.11.02","1.2.11.03","1.2.11.04","1.2.12.02","1.2.12.03","1.2.12.04","1.2.12.05","1.2.12.06","1.2.12.07","1.2.12.08","1.2.12.09","1.2.12.10","1.2.12.11","1.2.12.12","1.2.12.13","1.2.12.14","1.2.12.15","1.2.12.16","1.2.12.17","1.2.12.18","1.2.12.19","1.2.12.20","1.2.12.21","1.2.12.22","1.2.12.23","1.2.12.24","1.2.12.25","1.2.12.26","1.2.12.27","1.2.12.28","1.2.12.29","1.2.12.30","1.2.12.31","1.2.12.32","1.2.12.33","1.2.12.34","1.2.12.35","1.2.12.36","1.2.12.37","1.2.12.38","1.2.12.39","1.2.12.40","1.2.12.41","1.2.13.02","1.2.13.03","1.2.13.04","1.2.13.05","1.2.13.06","1.2.13.07","1.2.14.01","1.2.14.02","1.2.14.03","1.2.14.04","1.2.14.05","1.2.15.01"],"values":{"Tm1_plan":-135604952.1,"Tm1_forecast":-111509937.35,"Tm1_fact":-113727883.08,"T0":-115769928.2,"T1":-308765407.28,"T2":-221683575.63,"T3":-173856235.59,"M1":-820075146.7,"T4":-92288517.44,"T5":-122038972.72,"T6":-120608846.27,"T7":-315952932.82,"M2":-650889269.25,"T8":-100848773.12,"T9":-265097566.06,"T10":-170778760.38,"T11":-335613778.65,"T12":-21647703.95,"M3":-893986582.16,"TT0_12":-2364950998.11},"mapped":true},{"id":"r_capex","label":"CAPEX","short":"CAPEX","type":"detail","group":"INV_OUT","formula":"","codes":["1.2.01.02","1.2.01.03","1.2.01.04","1.2.01.05","1.2.01.06","1.2.01.07","1.2.01.08","1.2.01.09","1.2.01.10","1.2.01.11","1.2.01.12","1.2.01.13","1.2.02.02","1.2.02.03","1.2.02.04","1.2.02.05","1.2.03.02","1.2.03.03","1.2.03.04","1.2.03.05","1.2.03.06","1.2.03.07","1.2.04.01","1.2.05.02","1.2.05.03","1.2.05.04","1.2.05.05","1.2.05.06","1.2.05.07","1.2.05.08","1.2.05.09","1.2.06.02","1.2.06.03","1.2.06.04","1.2.06.05","1.2.06.06","1.2.06.07","1.2.07.02","1.2.07.03","1.2.08.02","1.2.08.03","1.2.08.04","1.2.08.05","1.2.08.06","1.2.08.07","1.2.08.08","1.2.08.09","1.2.08.10","1.2.08.11","1.2.08.12","1.2.08.13","1.2.08.14","1.2.08.15","1.2.08.16","1.2.08.17","1.2.08.18","1.2.08.19","1.2.08.20","1.2.08.21","1.2.09.01","1.2.09.02","1.2.09.03","1.2.09.04","1.2.09.05","1.2.10.02","1.2.10.03","1.2.10.04","1.2.10.05","1.2.10.06","1.2.10.07","1.2.10.08","1.2.10.09","1.2.10.10","1.2.11.02","1.2.11.03","1.2.11.04","1.2.12.02","1.2.12.03","1.2.12.04","1.2.12.05","1.2.12.06","1.2.12.07","1.2.12.08","1.2.12.09","1.2.12.10","1.2.12.11","1.2.12.12","1.2.12.13","1.2.12.14","1.2.12.15","1.2.12.16","1.2.12.17","1.2.12.18","1.2.12.19","1.2.12.20","1.2.12.21","1.2.12.22","1.2.12.23","1.2.12.24","1.2.12.25","1.2.12.26","1.2.12.27","1.2.12.28","1.2.12.29","1.2.12.30","1.2.12.31","1.2.12.32","1.2.12.33","1.2.12.34","1.2.12.35","1.2.12.36","1.2.12.37","1.2.12.38","1.2.12.39","1.2.12.40","1.2.12.41","1.2.13.02","1.2.13.03","1.2.13.04","1.2.13.05","1.2.13.06","1.2.13.07","1.2.14.01","1.2.14.02","1.2.14.03","1.2.14.04","1.2.14.05"],"values":{"Tm1_plan":-135604952.1,"Tm1_forecast":-111509937.35,"Tm1_fact":-113727883.08,"T0":-115769928.2,"T1":-308765407.28,"T2":-221683575.63,"T3":-173856235.59,"M1":-820075146.7,"T4":-92288517.44,"T5":-122038972.72,"T6":-120608846.27,"T7":-315952932.82,"M2":-650889269.25,"T8":-100848773.12,"T9":-265097566.06,"T10":-170778760.38,"T11":-335613778.65,"T12":-21647703.95,"M3":-893986582.16,"TT0_12":-2364950998.11},"mapped":true},{"id":"r_fin_inv","label":"Фінансові інвестиції","short":"CAPEX_FIN","type":"detail","group":"INV_OUT","formula":"","codes":["1.2.15.01"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_ovdp_buy","label":"Купівля ОВДП","short":"ОВДП","type":"detail","group":"INV_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"NCF_INV","label":"Чистий рух коштів від інвестиційної діяльності","short":"","type":"calc","group":"","formula":"INV_IN+INV_OUT","codes":[],"values":{"Tm1_plan":-106604952.1,"Tm1_forecast":-111509937.35,"Tm1_fact":-52935549.59,"T0":-115769928.2,"T1":-308765407.28,"T2":-221683575.63,"T3":-144856235.59,"M1":-791075146.7,"T4":-92288517.44,"T5":-122038972.72,"T6":-120608846.27,"T7":-311952932.82,"M2":-646889269.25,"T8":-75848773.12,"T9":-265097566.06,"T10":-170778760.38,"T11":-335613778.65,"T12":7352296.05,"M3":-839986582.16,"TT0_12":-2277950998.11},"mapped":true},{"id":"S3","label":"III. Рух коштів у результаті фінансової діяльності","short":"","type":"section","group":"","formula":"","codes":[],"values":{},"mapped":false},{"id":"FIN_IN","label":"Надходження грошових коштів від фінансової діяльності","short":"","type":"subtotal","group":"FIN_IN","formula":"","codes":["Отримано кредитних коштів Кредит Дніпро","Отримано кредитних коштів КредоБанк","Отримано кредитних коштів МТБ","Отримано кредитних коштів ОТП Банк","Отримано кредитних коштів ПУМБ","Отримано кредитних коштів Сенс Банк","Отримано кредитних коштів УГБ","Отримано постімпортне фінансування МТБ","Отримано постімпортне фінансування Ощадбанк","Отримано постімпортне фінансування ПУМБ","Отримано постімпортне фінансування Приват Банк","Отримано постімпортне фінансування Сенс Банк","Отримано постімпортне фінансування Укргазбанк","Отримано постімпортне фінансування Укргазбанк (субліміт НАК)","Отримано постімпортне фінансування Укрексімбанк"],"values":{"Tm1_plan":310899000.0,"Tm1_forecast":2877939552.09,"Tm1_fact":306225617.94,"T0":1832838031.98,"T1":0,"T2":2159148016.49,"T3":1255337352.07,"M1":5247323400.54,"T4":2000000000.0,"T5":507577988.45,"T6":424909346.87,"T7":694177930.25,"M2":3626665265.58,"T8":898960678.44,"T9":837134743.92,"T10":297748217.21,"T11":1929401155.56,"T12":679184485.73,"M3":4642429280.86,"TT0_12":13516417946.98},"mapped":true},{"id":"r_cred_short_in","label":"Залучення короткострокових кредитних коштів","short":"Нафтопродукти (постімпорт)","type":"detail","group":"FIN_IN","formula":"","codes":["Отримано кредитних коштів Кредит Дніпро","Отримано кредитних коштів КредоБанк","Отримано кредитних коштів МТБ","Отримано кредитних коштів ОТП Банк","Отримано кредитних коштів ПУМБ","Отримано кредитних коштів Сенс Банк","Отримано кредитних коштів УГБ","Отримано постімпортне фінансування МТБ","Отримано постімпортне фінансування Ощадбанк","Отримано постімпортне фінансування ПУМБ","Отримано постімпортне фінансування Приват Банк","Отримано постімпортне фінансування Сенс Банк","Отримано постімпортне фінансування Укргазбанк","Отримано постімпортне фінансування Укргазбанк (субліміт НАК)","Отримано постімпортне фінансування Укрексімбанк"],"values":{"Tm1_plan":310899000.0,"Tm1_forecast":2877939552.09,"Tm1_fact":306225617.94,"T0":1832838031.98,"T1":0.0,"T2":2159148016.49,"T3":1255337352.07,"M1":5247323400.54,"T4":2000000000.0,"T5":507577988.45,"T6":424909346.87,"T7":694177930.25,"M2":3626665265.58,"T8":898960678.44,"T9":837134743.92,"T10":297748217.21,"T11":1929401155.56,"T12":679184485.73,"M3":4642429280.86,"TT0_12":13516417946.98},"mapped":true},{"id":"r_cred_long_in","label":"Залучення довгострокових кредитних коштів","short":"Довгострокові кредити","type":"detail","group":"FIN_IN","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_bonds_in","label":"Надходження коштів від продажу облігацій","short":"","type":"detail","group":"FIN_IN","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_fin_other_in","label":"Інші надходження (фінансова діяльність)","short":"","type":"detail","group":"FIN_IN","formula":"","codes":[],"values":{},"mapped":false},{"id":"FIN_OUT","label":"Витрачання грошових коштів від фінансової діяльності","short":"","type":"subtotal","group":"FIN_OUT","formula":"","codes":["3.2.02.03","3.2.02.05","3.2.02.06","3.2.02.08","3.2.02.09","3.2.02.10","3.2.02.11","3.2.02.12","3.2.03.01","3.2.03.02","3.2.03.03","Оплата по постімпорту МТБ","Оплата по постімпорту Ощадбанк","Оплата по постімпорту ПУМБ","Оплата по постімпорту Приват Банк","Оплата по постімпорту Сенс Банк","Оплата по постімпорту Укргазбанк","Оплата по постімпорту Укргазбанк (субліміт НАК)","Оплата по постімпорту Укрексімбанк","Повернення кредиту Кредит Дніпро","Повернення кредиту КредоБанк","Повернення кредиту МТБ","Повернення кредиту ОТП Банк","Повернення кредиту ПУМБ","Повернення кредиту Сенс Банк","Повернення кредиту УГБ"],"values":{"Tm1_plan":-1514541225.98,"Tm1_forecast":-22997575.34,"Tm1_fact":-1031811660.37,"T0":-804672291.26,"T1":-556647.0,"T2":-2055032063.99,"T3":-1292674426.78,"M1":-4152935429.01,"T4":-5168592.06,"T5":-510450972.38,"T6":-429744854.29,"T7":-691296761.4,"M2":-1636661180.13,"T8":-901558862.86,"T9":-842022110.52,"T10":-298306969.21,"T11":-1906350773.29,"T12":-683529650.84,"M3":-4631768366.71,"TT0_12":-10421364975.88},"mapped":true},{"id":"r_div","label":"Сплата дивідендів","short":"Дивіденди","type":"detail","group":"FIN_OUT","formula":"","codes":["3.2.03.01","3.2.03.02","3.2.03.03"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":0.0,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"r_cred_short_out","label":"Повернення короткострокових кредитних коштів","short":"Нафтопродукти (постімпорт)","type":"detail","group":"FIN_OUT","formula":"","codes":["Оплата по постімпорту МТБ","Оплата по постімпорту Ощадбанк","Оплата по постімпорту ПУМБ","Оплата по постімпорту Приват Банк","Оплата по постімпорту Сенс Банк","Оплата по постімпорту Укргазбанк","Оплата по постімпорту Укргазбанк (субліміт НАК)","Оплата по постімпорту Укрексімбанк","Повернення кредиту Кредит Дніпро","Повернення кредиту КредоБанк","Повернення кредиту МТБ","Повернення кредиту ОТП Банк","Повернення кредиту ПУМБ","Повернення кредиту Сенс Банк","Повернення кредиту УГБ"],"values":{"Tm1_plan":-1489471354.11,"Tm1_forecast":-22997575.34,"Tm1_fact":-1010035912.64,"T0":-803600728.55,"T1":0.0,"T2":-2007214895.95,"T3":-1255337352.07,"M1":-4066152976.57,"T4":0.0,"T5":-507577988.45,"T6":-424909346.87,"T7":-688798183.63,"M2":-1621285518.95,"T8":-898960678.44,"T9":-837134743.92,"T10":-297748217.21,"T11":-1900848928.87,"T12":-679841076.65,"M3":-4614533645.09,"TT0_12":-10301972140.63},"mapped":true},{"id":"r_cred_long_out","label":"Повернення довгострокових кредитних коштів","short":"Довгострокові кредити","type":"detail","group":"FIN_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_bonds_out","label":"Виплати по облігаціям","short":"","type":"detail","group":"FIN_OUT","formula":"","codes":[],"values":{},"mapped":false},{"id":"r_interest","label":"Відсотки, комісії та інше","short":"Відсотки, комісії та інше","type":"detail","group":"FIN_OUT","formula":"","codes":["3.2.02.03","3.2.02.05","3.2.02.06","3.2.02.08","3.2.02.09","3.2.02.10","3.2.02.11","3.2.02.12"],"values":{"Tm1_plan":-25069871.87,"Tm1_forecast":0.0,"Tm1_fact":-21775747.73,"T0":-1071562.71,"T1":-556647.0,"T2":-47817168.04,"T3":-37337074.71,"M1":-86782452.44,"T4":-5168592.06,"T5":-2872983.93,"T6":-4835507.42,"T7":-2498577.77,"M2":-15375661.18,"T8":-2598184.42,"T9":-4887366.6,"T10":-558752.0,"T11":-5501844.42,"T12":-3688574.19,"M3":-17234721.62,"TT0_12":-119392835.25},"mapped":true},{"id":"NCF_FIN","label":"Чистий рух коштів від фінансової діяльності","short":"","type":"calc","group":"","formula":"FIN_IN+FIN_OUT","codes":[],"values":{"Tm1_plan":-1203642225.98,"Tm1_forecast":2854941976.75,"Tm1_fact":-725586042.43,"T0":1028165740.72,"T1":-556647.0,"T2":104115952.5,"T3":-37337074.71,"M1":1094387971.53,"T4":1994831407.94,"T5":-2872983.93,"T6":-4835507.42,"T7":2881168.85,"M2":1990004085.45,"T8":-2598184.42,"T9":-4887366.6,"T10":-558752.0,"T11":23050382.27,"T12":-4345165.11,"M3":10660914.15,"TT0_12":3095052971.1},"mapped":true},{"id":"BAL_OPEN","label":"Залишок ГК на початок","short":"Залишок на початок","type":"balance_open","group":"","formula":"","codes":[],"values":{"Tm1_plan":6441872347.28,"Tm1_forecast":6441872347.28,"Tm1_fact":6441872347.28,"T0":4634505175.07,"T1":922456799.31,"T2":518676612.92,"T3":-373582265.24,"M1":4634505175.07,"T4":-960167131.2,"T5":994114631.88,"T6":3564090185.03,"T7":3646481068.52,"M2":-960167131.2,"T8":2734359728.78,"T9":3017248038.25,"T10":3610461130.88,"T11":2967605204.53,"T12":3344589990.24,"M3":2734359728.78,"TT0_12":4634505175.07},"mapped":true},{"id":"r_fx","label":"Вплив зміни валютних курсів на залишок коштів","short":"Відсотки, комісії та інше","type":"detail","group":"FX","formula":"","codes":["3.1.01.01","3.1.01.02","3.1.01.03","3.2.01.01","3.2.01.02"],"values":{"Tm1_plan":0.0,"Tm1_forecast":0.0,"Tm1_fact":-3423829.32,"T0":0.0,"T1":0.0,"T2":0.0,"T3":0.0,"M1":0.0,"T4":0.0,"T5":0.0,"T6":0.0,"T7":0.0,"M2":0.0,"T8":0.0,"T9":0.0,"T10":0.0,"T11":0.0,"T12":0.0,"M3":0.0,"TT0_12":0.0},"mapped":true},{"id":"NCF_TOTAL","label":"Чистий рух коштів за період","short":"Чистий рух коштів","type":"calc","group":"","formula":"NCF_OP+NCF_INV+NCF_FIN+r_fx","codes":[],"values":{"Tm1_plan":-2035715058.02,"Tm1_forecast":1374066890.27,"Tm1_fact":-1822157498.69,"T0":-2894150371.04,"T1":-399780186.38,"T2":1120889138.33,"T3":673836191.93,"M1":-1499205227.18,"T4":3958281763.08,"T5":3082553541.6,"T6":512300230.36,"T7":-210943409.48,"M2":7342192125.56,"T8":1201848987.92,"T9":1435346636.55,"T10":-340107709.13,"T11":2321385941.28,"T12":-19722376.6,"M3":4598751479.97,"TT0_12":10441738378.34},"mapped":true},{"id":"BAL_CLOSE","label":"Залишок ГК на кінець","short":"Залишок на кінець","type":"calc","group":"","formula":"BAL_OPEN+NCF_TOTAL","codes":[],"values":{"Tm1_plan":4406157289.26,"Tm1_forecast":7815939237.55,"Tm1_fact":4619714848.59,"T0":1740354804.03,"T1":522676612.93,"T2":1639565751.25,"T3":300253926.69,"M1":3135299947.89,"T4":2998114631.88,"T5":4076668173.48,"T6":4076390415.39,"T7":3435537659.04,"M2":6382024994.36,"T8":3936208716.7,"T9":4452594674.8,"T10":3270353421.75,"T11":5288991145.81,"T12":3324867613.64,"M3":7333111208.75,"TT0_12":15076243553.41},"mapped":true}],"coverage":{"nodes_total":457,"nodes_matched":419,"nodes_unmatched":38,"unmatched":[{"key":"Повернення покриття банківські гарантії","name":"банківські гарантії","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття кредити","name":"кредит","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття акредитиви","name":"акредитиви","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття податкові векселі","name":"податкові векселі","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Укргазбанк","name":"Укргазбанк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Укргазбанк (субліміт НАК)","name":"Укргазбанк (субліміт НАК)","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Ощадбанк","name":"Ощадбанк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Сенс Банк","name":"Сенс Банк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Укрексімбанк","name":"Укрексімбанк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт МТБ","name":"МТБ","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт ПУМБ","name":"ПУМБ","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт курсові","name":"курсові","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"Повернення покриття постімпорт Приватбанк","name":"Приват Банк","block":"Надходження","reason":"немає статті РК-презентації"},{"key":"2.2.01.05","name":"Заборгованість по рентній платі за нафту, газ та ГК","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.01.07","name":"Заборгованність по Податку на прибуток","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.01.18","name":"Задолженность по ПДВ","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.05.12.25","name":"Транспортування нафти трубопроводом","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.05.12.13","name":"Послуги зберігання природного газу","block":"Видатки","reason":"немає у довіднику"},{"key":"Розміщення покриття постімпорт","name":"Розміщення покриття постімпорт","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Укргазбанк","name":"Укргазбанк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Ощадбанк","name":"Ощадбанк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Сенс Банк","name":"Сенс Банк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Укрексімбанк","name":"Укрексімбанк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт МТБ","name":"МТБ","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Укргазбанк (субліміт НАК)","name":"Укргазбанк (субліміт НАК)","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт ПУМБ","name":"ПУМБ","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт Приватбанк","name":"Приват Банк","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття постімпорт курсові різниці","name":"курсові різниці","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Покриття під податкові векселі","name":"Покриття під податкові векселі","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"2.2.05.12.27","name":"Брокерські послуги","block":"Видатки","reason":"немає у довіднику"},{"key":"2.2.05.12.24","name":"Перевезення нафти та НП морським транспортом","block":"Видатки","reason":"немає у довіднику"},{"key":"митне оформлення обладнання","name":"митне оформлення обладнання","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"2.2.05.10.48","name":"Послуги оренди нерухомості (АЗС)","block":"Видатки","reason":"немає у довіднику"},{"key":"Розміщення покриття під банківські гарантії","name":"Покриття під банківські гарантії","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"Розміщення покриття під акредитиви","name":"Покриття під акредитиви","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"2.2.05.10.41","name":"Енергія (ТОВ \"НЬЮ ЕНЕРДЖІ ЮКРЕЙН\")","block":"Видатки","reason":"немає у довіднику"},{"key":"3.2.02.01","name":"Повернення фінансової допомоги","block":"Видатки","reason":"немає статті РК-презентації"},{"key":"3.2.02.02","name":"Повернення позики","block":"Видатки","reason":"немає статті РК-презентації"}],"rows_total":67,"rows_mapped":52,"rows_unmapped":["Інше","Природний газ (Група НАК без ПСО)","Природний ГАЗ гурт","Розрахунки з бюджетом","Податки. ПДВ. Відшкодування з бюджету","Повернення тіла ОВДП та купонний дохід","Купівля ОВДП","Залучення довгострокових кредитних коштів","Надходження коштів від продажу облігацій","Інші надходження (фінансова діяльність)","Повернення довгострокових кредитних коштів","Виплати по облігаціям"]}};
+const EMBEDDED_DICT = [];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   РУШІЙ МАПІНГУ
+   ═══════════════════════════════════════════════════════════════════════════ */
+const ERP_RE = /^\d+(\.\d+)+$/;
+const ALL_PERIODS = ['Tm1_plan','Tm1_forecast','Tm1_fact','T0','T1','T2','T3','M1',
+                     'T4','T5','T6','T7','M2','T8','T9','T10','T11','T12','M3','TT0_12'];
+const WEEK_KEYS = ['T0','T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+const MPERIODS  = ['M1','M2','M3'];
+
+function walkTree(node, path, out, rootName){
+  out.push({node, path, rootName});
+  (node.children || []).forEach(ch => walkTree(ch, path.concat([node.name || '']), out, rootName));
+}
+function hasValues(n){
+  const v = n.values || {};
+  return Object.keys(v).some(k => typeof v[k] === 'number' && v[k] !== 0);
+}
+function isMeasureLeaf(n){
+  const kids = n.children || [];
+  if (!kids.length) return true;
+  return !kids.some(k => hasValues(k) || (k.children||[]).length);
+}
+function flowCutoff(snapshot){
+  const m = (snapshot.rows || [])
+    .filter(r => (r.name||'').startsWith('Залишки на кінець періоду') && r.src_row)
+    .map(r => r.src_row);
+  return m.length ? Math.min.apply(null, m) : Infinity;
+}
+function signMarkers(snapshot){
+  const marks = [];
+  (snapshot.rows || []).forEach(r => {
+    const nm = (r.name || '').trim();
+    if (!r.src_row) return;
+    if (nm === 'Надходження') marks.push([r.src_row, 1]);
+    else if (nm === 'Видатки') marks.push([r.src_row, -1]);
+  });
+  return marks.sort((a,b) => a[0]-b[0]);
+}
+function signFor(markers, srcRow, rootName){
+  let cur = rootName === 'Надходження' ? 1 : -1;
+  if (!srcRow) return cur;
+  for (const [sr, sg] of markers){ if (sr <= srcRow) cur = sg; else break; }
+  return cur;
+}
+function collectMeasureNodes(snapshot){
+  const cut = flowCutoff(snapshot), markers = signMarkers(snapshot), out = [];
+  (snapshot.tree || []).forEach(root => {
+    const flat = [];
+    walkTree(root, [], flat, root.name || '');
+    flat.forEach(({node, path, rootName}) => {
+      if (node.name === 'КОНТРОЛЬ витрат по напрямках' || path.includes('КОНТРОЛЬ витрат по напрямках')) return;
+      if (node.src_row && node.src_row >= cut) return;
+      if (node.kind !== 'child' && node.kind !== 'item') return;
+      const code = String(node.code || '').trim();
+      if (!code || !isMeasureLeaf(node)) return;
+      out.push({key: code, sign: signFor(markers, node.src_row, rootName),
+                name: node.name || '', block: rootName, values: node.values || {}});
+    });
+  });
+  return out;
+}
+function buildRk(snapshot, dictionary){
+  const dict = {};
+  (dictionary || []).forEach(d => {
+    const k = (d.MatchKey || d.Title || '').trim();
+    if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') dict[k] = d;
+  });
+  const nodes = collectMeasureNodes(snapshot);
+  const agg = {}, codesBy = {}, unmatched = [];
+  let matched = 0;
+  nodes.forEach(nd => {
+    const rec = dict[nd.key];
+    const rk = rec ? (rec.RK_Item || '') : '';
+    if (!rec){ unmatched.push({key:nd.key, name:nd.name, block:nd.block, reason:'немає у довіднику'}); return; }
+    if (!rk){ unmatched.push({key:nd.key, name:nd.name, block:nd.block, reason:'немає статті РК-презентації'}); return; }
+    matched++;
+    (codesBy[rk] = codesBy[rk] || new Set()).add(nd.key);
+    const a = agg[rk] = agg[rk] || {};
+    ALL_PERIODS.forEach(p => { const v = nd.values[p]; if (typeof v === 'number') a[p] = (a[p]||0) + v*nd.sign; });
+  });
+
+  let openBal = {};
+  (snapshot.tree||[]).forEach(root => {
+    const flat = []; walkTree(root, [], flat, root.name||'');
+    flat.forEach(({node}) => {
+      if (node.name === 'Залишки на початок періоду всього' && !Object.keys(openBal).length) openBal = node.values||{};
+    });
+  });
+
+  const rows = [], byId = {};
+  RK_ROWS.forEach(r => {
+    const row = {id:r.id, label:r.label, short:r.short, type:r.type, group:r.group,
+                 formula:r.formula, codes:[], values:{}, mapped:false};
+    if (r.type === 'detail' || r.type === 'detail_sub'){
+      if (agg[r.label]){ row.mapped = true;
+        ALL_PERIODS.forEach(p => row.values[p] = agg[r.label][p] || 0);
+        row.codes = Array.from(codesBy[r.label]||[]).sort();
+      } else ALL_PERIODS.forEach(p => row.values[p] = 0);
+    } else if (r.type === 'balance_open'){
+      row.mapped = Object.keys(openBal).length > 0;
+      ALL_PERIODS.forEach(p => row.values[p] = openBal[p]);
     }
+    rows.push(row); byId[r.id] = row;
+  });
+  rows.forEach(row => {
+    const kids = rows.filter(k => k.type === 'detail_sub' && k.group === row.id);
+    if (!kids.length) return;
+    const own = Object.assign({}, row.values);
+    row.has_breakdown = true; row.own_values = own;
+    row.has_residual = ALL_PERIODS.some(p => Math.abs(own[p]||0) > 0.005);
+    row.mapped = row.mapped || kids.some(k => k.mapped);
+    ALL_PERIODS.forEach(p => row.values[p] = (own[p]||0) + kids.reduce((s,k)=>s+(k.values[p]||0),0));
+    row.codes = Array.from(new Set(row.codes.concat(kids.flatMap(k => k.codes)))).sort();
+  });
+  rows.forEach(row => {
+    if (row.type !== 'subtotal') return;
+    const members = rows.filter(m => m.group === row.id && m.type === 'detail');
+    row.mapped = members.some(m => m.mapped);
+    row.codes = Array.from(new Set(members.flatMap(m => m.codes))).sort();
+    ALL_PERIODS.forEach(p => row.values[p] = members.reduce((s,m)=>s+(m.values[p]||0),0));
+  });
+  rows.forEach(row => {
+    if (row.type !== 'calc') return;
+    const parts = (row.formula||'').split('+').filter(x => byId[x]);
+    row.mapped = parts.some(x => byId[x].mapped);
+    ALL_PERIODS.forEach(p => row.values[p] = parts.reduce((s,x)=>s+(byId[x].values[p]||0),0));
+  });
 
-    const PX_PER_MM = 96 / 25.4;
-    const PAGE = { w: 420, h: 297, margin: 8 };
-    const MAX_PAGES = 2;
-    const MIN_SCALE = 0.35;
-    const ROW_SLACK = 1.06;
-    const ZOOM_OK = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('zoom', '2');
-    const pageW = () => (PAGE.w - 2 * PAGE.margin) * PX_PER_MM;
-    const pageH = () => (PAGE.h - 2 * PAGE.margin) * PX_PER_MM;
+  const cols = snapshot.columns || {};
+  return {
+    meta: {forecast_date:(snapshot.meta||{}).forecast_date, plan_fact_date:(snapshot.meta||{}).plan_fact_date,
+           source_file:(snapshot.meta||{}).source_file, created_utc:(snapshot.meta||{}).created_utc},
+    periods: ALL_PERIODS.map(p => ({key:p, label:(cols[p]||{}).label || p, range:(cols[p]||{}).date_range || null})),
+    rows,
+    coverage: {nodes_total:nodes.length, nodes_matched:matched, nodes_unmatched:unmatched.length,
+               unmatched, rows_total:rows.length, rows_mapped:rows.filter(r=>r.mapped).length}
+  };
+}
 
-    function printTitleHtml() {
-        const g = id => document.getElementById(id).textContent;
-        const created = g('hdrCreated');
-        return `<div class="print-title" style="font-size:13pt">
-            ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» 13 тижнів станом на ${esc(g('hdrCur'))}
-            <div class="sub" style="font-size:8.5pt;margin-top:2px">Горизонт прогнозу: ${esc(g('hdrRange'))} · ${esc(g('hdrUnit'))}${created && created !== '--' ? ' · ' + esc(created) : ''}</div>
-        </div>`;
+/* ═══════════════════════════════════════════════════════════════════════════
+   КАЛЕНДАРНА РОЗКЛАДКА ТИЖНІВ ПО МІСЯЦЯХ
+   ═══════════════════════════════════════════════════════════════════════════ */
+const DAY = 86400000;
+const MON_NAMES = ['січень','лютий','березень','квітень','травень','червень',
+                   'липень','серпень','вересень','жовтень','листопад','грудень'];
+const MON_SHORT = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+
+const isoOf = d => new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+const mondayOf = d => { const x=new Date(d); x.setHours(12,0,0,0); x.setDate(x.getDate()-((x.getDay()+6)%7)); return isoOf(x); };
+const isoShift = (iso,n) => isoOf(new Date(Date.parse(iso+'T12:00:00')+n*DAY));
+const dmy = iso => String(iso||'').split('-').reverse().join('.');
+const dateOf = iso => new Date(iso+'T12:00:00');
+const monKey = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+const monLabel = k => { const [y,m]=k.split('-'); return MON_SHORT[+m-1]+' '+y.slice(2); };
+const monFull  = k => { const [y,m]=k.split('-'); return MON_NAMES[+m-1]+' '+y; };
+const lastDayOf = (y,m) => new Date(y, m+1, 0, 12, 0, 0);
+
+function parseRange(s){
+  if (!s) return null;
+  const parts = String(s).trim().split('-');
+  if (parts.length !== 2) return null;
+  const R = parts[1].split('.').map(Number);
+  if (R.length !== 3 || R.some(isNaN)) return null;
+  const endY = R[2] < 100 ? 2000 + R[2] : R[2];
+  const end = new Date(endY, R[1]-1, R[0], 12, 0, 0);
+  const L = parts[0].split('.').map(Number);
+  let start;
+  if (L.length === 2){
+    let y = endY;
+    if (L[1] - 1 > end.getMonth()) y -= 1;          // 29.12-04.01.27
+    start = new Date(y, L[1]-1, L[0], 12, 0, 0);
+  } else {
+    start = new Date(endY, R[1]-1, L[0], 12, 0, 0);
+    if (start > end) start = new Date(endY, R[1]-2, L[0], 12, 0, 0);
+  }
+  if (isNaN(start) || isNaN(end) || start > end) return null;
+  return {start, end};
+}
+
+function splitWeek(range, isTax){
+  const out = {};
+  if (!range) return out;
+  if (isTax){
+    out[monKey(range.start)] = 1;
+    return out;
+  }
+  let total = 0;
+  for (let t = range.start.getTime(); t <= range.end.getTime(); t += DAY){
+    const d = new Date(t);
+    const k = monKey(d);
+    out[k] = (out[k]||0) + 1; total++;
+  }
+  Object.keys(out).forEach(k => out[k] = out[k]/total);
+  return out;
+}
+
+const isTaxRow = row => TAX_ROW_RE.test(row.label || '') || TAX_EXTRA_IDS.indexOf(row.id) >= 0;
+
+function monthCoverage(periods, keys){
+  const days = {};
+  keys.forEach(k => {
+    const p = periods.find(x => x.key === k);
+    const r = p && parseRange(p.range);
+    if (!r) return;
+    for (let t = r.start.getTime(); t <= r.end.getTime(); t += DAY){
+      const d = new Date(t); const m = monKey(d);
+      days[m] = (days[m]||0) + 1;
     }
+  });
+  const full = {};
+  Object.keys(days).forEach(m => {
+    const [y, mm] = m.split('-').map(Number);
+    full[m] = days[m] >= new Date(y, mm, 0).getDate();
+  });
+  return full;
+}
 
-    function measureTable() {
-        const src = document.querySelector('#pane table');
-        if (!src) return null;
-        const holder = document.getElementById('printMeasure');
-        holder.innerHTML = '';
-        const title = document.createElement('div');
-        title.innerHTML = printTitleHtml();
-        const clone = src.cloneNode(true);
-        clone.className = 'an-table print-table';
-        holder.appendChild(title);
-        holder.appendChild(clone);
+function monthsOfWeeks(periods, keys){
+  const seen = [];
+  keys.forEach(k => {
+    const p = periods.find(x => x.key === k);
+    const r = p && parseRange(p.range);
+    if (!r) return;
+    Object.keys(splitWeek(r, false)).forEach(m => { if (seen.indexOf(m) < 0) seen.push(m); });
+  });
+  return seen.sort();
+}
 
-        const natW = Math.max(clone.scrollWidth || 0, clone.offsetWidth || 0, 1);
-        const headCells = clone.tHead ? Array.from(clone.tHead.rows[0].cells) : [];
-        const colW = headCells.map(c => c.offsetWidth || 0);
-        const titleH = title.offsetHeight || 40;
-        const headH = clone.tHead ? (clone.tHead.offsetHeight || 24) : 0;
-        const rows = clone.tBodies[0] ? Array.from(clone.tBodies[0].rows) : [];
-        const rowH = rows.map(r => r.offsetHeight || 14);
-        const theadHtml = clone.tHead ? clone.tHead.outerHTML : '';
-        const rowsHtml = rows.map(r => r.outerHTML);
-        holder.innerHTML = '';
-        return { natW, colW, titleH, headH, rowH, theadHtml, rowsHtml, totalRowsH: rowH.reduce((a, b) => a + b, 0) };
-    }
+function forecastByMonth(rk){
+  const months = monthsOfWeeks(rk.periods, WEEK_KEYS);
+  const res = {};                                  // rowId -> {monKey: value}
+  const byId = {}; rk.rows.forEach(r => byId[r.id] = r);
 
-    function buildPrintPages() {
-        const root = document.getElementById('printRoot');
-        root.innerHTML = '';
-        const m = measureTable();
-        if (!m || !m.rowsHtml.length) return { pages: 0, scale: 1, natW: 0 };
-
-        const W = pageW(), H = pageH();
-        const scaleW = W / m.natW;
-        const neededH = m.titleH + MAX_PAGES * m.headH + m.totalRowsH;
-        const scaleH = (MAX_PAGES * H) / neededH;
-
-        const paginate = sc => {
-            const capacity = H / sc;
-            const pages = [];
-            let cur = [], used = m.titleH + m.headH;
-            m.rowH.forEach((h, i) => {
-                const hh = h * ROW_SLACK;
-                if (cur.length && used + hh > capacity) { pages.push(cur); cur = []; used = m.headH; }
-                cur.push(i); used += hh;
-            });
-            if (cur.length) pages.push(cur);
-            return pages;
-        };
-
-        let scale = Math.max(MIN_SCALE, Math.min(scaleW, scaleH, 1));
-        let pagesRows = paginate(scale);
-        while (pagesRows.length > MAX_PAGES && scale > MIN_SCALE) {
-            scale = Math.max(MIN_SCALE, scale * 0.97);
-            pagesRows = paginate(scale);
-        }
-
-        const targetW = W / scale;
-        const colSum = (m.colW || []).reduce((a, b) => a + b, 0);
-        const factor = colSum > 0 ? targetW / colSum : 1;
-        const widths = (m.colW && m.colW.length ? m.colW : []).map(w => Math.max(1, w * factor));
-        const colgroup = widths.length
-            ? '<colgroup>' + widths.map(w => '<col style="width:' + w.toFixed(2) + 'px">').join('') + '</colgroup>'
-            : '';
-
-        pagesRows.forEach((idxs, p) => {
-            const page = document.createElement('div');
-            page.className = 'print-page';
-            page.style.width = W + 'px';
-            page.style.height = H + 'px';
-            const inner = document.createElement('div');
-            inner.className = 'print-scale';
-            inner.style.width = targetW + 'px';
-            if (ZOOM_OK) inner.style.zoom = scale;
-            else { inner.style.transform = 'scale(' + scale + ')'; inner.style.transformOrigin = 'top left'; }
-            inner.innerHTML = (p === 0 ? printTitleHtml() : '') +
-                '<table class="an-table print-table" style="width:' + targetW.toFixed(2) + 'px">' +
-                colgroup + m.theadHtml +
-                '<tbody>' + idxs.map(i => m.rowsHtml[i]).join('') + '</tbody></table>';
-            page.appendChild(inner);
-            root.appendChild(page);
+  rk.rows.forEach(row => {
+    const acc = {}; months.forEach(m => acc[m] = 0);
+    if (row.type === 'detail' || row.type === 'detail_sub'){
+      const tax = isTaxRow(row);
+      const src = row.has_breakdown && row.own_values ? row.own_values : row.values;
+      WEEK_KEYS.forEach(k => {
+        const v = src[k];
+        if (typeof v !== 'number' || !v) return;
+        const p = rk.periods.find(x => x.key === k);
+        const share = splitWeek(p && parseRange(p.range), tax);
+        Object.keys(share).forEach(m => { if (m in acc) acc[m] += v*share[m]; else acc[m] = v*share[m]; });
+      });
+    } else if (row.type === 'balance_open'){
+      months.forEach(m => {
+        const wk = WEEK_KEYS.find(k => {
+          const p = rk.periods.find(x => x.key === k);
+          const r = p && parseRange(p.range);
+          return r && monKey(r.start) === m;
         });
-        return { pages: pagesRows.length, scale, natW: m.natW };
+        acc[m] = wk ? row.values[wk] : null;
+      });
     }
+    res[row.id] = acc;
+  });
 
-    function triggerDirectPrint() {
-        buildPrintPages();
-        closePrintPreview();
-        window.print();
-    }
+  rollUp(rk.rows, byId, res, months);
+  chainBalances(res, months);
+  return {months, values: res};
+}
 
-    let previewZoom = 1;
-    function openPrintPreview() {
-        const info = buildPrintPages();
-        const area = document.getElementById('previewScrollArea');
-        area.innerHTML = '';
-        const mm = PAGE.margin * PX_PER_MM;
-        Array.from(document.getElementById('printRoot').children).forEach(p => {
-            const sheet = document.createElement('div');
-            sheet.className = 'preview-sheet';
-            sheet.style.width = (PAGE.w * PX_PER_MM) + 'px';
-            sheet.style.height = (PAGE.h * PX_PER_MM) + 'px';
-            sheet.style.padding = mm + 'px';
-            sheet.appendChild(p.cloneNode(true));
-            area.appendChild(sheet);
-        });
-        document.getElementById('previewInfo').textContent =
-            'сторінок: ' + info.pages + ' · масштаб таблиці: ' + Math.round(info.scale * 100) + '%';
-        const modal = document.getElementById('printPreviewModal');
-        modal.classList.remove('hidden'); modal.classList.add('flex');
-        setTimeout(autoFitPreview, 40);
-    }
-    function closePrintPreview() {
-        const modal = document.getElementById('printPreviewModal');
-        modal.classList.add('hidden'); modal.classList.remove('flex');
-    }
-    function setPreviewZoom(z) {
-        previewZoom = Math.max(0.2, Math.min(2, z));
-        const h = PAGE.h * PX_PER_MM;
-        document.querySelectorAll('.preview-sheet').forEach(s => {
-            s.style.transform = 'scale(' + previewZoom + ')';
-            s.style.marginBottom = (18 + h * (previewZoom - 1)) + 'px';
-        });
-    }
-    function zoomPreview(d) { setPreviewZoom(previewZoom + d); }
-    function autoFitPreview() {
-        const area = document.getElementById('previewScrollArea');
-        if (!area) return;
-        setPreviewZoom((area.clientWidth - 60) / (PAGE.w * PX_PER_MM));
-    }
-    window.addEventListener('keydown', e => { if (e.key === 'Escape') closePrintPreview(); });
+function rollUp(rows, byId, res, cols){
+  rows.forEach(row => {
+    const kids = rows.filter(k => k.type === 'detail_sub' && k.group === row.id);
+    if (!kids.length) return;
+    cols.forEach(c => {
+      res[row.id][c] = (res[row.id][c]||0) + kids.reduce((s,k)=>s+(res[k.id][c]||0),0);
+    });
+  });
+  rows.forEach(row => {
+    if (row.type !== 'subtotal') return;
+    const members = rows.filter(m => m.group === row.id && m.type === 'detail');
+    cols.forEach(c => res[row.id][c] = members.reduce((s,m)=>s+(res[m.id][c]||0),0));
+  });
+  rows.forEach(row => {
+    if (row.type !== 'calc') return;
+    const parts = (row.formula||'').split('+').filter(x => byId[x]);
+    cols.forEach(c => res[row.id][c] = parts.reduce((s,x)=>s+((res[x]&&res[x][c])||0),0));
+  });
+}
 
-    function setStatus(text, cls) {
-        const el = document.getElementById('dataStatus');
-        el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + (cls || 'bg-slate-100 text-slate-700');
-        el.textContent = text;
+function chainBalances(res, months){
+  if (!res.BAL_OPEN || !res.BAL_CLOSE || !res.NCF_TOTAL) return;
+  months.forEach((m, i) => {
+    if (i > 0) res.BAL_OPEN[m] = res.BAL_CLOSE[months[i-1]];
+    const open = res.BAL_OPEN[m];
+    res.BAL_CLOSE[m] = (open == null ? null : open + (res.NCF_TOTAL[m] || 0));
+  });
+}
+
+function factByMonth(weekFacts, months){
+  const res = {}, byId = {};
+  RK_ROWS.forEach(r => byId[r.id] = r);
+  const rowsMeta = RK_ROWS.map(r => ({id:r.id, label:r.label, type:r.type, group:r.group, formula:r.formula}));
+
+  rowsMeta.forEach(row => {
+    const acc = {}; months.forEach(m => acc[m] = 0);
+    if (row.type === 'detail' || row.type === 'detail_sub'){
+      const tax = isTaxRow(row);
+      weekFacts.forEach(wf => {
+        const v = (wf.own[row.id] != null ? wf.own[row.id] : wf.values[row.id]);
+        if (typeof v !== 'number' || !v) return;
+        const share = splitWeek(wf.range, tax);
+        Object.keys(share).forEach(m => { if (m in acc) acc[m] += v*share[m]; });
+      });
+    } else if (row.type === 'balance_open'){
+      months.forEach(m => {
+        const first = weekFacts.filter(w => w.range && monKey(w.range.start) === m)
+                               .sort((a,b)=>a.range.start-b.range.start)[0];
+        acc[m] = first ? first.values[row.id] : null;
+      });
     }
+    res[row.id] = acc;
+  });
+  rollUp(rowsMeta, byId, res, months);
+  chainBalances(res, months);
+  return res;
+}
 
-    function extractSnapshotObject(obj) {
-        if (!obj || typeof obj !== 'object') return null;
-        if (obj.tree && obj.meta) return obj;
-        const cand = [obj.snapshot, obj.content, obj.body, obj.value, obj.data, obj.result, obj.json];
-        for (const c of cand) {
-            if (!c) continue;
-            if (typeof c === 'string') { try { const r = extractSnapshotObject(JSON.parse(c)); if (r) return r; } catch (e) {} continue; }
-            const r = extractSnapshotObject(c);
-            if (r) return r;
-        }
-        if (Array.isArray(obj)) for (const it of obj) { const r = extractSnapshotObject(it); if (r) return r; }
-        return null;
-    }
+/* ═══════════════════════════════════════════════════════════════════════════
+   СТАН
+   ═══════════════════════════════════════════════════════════════════════════ */
+let DATA = EMBEDDED;                 // поточний rk-набір
+let DICT = EMBEDDED_DICT;            // довідник CF
+let UNIT = 'mln';
+let FACT = {months: [], values: {}, partial: []};   // помісячний факт
+const SNAP_CACHE = new Map();        // iso -> snapshot
 
-    const NORM_KEYS = ['T0','T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
-    const nvals = r => NORM_KEYS.map(k => (r.values && r.values[k]) || 0);
-    const nNonZero = v => v.some(x => Math.abs(x) >= 1);
-    const nSame = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1);
-    const nAdd = (a, b) => a.map((v, i) => v + b[i]);
-    const clean = s => String(s == null ? '' : s).replace(/\s+/g, ' ').replace(/[’']/g, "'").trim();
-    const SUMMARY_RE = /^(Всього|КОНТРОЛЬ|Контроль|Грошовий потік|Чистий грошовий|Доступн|Залишки|Заборгован|Різниця|Надходження \(|Видатки \(|\*Інформаційно|Придбання МЗНН)/;
+function b64json(obj){
+  if (obj && typeof obj['$content'] === 'string'){
+    try {
+      return JSON.parse(new TextDecoder('utf-8')
+        .decode(Uint8Array.from(atob(obj['$content']), c => c.charCodeAt(0))));
+    } catch(e){ return null; }
+  }
+  return null;
+}
 
-    const LEVEL_HINTS = {
-        'Податки': 1, 'Державні податки': 2, 'Рентна плата': 3, 'Інші податки': 2, 'Місцеві податки': 3,
-        'Заробітна плата': 1, 'Енергія': 1, "Інші обов'язкові операційні платежі": 1
-    };
-    const DROP_ROWS = [/^КОНТРОЛЬ витрат по напрямках/i];
-    const LAST_ROW_RE = /^\*?\s*Інформаційно: придбання НП/i;
+function extractSnapshot(obj, depth){
+  depth = depth || 0;
+  if (obj == null || depth > 6) return null;
+  if (typeof obj === 'string'){ try { return extractSnapshot(JSON.parse(obj), depth+1); } catch(e){ return null; } }
+  if (Array.isArray(obj)){ for (const x of obj){ const r = extractSnapshot(x, depth+1); if (r) return r; } return null; }
+  if (typeof obj !== 'object') return null;
+  if (obj.tree && obj.meta) return obj;
+  const dec = b64json(obj);
+  if (dec){ const r = extractSnapshot(dec, depth+1); if (r) return r; }
+  for (const k of ['snapshot','body','data','content','value','result','json']){
+    if (obj[k] != null){ const r = extractSnapshot(obj[k], depth+1); if (r) return r; }
+  }
+  return null;
+}
 
-    function groupBySums(list) {
-        const n = list.length, memo = new Array(n).fill(null);
-        const node = i => {
-            if (memo[i]) return memo[i];
-            const r = list[i].row, own = nvals(r);
-            let out = { item: list[i], kids: [], next: i + 1 };
-            memo[i] = out;
-            if (nNonZero(own)) {
-                let k = i + 1, kids = [], cum = NORM_KEYS.map(() => 0);
-                while (k < n) {
-                    const c = node(k);
-                    if (kids.length && c.kids.length && (c.item.row.kind === 'total' || c.item.row.kind === 'subgroup')) break;
-                    kids.push(c); cum = nAdd(cum, nvals(c.item.row)); k = c.next;
-                    const enough = kids.length >= 2 || r.kind === 'total' || r.kind === 'subgroup';
-                    if (enough && nSame(cum, own)) {
-                        while (k < n && !nNonZero(nvals(list[k].row))) { const z = node(k); kids.push(z); k = z.next; }
-                        out = { item: list[i], kids, next: k }; memo[i] = out; break;
-                    }
-                }
-            }
-            return out;
-        };
-        const top = []; let i = 0;
-        while (i < n) { const c = node(i); top.push(c); i = c.next; }
-        return top;
-    }
+async function postJson(url, body){
+  const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'},
+                               body: JSON.stringify(body)});
+  if (!res.ok){
+    let msg = '';
+    try { const e = await res.json(); msg = e.message || e.error || ''; } catch(e){}
+    const err = new Error('HTTP ' + res.status + (msg ? ' — ' + msg : ''));
+    err.status = res.status;
+    throw err;
+  }
+  const txt = await res.text();
+  if (!txt.trim()) throw new Error('порожня відповідь потоку');
+  try { return JSON.parse(txt); } catch(e){ throw new Error('відповідь потоку не є JSON'); }
+}
 
-    function groupByHints(list) {
-        const top = [], stack = [];
-        const close = () => stack.pop();
-        list.forEach(entry => {
-            const r = entry.row, name = clean(r.name);
-            const hint = LEVEL_HINTS[name];
-            const nd = { item: entry, kids: [], cum: NORM_KEYS.map(() => 0), own: nvals(r) };
-            if (hint) { while (stack.length && stack[stack.length - 1].lvl >= hint) close(); }
-            const par = stack.length ? stack[stack.length - 1] : null;
-            (par ? par.node.kids : top).push(nd);
-            if (par) {
-                let p = stack.length - 1;
-                while (p >= 0) {
-                    stack[p].node.cum = nAdd(stack[p].node.cum, nvals(r));
-                    if (nNonZero(stack[p].node.own) && nSame(stack[p].node.cum, stack[p].node.own)) { stack.length = p; break; }
-                    p--;
-                }
-            }
-            const isGroup = r.kind === 'total' || r.kind === 'subgroup' || hint;
-            if (isGroup) stack.push({ lvl: hint || ((stack.length ? stack[stack.length - 1].lvl : 0) + 1), node: nd });
-        });
-        return top;
-    }
+async function callFlow(payload){
+  if (!CONFIG.FLOW_URL) throw new Error('FLOW_URL не налаштовано');
+  return postJson(CONFIG.FLOW_URL, payload);
+}
 
-    function buildTree(rows) {
-        let dropping = false;
-        const lastIdx = rows.findIndex(r => LAST_ROW_RE.test(clean(r.name)));
-        const usable = rows.filter((r, i) => {
-            if (lastIdx >= 0 && i > lastIdx) return false;
-            if (r.kind === 'block') dropping = false;
-            if (DROP_ROWS.some(re => re.test(clean(r.name)))) { dropping = true; return false; }
-            if (dropping) return false;
-            return !!clean(r.name);
-        });
-        const mk = r => ({ row: r, children: [], pending: [] });
-        const roots = []; let stack = [], block = null, pend = null;
-        usable.forEach(r => {
-            const no = String(r.no == null ? '' : r.no).trim();
-            const nd = mk(r);
-            if (r.kind === 'block') { roots.push(nd); block = nd; stack = [{ lvl: 0, nd }]; pend = nd; }
-            else if (r.kind === 'item' && no) {
-                const lvl = 1 + Math.max(0, no.split('.').length - 1);
-                while (stack.length && stack[stack.length - 1].lvl >= lvl) stack.pop();
-                const par = stack.length ? stack[stack.length - 1].nd : null;
-                (par ? par.pending : roots).push(nd);
-                stack.push({ lvl, nd }); pend = nd;
-            } else if (r.kind === 'total' && !r.code && !no && SUMMARY_RE.test(clean(r.name)) && block) {
-                while (stack.length > 1) stack.pop();
-                block.pending.push(nd); pend = block;
-            } else (pend ? pend.pending : roots).push(nd);
-        });
-        const finalize = nd => {
-            if (nd.pending.length) {
-                const hinted = nd.pending.some(p => LEVEL_HINTS[clean(p.row.name)]);
-                const grouped = hinted ? groupByHints(nd.pending) : groupBySums(nd.pending);
-                const conv = g => { const c = g.item; finalize(c); c.children = g.kids.map(conv).concat(c.children); return c; };
-                nd.children = grouped.map(conv).concat(nd.children);
-            }
-            nd.pending = [];
-        };
-        roots.forEach(finalize);
-        const toPlain = nd => Object.assign({}, nd.row, { children: nd.children.map(toPlain) });
-        return roots.map(toPlain).filter(n => n.kind !== 'block' || (n.children && n.children.length));
-    }
+async function pool(items, n, fn){
+  let i = 0;
+  await Promise.all(Array.from({length: Math.min(n, items.length)}, async () => {
+    while (i < items.length){ const k = i++; await fn(items[k], k); }
+  }));
+}
 
-    function indexTree(tree) {
-        const list = [];
-        const walk = (nodes, parentId, depth, prefix) => {
-            (nodes || []).forEach((n, i) => {
-                const id = prefix + '/' + i;
-                const rec = { id, parentId, depth, node: n, name: n.name || '', kind: n.kind || '',
-                              no: n.no, code: n.code, src_row: n.src_row, keep: n.keep, childIds: [] };
-                list.push(rec);
-                if (parentId != null) { const p = list.find(x => x.id === parentId); if (p) p.childIds.push(id); }
-                if (n.children && n.children.length) walk(n.children, id, depth + 1, id);
-            });
-        };
-        walk(tree, null, 0, '');
-        return list;
-    }
-    const byId = id => NODES.find(n => n.id === id);
-
-    function applySnapshot(envelope, requestedIso) {
-        const snap = extractSnapshotObject(envelope);
-        if (!snap) throw new Error('у відповіді немає снапшоту (meta + tree)');
-        SNAP = snap;
-        TREE = buildTree(snap.rows || []);
-        NODES = indexTree(TREE);
-        resetDefaultExpanded();
-        document.getElementById('expandAll').checked = false;
-        const m = snap.meta || {};
-        const iso = m.forecast_date || requestedIso || '';
-        if (iso) { currentReportDate = iso; availableDates.add(iso); }
-        document.getElementById('navCurDate').textContent = iso ? dmy(iso) : '--';
-        document.getElementById('hdrCur').textContent = iso ? dmy(iso) : '--';
-        document.getElementById('lblSelectedDate').textContent = iso ? dmy(iso) : 'Обрати дату';
-        document.getElementById('hdrCreated').textContent = m.created_utc
-            ? 'створено: ' + String(m.created_utc).replace('T', ' ').slice(0, 19) + ' UTC' : '';
-        const c = snap.columns || {};
-        document.getElementById('hdrRange').textContent =
-            ((c.T0 && c.T0.date_range) || '') + ' – ' + ((c.T12 && c.T12.date_range) || '');
-        render();
-    }
-
-    async function loadDictionary() {
-        if (!CONFIG.DICT_FLOW_URL) return;
-        try {
-            const res = await fetch(CONFIG.DICT_FLOW_URL, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ dictionaryOnly: true })
-            });
-            const data = await res.json();
-            const dictArray = data.cfDictionary || data.dictionary;
-            if (Array.isArray(dictArray) && dictArray.length > 0) {
-                // Оновлюємо обидві системи мапінгу у вашому файлі:
-                if (typeof DICT !== 'undefined') DICT = dictArray; 
-                window.DYNAMIC_CF_DICT = {}; 
-                dictArray.forEach(d => {
-                    const k = (d.MatchKey || d.Title || '').trim();
-                    if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
-                        window.DYNAMIC_CF_DICT[k] = [d.RK_Item || '', d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ'), d.ERPName || ''];
-                    }
-                });
-            }
-        } catch(e) { console.warn("Помилка завантаження довідника", e); }
-    }
-
-    async function fetchSnapshot(iso) {
-        if (typeof SNAP_CACHE !== 'undefined' && SNAP_CACHE.has(iso)) return SNAP_CACHE.get(iso);
-        
-        const res = await fetch(CONFIG.FLOW_URL, {
+/* ═══════════════════════════════════════════════════════════════════════════
+   ОНОВЛЕННЯ СЛОВНИКІВ НА ЛЬОТУ
+   ═══════════════════════════════════════════════════════════════════════════ */
+async function loadDictionary() {
+    if (!CONFIG.DICT_FLOW_URL) return;
+    try {
+        const res = await fetch(CONFIG.DICT_FLOW_URL, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso), includeDictionary: true })
+            body: JSON.stringify({ dictionaryOnly: true })
         });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        
         const dictArray = data.cfDictionary || data.dictionary;
         if (Array.isArray(dictArray) && dictArray.length > 0) {
-            // Оновлюємо обидві системи мапінгу під час завантаження зрізу:
-            if (typeof DICT !== 'undefined') DICT = dictArray;
-            window.DYNAMIC_CF_DICT = {};
+            DICT = dictArray; 
+            window.DYNAMIC_CF_DICT = {}; 
             dictArray.forEach(d => {
                 const k = (d.MatchKey || d.Title || '').trim();
                 if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
@@ -605,465 +670,369 @@
                 }
             });
         }
-        
-        // ВАЖЛИВО: Витягуємо сам зріз прогнозу з конверта сервера
-        // У попередній версії коду цього не було, через що дані таблиці були порожніми
-        let snap = null;
-        if (typeof extractSnapshot === 'function') snap = extractSnapshot(data);
-        else if (typeof extractSnapshotObject === 'function') snap = extractSnapshotObject(data);
-        
-        if (!snap) throw new Error('У відповіді немає снапшоту даних');
-        
-        if (typeof SNAP_CACHE !== 'undefined') SNAP_CACHE.set(iso, snap);
-        if (typeof availableDates !== 'undefined') availableDates.add(iso);
-        return snap;
-    }
+    } catch(e) { console.warn("Помилка завантаження довідника", e); }
+}
 
-    async function loadFromCloud(iso) {
-        setStatus('Завантаження…', 'bg-indigo-100 text-indigo-800');
-        try {
-            applySnapshot(await fetchSnapshot(iso), iso);
-            setStatus('Зріз ' + dmy(currentReportDate), 'bg-emerald-100 text-emerald-800');
-        } catch (err) {
-            setStatus('Дані недоступні: ' + err.message + ' — можна відкрити локальний JSON', 'bg-red-100 text-red-800');
-        }
-    }
-
-    async function loadLatestMonday(weeksBack) {
-        let iso = mondayOf(new Date());
-        const limit = weeksBack || 8;
-        setStatus('Пошук останнього зрізу…', 'bg-indigo-100 text-indigo-800');
-        for (let i = 0; i < limit; i++) {
-            try {
-                const data = await fetchSnapshot(iso);
-                applySnapshot(data, iso);
-                setStatus('Зріз ' + dmy(currentReportDate) + (i ? ' (останній наявний)' : ''), 'bg-emerald-100 text-emerald-800');
-                return iso;
-            } catch (e) { iso = isoShift(iso, -7); }
-        }
-        setStatus('Зрізів за останні ' + limit + ' тижнів не знайдено — можна відкрити локальний JSON', 'bg-red-100 text-red-800');
-        return null;
-    }
-
-    function loadLocalFile(input) {
-        const file = input.files && input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            try { applySnapshot(JSON.parse(reader.result), null); setStatus('Зріз ' + dmy(currentReportDate), 'bg-emerald-100 text-emerald-800'); }
-            catch (e) { setStatus('Не вдалося прочитати файл: ' + e.message, 'bg-red-100 text-red-800'); }
-        };
-        reader.readAsText(file, 'utf-8');
-        input.value = '';
-    }
-
-    async function init() {
-        document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
-        setViewMode('fluid');
-        renderCalendar();
-        render();
-        setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
-        await loadDictionary(); // <--- Завантажуємо свіжий довідник відразу при старті
-        if (typeof fetch === 'function') loadLatestMonday();
-    }
-
-    const MONTHS = [
-        { key: 'M1', weeks: ['T0', 'T1', 'T2', 'T3'] },
-        { key: 'M2', weeks: ['T4', 'T5', 'T6', 'T7'] },
-        { key: 'M3', weeks: ['T8', 'T9', 'T10', 'T11', 'T12'] }
-    ];
-    const PREV_KEYS = ['Tm1_plan', 'Tm1_forecast', 'dev_forecast', 'Tm1_fact', 'dev_fact'];
-    const MONTH_KEYS = MONTHS.map(m => m.key);
-    const DEV_KEYS = ['dev_forecast', 'dev_fact'];
-
-    function activeColumns() {
-        const cols = SNAP.columns || {}, keys = [];
-        PREV_KEYS.forEach(k => {
-            const box = document.getElementById('col' + k);
-            if (box && box.checked && cols[k]) keys.push(k);
+async function fetchSnapshot(iso) {
+    if (typeof SNAP_CACHE !== 'undefined' && SNAP_CACHE.has(iso)) return SNAP_CACHE.get(iso);
+    
+    const res = await fetch(CONFIG.FLOW_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso), includeDictionary: true })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    
+    const dictArray = data.cfDictionary || data.dictionary;
+    if (Array.isArray(dictArray) && dictArray.length > 0) {
+        DICT = dictArray;
+        window.DYNAMIC_CF_DICT = {};
+        dictArray.forEach(d => {
+            const k = (d.MatchKey || d.Title || '').trim();
+            if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
+                window.DYNAMIC_CF_DICT[k] = [d.RK_Item || '', d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ'), d.ERPName || ''];
+            }
         });
-        MONTHS.forEach(m => {
-            if (monthOpen[m.key]) m.weeks.forEach(w => cols[w] && keys.push(w));
-            if (cols[m.key]) keys.push(m.key);
-        });
-        if (document.getElementById('grpTotal').checked && cols.TT0_12) keys.push('TT0_12');
-        return keys;
     }
+    
+    let snap = null;
+    if (typeof extractSnapshot === 'function') snap = extractSnapshot(data);
+    else if (typeof extractSnapshotObject === 'function') snap = extractSnapshotObject(data);
+    
+    if (!snap) throw new Error('У відповіді немає снапшоту даних');
+    
+    if (typeof SNAP_CACHE !== 'undefined') SNAP_CACHE.set(iso, snap);
+    if (typeof availableDates !== 'undefined') availableDates.add(iso);
+    return snap;
+}
 
-    function setUnit(u) {
-        UNIT = u;
-        document.getElementById('unitThs').className = 'ctl' + (u === 'ths' ? ' active' : '');
-        document.getElementById('unitMln').className = 'ctl' + (u === 'mln' ? ' active' : '');
-        document.getElementById('hdrUnit').textContent = u === 'ths' ? 'тис. грн' : 'млн грн';
-        render();
-    }
-    const unitDiv = () => (UNIT === 'ths' ? 1e3 : 1e6);
+function applySnapshot(snap, iso){
+  DATA = buildRk(snap, DICT);
+  const m = DATA.meta || {};
+  currentDate = m.forecast_date || iso || currentDate;
+  availableDates.add(currentDate);
+  calView = dateOf(currentDate);
+  $('#navDate').textContent = dmy(currentDate);
+  $('#lblDate').textContent = dmy(currentDate);
+  $('#navSource').textContent = m.source_file || '—';
+  const byKey = {}; DATA.periods.forEach(p => byKey[p.key] = p);
+  $('#hdrRange').textContent = ((byKey.T0||{}).range||'') + ' – ' + ((byKey.T12||{}).range||'');
+  FACT = {months:[], values:{}, partial:[]};
+  $('#factMonths').value = '0';
+  render();
+}
 
-    function fmtCell(v) {
-        if (v == null || isNaN(v)) return { txt: '', cls: 'zero' };
-        const r = Math.round(v / unitDiv());
-        if (r === 0) return { txt: '0', cls: 'zero' };
-        return { txt: (r < 0 ? '−' : '') + sp(Math.abs(r).toLocaleString('uk-UA')), cls: r < 0 ? 'neg' : '' };
-    }
+async function loadDate(iso){
+  setStatus('Завантаження зрізу ' + dmy(iso) + '…', 'bg-indigo-100 text-indigo-800');
+  try{
+    applySnapshot(await fetchSnapshot(iso), iso);
+    setStatus('Зріз ' + dmy(currentDate), 'bg-emerald-100 text-emerald-800');
+  }catch(e){
+    setStatus('Не вдалося: ' + e.message, 'bg-red-100 text-red-800');
+  }
+}
 
-    function toggleMonth(k) { monthOpen[k] = !monthOpen[k]; render(); }
-    function resetDefaultExpanded() {
-        expanded = {};
-        if (Array.isArray(TREE)) TREE.forEach((n, i) => { expanded['/' + i] = true; });
-    }
-    function toggleExpandAll(checked) { if (!checked) resetDefaultExpanded(); render(); }
-    function toggleNode(id) {
-        const box = document.getElementById('expandAll');
-        if (box.checked) { box.checked = false; NODES.forEach(n => { expanded[n.id] = true; }); }
-        expanded[id] = !isExpanded(id);
-        render();
-    }
-    const isExpanded = id => (document.getElementById('expandAll').checked ? true : !!expanded[id]);
+async function loadLatestMonday(){
+  if (!CONFIG.FLOW_URL){
+    setStatus('Потік не налаштовано — вбудований зріз ' + dmy(currentDate), 'bg-amber-100 text-amber-800');
+    return;
+  }
+  let iso = mondayOf(new Date());
+  setStatus('Пошук останнього зрізу…', 'bg-indigo-100 text-indigo-800');
+  for (let i = 0; i < CONFIG.LATEST_LOOKBACK_WEEKS; i++){
+    try{
+      applySnapshot(await fetchSnapshot(iso), iso);
+      setStatus('Зріз ' + dmy(currentDate) + (i ? ' (останній наявний)' : ''), 'bg-emerald-100 text-emerald-800');
+      return;
+    }catch(e){ iso = isoShift(iso, -7); }
+  }
+  setStatus('Зрізів не знайдено — показано вбудований', 'bg-red-100 text-red-800');
+}
 
-    const KEY_ROWS = [/^Всього витрат/i, /^Всього видатків/i, /^Всього надходжень/i, /^Грошовий потік/i, /^Чистий грошовий потік/i];
-    const BLUE_ROWS = [/^Доступні залишки/i, /^Залишки доступні до використання/i];
-    const COVER_ROWS = [/^Повернення покриття/i, /^Розміщення покриття постімпорт/i, /^Оплата по постімпорту/i, /^постімпорт$/i];
-    const isKeyRow = n => KEY_ROWS.some(re => re.test(clean(n.name)));
-    const isCoverRow = n => COVER_ROWS.some(re => re.test(clean(n.name)));
-    const isBlueRow = n => BLUE_ROWS.some(re => re.test(clean(n.name)));
+function loadLocalFile(input){
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try{
+      const snap = extractSnapshot(JSON.parse(rd.result));
+      if (!snap) throw new Error('це не знімок прогнозу');
+      const iso = (snap.meta||{}).forecast_date;
+      if (iso) SNAP_CACHE.set(iso, snap);
+      applySnapshot(snap, iso);
+      setStatus('Локальний зріз ' + dmy(currentDate), 'bg-emerald-100 text-emerald-800');
+    }catch(e){ setStatus('Файл не прочитано: ' + e.message, 'bg-red-100 text-red-800'); }
+  };
+  rd.readAsText(f, 'utf-8');
+  input.value = '';
+}
 
-    function matches(rec) {
-        const q = clean(document.getElementById('searchBox').value).toLowerCase();
-        if (!q) return true;
-        return [rec.name, rec.code, rec.no].some(v => String(v == null ? '' : v).toLowerCase().includes(q));
-    }
-    const allZero = rec => !nNonZero(nvals(rec.node)) && !rec.childIds.some(id => nNonZero(nvals(byId(id).node)));
+async function onFactMonthsChange(){
+  const n = Number($('#factMonths').value);
+  if (!n){ FACT = {months:[], values:{}, partial:[]}; render(); return; }
+  if (!CONFIG.FLOW_URL){
+    setStatus('Факт за попередні місяці потребує налаштованого FLOW_URL', 'bg-amber-100 text-amber-800');
+    $('#factMonths').value = '0';
+    return;
+  }
+  const cur = dateOf(currentDate);
+  const from = new Date(cur.getFullYear(), cur.getMonth() - n, 1, 12, 0, 0);
+  const months = [];
+  for (let i = 0; i < n; i++){
+    const d = new Date(cur.getFullYear(), cur.getMonth() - n + i, 1, 12, 0, 0);
+    months.push(monKey(d));
+  }
 
-    function visibleRows() {
-        const onlyKeep = document.getElementById('onlyKeep').checked;
-        const hideZero = document.getElementById('hideZero').checked;
-        const q = clean(document.getElementById('searchBox').value);
-        const hits = new Set();
-        if (q) NODES.filter(matches).forEach(r => { let c = r; while (c) { hits.add(c.id); c = c.parentId ? byId(c.parentId) : null; } });
-        const out = [];
-        const walk = ids => ids.forEach(id => {
-            const rec = byId(id);
-            if (!rec) return;
-            if (onlyKeep && rec.keep === false) return;
-            if (hideZero && allZero(rec)) return;
-            if (q && !hits.has(id)) return;
-            out.push(rec);
-            if (rec.childIds.length && (q ? true : isExpanded(id))) walk(rec.childIds);
-        });
-        walk(NODES.filter(n => n.parentId === null).map(n => n.id));
-        return out;
-    }
+  const needs = [];
+  let w = dateOf(mondayOf(from));
+  while (w < cur){ needs.push(isoShift(isoOf(w), 7)); w = new Date(w.getTime() + 7*DAY); }
 
-    function formatColumnLabel(k, label) {
-        if (k === 'dev_fact') return 'Відхилення,<br><span style="font-weight:500">+/− (факт − план)</span>';
-        if (k === 'dev_forecast') return 'Відхилення,<br><span style="font-weight:500">+/− (прогноз − план)</span>';
-        return esc(label);
-    }
+  const weekFacts = [], failed = [];
+  let done = 0;
+  setStatus('Факт: 0 / ' + needs.length + ' тижнів…', 'bg-indigo-100 text-indigo-800');
+  await pool(needs, CONFIG.FETCH_CONCURRENCY, async iso => {
+    try{
+      const snap = await fetchSnapshot(iso);
+      const rk = buildRk(snap, DICT);
+      const p = rk.periods.find(x => x.key === 'Tm1_fact');
+      const range = parseRange(p && p.range);
+      const values = {}, own = {};
+      rk.rows.forEach(r => {
+        values[r.id] = r.values['Tm1_fact'];
+        if (r.has_breakdown && r.own_values) own[r.id] = r.own_values['Tm1_fact'];
+      });
+      weekFacts.push({iso, range, values, own});
+    }catch(e){ failed.push(iso); }
+    done++;
+    setStatus('Факт: ' + done + ' / ' + needs.length + ' тижнів…', 'bg-indigo-100 text-indigo-800');
+  });
 
-    function render() {
-        const pane = document.getElementById('pane');
-        if (!SNAP) { pane.innerHTML = '<div class="text-xs text-slate-400 p-3">Дані ще не завантажені. Оберіть дату зрізу або відкрийте локальний файл.</div>'; return; }
-        const cols = SNAP.columns || {}, keys = activeColumns();
+  const partial = months.filter(m => {
+    const have = weekFacts.filter(f => f.range && (monKey(f.range.start) === m || monKey(f.range.end) === m)).length;
+    const need = needs.filter(iso => {
+      const s = dateOf(isoShift(iso, -7));
+      return monKey(s) === m || monKey(new Date(s.getTime()+6*DAY)) === m;
+    }).length;
+    return have < need;
+  });
 
-        const head = `<tr><th class="nm-col">Стаття</th>${keys.map(k => {
-            const c = cols[k] || {};
-            const isMon = MONTH_KEYS.indexOf(k) >= 0;
-            const cls = k === 'TT0_12' ? 'col-sum' : isMon ? 'col-mon'
-                      : DEV_KEYS.indexOf(k) >= 0 ? 'col-prev col-dev' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev' : '');
-            const label = formatColumnLabel(k, (c.label || k).replace(/\s+/g, ' ').trim());
-            const toggle = isMon
-                ? `<span class="mon-toggle" title="${monthOpen[k] ? 'Згорнути тижні місяця' : 'Показати тижні місяця'}" onclick="toggleMonth('${k}')">${monthOpen[k] ? '−' : '+'}</span>`
-                : '';
-            const main = c.date_range ? esc(c.date_range) : label;
-            const sub = c.date_range ? `<span class="th-period">${label}</span>` : '';
-            return `<th class="${cls}">${main}${toggle}${sub}</th>`;
-        }).join('')}</tr>`;
+  FACT = {months, values: factByMonth(weekFacts, months), partial};
+  setStatus('Зріз ' + dmy(currentDate) + ' · факт ' + (months.length - partial.length) + '/' + months.length + ' міс.',
+            failed.length ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
+  render();
+}
 
-        const recs = visibleRows();
-        const body = recs.map(rec => {
-            const n = rec.node, hasKids = rec.childIds.length > 0, open = isExpanded(rec.id);
-            const toggle = hasKids
-                ? `<span class="toggle-kids" onclick="event.stopPropagation(); toggleNode('${esc(rec.id)}')">${open ? '−' : '+'}</span>`
-                : '<span class="toggle-placeholder"></span>';
-            const lvl = rec.kind === 'block' ? 'lvl-block'
-                      : rec.kind === 'item' ? 'lvl-item'
-                      : (rec.kind === 'total' || rec.kind === 'subgroup') ? 'lvl-sub' : 'lvl-leaf';
-            const extra = (isKeyRow(n) ? ' row-key' : '') + (isCoverRow(n) ? ' row-cover' : '') + (isBlueRow(n) ? ' row-blue' : '');
-            const codeTxt = String(n.no == null ? '' : n.no).trim();
-            const cells = keys.map(k => {
-                const c = fmtCell((n.values || {})[k]);
-                const isMon = MONTH_KEYS.indexOf(k) >= 0;
-                const isDev = DEV_KEYS.indexOf(k) >= 0;
-                const base = k === 'TT0_12' ? 'col-sum ' : isMon ? 'col-mon '
-                           : isDev ? 'col-prev col-dev ' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev ' : '');
-                const cls = base + c.cls + (isDev && c.cls === '' ? ' pos' : '');
-                return `<td class="${cls}">${c.txt}</td>`;
-            }).join('');
-            return `<tr class="${lvl}${extra}" onclick="${hasKids ? `toggleNode('${esc(rec.id)}')` : ''}">
-                <td class="nm-col" style="padding-left:${6 + rec.depth * 16}px">${toggle}${codeTxt ? `<span class="an-code">${esc(codeTxt)}</span>` : ''}<span class="nm-txt">${esc(n.name)}</span></td>
-                ${cells}</tr>`;
+function buildColumns(){
+  const cols = [];
+  const pByKey = {}; DATA.periods.forEach(p => pByKey[p.key] = p);
+  const mode = $('#fcstMode').value;
+
+  FACT.months.forEach(m => cols.push({
+    key:'F:'+m, label: monLabel(m), sub:'факт' + (FACT.partial.indexOf(m)>=0 ? ' (неповний)' : ''),
+    grp:'g-fact', src:'fact', mon:m
+  }));
+
+  if ($('#colTm1').checked && pByKey.Tm1_fact) cols.push({
+    key:'Tm1_fact', label:'Т −1', sub:(pByKey.Tm1_fact.range||'') + ' · факт', grp:'g-fact', src:'week'
+  });
+
+  if (mode === 'cal' || mode === 'mix'){
+    const fc = forecastByMonth(DATA);
+    DATA.__fcMonths = fc;
+    const cov = monthCoverage(DATA.periods, WEEK_KEYS);
+    fc.months.forEach(m => cols.push({key:'P:'+m, label: monLabel(m),
+      sub: cov[m] ? 'прогноз' : 'прогноз (неповний)', grp:'g-mon', src:'fmon', mon:m}));
+  }
+  if (mode === 'weeks' || mode === 'mix'){
+    WEEK_KEYS.forEach(k => pByKey[k] && cols.push({
+      key:k, label:(pByKey[k].label||k).replace(/\s+/g,' ').trim(), sub:pByKey[k].range, grp:'', src:'week'
+    }));
+  }
+  if (mode === 'mperiod'){
+    MPERIODS.forEach(k => pByKey[k] && cols.push({
+      key:k, label:(pByKey[k].label||k).split(' ').slice(0,2).join(' '), sub:pByKey[k].range, grp:'g-mon', src:'week'
+    }));
+  }
+  if ($('#colTotal').checked && pByKey.TT0_12) cols.push({
+    key:'TT0_12', label:'Разом 13 тижнів', sub:pByKey.TT0_12.range, grp:'g-sum', src:'week'
+  });
+  return cols;
+}
+
+function cellValue(col, row){
+  if (col.src === 'week') return row.values[col.key];
+  if (col.src === 'fact') return (FACT.values[row.id]||{})[col.mon];
+  if (col.src === 'fmon'){
+    const v = (DATA.__fcMonths && DATA.__fcMonths.values) ? DATA.__fcMonths.values[row.id] : null;
+    return v ? v[col.mon] : null;
+  }
+  return null;
+}
+
+function render(){
+  const pane = $('#pane');
+  if (!DATA){ pane.innerHTML = '<div class="p-3 text-xs text-slate-400">Дані не завантажені.</div>'; return; }
+  const cols = buildColumns();
+  const q = ($('#search').value || '').trim().toLowerCase();
+  const hideZero = $('#hideZero').checked;
+  const showUnmapped = $('#showUnmapped').checked;
+
+  const head = '<tr><th class="c-code">Коди ЕРП ПАТ «Укрнафта»</th><th class="c-name">Стаття РК-презентації 11-25</th>' +
+    cols.map(c => `<th class="${c.grp}">${esc(c.label)}${c.sub?`<span class="sub">${esc(c.sub)}</span>`:''}</th>`).join('') + '</tr>';
+
+  const body = [];
+  DATA.rows.forEach(r => {
+    const isData = r.type !== 'section';
+    if (!showUnmapped && !r.mapped && (r.type === 'detail' || r.type === 'detail_sub')) return;
+    if (q && !(r.label.toLowerCase().includes(q) || (r.codes||[]).some(c => c.toLowerCase().includes(q)))) return;
+    if (hideZero && isData && r.mapped && cols.every(c => !cellValue(c, r))) return;
+
+    const cls = [r.type];
+    if (!r.mapped && (r.type === 'detail' || r.type === 'detail_sub')) cls.push('unmapped');
+
+    let tags = '';
+    if (!r.mapped && (r.type === 'detail' || r.type === 'detail_sub')) tags += '<span class="tag nomap">немає мапінгу</span>';
+    if (r.type === 'calc') tags += '<span class="tag calcd">розрахунок</span>';
+    if (r.has_breakdown && r.has_residual) tags += '<span class="tag resid">частина без розшифровки</span>';
+    if (isTaxRow(r)) tags += '<span class="tag taxrule" title="Тиждень, розірваний між місяцями, відноситься повністю на місяць, що закривається">податок</span>';
+
+    const codes = r.codes || [];
+    const cells = r.type === 'section'
+      ? `<td colspan="${cols.length}"></td>`
+      : cols.map(c => {
+          const f = fmt(cellValue(c, r));
+          return `<td class="${c.grp} ${f.cls}">${f.txt}</td>`;
         }).join('');
 
-        pane.innerHTML = keys.length
-            ? `<table class="an-table"><thead>${head}</thead><tbody>${body}</tbody></table>`
-            : '<div class="text-xs text-slate-400 p-3">Оберіть хоча б одну групу колонок.</div>';
-    }
+    body.push(`<tr class="${cls.join(' ')}">` +
+      `<td class="c-code" title="${codes.length?esc(codes.length+' стат.: '+codes.join(', ')):''}">${esc(codes.join(', '))}</td>` +
+      `<td class="c-name">${esc(r.label)}${tags}</td>${cells}</tr>`);
+  });
 
-    function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
-    function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
-    function renderCalendar() {
-        const NAMES = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
-        const y = calViewDate.getFullYear(), mo = calViewDate.getMonth();
-        document.getElementById('calendarMonthYear').textContent = `${NAMES[mo]} ${y}`;
-        const first = new Date(y, mo, 1), days = new Date(y, mo + 1, 0).getDate();
-        let html = '<span></span>'.repeat((first.getDay() + 6) % 7);
-        for (let d = 1; d <= days; d++) {
-            const iso = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const cur = iso === currentReportDate, known = availableDates.has(iso);
-            html += `<button onclick="selectDate('${iso}')" class="p-1 rounded-md ${cur ? 'bg-indigo-600 text-white font-bold' : known ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-100 text-slate-700'}">${d}</button>`;
-        }
-        document.getElementById('calendarDaysGrid').innerHTML = html;
-    }
-    function selectDate(iso) {
-        currentReportDate = iso;
-        calViewDate = new Date(iso + 'T00:00:00');
-        document.getElementById('lblSelectedDate').textContent = dmy(iso);
-        document.getElementById('calendarDropdown').classList.add('hidden');
-        loadFromCloud(iso);
-    }
+  pane.innerHTML = `<table class="rk"><thead>${head}</thead><tbody>${body.join('')}</tbody></table>`;
 
-    function init() {
-        document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
-        setViewMode('fluid');
-        renderCalendar();
-        render();
-        setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
-        if (typeof fetch === 'function') loadLatestMonday();
-    }
-    window.addEventListener('DOMContentLoaded', init);
-    </script>
+  const c = DATA.coverage || {};
+  $('#hdrCov').textContent = `мапінг: ${c.nodes_matched||0} / ${c.nodes_total||0} статей прогнозу · рядків заповнено ${c.rows_mapped||0} з ${c.rows_total||0}`;
+  renderGaps();
+}
 
-    <!-- ═══════════════════════════════════════════════════════════════════════════
-         ЗВОРОТНИЙ МАПІНГ НА РК-ПРЕЗЕНТАЦІЮ 11-25 — лейбли на рядках прогнозу.
-         ═══════════════════════════════════════════════════════════════════════ -->
-        var CF_DICT = {};
-        var d = (window.DYNAMIC_CF_DICT || CF_DICT)[code];
-      
-      var esc = function (s) {
-        return String(s == null ? '' : s)
-          .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-          .replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      };
+function renderGaps(){
+  const u = (DATA.coverage||{}).unmatched || [];
+  $('#gapsTitle').textContent = 'Статті прогнозу без мапінгу — ' + u.length;
+  $('#gapsBody').innerHTML = '<table class="w-full text-[11px]"><tbody>' + u.map(x =>
+    `<tr class="border-b border-slate-100"><td class="py-0.5 pr-2">${esc(x.key)}</td>` +
+    `<td class="py-0.5 pr-2 text-slate-500">${esc(x.name||'')}</td>` +
+    `<td class="py-0.5 pr-2 text-slate-400">${esc(x.block||'')}</td>` +
+    `<td class="py-0.5 text-amber-700">${esc(x.reason)}</td></tr>`).join('') + '</tbody></table>';
+}
 
-      var LAST_ERROR = null;
+let REV_ON = false;
+function toggleRev(){
+  REV_ON = !REV_ON;
+  $('#btnRev').className = 'ctl' + (REV_ON ? ' active' : '');
+  $('#revPane').classList.toggle('hidden', !REV_ON);
+  $('#pane').classList.toggle('hidden', REV_ON);
+  if (REV_ON) renderReverse();
+}
 
-      function g(name) {
-        try { return (0, eval)(name); } catch (e) { return undefined; }
-      }
-      function getRows() {
-        var f = g('visibleRows');
-        if (typeof f !== 'function') return null;
-        try { return f(); } catch (e) { return null; }
-      }
+function buildReverse(){
+  const order = {}; RK_ROWS.forEach((r,i) => order[r.label] = i);
+  const rev = new Map();
+  (DICT || []).forEach(d => {
+    const rk = (d.RK_Item || '').trim() || '— БЕЗ МАПІНГУ —';
+    if (!rev.has(rk)) rev.set(rk, []);
+    rev.get(rk).push(d);
+  });
+  RK_ROWS.forEach(r => {
+    if ((r.type === 'detail' || r.type === 'detail_sub') && !rev.has(r.label)) rev.set(r.label, []);
+  });
+  return Array.from(rev.entries()).sort((a,b) => {
+    const oa = a[0] in order ? order[a[0]] : 998, ob = b[0] in order ? order[b[0]] : 998;
+    if (oa !== ob) return oa - ob;
+    return a[0].localeCompare(b[0], 'uk');
+  });
+}
 
-      function nodeHasValues(n) {
-        var v = (n && n.values) || {}, k;
-        for (k in v) if (typeof v[k] === 'number' && v[k] !== 0) return true;
-        return false;
-      }
+function orphanKeys(){
+  const known = new Set((DICT||[]).map(d => (d.MatchKey || d.Title || '').trim()));
+  return ((DATA.coverage||{}).unmatched || []).filter(u => !known.has(u.key));
+}
 
-      function isLeaf(n) {
-        var kids = (n && n.children) || [];
-        if (!kids.length) return true;
-        for (var i = 0; i < kids.length; i++) {
-          if (nodeHasValues(kids[i]) || ((kids[i].children || []).length)) return false;
-        }
-        return true;
-      }
+function renderReverse(){
+  const q = ($('#search').value || '').trim().toLowerCase();
+  const rows = [];
+  buildReverse().forEach(([rk, list]) => {
+    const rkRow = RK_ROWS.find(r => r.label === rk);
+    const used = DATA.rows.find(r => r.label === rk);
+    const noMap = rk === '— БЕЗ МАПІНГУ —';
+    const empty = !list.length;
+    const hit = k => !q || k.toLowerCase().includes(q);
+    const shown = list.filter(d => !q || hit(d.MatchKey||'') || hit(d.ERPName||'') || rk.toLowerCase().includes(q));
+    if (q && !shown.length && !rk.toLowerCase().includes(q)) return;
 
-      function cutoff() {
-        var snap = g('SNAP');
-        var rows = (snap && snap.rows) || [];
-        var min = Infinity;
-        for (var i = 0; i < rows.length; i++) {
-          var r = rows[i];
-          if (r && r.src_row && String(r.name || '').indexOf('Залишки на кінець періоду') === 0) {
-            if (r.src_row < min) min = r.src_row;
-          }
-        }
-        return min;
-      }
+    rows.push(`<tr class="${noMap ? 'calc' : 'subtotal'}">` +
+      `<td class="c-code">${esc(rkRow ? rkRow.id : '')}</td>` +
+      `<td class="c-name">${esc(rk)}` +
+      (noMap ? '<span class="tag nomap">потребує призначення статті РК</span>' : '') +
+      (empty && !noMap ? '<span class="tag nomap">немає жодного коду ЕРП</span>' : '') +
+      (used && !used.mapped && !noMap && !empty ? '<span class="tag resid">у зрізі значень немає</span>' : '') +
+      `</td><td style="text-align:right">${list.length}</td><td></td><td></td></tr>`);
 
-      function classify(rec, cut) {
-        var n = (rec && rec.node) || {};
-        var code = String(n.code == null ? '' : n.code).trim();
-        if (!code) return null;
-        if (n.kind !== 'child' && n.kind !== 'item') return null;
-        if (n.src_row && n.src_row >= cut) return null;
-        if (String(n.name || '').indexOf('КОНТРОЛЬ витрат по напрямках') === 0) return null;
-        if (!isLeaf(n)) return { kind: 'parent', code: code };
+    shown.forEach(d => {
+      const st = d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ');
+      const tag = st === 'ПРОПОЗИЦІЯ' ? '<span class="tag resid">пропозиція — перевірити</span>'
+                : st === 'БЕЗ МАПІНГУ' ? '<span class="tag nomap">без мапінгу</span>' : '';
+      rows.push(`<tr class="detail_sub"><td class="c-code">${esc(d.MatchType || '')}</td>` +
+        `<td class="c-name">${esc(d.MatchKey || d.Title || '')}${tag}</td>` +
+        `<td style="text-align:left">${esc(d.ERPName || '')}</td>` +
+        `<td style="text-align:left">${esc(d.CF_NAK || '')}</td>` +
+        `<td style="text-align:left">${esc(d.CF_ME || '')}</td></tr>`);
+    });
+  });
 
-        var d = (window.DYNAMIC_CF_DICT || CF_DICT)[code];
-        if (!d) return { kind: 'missing', code: code };
-        if (!d[0]) return { kind: 'nomap', code: code, status: d[1] };
-        return { kind: 'ok', code: code, rk: d[0], status: d[1] };
-      }
+  const orph = orphanKeys().filter(u => !q || u.key.toLowerCase().includes(q) || (u.name||'').toLowerCase().includes(q));
+  if (orph.length){
+    rows.push(`<tr class="section"><td class="c-code"></td><td class="c-name">Ключі зрізу, яких немає в довіднику</td><td>${orph.length}</td><td></td><td></td></tr>`);
+    orph.forEach(u => rows.push(`<tr class="detail_sub"><td class="c-code"></td>` +
+      `<td class="c-name">${esc(u.key)}<span class="tag nomap">додати в довідник</span></td>` +
+      `<td style="text-align:left">${esc(u.name||'')}</td><td style="text-align:left">${esc(u.block||'')}</td><td></td></tr>`));
+  }
 
-      function tagHtml(c) {
-        if (c.kind === 'ok') {
-          var sug = c.status === 'ПРОПОЗИЦІЯ';
-          return '<span class="map-tag ' + (sug ? 'map-sug' : 'map-ok') + '" title="Стаття РК-презентації 11-25' +
-                 (sug ? ' (пропозиція — потребує підтвердження)' : '') + '">' + esc(c.rk) + (sug ? ' ?' : '') + '</span>';
-        }
-        if (c.kind === 'nomap') {
-          return '<span class="map-tag map-none" title="Ключ ' + esc(c.code) +
-                 ' є в довіднику CF_Dictionary, але статтю РК-презентації йому не призначено">немає мапінгу</span>';
-        }
-        if (c.kind === 'missing') {
-          return '<span class="map-tag map-miss" title="Ключа ' + esc(c.code) +
-                 ' немає в довіднику CF_Dictionary — його треба додати">немає в довіднику</span>';
-        }
-        return '';
-      }
+  $('#revPane').innerHTML = '<table class="rk"><thead><tr>' +
+    '<th class="c-code">RowId / тип</th><th class="c-name">Стаття РК → ключ довідника</th>' +
+    '<th style="text-align:left">Назва статті ЕРП</th><th style="text-align:left">Стаття CF НАК</th>' +
+    '<th style="text-align:left">CF МЕ</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>';
+}
 
-      function toolbar() {
-        var bars = document.querySelectorAll('div.bg-slate-50');
-        for (var i = 0; i < bars.length; i++) {
-          if (bars[i].querySelector('#searchBox, #onlyKeep, #hideZero')) return bars[i];
-        }
-        return bars.length ? bars[0] : null;
-      }
+function exportCsv(){
+  const cols = buildColumns();
+  const out = [['Коди ЕРП','Стаття РК-презентації 11-25','Тип','Мапінг',
+                ...cols.map(c => c.label + (c.sub ? ' ('+c.sub+')' : ''))]];
+  DATA.rows.forEach(r => out.push([
+    (r.codes||[]).join(' '), r.label, r.type, r.mapped ? 'так' : 'ні',
+    ...cols.map(c => r.type === 'section' ? '' : (cellValue(c,r) == null ? '' : (cellValue(c,r)/unitDiv()).toFixed(2)))
+  ]));
+  const csv = '\uFEFF' + out.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = 'RK_presentation_' + (currentDate||'data') + '_' + UNIT + '.csv';
+  a.click();
+}
 
-      function injectControls() {
-        if (document.getElementById('mapShow')) return true;
-        var bar = toolbar();
-        if (!bar) return false;
-        var wrap = document.createElement('span');
-        wrap.className = 'flex items-center gap-3 border-l pl-4 border-slate-200';
-        wrap.innerHTML =
-          '<span class="text-xs text-slate-600">РК-мапінг:</span>' +
-          '<label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">' +
-            '<input type="checkbox" id="mapShow" checked> показувати</label>' +
-          '<label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer" ' +
-            'title="Залишає лише статті, яким не призначено статтю РК-презентації або яких немає в довіднику">' +
-            '<input type="checkbox" id="mapOnlyGaps"> лише без мапінгу</label>' +
-          '<span class="map-legend" id="mapStats"></span>';
-        bar.appendChild(wrap);
-        document.getElementById('mapShow').addEventListener('change', function () { decorate(); });
-        document.getElementById('mapOnlyGaps').addEventListener('change', function () { decorate(); });
-        return true;
-      }
-
-      var busy = false;
-      function decorate() {
-        if (busy) return;
-        var showBox = document.getElementById('mapShow');
-        if (!showBox) { injectControls(); showBox = document.getElementById('mapShow'); }
-        var stats = document.getElementById('mapStats');
-
-        var trs = document.querySelectorAll('#pane table tbody tr');
-        var recs = getRows();
-        if (!trs.length || !recs || recs.length !== trs.length) {
-          if (stats && !trs.length) stats.textContent = '';
-          return;
-        }
-
-        var cut = cutoff();
-        var show = !showBox || showBox.checked;
-        var gapsBox = document.getElementById('mapOnlyGaps');
-        var onlyGaps = gapsBox && gapsBox.checked;
-        var ok = 0, nomap = 0, missing = 0;
-
-        busy = true;
-        try {
-          for (var i = 0; i < trs.length; i++) {
-            var tr = trs[i];
-            tr.classList.remove('map-unmapped');
-            tr.style.removeProperty('display');
-
-            var old = tr.querySelector('.map-tag');
-            if (old && old.parentNode) old.parentNode.removeChild(old);
-
-            var c = classify(recs[i], cut);
-            if (c) {
-              if (c.kind === 'ok') ok++;
-              else if (c.kind === 'nomap') nomap++;
-              else if (c.kind === 'missing') missing++;
-            }
-
-            var isGap = !!(c && (c.kind === 'nomap' || c.kind === 'missing'));
-            if (onlyGaps && !isGap) { tr.style.display = 'none'; continue; }
-            if (!show || !c) continue;
-
-            var cell = tr.querySelector('td.nm-col') || tr.cells[0];
-            var html = tagHtml(c);
-            if (cell && html) cell.insertAdjacentHTML('beforeend', html);
-            if (isGap) tr.classList.add('map-unmapped');
-          }
-
-          if (stats) {
-            var tot = ok + nomap + missing;
-            stats.textContent = tot
-              ? 'змаплено ' + ok + ' з ' + tot +
-                (nomap ? ' · без статті РК ' + nomap : '') +
-                (missing ? ' · немає в довіднику ' + missing : '')
-              : '';
-            stats.className = 'map-legend' + ((nomap + missing) ? ' text-amber-700 font-semibold' : '');
-          }
-        } catch (e) {
-          LAST_ERROR = e;
-          if (window.console) console.warn('РК-мапінг:', e);
-        } finally {
-          busy = false;
-        }
-      }
-
-      var timer = null;
-      function schedule() {
-        if (busy) return;
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(function () { timer = null; decorate(); }, 60);
-      }
-
-      function start() {
-        try {
-          injectControls();
-          var pane = document.getElementById('pane');
-          if (!pane) { setTimeout(start, 500); return; }
-          new MutationObserver(schedule).observe(pane, { childList: true, subtree: true });
-          schedule();
-        } catch (e) {
-          LAST_ERROR = e;
-          if (window.console) console.warn('РК-мапінг (старт):', e);
-        }
-      }
-
-      window.__rkMap = {
-        decorate: function () { decorate(); },
-        debug: function () {
-          var recs = getRows();
-          var info = {
-            'записів у довіднику': Object.keys(CF_DICT).length,
-            'знайдено панель фільтрів': !!toolbar(),
-            'перемикачі додано': !!document.getElementById('mapShow'),
-            'visibleRows доступна': typeof g('visibleRows') === 'function',
-            'SNAP завантажено': !!g('SNAP'),
-            'рядків у таблиці': document.querySelectorAll('#pane table tbody tr').length,
-            'рядків з visibleRows': recs ? recs.length : null,
-            'межа інформаційної частини (src_row)': cutoff(),
-            'остання помилка': LAST_ERROR ? String(LAST_ERROR) : null
-          };
-          if (window.console) console.log(info);
-          return info;
-        }
-      };
-
-      if (document.readyState === 'loading') {
-        window.addEventListener('DOMContentLoaded', start);
-      } else {
-        start();
-      }
-    })();
-    </script>
+(async function init(){
+  $('#navDate').textContent = dmy(currentDate);
+  $('#lblDate').textContent = dmy(currentDate);
+  $('#navSource').textContent = (EMBEDDED.meta||{}).source_file || '—';
+  const byKey = {}; (EMBEDDED.periods||[]).forEach(p => byKey[p.key] = p);
+  $('#hdrRange').textContent = ((byKey.T0||{}).range||'') + ' – ' + ((byKey.T12||{}).range||'');
+  availableDates.add(currentDate);
+  renderCal();
+  render();
+  setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
+  
+  await loadDictionary();
+  if (typeof fetch === 'function') await loadLatestMonday();
+})();
+</script>
 </body>
 </html>

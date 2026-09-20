@@ -800,10 +800,12 @@ function collectMeasureNodes(snapshot){
 }
 function buildRk(snapshot, dictionary){
   const dict = {};
+  // Тут залишаємо фільтрацію, щоб у сам звіт ішли лише активні статті
   (dictionary || []).forEach(d => {
     const k = (d.MatchKey || d.Title || '').trim();
     if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') dict[k] = d;
   });
+
   const nodes = collectMeasureNodes(snapshot);
   const agg = {}, codesBy = {}, unmatched = [];
   let matched = 0;
@@ -1434,12 +1436,14 @@ function toggleRev(){
 function buildReverse(){
   const order = {}; RK_ROWS.forEach((r,i) => order[r.label] = i);
   const rev = new Map();
+  
+  // Використовуємо весь DICT (включно з виключеними), щоб побачити їх у зворотному мапінгу
   (DICT || []).forEach(d => {
     const rk = (d.RK_Item || '').trim() || '— БЕЗ МАПІНГУ —';
     if (!rev.has(rk)) rev.set(rk, []);
     rev.get(rk).push(d);
   });
-  /* рядки РК, для яких у довіднику немає жодного ключа */
+
   RK_ROWS.forEach(r => {
     if ((r.type === 'detail' || r.type === 'detail_sub') && !rev.has(r.label)) rev.set(r.label, []);
   });
@@ -1466,7 +1470,7 @@ function renderReverse(){
     const shown = list.filter(d => !q || hit(d.MatchKey||'') || hit(d.ERPName||'') || rk.toLowerCase().includes(q));
     if (q && !shown.length && !rk.toLowerCase().includes(q)) return;
 
-    // Заголовок групи (додано <td></td> для 6-ї колонки)
+    // Заголовок групи
     rows.push(`<tr class="${noMap ? 'calc' : 'subtotal'}">` +
       `<td class="c-code">${esc(rkRow ? rkRow.id : '')}</td>` +
       `<td class="c-name">${esc(rk)}` +
@@ -1475,19 +1479,25 @@ function renderReverse(){
       (used && !used.mapped && !noMap && !empty ? '<span class="tag resid">у зрізі значень немає</span>' : '') +
       `</td><td style="text-align:right">${list.length}</td><td></td><td></td><td></td></tr>`);
 
-    // Рядки довідника
+    // Рядки довідника (рендеримо один раз із повною перевіркою IsActive та підсвіткою)
     shown.forEach(d => {
+      const isActive = String(d.IsActive == null ? 'Так' : d.IsActive);
+      const isOff = isActive === 'Ні' || isActive === 'false' || isActive === '0';
       const st = d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ');
-      const tag = st === 'ПРОПОЗИЦІЯ' ? '<span class="tag resid">пропозиція — перевірити</span>'
-                : st === 'БЕЗ МАПІНГУ' ? '<span class="tag nomap">без мапінгу</span>' : '';
       
-      // Додано виведення d.IsActive
+      let tag = st === 'ПРОПОЗИЦІЯ' ? '<span class="tag resid">пропозиція — перевірити</span>'
+              : st === 'БЕЗ МАПІНГУ' ? '<span class="tag nomap">без мапінгу</span>' : '';
+      
+      if (isOff) {
+        tag += ' <span class="tag nomap" style="background:#fee2e2; color:#991b1b;">IsActive: Ні (вимкнено)</span>';
+      }
+
       rows.push(`<tr class="detail_sub"><td class="c-code">${esc(d.MatchType || '')}</td>` +
         `<td class="c-name">${esc(d.MatchKey || d.Title || '')}${tag}</td>` +
         `<td style="text-align:left">${esc(d.ERPName || '')}</td>` +
         `<td style="text-align:left">${esc(d.CF_NAK || '')}</td>` +
         `<td style="text-align:left">${esc(d.CF_ME || '')}</td>` +
-        `<td style="text-align:center; font-weight:bold;">${esc(d.IsActive || 'Так')}</td></tr>`);
+        `<td style="text-align:center; font-weight:bold; color:${isOff ? '#dc2626' : 'inherit'}">${esc(isActive)}</td></tr>`);
     });
   });
 
@@ -1499,7 +1509,7 @@ function renderReverse(){
       `<td style="text-align:left">${esc(u.name||'')}</td><td style="text-align:left">${esc(u.block||'')}</td><td></td><td></td></tr>`));
   }
 
-  // Оновлена шапка таблиці з колонкою IsActive
+  // Шапка таблиці з колонкою IsActive
   $('#revPane').innerHTML = '<table class="rk"><thead><tr>' +
     '<th class="c-code">RowId / тип</th><th class="c-name">Стаття РК → ключ довідника</th>' +
     '<th style="text-align:left">Назва статті ЕРП</th><th style="text-align:left">Стаття CF НАК</th>' +

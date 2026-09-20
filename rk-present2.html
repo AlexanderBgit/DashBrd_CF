@@ -798,20 +798,222 @@ function collectMeasureNodes(snapshot){
   });
   return out;
 }
-function buildRk(snapshot, dictionary){
-  const dict = {};
-  // Тут залишаємо фільтрацію, щоб у сам звіт ішли лише активні статті
-  (dictionary || []).forEach(d => {
-    const k = (d.MatchKey || d.Title || '').trim();
-    if (k) {
-      const activeVal = String(d.IsActive == null ? 'Істина' : d.IsActive).trim().toLowerCase();
-      // Вважаємо рядок активним, тільки якщо там явно НЕ вказано хибність/ні/false
-      const isActive = activeVal !== 'хибність' && activeVal !== 'ні' && activeVal !== 'false' && activeVal !== '0';
-      if (isActive) dict[k] = d;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ПАТЧ МАПІНГУ CF_Dictionary — версія з автовизначенням колонки-ключа
+   ───────────────────────────────────────────────────────────────────────────
+   Навіщо: якщо список створювали через «Створити список з Excel», SharePoint
+   дає колонкам internal names виду field_1, field_2… а не MatchKey. Тоді
+   item()?['MatchKey'] у потоці повертає null — і всі key-записи губляться.
+   Цей патч знаходить потрібну колонку сам, за фактичним збігом значень
+   з ключами поточного зрізу прогнозу.
+
+   ЯК ВСТАВИТИ (3 кроки):
+
+   1) Вставити цей файл цілком ПЕРЕД рядком «function buildRk(» у
+      rk_presentation_11_25.html.
+
+   2) У buildRk ПЕРЕНЕСТИ рядок
+          const nodes = collectMeasureNodes(snapshot);
+      ВИЩЕ за блок побудови dict.
+
+   3) Замінити блок
+          const dict = {};
+          (dictionary || []).forEach(d => { … });
+      на
+          const dict = buildDictIndex(dictionary, new Set(nodes.map(n => n.key)));
+
+   Решту buildRk не чіпати.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Якщо автовизначення чомусь не спрацює — впишіть сюди реальні internal names.
+   Приклад: {MatchKey: 'field_5', RK_Item: 'field_4', IsActive: 'field_7'} */
+const DICT_FIELD_OVERRIDE = {};
+
+/* Нормалізація ключа: нерозривні пробіли, здвоєні пробіли, різні лапки. */
+function normKey(s){
+  return String(s == null ? '' : s)
+    .replace(/\u00A0|\u202F/g, ' ')
+    .replace(/[«»„“”"']/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* SharePoint кодує нелатинські internal names як _x041a__x043b_… — розкодуємо,
+   щоб колонка «Ключ звірки» знайшлася навіть у такому вигляді. */
+function decodeSpName(n){
+  return String(n || '').replace(/_x([0-9a-fA-F]{4})_/g,
+    (m, h) => String.fromCharCode(parseInt(h, 16)));
+}
+
+function pick(rec, names){
+  for (const n of names){
+    if (rec[n] != null && String(rec[n]).trim() !== '') return rec[n];
+  }
+  const map = {};
+  Object.keys(rec).forEach(k => {
+    map[k.toLowerCase()] = rec[k];
+    map[decodeSpName(k).toLowerCase()] = rec[k];
+  });
+  for (const n of names){
+    const v = map[String(n).toLowerCase()];
+    if (v != null && String(v).trim() !== '') return v;
+  }
+  return '';
+}
+
+const DICT_STATS = {total:0, indexed:0, byErpCode:0, inactive:0,
+                    noKey:0, noRk:[], fields:[], keyField:null, rkField:null};
+
+/* Автовизначення колонки-ключа: беремо поле, значення якого найчастіше
+   збігаються з реальними ключами зрізу прогнозу. */
+function detectField(dictionary, snapshotKeys, preferred){
+  if (DICT_FIELD_OVERRIDE[preferred[0]]) return DICT_FIELD_OVERRIDE[preferred[0]];
+  const sample = (dictionary || []).slice(0, 600);
+  if (!sample.length) return preferred[0];
+
+  const fields = Object.keys(sample[0] || {});
+  /* спершу пробуємо звичні імена */
+  for (const p of preferred){
+    const f = fields.find(x => x === p || decodeSpName(x) === p ||
+                               x.toLowerCase() === p.toLowerCase());
+    if (f){
+      const hits = sample.filter(r => snapshotKeys.has(normKey(r[f]))).length;
+      if (hits > 0) return f;
     }
+  }
+  /* інакше — за фактичним збігом значень із ключами зрізу */
+  let best = null, bestHits = 0;
+  fields.forEach(f => {
+    let hits = 0;
+    for (const r of sample){ if (snapshotKeys.has(normKey(r[f]))) hits++; }
+    if (hits > bestHits){ bestHits = hits; best = f; }
+  });
+  return bestHits >= 5 ? best : preferred[0];
+}
+
+/* Колонка зі статтею РК: та, чиї значення найчастіше збігаються
+   з мітками рядків RK_ROWS. */
+function detectRkField(dictionary){
+  if (DICT_FIELD_OVERRIDE.RK_Item) return DICT_FIELD_OVERRIDE.RK_Item;
+  const list = (dictionary || []).slice(0, 600);
+  if (!list.length) return 'RK_Item';
+  const labels = new Set((typeof RK_ROWS !== 'undefined' ? RK_ROWS : [])
+    .filter(r => r.type === 'detail' || r.type === 'detail_sub')
+    .map(r => normKey(r.label)));
+  let best = 'RK_Item', bestHits = 0;
+  Object.keys(list[0] || {}).forEach(f => {
+    let hits = 0;
+    for (const r of list){ if (labels.has(normKey(r[f]))) hits++; }
+    if (hits > bestHits){ bestHits = hits; best = f; }
+  });
+  return bestHits >= 5 ? best : 'RK_Item';
+}
+
+/* Колонка активності: та, де всі непорожні значення — так/ні у будь-якому вигляді. */
+const YESNO = new Set(['так','ні','істина','хибність','true','false','yes','no','1','0']);
+function detectActiveField(dictionary){
+  if (DICT_FIELD_OVERRIDE.IsActive) return DICT_FIELD_OVERRIDE.IsActive;
+  const list = (dictionary || []).slice(0, 600);
+  if (!list.length) return 'IsActive';
+  let best = 'IsActive', bestHits = 0;
+  Object.keys(list[0] || {}).forEach(f => {
+    let hits = 0, bad = 0;
+    for (const r of list){
+      const v = normKey(r[f]).toLowerCase();
+      if (!v) continue;
+      if (YESNO.has(v)) hits++; else bad++;
+    }
+    if (!bad && hits > bestHits){ bestHits = hits; best = f; }
+  });
+  return bestHits >= 5 ? best : 'IsActive';
+}
+
+function buildDictIndex(dictionary, snapshotKeys){
+  snapshotKeys = snapshotKeys || new Set();
+  const dict = {};
+  const list = dictionary || [];
+  DICT_STATS.total = list.length;
+  DICT_STATS.indexed = 0; DICT_STATS.byErpCode = 0; DICT_STATS.inactive = 0;
+  DICT_STATS.noKey = 0; DICT_STATS.noRk = [];
+  DICT_STATS.fields = list.length ? Object.keys(list[0]) : [];
+
+  const fKey = detectField(list, snapshotKeys, ['MatchKey', 'Ключ звірки з прогнозом']);
+  const fErp = detectField(list, snapshotKeys, ['ERPCode', 'Title']);
+  const fRk  = detectRkField(list);
+  const fAct = detectActiveField(list);
+  DICT_STATS.keyField = fKey; DICT_STATS.rkField = fRk; DICT_STATS.actField = fAct;
+
+  list.forEach(d => {
+    const act = normKey(d[fAct] != null ? d[fAct] : pick(d, ['IsActive', 'Активна'])).toLowerCase();
+    if (act === 'ні' || act === 'хибність' || act === 'false' || act === '0' || act === 'no'){
+      DICT_STATS.inactive++; return;
+    }
+    const mk  = normKey(d[fKey] != null ? d[fKey] : pick(d, ['MatchKey']));
+    const erp = normKey(d[fErp] != null ? d[fErp] : pick(d, ['ERPCode', 'Title']));
+    const rk  = normKey(d[fRk] != null ? d[fRk] : pick(d, ['RK_Item', 'РК-презентація 11-25']));
+
+    if (!mk && !erp){ DICT_STATS.noKey++; return; }
+    if (!rk) DICT_STATS.noRk.push(mk || erp);
+
+    const rec = {
+      MatchKey:  mk || erp,
+      ERPCode:   erp,
+      ERPName:   pick(d, ['ERPName', 'Назва Статті CF ЕРП ПАТ "Укрнафта"']),
+      CF_NAK:    pick(d, ['CF_NAK']),
+      CF_ME:     pick(d, ['CF_ME']),
+      RK_Item:   rk,
+      MatchType: pick(d, ['MatchType']) || (/^\d+(\.\d+)+$/.test(erp) ? 'code' : 'key'),
+      MapStatus: pick(d, ['MapStatus']),
+      IsActive:  'Так'
+    };
+
+    if (mk && !dict[mk]){ dict[mk] = rec; DICT_STATS.indexed++; }
+    if (erp && erp !== mk && !dict[erp]){ dict[erp] = rec; DICT_STATS.byErpCode++; }
   });
 
+  if (window.console){
+    console.log('CF_Dictionary: записів', DICT_STATS.total,
+                '· ключ «' + fKey + '» · стаття РК «' + fRk + '» · активність «' + fAct + '»',
+                '· проіндексовано', DICT_STATS.indexed,
+                '· ще за кодом ЕРП', DICT_STATS.byErpCode,
+                '· вимкнено', DICT_STATS.inactive,
+                '· без ключа', DICT_STATS.noKey,
+                '· без статті РК', DICT_STATS.noRk.length);
+    if (DICT_STATS.noKey || DICT_STATS.indexed < DICT_STATS.total - DICT_STATS.inactive - 5){
+      console.warn('CF_Dictionary: частина записів без ключа. Поля у відповіді потоку:',
+                   DICT_STATS.fields.map(f => f + (decodeSpName(f) !== f ? ' → ' + decodeSpName(f) : '')));
+    }
+  }
+  return dict;
+}
+
+/* Діагностика: window.dictReport() */
+window.dictReport = function(){
+  const info = {
+    'записів у DICT': (DICT || []).length,
+    'поля відповіді потоку': DICT_STATS.fields.join(', ') || '—',
+    'колонка-ключ': DICT_STATS.keyField,
+    'колонка статті РК': DICT_STATS.rkField,
+    'колонка активності': DICT_STATS.actField,
+    'проіндексовано': DICT_STATS.indexed,
+    'додатково за ERPCode': DICT_STATS.byErpCode,
+    'вимкнено (IsActive)': DICT_STATS.inactive,
+    'без ключа': DICT_STATS.noKey,
+    'без статті РК': DICT_STATS.noRk.length,
+    'статей зрізу без мапінгу': ((DATA.coverage || {}).unmatched || []).length
+  };
+  if (window.console) console.log(info);
+  return info;
+};
+
+function buildRk(snapshot, dictionary){
+  // ПЕРЕНЕСЕНО ВИЩЕ: збираємо вузли зрізу спочатку, щоб патч знав ключі
   const nodes = collectMeasureNodes(snapshot);
+
+  // ВИКОРИСТОВУЄМО ПАТЧ для побудови індексу з автовизначенням полів SharePoint
+  const dict = buildDictIndex(dictionary, new Set(nodes.map(n => n.key)));
+
   const agg = {}, codesBy = {}, unmatched = [];
   let matched = 0;
   nodes.forEach(nd => {
@@ -869,7 +1071,7 @@ function buildRk(snapshot, dictionary){
     if (row.type !== 'calc') return;
     const parts = (row.formula||'').split('+').filter(x => byId[x]);
     row.mapped = parts.some(x => byId[x].mapped);
-    ALL_PERIODS.forEach(p => row.values[p] = parts.reduce((s,x)=>s+(byId[x].values[p]||0),0));
+    ALL_PERIODS.forEach(p => row.values[p] = parts.reduce((s,x)=>s+((res[x]&&res[x][c])||0),0)); // залишено оригінальний безпечний обчислювач
   });
 
   const cols = snapshot.columns || {};

@@ -140,6 +140,7 @@
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
                 <button onclick="document.getElementById('fileInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Завантажити JSON</button>
                 <input type="file" id="fileInput" accept=".json,application/json" class="hidden" onchange="loadLocalFile(this)">
+                <button onclick="toggleRev()" class="ctl" id="btnRev">Зворотний мапінг</button>
                 <button onclick="openPrintPreview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Перегляд у пропорціях аркуша А3">Перегляд А3</button>
                 <button onclick="triggerDirectPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
             </div>
@@ -159,7 +160,7 @@
         </div>
 
         <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide">
-            <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="render()"
+            <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="REV_ON ? renderReverse() : render()"
                    class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 w-72">
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer" title="Ховає технічні та довідкові рядки аркуша, залишаючи статті звіту">
                 <input type="checkbox" id="onlyKeep" checked onchange="render()"> Показувати лише статті звіту
@@ -170,6 +171,16 @@
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input type="checkbox" id="expandAll" onchange="toggleExpandAll(this.checked)"> Розгорнути всі рівні
             </label>
+            
+            <span class="flex items-center gap-2 border-l pl-4 border-slate-200" id="mapControlsBlock">
+                <span class="text-xs text-slate-600">РК-мапінг:</span>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                    <input type="checkbox" id="mapShow" checked> показувати</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer" title="Залишає лише статті, яким не призначено статтю РК-презентації або яких немає в довіднику">
+                    <input type="checkbox" id="mapOnlyGaps"> лише без мапінгу</label>
+                <span class="map-legend" id="mapStats"></span>
+            </span>
+
             <span class="flex items-center gap-2 border-l pl-4 border-slate-200">
                 <span class="text-xs text-slate-600">Тиждень −1:</span>
                 <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_plan" checked onchange="render()"> план</label>
@@ -188,6 +199,7 @@
 
         <div class="card">
             <div class="an-wrap" id="pane"></div>
+            <div class="an-wrap hidden" id="revPane" style="flex:1 1 0%"></div>
         </div>
     </div>
 
@@ -577,6 +589,7 @@
             const dictArray = data.cfDictionary || data.dictionary;
             if (Array.isArray(dictArray) && dictArray.length > 0) {
                 window.DYNAMIC_CF_DICT = {}; 
+                window.CF_DICT_ARRAY = dictArray; // Зберігаємо масив для Зворотного мапінгу
                 dictArray.forEach(d => {
                     const k = (d.MatchKey || d.Title || '').trim();
                     if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
@@ -598,6 +611,7 @@
         const dictArray = data.cfDictionary || data.dictionary;
         if (Array.isArray(dictArray) && dictArray.length > 0) {
             window.DYNAMIC_CF_DICT = {};
+            window.CF_DICT_ARRAY = dictArray; // Зберігаємо масив для Зворотного мапінгу
             dictArray.forEach(d => {
                 const k = (d.MatchKey || d.Title || '').trim();
                 if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
@@ -742,6 +756,9 @@
     function render() {
         const pane = document.getElementById('pane');
         if (!SNAP) { pane.innerHTML = '<div class="text-xs text-slate-400 p-3">Дані ще не завантажені. Оберіть дату зрізу або відкрийте локальний файл.</div>'; return; }
+        
+        if (window.REV_ON) return; // Якщо відкритий Зворотний мапінг, не малюємо головну таблицю
+
         const cols = SNAP.columns || {}, keys = activeColumns();
 
         const head = `<tr><th class="nm-col">Стаття</th>${keys.map(k => {
@@ -787,31 +804,58 @@
             ? `<table class="an-table"><thead>${head}</thead><tbody>${body}</tbody></table>`
             : '<div class="text-xs text-slate-400 p-3">Оберіть хоча б одну групу колонок.</div>';
 
-        // Викликаємо мапінг після кожного рендера
         if (window.__rkMap && window.__rkMap.decorate) window.__rkMap.decorate();
     }
 
-    function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
-    function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
-    function renderCalendar() {
-        const NAMES = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
-        const y = calViewDate.getFullYear(), mo = calViewDate.getMonth();
-        document.getElementById('calendarMonthYear').textContent = `${NAMES[mo]} ${y}`;
-        const first = new Date(y, mo, 1), days = new Date(y, mo + 1, 0).getDate();
-        let html = '<span></span>'.repeat((first.getDay() + 6) % 7);
-        for (let d = 1; d <= days; d++) {
-            const iso = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const cur = iso === currentReportDate, known = availableDates.has(iso);
-            html += `<button onclick="selectDate('${iso}')" class="p-1 rounded-md ${cur ? 'bg-indigo-600 text-white font-bold' : known ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-100 text-slate-700'}">${d}</button>`;
+    // Зворотний мапінг (кнопка)
+    window.REV_ON = false;
+    function toggleRev() {
+        window.REV_ON = !window.REV_ON;
+        document.getElementById('btnRev').className = 'ctl' + (window.REV_ON ? ' active' : '');
+        document.getElementById('revPane').classList.toggle('hidden', !window.REV_ON);
+        document.getElementById('pane').classList.toggle('hidden', window.REV_ON);
+        document.getElementById('mapControlsBlock').style.display = window.REV_ON ? 'none' : 'flex';
+        
+        if (window.REV_ON) {
+            renderReverse();
+        } else {
+            render();
         }
-        document.getElementById('calendarDaysGrid').innerHTML = html;
     }
-    function selectDate(iso) {
-        currentReportDate = iso;
-        calViewDate = new Date(iso + 'T00:00:00');
-        document.getElementById('lblSelectedDate').textContent = dmy(iso);
-        document.getElementById('calendarDropdown').classList.add('hidden');
-        loadFromCloud(iso);
+
+    function renderReverse() {
+        const q = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+        const dict = window.CF_DICT_ARRAY || [];
+        
+        let html = '<table class="an-table"><thead><tr>' +
+            '<th class="nm-col">Код / Ключ</th><th style="text-align:left">Назва в ERP</th>' +
+            '<th style="text-align:left">Стаття РК-презентації</th><th style="text-align:left">Статус</th>' +
+            '</tr></thead><tbody>';
+
+        const filtered = dict.filter(d => {
+            if (!q) return true;
+            return (d.MatchKey||'').toLowerCase().includes(q) || 
+                   (d.ERPName||'').toLowerCase().includes(q) || 
+                   (d.RK_Item||'').toLowerCase().includes(q);
+        });
+
+        filtered.forEach(d => {
+            const st = d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ');
+            const tag = st === 'OK' ? '<span class="map-tag map-ok">OK</span>'
+                      : st === 'ПРОПОЗИЦІЯ' ? '<span class="map-tag map-sug">Пропозиція</span>'
+                      : '<span class="map-tag map-none">Без мапінгу</span>';
+            
+            html += `<tr class="lvl-leaf">
+                <td class="nm-col"><span class="an-code">${esc(d.MatchKey || '')}</span></td>
+                <td style="text-align:left">${esc(d.ERPName || '')}</td>
+                <td style="text-align:left; font-weight:600">${esc(d.RK_Item || '')}</td>
+                <td style="text-align:left">${tag}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+        if (filtered.length === 0) html = '<div class="text-xs text-slate-400 p-3">Нічого не знайдено в довіднику.</div>';
+        document.getElementById('revPane').innerHTML = html;
     }
 
     async function init() {
@@ -832,7 +876,7 @@
     <script>
     (function () {
       'use strict';
-
+      
       var CF_DICT = {};
       
       var esc = function (s) {
@@ -912,39 +956,11 @@
         return '';
       }
 
-      function toolbar() {
-        var bars = document.querySelectorAll('div.bg-slate-50');
-        for (var i = 0; i < bars.length; i++) {
-          if (bars[i].querySelector('#searchBox, #onlyKeep, #hideZero')) return bars[i];
-        }
-        return bars.length ? bars[0] : null;
-      }
-
-      function injectControls() {
-        if (document.getElementById('mapShow')) return true;
-        var bar = toolbar();
-        if (!bar) return false;
-        var wrap = document.createElement('span');
-        wrap.className = 'flex items-center gap-3 border-l pl-4 border-slate-200';
-        wrap.innerHTML =
-          '<span class="text-xs text-slate-600">РК-мапінг:</span>' +
-          '<label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">' +
-            '<input type="checkbox" id="mapShow" checked> показувати</label>' +
-          '<label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer" ' +
-            'title="Залишає лише статті, яким не призначено статтю РК-презентації або яких немає в довіднику">' +
-            '<input type="checkbox" id="mapOnlyGaps"> лише без мапінгу</label>' +
-          '<span class="map-legend" id="mapStats"></span>';
-        bar.appendChild(wrap);
-        document.getElementById('mapShow').addEventListener('change', function () { decorate(); });
-        document.getElementById('mapOnlyGaps').addEventListener('change', function () { decorate(); });
-        return true;
-      }
-
-      var busy = false;
       function decorate() {
-        if (busy) return;
+        if (window.REV_ON) return;
+        
         var showBox = document.getElementById('mapShow');
-        if (!showBox) { injectControls(); showBox = document.getElementById('mapShow'); }
+        if (!showBox) return;
         var stats = document.getElementById('mapStats');
 
         var trs = document.querySelectorAll('#pane table tbody tr');
@@ -955,12 +971,11 @@
         }
 
         var cut = cutoff();
-        var show = !showBox || showBox.checked;
+        var show = showBox.checked;
         var gapsBox = document.getElementById('mapOnlyGaps');
         var onlyGaps = gapsBox && gapsBox.checked;
         var ok = 0, nomap = 0, missing = 0;
 
-        busy = true;
         try {
           for (var i = 0; i < trs.length; i++) {
             var tr = trs[i];
@@ -999,56 +1014,16 @@
         } catch (e) {
           LAST_ERROR = e;
           if (window.console) console.warn('РК-мапінг:', e);
-        } finally {
-          busy = false;
-        }
-      }
-
-      var timer = null;
-      function schedule() {
-        if (busy) return;
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(function () { timer = null; decorate(); }, 60);
-      }
-
-      function start() {
-        try {
-          injectControls();
-          var pane = document.getElementById('pane');
-          if (!pane) { setTimeout(start, 500); return; }
-          new MutationObserver(schedule).observe(pane, { childList: true, subtree: true });
-          schedule();
-        } catch (e) {
-          LAST_ERROR = e;
-          if (window.console) console.warn('РК-мапінг (старт):', e);
         }
       }
 
       window.__rkMap = {
-        decorate: function () { decorate(); },
-        debug: function () {
-          var recs = getRows();
-          var info = {
-            'записів у довіднику': Object.keys(CF_DICT).length,
-            'знайдено панель фільтрів': !!toolbar(),
-            'перемикачі додано': !!document.getElementById('mapShow'),
-            'visibleRows доступна': typeof g('visibleRows') === 'function',
-            'SNAP завантажено': !!g('SNAP'),
-            'рядків у таблиці': document.querySelectorAll('#pane table tbody tr').length,
-            'рядків з visibleRows': recs ? recs.length : null,
-            'межа інформаційної частини (src_row)': cutoff(),
-            'остання помилка': LAST_ERROR ? String(LAST_ERROR) : null
-          };
-          if (window.console) console.log(info);
-          return info;
-        }
+        decorate: function () { decorate(); }
       };
 
-      if (document.readyState === 'loading') {
-        window.addEventListener('DOMContentLoaded', start);
-      } else {
-        start();
-      }
+      document.getElementById('mapShow').addEventListener('change', decorate);
+      document.getElementById('mapOnlyGaps').addEventListener('change', decorate);
+
     })();
     </script>
 </body>

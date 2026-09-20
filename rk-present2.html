@@ -180,14 +180,12 @@
    КОНФІГУРАЦІЯ
    ═══════════════════════════════════════════════════════════════════════════ */
 const CONFIG = {
-  /* Потік зрізів прогнозу (той самий, що у робочих сторінках дашборду).
-     Порожньо -> сторінка працює лише на вбудованому знімку. */
   FLOW_URL: "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU",
-  /* Окремий потік довідника CF (Get_RK_Metrics з dictionaryOnly). Порожньо -> вбудований довідник. */
-  DICT_FLOW_URL: "",
-  /* Скільки паралельних викликів потоку робити при добиранні фактичних місяців */
+  
+  // ВСТАВЛЯЄМО ТОЙ САМИЙ URL:
+  DICT_FLOW_URL: "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU",
+  
   FETCH_CONCURRENCY: 4,
-  /* Скільки тижнів назад шукати найсвіжіший зріз при старті */
   LATEST_LOOKBACK_WEEKS: 8
 };
 

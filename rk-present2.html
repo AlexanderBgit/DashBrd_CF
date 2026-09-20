@@ -1146,44 +1146,31 @@ async function pool(items, n, fn){
 }
 
 /* довідник CF: завантаження онлайн з SharePoint XML (query.iqy) */
+/* довідник CF: завантаження через Power Automate */
 async function loadDictionary(){
-  // URL з файлу query.iqy
-  const url = "https://ukrnaftaoffice365.sharepoint.com/sites/CashFlow/_vti_bin/owssvr.dll?XMLDATA=1&List=822340fb-2928-4196-8a56-5cfcfdccf3e1&View=1089D1B3-116A-4D5D-ADB3-2984A003406A&RowLimit=0";
-  
+  if (!CONFIG.DICT_FLOW_URL) return;
   try {
-    // credentials: 'include' потрібен, щоб браузер передав ваші файли cookie для авторизації в Office 365
-    const res = await fetch(url, { credentials: 'include' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    setStatus('Оновлення довідника (Power Automate)…', 'bg-indigo-100 text-indigo-800');
     
-    const text = await res.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, "text/xml");
-    const rows = xml.getElementsByTagName('z:row');
+    const res = await postJson(CONFIG.DICT_FLOW_URL, {dictionaryOnly: true});
     
-    const newDict = [];
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i];
-      // У SharePoint owssvr.dll поля повертаються з префіксом ows_
-      newDict.push({
-        MatchKey: r.getAttribute('ows_Title') || r.getAttribute('ows_MatchKey'),
-        MatchType: r.getAttribute('ows_MatchType'),
-        RK_Item: r.getAttribute('ows_RK_Item'),
-        ERPName: r.getAttribute('ows_ERPName'),
-        CF_NAK: r.getAttribute('ows_CF_NAK'),
-        CF_ME: r.getAttribute('ows_CF_ME'),
-        MapStatus: r.getAttribute('ows_MapStatus'),
-        IsActive: r.getAttribute('ows_IsActive')
-      });
+    // Шукаємо масив у відповіді (залежить від того, як налаштовано ваш потік)
+    const d = res.cfDictionary || res.dictionary || (Array.isArray(res) ? res : null);
+    
+    if (d && Array.isArray(d) && d.length > 0) {
+      DICT = d;
+      console.log('Словник успішно оновлено онлайн:', DICT.length, 'записів');
+      setStatus('Словник завантажено', 'bg-emerald-100 text-emerald-800');
+    } else {
+      console.warn('Power Automate не повернув масив даних довідника.', res);
+      setStatus('Словник порожній, діє вбудований', 'bg-amber-100 text-amber-800');
     }
-    
-    if (newDict.length > 0) {
-      DICT = newDict;
-      console.log('Словник успішно завантажено онлайн:', DICT.length, 'записів');
-    }
-  } catch(e) { 
-    console.warn('Не вдалося завантажити словник онлайн, використовується вбудований.', e);
+  } catch(e) {
+    console.error('Помилка завантаження словника з Power Automate:', e);
+    setStatus('Помилка словника (див. консоль)', 'bg-red-100 text-red-800');
   }
 }
+
 async function fetchSnapshot(iso){
   if (SNAP_CACHE.has(iso)) return SNAP_CACHE.get(iso);
   const res = await callFlow({reportDate: iso, reportDateDot: dmy(iso), includeDictionary: true});
@@ -1479,7 +1466,7 @@ function renderReverse(){
     const shown = list.filter(d => !q || hit(d.MatchKey||'') || hit(d.ERPName||'') || rk.toLowerCase().includes(q));
     if (q && !shown.length && !rk.toLowerCase().includes(q)) return;
 
-    // Змінено: додано ще один <td></td> для вирівнювання заголовків груп (тепер колонок 6)
+    // Заголовок групи (додано <td></td> для 6-ї колонки)
     rows.push(`<tr class="${noMap ? 'calc' : 'subtotal'}">` +
       `<td class="c-code">${esc(rkRow ? rkRow.id : '')}</td>` +
       `<td class="c-name">${esc(rk)}` +
@@ -1488,31 +1475,31 @@ function renderReverse(){
       (used && !used.mapped && !noMap && !empty ? '<span class="tag resid">у зрізі значень немає</span>' : '') +
       `</td><td style="text-align:right">${list.length}</td><td></td><td></td><td></td></tr>`);
 
+    // Рядки довідника
     shown.forEach(d => {
       const st = d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ');
       const tag = st === 'ПРОПОЗИЦІЯ' ? '<span class="tag resid">пропозиція — перевірити</span>'
                 : st === 'БЕЗ МАПІНГУ' ? '<span class="tag nomap">без мапінгу</span>' : '';
       
-      // Змінено: виводимо значення d.IsActive в останній колонці
+      // Додано виведення d.IsActive
       rows.push(`<tr class="detail_sub"><td class="c-code">${esc(d.MatchType || '')}</td>` +
         `<td class="c-name">${esc(d.MatchKey || d.Title || '')}${tag}</td>` +
         `<td style="text-align:left">${esc(d.ERPName || '')}</td>` +
         `<td style="text-align:left">${esc(d.CF_NAK || '')}</td>` +
         `<td style="text-align:left">${esc(d.CF_ME || '')}</td>` +
-        `<td style="text-align:center; font-weight:bold;">${esc(d.IsActive || '')}</td></tr>`);
+        `<td style="text-align:center; font-weight:bold;">${esc(d.IsActive || 'Так')}</td></tr>`);
     });
   });
 
   const orph = orphanKeys().filter(u => !q || u.key.toLowerCase().includes(q) || (u.name||'').toLowerCase().includes(q));
   if (orph.length){
-    // Змінено: додано пустий <td> для нової колонки
     rows.push(`<tr class="section"><td class="c-code"></td><td class="c-name">Ключі зрізу, яких немає в довіднику</td><td>${orph.length}</td><td></td><td></td><td></td></tr>`);
     orph.forEach(u => rows.push(`<tr class="detail_sub"><td class="c-code"></td>` +
       `<td class="c-name">${esc(u.key)}<span class="tag nomap">додати в довідник</span></td>` +
       `<td style="text-align:left">${esc(u.name||'')}</td><td style="text-align:left">${esc(u.block||'')}</td><td></td><td></td></tr>`));
   }
 
-  // Змінено шапку: додано <th style="text-align:center">IsActive</th>
+  // Оновлена шапка таблиці з колонкою IsActive
   $('#revPane').innerHTML = '<table class="rk"><thead><tr>' +
     '<th class="c-code">RowId / тип</th><th class="c-name">Стаття РК → ключ довідника</th>' +
     '<th style="text-align:left">Назва статті ЕРП</th><th style="text-align:left">Стаття CF НАК</th>' +

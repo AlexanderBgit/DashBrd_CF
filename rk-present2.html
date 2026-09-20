@@ -1328,30 +1328,28 @@ function extractSnapshot(obj, depth){
   }
   return null;
 }
+/* ── 1. Замінена функція postJson цілком ──────────────────────────────── */
 async function postJson(url, body){
   const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'},
-                               body: JSON.stringify(body)});
+                                body: JSON.stringify(body)});
+  const txt = await res.text();
   if (!res.ok){
-    let msg = '';
-    try { const e = await res.json(); msg = e.message || e.error || ''; } catch(e){}
-    const err = new Error('HTTP ' + res.status + (msg ? ' — ' + msg : ''));
-    err.status = res.status;
+    /* Power Automate повертає помилку об'єктом — показуємо її цілком,
+       а не '[object Object]' */
+    let detail = txt;
+    try {
+      const e = JSON.parse(txt);
+      detail = (e.error && (e.error.message || JSON.stringify(e.error)))
+            || e.message || JSON.stringify(e);
+    } catch(e){}
+    const err = new Error('HTTP ' + res.status + ' — ' + String(detail).slice(0, 500));
+    err.status = res.status; err.raw = txt;
+    if (window.console) console.error('Потік', url.split('/workflows/')[1]?.slice(0, 32),
+                                      'відповів', res.status, '\n', txt.slice(0, 2000));
     throw err;
   }
-  const txt = await res.text();
   if (!txt.trim()) throw new Error('порожня відповідь потоку');
   try { return JSON.parse(txt); } catch(e){ throw new Error('відповідь потоку не є JSON'); }
-}
-async function callFlow(payload){
-  if (!CONFIG.FLOW_URL) throw new Error('FLOW_URL не налаштовано');
-  return postJson(CONFIG.FLOW_URL, payload);
-}
-/* черга з обмеженою паралельністю */
-async function pool(items, n, fn){
-  let i = 0;
-  await Promise.all(Array.from({length: Math.min(n, items.length)}, async () => {
-    while (i < items.length){ const k = i++; await fn(items[k], k); }
-  }));
 }
 
 /* довідник CF: завантаження онлайн з SharePoint XML (query.iqy) */
@@ -1405,31 +1403,64 @@ function applySnapshot(snap, iso){
   $('#factMonths').value = '0';
   render();
 }
+
+/* ── 3. Замінена функція loadDate цілком ──────────────────────────────── */
 async function loadDate(iso){
   setStatus('Завантаження зрізу ' + dmy(iso) + '…', 'bg-indigo-100 text-indigo-800');
-  try{
-    applySnapshot(await fetchSnapshot(iso), iso);
+  let snap = null;
+  try {
+    snap = await fetchSnapshot(iso);
+  } catch(e){
+    if (window.console) console.error('Не вдалося отримати зріз', dmy(iso), e);
+    setStatus('Зріз ' + dmy(iso) + ' не отримано: ' + e.message, 'bg-red-100 text-red-800');
+    return;
+  }
+  try {
+    applySnapshot(snap, iso);
     setStatus('Зріз ' + dmy(currentDate), 'bg-emerald-100 text-emerald-800');
-  }catch(e){
-    setStatus('Не вдалося: ' + e.message, 'bg-red-100 text-red-800');
+  } catch(e){
+    if (window.console) console.error('Зріз отримано, але обробка впала:', e);
+    setStatus('Зріз отримано, але не показався: ' + e.message, 'bg-red-100 text-red-800');
   }
 }
+
+/* ── 2. Замінена функція loadLatestMonday цілком ──────────────────────── */
 async function loadLatestMonday(){
   if (!CONFIG.FLOW_URL){
     setStatus('Потік не налаштовано — вбудований зріз ' + dmy(currentDate), 'bg-amber-100 text-amber-800');
     return;
   }
   let iso = mondayOf(new Date());
+  const problems = [];
   setStatus('Пошук останнього зрізу…', 'bg-indigo-100 text-indigo-800');
+
   for (let i = 0; i < CONFIG.LATEST_LOOKBACK_WEEKS; i++){
-    try{
-      applySnapshot(await fetchSnapshot(iso), iso);
+    let snap = null;
+    /* крок 1: мережа — тут «не знайдено» є нормальним результатом */
+    try {
+      snap = await fetchSnapshot(iso);
+    } catch(e){
+      problems.push(dmy(iso) + ': ' + e.message);
+      iso = isoShift(iso, -7);
+      continue;
+    }
+    /* крок 2: обробка — тут будь-яка помилка є БАГОМ, а не відсутністю зрізу */
+    try {
+      applySnapshot(snap, iso);
       setStatus('Зріз ' + dmy(currentDate) + (i ? ' (останній наявний)' : ''), 'bg-emerald-100 text-emerald-800');
       return;
-    }catch(e){ iso = isoShift(iso, -7); }
+    } catch(e){
+      if (window.console) console.error('Зріз ' + dmy(iso) + ' завантажено, але обробка впала:', e);
+      setStatus('Зріз ' + dmy(iso) + ' отримано, але сторінка не змогла його показати: ' + e.message,
+                'bg-red-100 text-red-800');
+      return;                     /* не йдемо на тиждень назад — це не допоможе */
+    }
   }
-  setStatus('Зрізів не знайдено — показано вбудований', 'bg-red-100 text-red-800');
+  if (window.console) console.warn('Жоден зріз не завантажився:', problems);
+  setStatus('Зрізів не знайдено за ' + CONFIG.LATEST_LOOKBACK_WEEKS + ' тижнів — див. консоль',
+            'bg-red-100 text-red-800');
 }
+
 function loadLocalFile(input){
   const f = input.files && input.files[0];
   if (!f) return;

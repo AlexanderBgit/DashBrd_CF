@@ -803,7 +803,12 @@ function buildRk(snapshot, dictionary){
   // Тут залишаємо фільтрацію, щоб у сам звіт ішли лише активні статті
   (dictionary || []).forEach(d => {
     const k = (d.MatchKey || d.Title || '').trim();
-    if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') dict[k] = d;
+    if (k) {
+      const activeVal = String(d.IsActive == null ? 'Істина' : d.IsActive).trim().toLowerCase();
+      // Вважаємо рядок активним, тільки якщо там явно НЕ вказано хибність/ні/false
+      const isActive = activeVal !== 'хибність' && activeVal !== 'ні' && activeVal !== 'false' && activeVal !== '0';
+      if (isActive) dict[k] = d;
+    }
   });
 
   const nodes = collectMeasureNodes(snapshot);

@@ -560,7 +560,7 @@
         render();
     }
 
-async function loadDictionary() {
+    async function loadDictionary() {
         if (!CONFIG.DICT_FLOW_URL) return;
         try {
             const res = await fetch(CONFIG.DICT_FLOW_URL, {
@@ -569,12 +569,13 @@ async function loadDictionary() {
             });
             const data = await res.json();
             const dictArray = data.cfDictionary || data.dictionary;
-            if (Array.isArray(dictArray)) {
-                window.DYNAMIC_CF_DICT = {};
+            if (Array.isArray(dictArray) && dictArray.length > 0) {
+                // Оновлюємо обидві системи мапінгу у вашому файлі:
+                if (typeof DICT !== 'undefined') DICT = dictArray; 
+                window.DYNAMIC_CF_DICT = {}; 
                 dictArray.forEach(d => {
                     const k = (d.MatchKey || d.Title || '').trim();
                     if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
-                        // Конвертуємо у формат: ["Стаття РК", "Статус", "Назва ERP"]
                         window.DYNAMIC_CF_DICT[k] = [d.RK_Item || '', d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ'), d.ERPName || ''];
                     }
                 });
@@ -583,6 +584,8 @@ async function loadDictionary() {
     }
 
     async function fetchSnapshot(iso) {
+        if (typeof SNAP_CACHE !== 'undefined' && SNAP_CACHE.has(iso)) return SNAP_CACHE.get(iso);
+        
         const res = await fetch(CONFIG.FLOW_URL, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso), includeDictionary: true })
@@ -590,9 +593,10 @@ async function loadDictionary() {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         
-        // Перехоплюємо довідник, якщо він прийшов разом зі зрізом
         const dictArray = data.cfDictionary || data.dictionary;
-        if (Array.isArray(dictArray)) {
+        if (Array.isArray(dictArray) && dictArray.length > 0) {
+            // Оновлюємо обидві системи мапінгу під час завантаження зрізу:
+            if (typeof DICT !== 'undefined') DICT = dictArray;
             window.DYNAMIC_CF_DICT = {};
             dictArray.forEach(d => {
                 const k = (d.MatchKey || d.Title || '').trim();
@@ -601,7 +605,18 @@ async function loadDictionary() {
                 }
             });
         }
-        return data;
+        
+        // ВАЖЛИВО: Витягуємо сам зріз прогнозу з конверта сервера
+        // У попередній версії коду цього не було, через що дані таблиці були порожніми
+        let snap = null;
+        if (typeof extractSnapshot === 'function') snap = extractSnapshot(data);
+        else if (typeof extractSnapshotObject === 'function') snap = extractSnapshotObject(data);
+        
+        if (!snap) throw new Error('У відповіді немає снапшоту даних');
+        
+        if (typeof SNAP_CACHE !== 'undefined') SNAP_CACHE.set(iso, snap);
+        if (typeof availableDates !== 'undefined') availableDates.add(iso);
+        return snap;
     }
 
     async function loadFromCloud(iso) {

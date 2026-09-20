@@ -1144,14 +1144,45 @@ async function pool(items, n, fn){
     while (i < items.length){ const k = i++; await fn(items[k], k); }
   }));
 }
-/* довідник CF: окремий потік, якщо налаштовано; інакше вбудований */
+
+/* довідник CF: завантаження онлайн з SharePoint XML (query.iqy) */
 async function loadDictionary(){
-  if (!CONFIG.DICT_FLOW_URL) return;
-  try{
-    const res = await postJson(CONFIG.DICT_FLOW_URL, {dictionaryOnly: true});
-    const d = res.cfDictionary || res.dictionary;
-    if (Array.isArray(d) && d.length) DICT = d;
-  }catch(e){ /* лишаємось на вбудованому довіднику */ }
+  // URL з файлу query.iqy
+  const url = "https://ukrnaftaoffice365.sharepoint.com/sites/CashFlow/_vti_bin/owssvr.dll?XMLDATA=1&List=822340fb-2928-4196-8a56-5cfcfdccf3e1&View=1089D1B3-116A-4D5D-ADB3-2984A003406A&RowLimit=0";
+  
+  try {
+    // credentials: 'include' потрібен, щоб браузер передав ваші файли cookie для авторизації в Office 365
+    const res = await fetch(url, { credentials: 'include' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    
+    const text = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, "text/xml");
+    const rows = xml.getElementsByTagName('z:row');
+    
+    const newDict = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      // У SharePoint owssvr.dll поля повертаються з префіксом ows_
+      newDict.push({
+        MatchKey: r.getAttribute('ows_Title') || r.getAttribute('ows_MatchKey'),
+        MatchType: r.getAttribute('ows_MatchType'),
+        RK_Item: r.getAttribute('ows_RK_Item'),
+        ERPName: r.getAttribute('ows_ERPName'),
+        CF_NAK: r.getAttribute('ows_CF_NAK'),
+        CF_ME: r.getAttribute('ows_CF_ME'),
+        MapStatus: r.getAttribute('ows_MapStatus'),
+        IsActive: r.getAttribute('ows_IsActive')
+      });
+    }
+    
+    if (newDict.length > 0) {
+      DICT = newDict;
+      console.log('Словник успішно завантажено онлайн:', DICT.length, 'записів');
+    }
+  } catch(e) { 
+    console.warn('Не вдалося завантажити словник онлайн, використовується вбудований.', e);
+  }
 }
 async function fetchSnapshot(iso){
   if (SNAP_CACHE.has(iso)) return SNAP_CACHE.get(iso);
@@ -1448,38 +1479,44 @@ function renderReverse(){
     const shown = list.filter(d => !q || hit(d.MatchKey||'') || hit(d.ERPName||'') || rk.toLowerCase().includes(q));
     if (q && !shown.length && !rk.toLowerCase().includes(q)) return;
 
+    // Змінено: додано ще один <td></td> для вирівнювання заголовків груп (тепер колонок 6)
     rows.push(`<tr class="${noMap ? 'calc' : 'subtotal'}">` +
       `<td class="c-code">${esc(rkRow ? rkRow.id : '')}</td>` +
       `<td class="c-name">${esc(rk)}` +
       (noMap ? '<span class="tag nomap">потребує призначення статті РК</span>' : '') +
       (empty && !noMap ? '<span class="tag nomap">немає жодного коду ЕРП</span>' : '') +
       (used && !used.mapped && !noMap && !empty ? '<span class="tag resid">у зрізі значень немає</span>' : '') +
-      `</td><td style="text-align:right">${list.length}</td><td></td><td></td></tr>`);
+      `</td><td style="text-align:right">${list.length}</td><td></td><td></td><td></td></tr>`);
 
     shown.forEach(d => {
       const st = d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ');
       const tag = st === 'ПРОПОЗИЦІЯ' ? '<span class="tag resid">пропозиція — перевірити</span>'
                 : st === 'БЕЗ МАПІНГУ' ? '<span class="tag nomap">без мапінгу</span>' : '';
+      
+      // Змінено: виводимо значення d.IsActive в останній колонці
       rows.push(`<tr class="detail_sub"><td class="c-code">${esc(d.MatchType || '')}</td>` +
         `<td class="c-name">${esc(d.MatchKey || d.Title || '')}${tag}</td>` +
         `<td style="text-align:left">${esc(d.ERPName || '')}</td>` +
         `<td style="text-align:left">${esc(d.CF_NAK || '')}</td>` +
-        `<td style="text-align:left">${esc(d.CF_ME || '')}</td></tr>`);
+        `<td style="text-align:left">${esc(d.CF_ME || '')}</td>` +
+        `<td style="text-align:center; font-weight:bold;">${esc(d.IsActive || '')}</td></tr>`);
     });
   });
 
   const orph = orphanKeys().filter(u => !q || u.key.toLowerCase().includes(q) || (u.name||'').toLowerCase().includes(q));
   if (orph.length){
-    rows.push(`<tr class="section"><td class="c-code"></td><td class="c-name">Ключі зрізу, яких немає в довіднику</td><td>${orph.length}</td><td></td><td></td></tr>`);
+    // Змінено: додано пустий <td> для нової колонки
+    rows.push(`<tr class="section"><td class="c-code"></td><td class="c-name">Ключі зрізу, яких немає в довіднику</td><td>${orph.length}</td><td></td><td></td><td></td></tr>`);
     orph.forEach(u => rows.push(`<tr class="detail_sub"><td class="c-code"></td>` +
       `<td class="c-name">${esc(u.key)}<span class="tag nomap">додати в довідник</span></td>` +
-      `<td style="text-align:left">${esc(u.name||'')}</td><td style="text-align:left">${esc(u.block||'')}</td><td></td></tr>`));
+      `<td style="text-align:left">${esc(u.name||'')}</td><td style="text-align:left">${esc(u.block||'')}</td><td></td><td></td></tr>`));
   }
 
+  // Змінено шапку: додано <th style="text-align:center">IsActive</th>
   $('#revPane').innerHTML = '<table class="rk"><thead><tr>' +
     '<th class="c-code">RowId / тип</th><th class="c-name">Стаття РК → ключ довідника</th>' +
     '<th style="text-align:left">Назва статті ЕРП</th><th style="text-align:left">Стаття CF НАК</th>' +
-    '<th style="text-align:left">CF МЕ</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>';
+    '<th style="text-align:left">CF МЕ</th><th style="text-align:center">IsActive</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>';
 }
 
 function exportCsv(){

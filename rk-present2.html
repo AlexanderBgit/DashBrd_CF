@@ -1071,7 +1071,7 @@ function buildRk(snapshot, dictionary){
     if (row.type !== 'calc') return;
     const parts = (row.formula||'').split('+').filter(x => byId[x]);
     row.mapped = parts.some(x => byId[x].mapped);
-    ALL_PERIODS.forEach(p => row.values[p] = parts.reduce((s,x)=>s+((res[x]&&res[x][c])||0),0)); // залишено оригінальний безпечний обчислювач
+    ALL_PERIODS.forEach(p => row.values[p] = parts.reduce((s,x)=>s+(byId[x].values[p]||0),0));
   });
 
   const cols = snapshot.columns || {};

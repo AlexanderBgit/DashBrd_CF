@@ -96,7 +96,7 @@
             .print-page:last-child { page-break-after: auto; break-after: auto; }
         }
 
-        /* Стилі РК-мапінгу */
+        /* ---------- РК-мапінг ---------- */
         .map-tag{display:inline-block;margin-left:8px;padding:0 6px;border-radius:9px;
                  font-size:7.5pt;font-weight:700;letter-spacing:.1px;vertical-align:1px;
                  white-space:nowrap;line-height:1.5;}
@@ -104,9 +104,19 @@
         .map-sug{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe;}
         .map-none{background:#fef3c7;color:#b45309;border:1px solid #fcd34d;}
         .map-miss{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
+        .map-off{background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;}
         tr.map-unmapped td.nm-col .nm-txt{color:#b45309;}
+        tr.map-disabled td.nm-col .nm-txt{color:#94a3b8;}
         .map-legend{font-size:10px;color:#94a3b8;}
         @media print{ .map-tag{border:none !important;padding:0 3px;font-size:6.5pt;} }
+
+        /* ---------- зворотний мапінг ---------- */
+        tr.rev-head td { background:#f8fafc; font-weight:700; color:#0f172a; }
+        tr.rev-nomap td { background:#fef3c7 !important; font-weight:700; color:#92400e; }
+        tr.rev-section td { background:#e0e7ff !important; font-weight:700; color:#312e81; }
+        tr.rev-row td { font-size:8.8pt; color:#475569; text-align:left; }
+        tr.rev-row td.nm-col { padding-left:26px; }
+        tr.rev-off td { color:#94a3b8; }
     </style>
 </head>
 <body class="view-fluid">
@@ -128,18 +138,20 @@
                 <div id="calendarDropdown" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
                     <div class="flex justify-between items-center mb-3">
                         <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&larr;</button>
-                        <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase">Вересень 2026</span>
+                        <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase">--</span>
                         <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&rarr;</button>
                     </div>
                     <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
                         <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
                     </div>
                     <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                    <p class="text-[10px] text-slate-400 mt-2">Підсвічені дати — зрізи, вже завантажені в цьому сеансі.</p>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
                 <button onclick="document.getElementById('fileInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Завантажити JSON</button>
                 <input type="file" id="fileInput" accept=".json,application/json" class="hidden" onchange="loadLocalFile(this)">
+                <button onclick="toggleRev()" class="ctl" id="btnRev">Зворотний мапінг</button>
                 <button onclick="openPrintPreview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Перегляд у пропорціях аркуша А3">Перегляд А3</button>
                 <button onclick="triggerDirectPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
             </div>
@@ -159,7 +171,7 @@
         </div>
 
         <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide">
-            <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="render()"
+            <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="window.REV_ON ? renderReverse() : render()"
                    class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 w-72">
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer" title="Ховає технічні та довідкові рядки аркуша, залишаючи статті звіту">
                 <input type="checkbox" id="onlyKeep" checked onchange="render()"> Показувати лише статті звіту
@@ -170,6 +182,16 @@
             <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input type="checkbox" id="expandAll" onchange="toggleExpandAll(this.checked)"> Розгорнути всі рівні
             </label>
+
+            <span class="flex items-center gap-2 border-l pl-4 border-slate-200" id="mapControlsBlock">
+                <span class="text-xs text-slate-600">РК-мапінг:</span>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                    <input type="checkbox" id="mapShow" checked onchange="render()"> показувати</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer" title="Залишає лише статті без статті РК або відсутні в довіднику (разом із батьківськими рядками для контексту)">
+                    <input type="checkbox" id="mapOnlyGaps" onchange="render()"> лише без мапінгу</label>
+                <span class="map-legend" id="mapStats"></span>
+            </span>
+
             <span class="flex items-center gap-2 border-l pl-4 border-slate-200">
                 <span class="text-xs text-slate-600">Тиждень −1:</span>
                 <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_plan" checked onchange="render()"> план</label>
@@ -188,6 +210,7 @@
 
         <div class="card">
             <div class="an-wrap" id="pane"></div>
+            <div class="an-wrap hidden" id="revPane" style="flex:1 1 0%"></div>
         </div>
     </div>
 
@@ -214,14 +237,19 @@
     </div>
 
     <script>
-    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
-    
+    /* ═══════════════════════════════════════════════════════════════════════
+       1. КОНФІГУРАЦІЯ
+       ═══════════════════════════════════════════════════════════════════════ */
     const CONFIG = {
-        FLOW_URL: GET_METRICS_FLOW_URL,
-        DICT_FLOW_URL: GET_METRICS_FLOW_URL
+        /* зрізи прогнозу */
+        FLOW_URL: "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU",
+        /* довідник CF_Dictionary (Get_RK_Metrics_v3, гілка dictionaryOnly) — той самий, що в РК-презентації */
+        DICT_FLOW_URL: "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/31/workflows/87cf21651b8340f9a27d383b552da141/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=emsY1rzHuUUHmR04_3IaWVK-h3F3qnoIDCMTMnFNktE",
+        LATEST_LOOKBACK_WEEKS: 8
     };
 
-    window.DYNAMIC_CF_DICT = null;
+    window.REV_ON = false;
+
     let SNAP = null, NODES = [], TREE = null, expanded = {}, UNIT = 'ths';
     let monthOpen = { M1: true, M2: false, M3: false };
     const DAY = 86400000;
@@ -245,6 +273,9 @@
         document.getElementById('btnViewFluid').classList.toggle('active', !a3);
     }
 
+    /* ═══════════════════════════════════════════════════════════════════════
+       2. ДРУК A3
+       ═══════════════════════════════════════════════════════════════════════ */
     const PX_PER_MM = 96 / 25.4;
     const PAGE = { w: 420, h: 297, margin: 8 };
     const MAX_PAGES = 2;
@@ -272,6 +303,8 @@
         title.innerHTML = printTitleHtml();
         const clone = src.cloneNode(true);
         clone.className = 'an-table print-table';
+        /* рядки, приховані фільтром «лише без мапінгу», у друк не йдуть */
+        Array.from(clone.querySelectorAll('tbody tr')).forEach(tr => { if (tr.style.display === 'none') tr.remove(); });
         holder.appendChild(title);
         holder.appendChild(clone);
 
@@ -400,20 +433,270 @@
         el.textContent = text;
     }
 
-    function extractSnapshotObject(obj) {
-        if (!obj || typeof obj !== 'object') return null;
-        if (obj.tree && obj.meta) return obj;
-        const cand = [obj.snapshot, obj.content, obj.body, obj.value, obj.data, obj.result, obj.json];
-        for (const c of cand) {
-            if (!c) continue;
-            if (typeof c === 'string') { try { const r = extractSnapshotObject(JSON.parse(c)); if (r) return r; } catch (e) {} continue; }
-            const r = extractSnapshotObject(c);
-            if (r) return r;
+    /* ═══════════════════════════════════════════════════════════════════════
+       3. МЕРЕЖА — з показом справжнього тексту помилки
+       ═══════════════════════════════════════════════════════════════════════ */
+    async function postJson(url, body) {
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(body) });
+        const txt = await res.text();
+        if (!res.ok) {
+            let detail = txt;
+            try {
+                const e = JSON.parse(txt);
+                detail = (e.error && (e.error.message || JSON.stringify(e.error))) || e.message || JSON.stringify(e);
+            } catch (e) {}
+            const err = new Error('HTTP ' + res.status + ' — ' + String(detail).slice(0, 500));
+            err.status = res.status;
+            if (window.console) console.error('Потік відповів', res.status, '\n', txt.slice(0, 2000));
+            throw err;
         }
-        if (Array.isArray(obj)) for (const it of obj) { const r = extractSnapshotObject(it); if (r) return r; }
+        if (!txt.trim()) throw new Error('порожня відповідь потоку');
+        try { return JSON.parse(txt); } catch (e) { throw new Error('відповідь потоку не є JSON'); }
+    }
+
+    function b64json(obj) {
+        if (obj && typeof obj['$content'] === 'string') {
+            try {
+                return JSON.parse(new TextDecoder('utf-8')
+                    .decode(Uint8Array.from(atob(obj['$content']), c => c.charCodeAt(0))));
+            } catch (e) { return null; }
+        }
         return null;
     }
 
+    function extractSnapshotObject(obj, depth = 0) {
+        if (!obj || typeof obj !== 'object' || depth > 8) return null;
+        if (obj.tree && obj.meta) return obj;
+        const dec = b64json(obj);
+        if (dec) { const r = extractSnapshotObject(dec, depth + 1); if (r) return r; }
+        const cand = [obj.snapshot, obj.content, obj.body, obj.value, obj.data, obj.result, obj.json];
+        for (const c of cand) {
+            if (!c) continue;
+            if (typeof c === 'string') { try { const r = extractSnapshotObject(JSON.parse(c), depth + 1); if (r) return r; } catch (e) {} continue; }
+            const r = extractSnapshotObject(c, depth + 1);
+            if (r) return r;
+        }
+        if (Array.isArray(obj)) for (const it of obj) { const r = extractSnapshotObject(it, depth + 1); if (r) return r; }
+        return null;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       4. ДОВІДНИК CF_Dictionary — та сама логіка, що в РК-презентації
+       Колонки SharePoint можуть мати імена field_N / OData__x0410_… —
+       потрібні колонки визначаються за вмістом, а не за назвою.
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    /* Ручне перевизначення, якщо автовизначення колись помилиться.
+       Приклад: {MatchKey: 'field_5', RK_Item: 'field_4', IsActive: 'field_7'} */
+    const DICT_FIELD_OVERRIDE = {};
+
+    /* Мітки рядків РК-презентації 11-25 — для визначення колонки «стаття РК» */
+    const RK_LABELS = ["Нафта з конденсатом", "Нафтопродукти", "Гурт", "АОЗ / МОУ", "В2С Роздріб", "В2В Роздріб (Укрнафта-Постач)", "Інше", "Природний газ", "Природний газ (НАК ПСО)", "Природний газ (Група НАК без ПСО)", "Природний ГАЗ гурт", "Інші надходження (операційна діяльність)", "Розрахунки з бюджетом", "Податки. Податок на прибуток", "Податки. ПДВ", "Податки. Рента нафта та конденсат", "Податки. Рента газ", "Податки. Акциз", "Податки. Рента інша", "Податки. Митні платежі", "Податки. Інші податки", "Податки. Штрафи та пені", "Податки. ПДВ. Відшкодування з бюджету", "ЗП. Виплата", "ЗП. ЄСВ", "ЗП. ПДФО", "ЗП. ВЗ", "Електроенергія", "Операційні витрати", "Транспортування НП та сировини", "Транспортування газу", "Послуги з переробки", "Нафта і кондесат (сировина)", "Нафтопродукти (закупівля)", "Благодійність", "Інші витрачання (операційна діяльність)", "Повернення тіла ОВДП та купонний дохід", "Дохід від поточних та депозитних вкладів та ін", "Інші надходження (інвестиційна діяльність)", "CAPEX", "Фінансові інвестиції", "Купівля ОВДП", "Залучення короткострокових кредитних коштів", "Залучення довгострокових кредитних коштів", "Надходження коштів від продажу облігацій", "Інші надходження (фінансова діяльність)", "Сплата дивідендів", "Повернення короткострокових кредитних коштів", "Повернення довгострокових кредитних коштів", "Виплати по облігаціям", "Відсотки, комісії та інше", "Вплив зміни валютних курсів на залишок коштів"];
+
+    /* Резервний довідник: знімок списку CF_Dictionary, діє, якщо потік недоступний */
+    const DICT_FALLBACK = [{"MatchKey":"2.1.01.07","ERPCode":"2.1.01.07","ERPName":"Газ природний товарний горючий","CF_NAK":"CI_7001008 - Реалізація газу Промислові споживачі, трейдери та інші","CF_ME":"3010","RK_Item":"Природний газ","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.06","ERPCode":"2.1.01.06","ERPName":"Газ нафтовий відбензинений","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.12.01","ERPCode":"2.1.01.12.01","ERPName":"Нафта (по договорам) (комерція)","CF_NAK":"CI_700201 - Реалізація нафти та конденсату","CF_ME":"3010","RK_Item":"Нафта з конденсатом","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.12.02","ERPCode":"2.1.01.12.02","ERPName":"Нафта (попередні внески від біржи 5%)","CF_NAK":"CI_700201 - Реалізація нафти та конденсату","CF_ME":"3010","RK_Item":"Нафта з конденсатом","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.12.03","ERPCode":"2.1.01.12.03","ERPName":"Нафта (по мировим угодам)","CF_NAK":"CI_700201 - Реалізація нафти та конденсату","CF_ME":"3010","RK_Item":"Нафта з конденсатом","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.01","ERPCode":"2.1.01.01","ERPName":"Нафтопрдукти (оптова реалізація)","CF_NAK":"CI_700300 - Реалізація нафтопродуктів","CF_ME":"3010","RK_Item":"Нафтопродукти","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.02","ERPCode":"2.1.01.02","ERPName":"Нафтопрдукти (роздрібна реалізація)","CF_NAK":"CI_700300 - Реалізація нафтопродуктів","CF_ME":"3010","RK_Item":"Нафтопродукти","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.20","ERPCode":"2.1.01.20","ERPName":"Мазут","CF_NAK":"CI_700300 - Реалізація нафтопродуктів","CF_ME":"3010","RK_Item":"Нафтопродукти","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.08","ERPCode":"2.1.01.08","ERPName":"Газ скраплений комерційний","CF_NAK":"CI_700302 - Реалізація скрапленого газу","CF_ME":"3010","RK_Item":"Нафтопродукти","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.02","ERPCode":"2.1.02.02","ERPName":"Ремонтні роботи (надходження)","CF_NAK":"CI_700500 - Послуги з ремонту та будівництва","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.04","ERPCode":"2.1.02.04","ERPName":"Будівельно-монтажні роботи","CF_NAK":"CI_700500 - Послуги з ремонту та будівництва","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.03","ERPCode":"2.1.02.03","ERPName":"Тампонажні роботи","CF_NAK":"CI_700500 - Послуги з ремонту та будівництва","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.07","ERPCode":"2.1.02.07","ERPName":"Налив нафти,конденсату, інших","CF_NAK":"CI_709001 - Послуги по видобутку вуглеводнів","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.20","ERPCode":"2.1.02.20","ERPName":"Транспортування нафти і газу","CF_NAK":"CI_709001 - Послуги по видобутку вуглеводнів","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.17","ERPCode":"2.1.02.17","ERPName":"Послуги із зберігання нафти (надходження)","CF_NAK":"CI_709001 - Послуги по видобутку вуглеводнів","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.15","ERPCode":"2.1.02.15","ERPName":"Послуги з підготовки та переробки нафти","CF_NAK":"CI_709001 - Послуги по видобутку вуглеводнів","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.14","ERPCode":"2.1.02.14","ERPName":"Послуги з підготовки та переробки газу","CF_NAK":"CI_709001 - Послуги по видобутку вуглеводнів","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.12","ERPCode":"2.1.02.12","ERPName":"Послуги з видобутку нафти і газу","CF_NAK":"CI_709001 - Послуги по видобутку вуглеводнів","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.14","ERPCode":"2.1.01.14","ERPName":"Теплоенергія","CF_NAK":"CI_709002 - Реалізація теплоенергії","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.05","ERPCode":"2.1.02.05","ERPName":"Науково-дослідні роботи та послуги","CF_NAK":"CI_709003 - Надходження від НДКР","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.23","ERPCode":"2.1.01.23","ERPName":"Енергія","CF_NAK":"CI_709010 - Реалізація електроенергії","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.01","ERPCode":"2.1.02.01","ERPName":"Бурові роботи","CF_NAK":"CI_700500 - Послуги з ремонту та будівництва","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.21","ERPCode":"2.1.02.21","ERPName":"Інші роботи, послуги допоміжного виробництва","CF_NAK":"CI_709090 - Реалізація інших робіт","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.22","ERPCode":"2.1.02.22","ERPName":"Інші роботи, послуги іншого виробництва","CF_NAK":"CI_709090 - Реалізація інших робіт","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.23","ERPCode":"2.1.02.23","ERPName":"Інші роботи, послуги основного виробництва","CF_NAK":"CI_709090 - Реалізація інших робіт","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.24","ERPCode":"2.1.01.24","ERPName":"Надходження від реалізації МТР","CF_NAK":"CI_710200 - Реалізація запасів та інших оборотних активів","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.25","ERPCode":"2.1.02.25","ERPName":"Оренда майна","CF_NAK":"CI_710302 - Надходження від оренди","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.26","ERPCode":"2.1.02.26","ERPName":"Оренда свердловин","CF_NAK":"CI_710302 - Надходження від оренди","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.18","ERPCode":"2.1.01.18","ERPName":"Інші товари непродовольчої групи","CF_NAK":"CI_711200 - Реалізація товарів,робіт,послуг від неоснов діял-ті","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.19","ERPCode":"2.1.01.19","ERPName":"Товари продовольчої групи","CF_NAK":"CI_711200 - Реалізація товарів,робіт,послуг від неоснов діял-ті","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.13","ERPCode":"2.1.01.13","ERPName":"Вода технічна","CF_NAK":"CI_711200 - Реалізація товарів,робіт,послуг від неоснов діял-ті","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.15","ERPCode":"2.1.01.15","ERPName":"Продукція машинобудування","CF_NAK":"CI_711200 - Реалізація товарів,робіт,послуг від неоснов діял-ті","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.16","ERPCode":"2.1.01.16","ERPName":"Інша готова продукція допоміжного виробництва","CF_NAK":"CI_711200 - Реалізація товарів,робіт,послуг від неоснов діял-ті","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.17","ERPCode":"2.1.01.17","ERPName":"Інша готова продукція","CF_NAK":"CI_711200 - Реалізація товарів,робіт,послуг від неоснов діял-ті","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.06","ERPCode":"2.1.03.06","ERPName":"Штрафи, кошти отримані згідно рішень суду","CF_NAK":"CI_711300 - Отримані штрафи, пені, неустойки","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.08","ERPCode":"2.1.02.08","ERPName":"Послуги воєнізованої частини","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.09","ERPCode":"2.1.02.09","ERPName":"Послуги готелю","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.10","ERPCode":"2.1.02.10","ERPName":"Послуги громадського харчування","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.11","ERPCode":"2.1.02.11","ERPName":"Послуги електромережі","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.13","ERPCode":"2.1.02.13","ERPName":"Послуги з опалення","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.16","ERPCode":"2.1.02.16","ERPName":"Послуги зв'язку","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.18","ERPCode":"2.1.02.18","ERPName":"Послуги навчально-виробничих комбінатів","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.19","ERPCode":"2.1.02.19","ERPName":"Транспортні послуги","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.01","ERPCode":"2.1.03.01","ERPName":"Виторг, платежі від населення","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.02","ERPCode":"2.1.03.02","ERPName":"Повернення коштів","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.04","ERPCode":"2.1.03.04","ERPName":"Відшкодування витрат пов'язаних зі зберіганням СНП","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.05","ERPCode":"2.1.03.05","ERPName":"Надходження за мировими угодами","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.06","ERPCode":"2.1.02.06","ERPName":"Комісійні послуги з реалізації інших товарів","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.27","ERPCode":"2.1.02.27","ERPName":"Послуги мерчендайзингу","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.07","ERPCode":"2.1.03.07","ERPName":"Винагорода управителя","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.08","ERPCode":"2.1.03.08","ERPName":"Відшкодування витрат управителю","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.21","ERPCode":"2.1.01.21","ERPName":"% по мировим угодам за нафту","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.99","ERPCode":"2.1.03.99","ERPName":"Інші сторонні надходження","CF_NAK":"CI_719000 - Інші находження від операційної діяльності","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.05.01","ERPCode":"2.1.05.01","ERPName":"Надходження від Фонду Соц страху","CF_NAK":"CI_389001 - Надходження від фондів соціального страхування","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.09","ERPCode":"2.1.03.09","ERPName":"Отримано забезпечувальний платіж від контрагента","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.10","ERPCode":"2.1.03.10","ERPName":"Повернення забезпечувального платежу наданого ПАТ Укрнафта","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.1.03","ERPCode":"1.1.03","ERPName":"Отримані дивіденди","CF_NAK":"CI_380601 - Отримані дивіденди","CF_ME":"3230","RK_Item":"Інші надходження (інвестиційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.1.01.02","ERPCode":"1.1.01.02","ERPName":"Від спільної діяльності (прибуток)","CF_NAK":"CI_380601 - Отримані дивіденди","CF_ME":"3230","RK_Item":"Інші надходження (інвестиційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.04","ERPCode":"3.1.04","ERPName":"Процентні доходи на залишки по рахункам","CF_NAK":"CI_730201 - Відсотки отримані_Банківські рахунки","CF_ME":"3225","RK_Item":"Дохід від поточних та депозитних вкладів та ін","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.03.01","ERPCode":"3.1.03.01","ERPName":"Процентні доходи по депозитам","CF_NAK":"CI_730202 - Відсотки отримані_Депозити","CF_ME":"3225","RK_Item":"Дохід від поточних та депозитних вкладів та ін","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.02.04","ERPCode":"3.1.02.04","ERPName":"Повернення фінансової допомоги","CF_NAK":"CI_380102 - Короткострокові небанк позики та фін допомоги повернення","CF_ME":"3070/1","RK_Item":"Інші надходження (фінансова діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.02.01","ERPCode":"3.1.02.01","ERPName":"Отримана фінансова допомога","CF_NAK":"CI_380102 - Короткострокові небанк позики та фін допомоги повернення","CF_ME":"3070/1","RK_Item":"Інші надходження (фінансова діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.02.02","ERPCode":"3.1.02.02","ERPName":"Отримано кредит","CF_NAK":"CI_610101 - Короткострокові банк позики отримані","CF_ME":"3061","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.02.03","ERPCode":"3.1.02.03","ERPName":"Отримана позика","CF_NAK":"CI_691101 - Короткострокові небанк позики отримані","CF_ME":"3062","RK_Item":"","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.05","ERPCode":"3.1.05","ERPName":"Відсотки по мировим угодам","CF_NAK":"CI_739000 - Інші надходження від фінансової діяльності","CF_ME":"3320/1","RK_Item":"Інші надходження (інвестиційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.06","ERPCode":"3.1.06","ERPName":"Оплата по вимозі (гарантія)","CF_NAK":"CI_711300 - Отримані штрафи, пені, неустойки","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.03","ERPCode":"2.2.04.03","ERPName":"Придбання газу природного","CF_NAK":"CI_800101 - Природний газ різного походження","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.21","ERPCode":"2.2.04.21","ERPName":"Придбання газу природного (комерція)","CF_NAK":"CI_800101 - Природний газ різного походження","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.01","ERPCode":"2.2.04.01","ERPName":"Придбання нафти (комерція)","CF_NAK":"CI_800104 - Нафта і конденсат","CF_ME":"3110","RK_Item":"Нафта і кондесат (сировина)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.02","ERPCode":"2.2.04.02","ERPName":"Придбання газового конденсату (комерція)","CF_NAK":"CI_800104 - Нафта і конденсат","CF_ME":"3110","RK_Item":"Нафта і кондесат (сировина)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.07","ERPCode":"2.2.04.07","ERPName":"Придбання мазуту (Комерція)","CF_NAK":"CI_800204 - Продукти нафтогазопререробки (перепродаж)","CF_ME":"3110","RK_Item":"Нафтопродукти (закупівля)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.15.01","ERPCode":"2.2.04.15.01","ERPName":"Продукти видобування та переробки","CF_NAK":"CI_800105 - Паливно-мастильні матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.15.02","ERPCode":"2.2.04.15.02","ERPName":"Палива моторні (закупка НП)","CF_NAK":"CI_800204 - Продукти нафтогазопререробки (перепродаж)","CF_ME":"3110","RK_Item":"Нафтопродукти (закупівля)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.15.03","ERPCode":"2.2.04.15.03","ERPName":"Паливо пічне побутове","CF_NAK":"CI_800105 - Паливно-мастильні матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.15.04","ERPCode":"2.2.04.15.04","ERPName":"Оливи та мастила","CF_NAK":"CI_800105 - Паливно-мастильні матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.15.05","ERPCode":"2.2.04.15.05","ERPName":"Технічні рідини","CF_NAK":"CI_800105 - Паливно-мастильні матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.15.06","ERPCode":"2.2.04.15.06","ERPName":"Продукти видобування та переробки (комерція)","CF_NAK":"CI_800204 - Продукти нафтогазопререробки (перепродаж)","CF_ME":"3110","RK_Item":"Нафтопродукти (закупівля)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.15.07","ERPCode":"2.2.04.15.07","ERPName":"Палива моторні (закупка НП) (комерція)","CF_NAK":"CI_800204 - Продукти нафтогазопререробки (перепродаж)","CF_ME":"3110","RK_Item":"Нафтопродукти (закупівля)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.13","ERPCode":"2.2.04.16.13","ERPName":"Хімреагенти","CF_NAK":"CI_800110 - Інші реагенти","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.27","ERPCode":"2.2.05.10.27","ERPName":"Енергія","CF_NAK":"CI_800301 - Електроенергія","CF_ME":"3110","RK_Item":"Електроенергія","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.01","ERPCode":"2.2.04.08.01","ERPName":"Обладнання для видобутку","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.02","ERPCode":"2.2.04.08.02","ERPName":"Обладнання для буріння","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.03","ERPCode":"2.2.04.08.03","ERPName":"Обладнання для збору, транспортування, підготовки та переробки нафти і газу","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.04","ERPCode":"2.2.04.08.04","ERPName":"Резервуари, ємності та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.05","ERPCode":"2.2.04.08.05","ERPName":"Промислове насосне обладнання,з/ч і комплектуючі (окрім глибиного)","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.06","ERPCode":"2.2.04.08.06","ERPName":"Компресорне обладнання , з/ч та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.07","ERPCode":"2.2.04.08.07","ERPName":"Теплотехнічне, вентиляційне обладнання та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.08","ERPCode":"2.2.04.08.08","ERPName":"Такелажне, вантажопідіймальне обладнання та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.09","ERPCode":"2.2.04.08.09","ERPName":"Верстати, стенди, обладнання для зварювання та автосервісу, комплектуючі до них","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.10","ERPCode":"2.2.04.08.10","ERPName":"Вагон-будинки та з/ч до них","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.11","ERPCode":"2.2.04.08.11","ERPName":"Торгове обладнання, побутова техніка промислового призначення та","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.08.12","ERPCode":"2.2.04.08.12","ERPName":"Спеціалізоване обладнання для АЗС, АГЗС","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.09.01","ERPCode":"2.2.04.09.01","ERPName":"Автомобільна техніка","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.09.02","ERPCode":"2.2.04.09.02","ERPName":"Тракторна техніка","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.09.03","ERPCode":"2.2.04.09.03","ERPName":"Причепи та напівпричепи","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.09.04","ERPCode":"2.2.04.09.04","ERPName":"З/ч, комплектуючі та аксесуари до транспортних засобів","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.10.01","ERPCode":"2.2.04.10.01","ERPName":"Електрообладнання та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.10.02","ERPCode":"2.2.04.10.02","ERPName":"Дизельні та бензинові електростанції, комплектуючі та з/ч до них","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.10.03","ERPCode":"2.2.04.10.03","ERPName":"Апаратура електрохімічного захисту","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.10.04","ERPCode":"2.2.04.10.04","ERPName":"Кабельно-провідникова продукція","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.10.05","ERPCode":"2.2.04.10.05","ERPName":"Джерела живлення та АКБ","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.10.06","ERPCode":"2.2.04.10.06","ERPName":"Ізолятори та електроізоляційні матеріали","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.11.01","ERPCode":"2.2.04.11.01","ERPName":"Інструмент загального призначення","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.12.01","ERPCode":"2.2.04.12.01","ERPName":"Обладнання автоматизації для буріння свердловин","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.12.02","ERPCode":"2.2.04.12.02","ERPName":"Обладнання автоматизації для видобутку","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.12.03","ERPCode":"2.2.04.12.03","ERPName":"Системи та прилади для дослідження свердловин","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.12.04","ERPCode":"2.2.04.12.04","ERPName":"Електронні системи запалювання, РО та комплектуючі для ГМК","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.12.05","ERPCode":"2.2.04.12.05","ERPName":"Обладнання та комплектуючі для моніторингу руху та роботи транспорту","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.12.06","ERPCode":"2.2.04.12.06","ERPName":"Устаткування для керування технологічними процесами","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.12.07","ERPCode":"2.2.04.12.07","ERPName":"Обладнання для обліку потоків","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.12.08","ERPCode":"2.2.04.12.08","ERPName":"Контрольно-вимірювальні прилади","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.13.01","ERPCode":"2.2.04.13.01","ERPName":"Система контролю та управління доступом, компоненти та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.13.02","ERPCode":"2.2.04.13.02","ERPName":"Засоби аудіо/відеоспостереження та контролю, компоненти та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.13.03","ERPCode":"2.2.04.13.03","ERPName":"Засоби сигналізації, компоненти та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.13.04","ERPCode":"2.2.04.13.04","ERPName":"Засоби спостереження та контролю, компоненти та комплектючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.13.05","ERPCode":"2.2.04.13.05","ERPName":"Засоби захисту інформації, компоненти та комплектючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.13.06","ERPCode":"2.2.04.13.06","ERPName":"Пошукові пристрої та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.14.01","ERPCode":"2.2.04.14.01","ERPName":"ІТ Обладнання","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.14.02","ERPCode":"2.2.04.14.02","ERPName":"Програмне забезпечення","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.01","ERPCode":"2.2.04.16.01","ERPName":"Трубна продукція","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.02","ERPCode":"2.2.04.16.02","ERPName":"Деталі трубопроводів","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.03","ERPCode":"2.2.04.16.03","ERPName":"Трубопровідна арматура","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.04","ERPCode":"2.2.04.16.04","ERPName":"Металовироби та кріплення","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.05","ERPCode":"2.2.04.16.05","ERPName":"Прокладочні та ущільнюючі матеріали","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.06","ERPCode":"2.2.04.16.06","ERPName":"Електроди та матеріали для зварки та наплавки","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.07","ERPCode":"2.2.04.16.07","ERPName":"Прокат чорних металів та напівфабрикати","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.08","ERPCode":"2.2.04.16.08","ERPName":"Прокат кольорових металів та напівфабрикати","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.09","ERPCode":"2.2.04.16.09","ERPName":"Канати, троси, дріт, сітка","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.10","ERPCode":"2.2.04.16.10","ERPName":"Підшипники","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.11","ERPCode":"2.2.04.16.11","ERPName":"Будівельні матеріали","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.12","ERPCode":"2.2.04.16.12","ERPName":"Тампонажні матеріали","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.14","ERPCode":"2.2.04.16.14","ERPName":"Матеріали та засоби для ліквідації нафтозабруднень","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.15","ERPCode":"2.2.04.16.15","ERPName":"Гумотехнічні вироби","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.16","ERPCode":"2.2.04.16.16","ERPName":"Фільтри та фільтроелементи","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.17","ERPCode":"2.2.04.16.17","ERPName":"Пломбувальні засоби та комплектуючі","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.18","ERPCode":"2.2.04.16.18","ERPName":"Матеріали для піскоструйної очистки","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.19","ERPCode":"2.2.04.16.19","ERPName":"Матеріали для неруйнівного контролю","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.16.20","ERPCode":"2.2.04.16.20","ERPName":"Тара","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.17.01","ERPCode":"2.2.04.17.01","ERPName":"Меблі (окрім торгівельних)","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.17.02","ERPCode":"2.2.04.17.02","ERPName":"Побутова техніка","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.17.04","ERPCode":"2.2.04.17.04","ERPName":"Миючі засоби та засоби гігієни","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.17.05","ERPCode":"2.2.04.17.05","ERPName":"Господарський інвентар","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.17.06","ERPCode":"2.2.04.17.06","ERPName":"Постільна білизна","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.17.07","ERPCode":"2.2.04.17.07","ERPName":"Матеріали для пошиття рукавиць та тентів","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.17.08","ERPCode":"2.2.04.17.08","ERPName":"Рослини, квіти та копмоненти","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.17.09","ERPCode":"2.2.04.17.09","ERPName":"Непродовольчі товари для реалізації","CF_NAK":"CI_800190 - Інші матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.17.03","ERPCode":"2.2.04.17.03","ERPName":"Канцтовари","CF_NAK":"CI_800503 - Канцтовари, витратні матеріали","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.18.01","ERPCode":"2.2.04.18.01","ERPName":"Продукти харчування","CF_NAK":"CI_800504 - Продукти харчування","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.03.01","ERPCode":"2.2.03.01","ERPName":"Розрахунки по заробітній платі","CF_NAK":"CI_810000 - Оплата праці","CF_ME":"3120","RK_Item":"ЗП. Виплата","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.03.03","ERPCode":"2.2.03.03","ERPName":"Відрахування на соціальні заходи (ЄСВ)","CF_NAK":"CI_820000 - ЄСВ","CF_ME":"3130","RK_Item":"ЗП. ЄСВ","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.17","ERPCode":"2.2.01.17","ERPName":"ПДВ","CF_NAK":"CI_642100 - ПДВ","CF_ME":"3152","RK_Item":"Податки. ПДВ","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.01","ERPCode":"2.2.01.01","ERPName":"Акцизний податок (СГ та інші нафтопродукти)","CF_NAK":"CI_642300 - Акцизний податок","CF_ME":"3153","RK_Item":"Податки. Акциз","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.09","ERPCode":"2.2.01.09","ERPName":"Акцизний збір з роздрібної реалізації підакцизних товарів","CF_NAK":"CI_642300 - Акцизний податок","CF_ME":"3153","RK_Item":"Податки. Акциз","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.03.04","ERPCode":"2.2.03.04","ERPName":"ПДФО","CF_NAK":"CI_642400 - ПДФО","CF_ME":"3155","RK_Item":"ЗП. ПДФО","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.03.02","ERPCode":"2.2.03.02","ERPName":"Військовий збір","CF_NAK":"CI_642700 - Військовий збір","CF_ME":"3157/1","RK_Item":"ЗП. ВЗ","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.03","ERPCode":"2.2.01.03","ERPName":"Рентна плата за газ","CF_NAK":"CI_840101 - Рента газ","CF_ME":"3154","RK_Item":"Податки. Рента газ","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.02","ERPCode":"2.2.01.02","ERPName":"Рентна плата за нафту","CF_NAK":"CI_840102 - Рента нафта","CF_ME":"3154","RK_Item":"Податки. Рента нафта та конденсат","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.04","ERPCode":"2.2.01.04","ERPName":"Рентна плата за конденсат","CF_NAK":"CI_840103 - Рента конденсат","CF_ME":"3154","RK_Item":"Податки. Рента нафта та конденсат","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.13","ERPCode":"2.2.01.13","ERPName":"Рентна плата за спеціальне використання води","CF_NAK":"CI_840105 - Інші рентні платежі","CF_ME":"3154","RK_Item":"Податки. Рента інша","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.08","ERPCode":"2.2.01.08","ERPName":"Рентна плата за користування надрами (вода)","CF_NAK":"CI_840105 - Інші рентні платежі","CF_ME":"3157/3","RK_Item":"Податки. Рента інша","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.10","ERPCode":"2.2.01.10","ERPName":"Рентна плата за коритсування радіочастотним ресурсом","CF_NAK":"CI_840105 - Інші рентні платежі","CF_ME":"3157/3","RK_Item":"Податки. Рента інша","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.14","ERPCode":"2.2.01.14","ERPName":"Рентна плата за спеціальне використання лісових ресурсів","CF_NAK":"CI_840105 - Інші рентні платежі","CF_ME":"3157/3","RK_Item":"Податки. Рента інша","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.12","ERPCode":"2.2.01.12","ERPName":"Екологічний податок","CF_NAK":"CI_840108 - Екологічний податок","CF_ME":"3157/3","RK_Item":"Податки. Інші податки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.02.01","ERPCode":"2.2.02.01","ERPName":"Плата за землю (зем податок та/або орендна плата за зем ділянки держ власності)","CF_NAK":"CI_840109 - Податок на землю","CF_ME":"3157/3","RK_Item":"Податки. Інші податки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.02.03","ERPCode":"2.2.02.03","ERPName":"Податок на нерухоме майно","CF_NAK":"CI_840110 - Податок на нерухоме майно","CF_ME":"3157/3","RK_Item":"Податки. Інші податки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.16","ERPCode":"2.2.01.16","ERPName":"Штрафні санкції (загальнодерж. податки і збори)","CF_NAK":"CI_840112 - Штрафи та пені по податках","CF_ME":"3157/2","RK_Item":"Податки. Штрафи та пені","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.02.05","ERPCode":"2.2.02.05","ERPName":"Штрафні санкції (місцев.бюджет)","CF_NAK":"CI_840112 - Штрафи та пені по податках","CF_ME":"3157/2","RK_Item":"Податки. Штрафи та пені","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.11","ERPCode":"2.2.01.11","ERPName":"Збір на розвиток виноградарства, садівництва і хмелярства","CF_NAK":"CI_840190 - Інші податки та збори","CF_ME":"3157/3","RK_Item":"Податки. Інші податки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.15","ERPCode":"2.2.01.15","ERPName":"Транспортний податок","CF_NAK":"CI_840190 - Інші податки та збори","CF_ME":"3157/3","RK_Item":"Податки. Інші податки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.99","ERPCode":"2.2.01.99","ERPName":"Інші загальнодержавні податки і збори","CF_NAK":"CI_840190 - Інші податки та збори","CF_ME":"3157/3","RK_Item":"Податки. Інші податки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.02.02","ERPCode":"2.2.02.02","ERPName":"Плата за лiцензії на право роздрібної торгівлі алкогольними напоями та тютюновими виробами","CF_NAK":"CI_840190 - Інші податки та збори","CF_ME":"3157/3","RK_Item":"Податки. Інші податки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.02.04","ERPCode":"2.2.02.04","ERPName":"Туристичний збір","CF_NAK":"CI_840190 - Інші податки та збори","CF_ME":"3157/3","RK_Item":"Податки. Інші податки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.02.06","ERPCode":"2.2.02.06","ERPName":"Інші платежі в місцевий бюджет","CF_NAK":"CI_840190 - Інші податки та збори","CF_ME":"3157/3","RK_Item":"Податки. Інші податки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.06","ERPCode":"2.2.01.06","ERPName":"Податок на прибуток підприємства","CF_NAK":"CI_980100 - Податок на прибуток","CF_ME":"3151","RK_Item":"Податки. Податок на прибуток","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.38","ERPCode":"2.2.05.10.38","ERPName":"Послуга з ремонту технологічного обладнання","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.31","ERPCode":"2.2.05.10.31","ERPName":"Послуги з ремонту та тех. обслуговування-обладнання видобування","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.32","ERPCode":"2.2.05.10.32","ERPName":"Послуги з ремонту, тех. обслугов. та супровід обладнання підготовк","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.33","ERPCode":"2.2.05.10.33","ERPName":"Послуги з ремонту та тех. обслуговування обладнання механічне","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.34","ERPCode":"2.2.05.10.34","ERPName":"Послуги з ремонту та тех. обслуговування-обладнання енергетичне","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.35","ERPCode":"2.2.05.10.35","ERPName":"Послуги з ремонту та тех. обслуговування-обладнання транспортне","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.36","ERPCode":"2.2.05.10.36","ERPName":"Послуги з ремонту та технічного обслуговування-обладнання АЗС","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.37","ERPCode":"2.2.05.10.37","ERPName":"Послуга з ремонту бурового обладнання","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.39","ERPCode":"2.2.05.10.39","ERPName":"Ремонт і техничне обслуговування загальногосподарського обладнання","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.23","ERPCode":"2.2.05.10.23","ERPName":"Послуги з ремонту та технічного обслуговування","CF_NAK":"CI_840290 - Поточний ремонт інших ОЗ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.03","ERPCode":"2.2.07.03","ERPName":"Відрядження","CF_NAK":"CI_840300 - Витрати на відрядження","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.10","ERPCode":"2.2.05.12.10","ERPName":"Послуги з переробки нафти (комерція)","CF_NAK":"CI_840402 - Послуги по переробці","CF_ME":"3110","RK_Item":"Послуги з переробки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.11.06","ERPCode":"2.2.05.11.06","ERPName":"Геофізичні роботи","CF_NAK":"CI_840407 - Геофізичні роботи","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.17","ERPCode":"2.2.05.10.17","ERPName":"Послуги з протипожежної охорони","CF_NAK":"CI_840408 - Пожежна охорона","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.15","ERPCode":"2.2.05.10.15","ERPName":"Охорона","CF_NAK":"CI_840409 - Забезпечення безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.04","ERPCode":"2.2.07.04","ERPName":"Охорона (ТОВ \"СекьюрАйТі\")","CF_NAK":"CI_840409 - Забезпечення безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.08","ERPCode":"2.2.05.10.08","ERPName":"Послуги з транспортування, обробки та зберігання вантажів","CF_NAK":"CI_840410 - Автомобільний транспорт","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.40","ERPCode":"2.2.05.10.40","ERPName":"Послуги з транспортування, обробки та зберігання вантажів (комерція)","CF_NAK":"CI_840410 - Автомобільний транспорт","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.28","ERPCode":"2.2.05.10.28","ERPName":"Послуги із залізничних перевезень","CF_NAK":"CI_840411 - Залізничний транспорт","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.14","ERPCode":"2.2.05.10.14","ERPName":"Послуги оренди","CF_NAK":"CI_840415 - Оренда приміщень та інших активів","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.29","ERPCode":"2.2.05.10.29","ERPName":"Послуги оренди землі","CF_NAK":"CI_840415 - Оренда приміщень та інших активів","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.42","ERPCode":"2.2.05.10.42","ERPName":"Послуги оренди землі у фізичних осіб","CF_NAK":"CI_840415 - Оренда приміщень та інших активів","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.43","ERPCode":"2.2.05.10.43","ERPName":"Послуги оренди землі (відшкодування ПДФО фізичним особам)","CF_NAK":"CI_840415 - Оренда приміщень та інших активів","CF_ME":"3155","RK_Item":"ЗП. ПДФО","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.44","ERPCode":"2.2.05.10.44","ERPName":"Послуги оренди землі (відшкодування військового збору фізичним особам)","CF_NAK":"CI_840415 - Оренда приміщень та інших активів","CF_ME":"3157/1","RK_Item":"ЗП. ВЗ","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.09","ERPCode":"2.2.05.12.09","ERPName":"Послуги закачки, відбір, зберігання та транспортування прир. газу","CF_NAK":"CI_840418 - Транспортування газу розподільні газопроводи","CF_ME":"3110","RK_Item":"Транспортування газу","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.04","ERPCode":"2.2.05.12.04","ERPName":"Послуги з транспортування скрапленого газу (комерція)","CF_NAK":"CI_840423 - Транспортування зрідженого газу залізничними цистернами","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.02","ERPCode":"2.2.05.12.02","ERPName":"Послуги з транспортування нафти (комерція)","CF_NAK":"CI_840427 - Транспортування нафти","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.01","ERPCode":"2.2.05.12.01","ERPName":"Послуги з транспорт. нафти, конденсату прод. підгот. і реаген (т)","CF_NAK":"CI_840427 - Транспортування нафти","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.05","ERPCode":"2.2.05.12.05","ERPName":"Послуги із транспортування газового конденсату (комерція)","CF_NAK":"CI_840427 - Транспортування нафти","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.07","ERPCode":"2.2.05.10.07","ERPName":"Сейсморозвідувальні дослідження","CF_NAK":"CI_840430 - Геолого-розвідувальні роботи","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.06","ERPCode":"2.2.05.10.06","ERPName":"Послуги в сфері наукових досліджень і робіт","CF_NAK":"CI_840431 - НДКР","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.18","ERPCode":"2.2.05.10.18","ERPName":"Послуги з забезпечення техногенної безпеки та цивільного захисту","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.16","ERPCode":"2.2.05.10.16","ERPName":"Послуги охорони праці","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.19.01","ERPCode":"2.2.04.19.01","ERPName":"Засоби індивідуального захисту","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.19.02","ERPCode":"2.2.04.19.02","ERPName":"Товари медичного призначення, аптечки та їх комплектуючі","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.19.03","ERPCode":"2.2.04.19.03","ERPName":"Протипожежна техніка та спорядження","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.19.04","ERPCode":"2.2.04.19.04","ERPName":"Обладнання медкабінетів","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.19.05","ERPCode":"2.2.04.19.05","ERPName":"Матеріали для охорони праці, пожежної безпеки та безпеки руху","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.20.01","ERPCode":"2.2.04.20.01","ERPName":"Засоби індивідуального захисту (окрім Промислової безпеки)","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.20.02","ERPCode":"2.2.04.20.02","ERPName":"Медичне майно (окрім Промислової безпеки)","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.20.03","ERPCode":"2.2.04.20.03","ERPName":"Засоби радіаційної, хімічної розвідки і контролю та спец. обробки","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.20.04","ERPCode":"2.2.04.20.04","ERPName":"Мобілізаційна підготовка","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.19","ERPCode":"2.2.05.10.19","ERPName":"Охорона навколишнього середовища","CF_NAK":"CI_840437 - Охорона навколишнього середовища","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.01","ERPCode":"2.2.05.10.01","ERPName":"Комунальні послуги","CF_NAK":"CI_840438 - Комунальні послуги","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.30","ERPCode":"2.2.05.10.30","ERPName":"Банківські послуги","CF_NAK":"CI_840440 - Банківські послуги","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.02","ERPCode":"2.2.05.10.02","ERPName":"Маркетинг та реклама","CF_NAK":"CI_840443 - Реклама і послуги ЗМІ","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.05","ERPCode":"2.2.05.10.05","ERPName":"Послуги з підбору, навчання та розвитоку персоналу","CF_NAK":"CI_840446 - Навчання та атест персоналу","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.11","ERPCode":"2.2.07.11","ERPName":"Представницькі витрати","CF_NAK":"CI_840447 - Представницькі витрати","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.22","ERPCode":"2.2.05.10.22","ERPName":"Cтрахові послуги","CF_NAK":"CI_840449 - Добровільне страхування","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.03","ERPCode":"2.2.05.10.03","ERPName":"Юридичні послуги","CF_NAK":"CI_840460 - Юридичні послуги","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.04","ERPCode":"2.2.05.10.04","ERPName":"Консалтинг та аудит","CF_NAK":"CI_840459 - Консультаційно-інформаційні послуги","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.20","ERPCode":"2.2.07.20","ERPName":"Відрахування профспілкам","CF_NAK":"CI_840468 - Відрахування до профспілок","CF_ME":"3170/1","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.21","ERPCode":"2.2.07.21","ERPName":"Судовий збір","CF_NAK":"CI_840469 - Судовий збір","CF_ME":"3157/3","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.10","ERPCode":"2.2.07.10","ERPName":"Представницькі витрати (Наглядова рада)","CF_NAK":"CI_840809 - Інші витрати на членів Наглядової ради","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.11","ERPCode":"2.2.05.10.11","ERPName":"Адміністративні послуги","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.12","ERPCode":"2.2.05.10.12","ERPName":"Готельні та ресторанні послуги","CF_NAK":"CI_840811 - Виробничі/торгові витрати неосновної діяльності","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.45","ERPCode":"2.2.05.10.45","ERPName":"ПДФО з сум добровільного медичного страхування","CF_NAK":"CI_642400 - ПДФО","CF_ME":"3155","RK_Item":"ЗП. ПДФО","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.46","ERPCode":"2.2.05.10.46","ERPName":"ВЗ з сум добровільного медичного страхування","CF_NAK":"CI_642700 - Військовий збір","CF_ME":"3157/1","RK_Item":"ЗП. ВЗ","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.13","ERPCode":"2.2.05.10.13","ERPName":"Поштові та кур’єрські послуги","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.20","ERPCode":"2.2.05.10.20","ERPName":"Соціальні витрати","CF_NAK":"CI_840811 - Виробничі/торгові витрати неосновної діяльності","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.21","ERPCode":"2.2.05.10.21","ERPName":"Медичні послуги","CF_NAK":"CI_840436 - Охорона праці та техніка безпеки","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.24","ERPCode":"2.2.05.10.24","ERPName":"Експертні та інспекційні послуги","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.03","ERPCode":"2.2.05.12.03","ERPName":"Послуги із зберігання нафти (витрати)","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.06","ERPCode":"2.2.05.12.06","ERPName":"Послуги зберігання газового конденсату","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.08","ERPCode":"2.2.05.12.08","ERPName":"Послуги із зберігання СНП (комерція)","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.07","ERPCode":"2.2.05.12.07","ERPName":"Послуги з транспортування СНП (комерція)","CF_NAK":"CI_840410 - Автомобільний транспорт","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.11.01","ERPCode":"2.2.05.11.01","ERPName":"Проектні роботи","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.11.02","ERPCode":"2.2.05.11.02","ERPName":"Будівництво","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.11.03","ERPCode":"2.2.05.11.03","ERPName":"Монтажні роботи","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.11.04","ERPCode":"2.2.05.11.04","ERPName":"Ремонтні роботи","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.11.05","ERPCode":"2.2.05.11.05","ERPName":"Спеціалізовані роботи","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.10","ERPCode":"2.2.05.10.10","ERPName":"Послуги з пусконалагоджування","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.25","ERPCode":"2.2.05.10.25","ERPName":"Послуги технологічні (нафтогазова промисловість)","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.26","ERPCode":"2.2.05.10.26","ERPName":"ІТ Послуги","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.01","ERPCode":"2.2.07.01","ERPName":"Повернення коштів за продукцію/послуги","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.02","ERPCode":"2.2.07.02","ERPName":"Відшкодування витрат","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.05","ERPCode":"2.2.07.05","ERPName":"Соц.розвиток","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.06","ERPCode":"2.2.07.06","ERPName":"Винагорода пов'язана з реалізацією","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.07","ERPCode":"2.2.07.07","ERPName":"ФК \"Нафтовик\"","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.08","ERPCode":"2.2.07.08","ERPName":"ПДФО із стипендії","CF_NAK":"CI_642400 - ПДФО","CF_ME":"3155","RK_Item":"ЗП. ПДФО","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.09","ERPCode":"2.2.07.09","ERPName":"ВЗ із стипендії","CF_NAK":"CI_642700 - Військовий збір","CF_ME":"3157/1","RK_Item":"ЗП. ВЗ","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.12","ERPCode":"2.2.07.12","ERPName":"Гарантійний платіж за користування активами","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.13","ERPCode":"2.2.07.13","ERPName":"Перерахування до Державного бюджету за користування активами","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.14","ERPCode":"2.2.07.14","ERPName":"Відшкодування за поповнення банківських карток","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.15","ERPCode":"2.2.07.15","ERPName":"Забезпечувальний платіж наданий ПАТ Укрнафта","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.16","ERPCode":"2.2.07.16","ERPName":"Повернення забезпечувального платежу отриманого від контрагента","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.17","ERPCode":"2.2.07.17","ERPName":"Гарантійні внески (енергія)","CF_NAK":"CI_800301 - Електроенергія","CF_ME":"3110","RK_Item":"Електроенергія","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.18","ERPCode":"2.2.07.18","ERPName":"Гарантійні внески (сировина)","CF_NAK":"CI_800104 - Нафта і конденсат","CF_ME":"3110","RK_Item":"Нафта і кондесат (сировина)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.19","ERPCode":"2.2.07.19","ERPName":"Гарантійні внески (участь в тендері)","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.22","ERPCode":"2.2.07.22","ERPName":"Надана благодійна допомога","CF_NAK":"CI_840920 - Благодійність","CF_ME":"3170/1","RK_Item":"Благодійність","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.99","ERPCode":"2.2.07.99","ERPName":"Інші операційні витрати","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.98","ERPCode":"2.2.07.98","ERPName":"Інші операційні витрати (комерція)","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.07","ERPCode":"3.2.02.07","ERPName":"Надана благодійна допомога","CF_NAK":"CI_840920 - Благодійність","CF_ME":"3170/1","RK_Item":"Благодійність","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.04","ERPCode":"3.2.04","ERPName":"Гарантійне забезпечення по тендерним договорам","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.13.03","ERPCode":"1.2.13.03","ERPName":"Будівництво","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.13.02","ERPCode":"1.2.13.02","ERPName":"Проектні роботи","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.13.04","ERPCode":"1.2.13.04","ERPName":"Монтажні роботи","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.02","ERPCode":"1.2.01.02","ERPName":"Обладнання для видобутку","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.03","ERPCode":"1.2.01.03","ERPName":"Обладнання для буріння","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.04","ERPCode":"1.2.01.04","ERPName":"Обладнання для збору, транспортування, підготовки та переробки нафти і газу","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.05","ERPCode":"1.2.01.05","ERPName":"Резервуари, ємності та комплектуючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.06","ERPCode":"1.2.01.06","ERPName":"Промислове насосне обладнання,з/ч і комплектуючі (окрім глибиного)","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.07","ERPCode":"1.2.01.07","ERPName":"Компресорне обладнання , з/ч та комплектуючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.08","ERPCode":"1.2.01.08","ERPName":"Теплотехнічне, вентиляційне обладнання та комплектуючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.09","ERPCode":"1.2.01.09","ERPName":"Такелажне, вантажопідіймальне обладнання та комплектуючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.10","ERPCode":"1.2.01.10","ERPName":"Верстати, стенди, обладнання для зварювання та автосервісу, комплектуючі до них","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.11","ERPCode":"1.2.01.11","ERPName":"Вагон-будинки та з/ч до них","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.12","ERPCode":"1.2.01.12","ERPName":"Торгове обладнання, побутова техніка промислового призначення та","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.01.13","ERPCode":"1.2.01.13","ERPName":"Спеціалізоване обладнання для АЗС, АГЗС","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.02.02","ERPCode":"1.2.02.02","ERPName":"Автомобільна техніка","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.02.03","ERPCode":"1.2.02.03","ERPName":"Тракторна техніка","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.02.04","ERPCode":"1.2.02.04","ERPName":"Причепи та напівпричепи","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.02.05","ERPCode":"1.2.02.05","ERPName":"З/ч, комплектуючі та аксесуари до транспортних засобів","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.03.02","ERPCode":"1.2.03.02","ERPName":"Електрообладнання та комплектуючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.03.03","ERPCode":"1.2.03.03","ERPName":"Дизельні та бензинові електростанції, комплектуючі та з/ч до них","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.03.04","ERPCode":"1.2.03.04","ERPName":"Апаратура електрохімічного захисту","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.03.05","ERPCode":"1.2.03.05","ERPName":"Кабельно-провідникова продукція","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.03.06","ERPCode":"1.2.03.06","ERPName":"Джерела живлення та АКБ","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.03.07","ERPCode":"1.2.03.07","ERPName":"Ізолятори та електроізоляційні матеріали","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.04.01","ERPCode":"1.2.04.01","ERPName":"Капітальні витрати на інструмент","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.05.02","ERPCode":"1.2.05.02","ERPName":"Обладнання автоматизації для буріння свердловин","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.05.03","ERPCode":"1.2.05.03","ERPName":"Обладнання автоматизації для видобутку","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.05.04","ERPCode":"1.2.05.04","ERPName":"Системи та прилади для дослідження свердловин","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.05.05","ERPCode":"1.2.05.05","ERPName":"Електронні системи запалювання, РО та комплектуючі для ГМК","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.05.06","ERPCode":"1.2.05.06","ERPName":"Обладнання та комплектуючі для моніторингу руху та роботи транспорту","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.05.07","ERPCode":"1.2.05.07","ERPName":"Устаткування для керування технологічними процесами","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.05.08","ERPCode":"1.2.05.08","ERPName":"Обладнання для обліку потоків","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.05.09","ERPCode":"1.2.05.09","ERPName":"Контрольно-вимірювальні прилади","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.06.02","ERPCode":"1.2.06.02","ERPName":"Система контролю та управління доступом, компоненти та комплектуючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.06.03","ERPCode":"1.2.06.03","ERPName":"Засоби аудіо/відеоспостереження та контролю, компоненти та комплектуючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.06.04","ERPCode":"1.2.06.04","ERPName":"Засоби сигналізації, компоненти та комплектуючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.06.05","ERPCode":"1.2.06.05","ERPName":"Засоби спостереження та контролю, компоненти та комплектючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.06.06","ERPCode":"1.2.06.06","ERPName":"Засоби захисту інформації, компоненти та комплектючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.06.07","ERPCode":"1.2.06.07","ERPName":"Пошукові пристрої та комплектуючі","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.07.02","ERPCode":"1.2.07.02","ERPName":"ІТ Обладнання","CF_NAK":"CI_150201 - Придбання та виготовлення основних засобів","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.02","ERPCode":"1.2.08.02","ERPName":"Трубна продукція","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.03","ERPCode":"1.2.08.03","ERPName":"Деталі трубопроводів","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.04","ERPCode":"1.2.08.04","ERPName":"Трубопровідна арматура","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.05","ERPCode":"1.2.08.05","ERPName":"Металовироби та кріплення","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.06","ERPCode":"1.2.08.06","ERPName":"Прокладочні та ущільнюючі матеріали","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.07","ERPCode":"1.2.08.07","ERPName":"Електроди та матеріали для зварки та наплавки","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.08","ERPCode":"1.2.08.08","ERPName":"Прокат чорних металів та напівфабрикати","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.09","ERPCode":"1.2.08.09","ERPName":"Прокат кольорових металів та напівфабрикати","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.10","ERPCode":"1.2.08.10","ERPName":"Канати, троси, дріт, сітка","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.11","ERPCode":"1.2.08.11","ERPName":"Підшипники","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.12","ERPCode":"1.2.08.12","ERPName":"Будівельні матеріали","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.13","ERPCode":"1.2.08.13","ERPName":"Тампонажні матеріали","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.14","ERPCode":"1.2.08.14","ERPName":"Хімреагенти","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.15","ERPCode":"1.2.08.15","ERPName":"Матеріали та засоби для ліквідації нафтозабруднень","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.16","ERPCode":"1.2.08.16","ERPName":"Гумотехнічні вироби","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.17","ERPCode":"1.2.08.17","ERPName":"Фільтри та фільтроелементи","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.18","ERPCode":"1.2.08.18","ERPName":"Пломбувальні засоби та комплектуючі","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.19","ERPCode":"1.2.08.19","ERPName":"Матеріали для піскоструйної очистки","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.20","ERPCode":"1.2.08.20","ERPName":"Матеріали для неруйнівного контролю","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.08.21","ERPCode":"1.2.08.21","ERPName":"Тара","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.09.01","ERPCode":"1.2.09.01","ERPName":"Продукти видобування та переробки","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.09.02","ERPCode":"1.2.09.02","ERPName":"Палива моторні","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.09.03","ERPCode":"1.2.09.03","ERPName":"Паливо пічне побутове","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.09.04","ERPCode":"1.2.09.04","ERPName":"Оливи та мастила","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.09.05","ERPCode":"1.2.09.05","ERPName":"Технічні рідини","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.10.02","ERPCode":"1.2.10.02","ERPName":"Меблі (окрім торгівельних)","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.10.03","ERPCode":"1.2.10.03","ERPName":"Побутова техніка","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.10.04","ERPCode":"1.2.10.04","ERPName":"Канцтовари","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.10.05","ERPCode":"1.2.10.05","ERPName":"Миючі засоби та засоби гігієни","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.10.06","ERPCode":"1.2.10.06","ERPName":"Господарський інвентар","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.10.07","ERPCode":"1.2.10.07","ERPName":"Постільна білизна","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.10.08","ERPCode":"1.2.10.08","ERPName":"Матеріали для пошиття рукавиць та тентів","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.10.09","ERPCode":"1.2.10.09","ERPName":"Рослини, квіти та копмоненти","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.10.10","ERPCode":"1.2.10.10","ERPName":"Непродовольчі товари для реалізації","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.11.02","ERPCode":"1.2.11.02","ERPName":"Засоби індивідуального захисту (окрім Промислової безпеки)","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.11.03","ERPCode":"1.2.11.03","ERPName":"Медичне майно (окрім Промислової безпеки)","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.11.04","ERPCode":"1.2.11.04","ERPName":"Засоби радіаційної, хімічної розвідки і контролю та спец. обробки","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.02","ERPCode":"1.2.12.02","ERPName":"Комунальні послуги","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.03","ERPCode":"1.2.12.03","ERPName":"Маркетинг та реклама (кап.витрати)","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.04","ERPCode":"1.2.12.04","ERPName":"Юридичні послуги","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.05","ERPCode":"1.2.12.05","ERPName":"Консалтинг та аудит","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.06","ERPCode":"1.2.12.06","ERPName":"Послуги з підбору, навчання та розвитоку персоналу","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.07","ERPCode":"1.2.12.07","ERPName":"Послуги в сфері наукових досліджень і робіт","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.08","ERPCode":"1.2.12.08","ERPName":"Сейсморозвідувальні дослідження","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.09","ERPCode":"1.2.12.09","ERPName":"Послуги з транспортування, обробки та зберігання вантажів","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.10","ERPCode":"1.2.12.10","ERPName":"Послуги з транспортування, зберігання та обробки продуктів видобування та переробки (кап.витрати)","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.11","ERPCode":"1.2.12.11","ERPName":"Послуги з пусконалагоджування","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.12","ERPCode":"1.2.12.12","ERPName":"Адміністративні послуги","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.13","ERPCode":"1.2.12.13","ERPName":"Готельні та ресторанні послуги","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.14","ERPCode":"1.2.12.14","ERPName":"Поштові та кур’єрські послуги","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.15","ERPCode":"1.2.12.15","ERPName":"Послуги оренди","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.16","ERPCode":"1.2.12.16","ERPName":"Охорона (кап.витрати)","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.17","ERPCode":"1.2.12.17","ERPName":"Послуги охорони праці","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.18","ERPCode":"1.2.12.18","ERPName":"Послуги з протипожежної охорони","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.19","ERPCode":"1.2.12.19","ERPName":"Послуги з забезпечення техногенної безпеки та цивільного захисту","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.20","ERPCode":"1.2.12.20","ERPName":"Охорона навколишнього середовища (кап.витрати)","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.21","ERPCode":"1.2.12.21","ERPName":"Соціальні витрати","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.22","ERPCode":"1.2.12.22","ERPName":"Медичні послуги","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.23","ERPCode":"1.2.12.23","ERPName":"Cтрахові послуги","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.24","ERPCode":"1.2.12.24","ERPName":"Послуги з ремонту та технічного обслуговування","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.25","ERPCode":"1.2.12.25","ERPName":"Експертні та інспекційні послуги","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.26","ERPCode":"1.2.12.26","ERPName":"Послуги технологічні (нафтогазова промисловість)","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.27","ERPCode":"1.2.12.27","ERPName":"ІТ Послуги","CF_NAK":"CI_150601 - Придбання та виготовлення нематеріальних активів","CF_ME":"3273/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.28","ERPCode":"1.2.12.28","ERPName":"Енергія","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.29","ERPCode":"1.2.12.29","ERPName":"Послуги із залізничних перевезень","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.30","ERPCode":"1.2.12.30","ERPName":"Послуги оренди землі","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.31","ERPCode":"1.2.12.31","ERPName":"Банківські послуги","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.41","ERPCode":"1.2.12.41","ERPName":"Послуги з транспортування, зберігання та обробки продуктів видобування та переробки (кап.витрати) (комерція)","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.13.06","ERPCode":"1.2.13.06","ERPName":"Спеціалізовані роботи","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.13.07","ERPCode":"1.2.13.07","ERPName":"Геофізичні роботи","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.14.01","ERPCode":"1.2.14.01","ERPName":"Засоби індивідуального захисту","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.14.02","ERPCode":"1.2.14.02","ERPName":"Товари медичного призначення, аптечки та їх комплектуючі","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.14.03","ERPCode":"1.2.14.03","ERPName":"Протипожежна техніка та спорядження","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.14.04","ERPCode":"1.2.14.04","ERPName":"Обладнання медкабінетів","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.14.05","ERPCode":"1.2.14.05","ERPName":"Матеріали для охорони праці, пожежної безпеки та безпеки руху","CF_NAK":"CI_150101 - Капітальне будівництво","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.32","ERPCode":"1.2.12.32","ERPName":"Послуги з ремонту та тех. обслуговування-обладнання видобування","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.33","ERPCode":"1.2.12.33","ERPName":"Послуги з ремонту, тех. обслугов. та супровід обладнання підготовк","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.34","ERPCode":"1.2.12.34","ERPName":"Послуги з ремонту та тех. обслуговування обладнання механічне","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.35","ERPCode":"1.2.12.35","ERPName":"Послуги з ремонту та тех. обслуговування-обладнання енергетичне","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.36","ERPCode":"1.2.12.36","ERPName":"Послуги з ремонту та тех. обслуговування-обладнання транспортне","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.37","ERPCode":"1.2.12.37","ERPName":"Послуги з ремонту та технічного обслуговування-обладнання АЗС","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.38","ERPCode":"1.2.12.38","ERPName":"Послуга з ремонту бурового обладнання","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.39","ERPCode":"1.2.12.39","ERPName":"Послуга з ремонту технологічного обладнання","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.12.40","ERPCode":"1.2.12.40","ERPName":"Ремонт і техничне обслуговування загальногосподарського обладнання","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.13.05","ERPCode":"1.2.13.05","ERPName":"Ремонтні роботи (кап.витрати)","CF_NAK":"CI_150301 - Модернізація та капітальний ремонт об'єктів ОЗ","CF_ME":"3272/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.15.01","ERPCode":"1.2.15.01","ERPName":"Придбання корпоративних прав","CF_NAK":"CI_140101 - Фінансові інвестиції","CF_ME":"3260","RK_Item":"Фінансові інвестиції","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.07.03","ERPCode":"1.2.07.03","ERPName":"Програмне забезпечення","CF_NAK":"CI_150601 - Придбання та виготовлення нематеріальних активів","CF_ME":"3273/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.05","ERPCode":"3.2.02.05","ERPName":"Надана фінансова допомога","CF_NAK":"CI_380101 - Короткострокові небанк позики та фін допомоги надані","CF_ME":"3380/1","RK_Item":"Відсотки, комісії та інше","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.04","ERPCode":"3.2.02.04","ERPName":"Повернення кредиту","CF_NAK":"CI_610102 - Короткострокові банк позики погашені","CF_ME":"3141","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.03.01","ERPCode":"3.2.03.01","ERPName":"Виплата дивідендів (інші)","CF_NAK":"CI_670001 - Дивіденди акціонеру","CF_ME":"3350","RK_Item":"Сплата дивідендів","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.03.02","ERPCode":"3.2.03.02","ERPName":"Виплата дивідендів (НАК)","CF_NAK":"CI_670000 - Дивіденди в бюджет","CF_ME":"3350","RK_Item":"Сплата дивідендів","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.03.03","ERPCode":"3.2.03.03","ERPName":"Частина чистого прибутку (НАК)","CF_NAK":"CI_670000 - Дивіденди в бюджет","CF_ME":"3156/2","RK_Item":"Сплата дивідендів","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.02","ERPCode":"3.2.02.02","ERPName":"Повернення позики","CF_NAK":"CI_691102 - Короткострокові небанк позики погашені","CF_ME":"3142","RK_Item":"","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.01","ERPCode":"3.2.02.01","ERPName":"Повернення фінансової допомоги","CF_NAK":"CI_691102 - Короткострокові небанк позики погашені","CF_ME":"3380/1","RK_Item":"","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.03","ERPCode":"3.2.02.03","ERPName":"Сплачений процент по кредиту","CF_NAK":"CI_950101 - Сплата відсотків по кредитах","CF_ME":"3360","RK_Item":"Відсотки, комісії та інше","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.06","ERPCode":"3.2.02.06","ERPName":"Винагорода лізингодавця","CF_NAK":"CI_950101 - Сплата відсотків по кредитах","CF_ME":"3360","RK_Item":"Відсотки, комісії та інше","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.01.02","ERPCode":"3.1.01.02","ERPName":"Продаж валюти","CF_NAK":"CI_710100 - купівля-продаж валют","CF_ME":"3410","RK_Item":"Вплив зміни валютних курсів на залишок коштів","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.01.02","ERPCode":"3.2.01.02","ERPName":"Купівля валюти","CF_NAK":"CI_710100 - купівля-продаж валют","CF_ME":"3410","RK_Item":"Вплив зміни валютних курсів на залишок коштів","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.01.01","ERPCode":"3.1.01.01","ERPName":"Надходження від курсової різниці","CF_NAK":"CI_740904 - Курсові різниці переоцінка","CF_ME":"3410","RK_Item":"Вплив зміни валютних курсів на залишок коштів","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.01.01","ERPCode":"3.2.01.01","ERPName":"Втрати від курсової різниці","CF_NAK":"CI_740904 - Курсові різниці переоцінка","CF_ME":"3410","RK_Item":"Вплив зміни валютних курсів на залишок коштів","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.11","ERPCode":"2.2.05.12.11","ERPName":"Послуги закачки, відбір, зберігання та транспортування прир. газу (комерція)","CF_NAK":"CI_840428 - Зберігання природного газу","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"Мито","ERPCode":"Мито","ERPName":"Мито","CF_NAK":"CI_840471 - Мито","CF_ME":"3157/4","RK_Item":"Податки. Митні платежі","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.04.01","ERPCode":"2.1.04.01","ERPName":"Внутрішні надходження","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.08.01","ERPCode":"2.2.08.01","ERPName":"Внутрішні перекази","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"Фіноренда","ERPCode":"Фіноренда","ERPName":"Фіноренда","CF_NAK":"CI_959000 - Інші грошові витрати в межах фінансової діяльності","CF_ME":"3370","RK_Item":"Відсотки, комісії та інше","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.18","ERPCode":"2.2.04.18","ERPName":"Продукти харчування","CF_NAK":"CI_800504 - Продукти харчування","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10","ERPCode":"2.2.05.10","ERPName":"Інші отримані послуги, які не включаються до капітальних витрат","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.11","ERPCode":"2.2.05.11","ERPName":"Інші отримані роботи, які не включаються до капітальних витрат","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.99","ERPCode":"2.2.05.99","ERPName":"Інші отримані послуги які не включаються до капітальних витрат (скасовано)","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.11.4","ERPCode":"2.1.03.11.4","ERPName":"Повернення внесків за природний газ","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.28","ERPCode":"2.1.02.28","ERPName":"Транспортування газу","CF_NAK":"CI_700403 - Транспортування газу розподільчими газопроводами","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.30","ERPCode":"2.1.02.30","ERPName":"Транспортування нафти","CF_NAK":"CI_700602 - Транспортування нафти на НПЗ","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.11.1","ERPCode":"2.1.03.11.1","ERPName":"Повернення внесків за нафту","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.11.3","ERPCode":"2.1.03.11.3","ERPName":"Повернення внесків за енергію","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.12","ERPCode":"2.1.03.12","ERPName":"Повернення резервного платежу","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.13","ERPCode":"2.1.03.13","ERPName":"Компенсація акцизного податку","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.12","ERPCode":"2.2.05.12.12","ERPName":"Послуги закачування природного газу","CF_NAK":"CI_840428 - Зберігання природного газу","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.14","ERPCode":"2.2.05.12.14","ERPName":"Послуги транспортування природного газу","CF_NAK":"CI_840418 - Транспортування газу розподільні газопроводи","CF_ME":"3110","RK_Item":"Транспортування газу","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.17","ERPCode":"2.2.05.12.17","ERPName":"Відшкодування витрат в зв'язку з оплатою акцизу","CF_NAK":"CI_840402 - Послуги по переробці","CF_ME":"3110","RK_Item":"Послуги з переробки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.18","ERPCode":"2.2.05.12.18","ERPName":"Аванс акцизного податку податковому агенту","CF_NAK":"CI_840402 - Послуги по переробці","CF_ME":"3110","RK_Item":"Послуги з переробки","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.19","ERPCode":"2.2.05.12.19","ERPName":"Резервний платіж для забезпечення авалювання векселів","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.08","ERPCode":"3.2.02.08","ERPName":"Комісія лізингодавця","CF_NAK":"CI_950900 - Комісії по кредитним договорам","CF_ME":"3380/1","RK_Item":"Відсотки, комісії та інше","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.12","ERPCode":"2.1.01.12","ERPName":"Нафта","CF_NAK":"CI_700201 - Реалізація нафти та конденсату","CF_ME":"3010","RK_Item":"Нафта з конденсатом","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.16","ERPCode":"1.2.16","ERPName":"Витрати на придбання ОВДП","CF_NAK":"CI_950600 - Придбання ОВДП","CF_ME":"3265","RK_Item":"Купівля ОВДП","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.1.04.03","ERPCode":"1.1.04.03","ERPName":"Надходження від отриманих відсотків","CF_NAK":"CI_199002 - Інші надходження від інвестиційної діяльності","CF_ME":"3225","RK_Item":"Повернення тіла ОВДП та купонний дохід","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.15","ERPCode":"2.2.05.12.15","ERPName":"Послуги транспортування нафти","CF_NAK":"CI_840427 - Транспортування нафти","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.1.04.01","ERPCode":"1.1.04.01","ERPName":"Надходження від погашення ОВДП","CF_NAK":"CI_730500 - Надходження від реалізації ОВДП","CF_ME":"3215","RK_Item":"Повернення тіла ОВДП та купонний дохід","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.17","ERPCode":"1.2.17","ERPName":"1. Витрати на придбання РЕПО","CF_NAK":"CI_950600 - Придбання ОВДП","CF_ME":"3265","RK_Item":"Купівля ОВДП","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.1.04.04","ERPCode":"1.1.04.04","ERPName":"Доходи від зворотнього продажу РЕПО","CF_NAK":"CI_730500 - Надходження від реалізації ОВДП","CF_ME":"3215","RK_Item":"Повернення тіла ОВДП та купонний дохід","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.16","ERPCode":"2.2.05.12.16","ERPName":"Послуги зберігання нафти","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3010","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.2.99_ПАМ","ERPCode":"1.2.99_ПАМ","ERPName":"Придбання нематактивів","CF_NAK":"CI_150601 - Придбання та виготовлення нематеріальних активів","CF_ME":"3273/1","RK_Item":"CAPEX","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.14","ERPCode":"2.1.03.14","ERPName":"Бюджетне відшкодування ПДВ","CF_NAK":"CI_640700 - Відшкодування ПДВ з бюджету","CF_ME":"3030","RK_Item":"Податки. ПДВ. Відшкодування з бюджету","MatchType":"code","IsActive":"Так"},{"MatchKey":"1.1.04.02","ERPCode":"1.1.04.02","ERPName":"Надходження від продажу ОВДП","CF_NAK":"CI_730500 - Надходження від реалізації ОВДП","CF_ME":"3215","RK_Item":"Повернення тіла ОВДП та купонний дохід","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.12.04","ERPCode":"2.1.01.12.04","ERPName":"Експорт нафти","CF_NAK":"CI_700201 - Реалізація нафти та конденсату","CF_ME":"3010","RK_Item":"Нафта з конденсатом","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.02.31","ERPCode":"2.1.02.31","ERPName":"Зберігання нафти","CF_NAK":"CI_709090 - Реалізація інших робіт","CF_ME":"3010","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.07.23","ERPCode":"2.2.07.23","ERPName":"Повернення коштів за НП (видатки)","CF_NAK":"CI_700300 - Реалізація нафтопродуктів","CF_ME":"3010","RK_Item":"Нафтопродукти","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.03.15","ERPCode":"2.1.03.15","ERPName":"Повернення коштів за НП (надходження)","CF_NAK":"CI_800204 - Продукти нафтогазопререробки (перепродаж)","CF_ME":"3110","RK_Item":"Нафтопродукти (закупівля)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.12.05","ERPCode":"2.1.01.12.05","ERPName":"Нафта СП УКО","CF_NAK":"CI_700201 - Реалізація нафти та конденсату","CF_ME":"3010","RK_Item":"Нафта з конденсатом","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.1.01.28","ERPCode":"2.1.01.28","ERPName":"Скраплений газ СП УКО","CF_NAK":"CI_700302 - Реалізація скрапленого газу","CF_ME":"3010","RK_Item":"Нафтопродукти","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.15.08","ERPCode":"2.2.04.15.08","ERPName":"Придбання НП (імпорт комерція)","CF_NAK":"CI_800204 - Продукти нафтогазопререробки (перепродаж)","CF_ME":"3110","RK_Item":"Нафтопродукти (закупівля)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.15.09","ERPCode":"2.2.04.15.09","ERPName":"Митне оформлення при імпорті НП","CF_NAK":"CI_840471 - Мито","CF_ME":"3157/4","RK_Item":"Податки. Митні платежі","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.22","ERPCode":"2.2.04.22","ERPName":"Придбання нафти СП УКО","CF_NAK":"CI_800104 - Нафта і конденсат","CF_ME":"3110","RK_Item":"Нафта і кондесат (сировина)","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.23","ERPCode":"2.2.04.23","ERPName":"Придбання СГ СП УКО","CF_NAK":"CI_800204 - Продукти нафтогазопререробки (перепродаж)","CF_ME":"3110","RK_Item":"Нафтопродукти (закупівля)","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.09","ERPCode":"3.2.02.09","ERPName":"Комісія за користування гарантіями","CF_NAK":"CI_959000 - Інші грошові витрати в межах фінансової діяльності","CF_ME":"3380/1","RK_Item":"Відсотки, комісії та інше","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.04.18.02","ERPCode":"2.2.04.18.02","ERPName":"Придбання продовольчих товарів для мережі АЗС","CF_NAK":"CI_800504 - Продукти харчування","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.20","ERPCode":"2.2.05.12.20","ERPName":"Послуги оренди вагоно-цистерн","CF_NAK":"CI_840411 - Залізничний транспорт","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.11","ERPCode":"3.2.02.11","ERPName":"Комісія по постімпорту","CF_NAK":"CI_950900 - Комісії по кредитним договорам","CF_ME":"3360","RK_Item":"Відсотки, комісії та інше","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.12","ERPCode":"3.2.02.12","ERPName":"Комісія за обслуговування акредитиву","CF_NAK":"CI_950900 - Комісії по кредитним договорам","CF_ME":"3360","RK_Item":"Відсотки, комісії та інше","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.10","ERPCode":"3.2.02.10","ERPName":"Комісія за обслуговування кредитів","CF_NAK":"CI_950900 - Комісії по кредитним договорам","CF_ME":"3360","RK_Item":"Відсотки, комісії та інше","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.21","ERPCode":"2.2.05.12.21","ERPName":"Послуги з фарбування НП","CF_NAK":"CI_840490 - Інші роботи та послуги","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.2.02.13","ERPCode":"3.2.02.13","ERPName":"Оплата постімпорт","CF_NAK":"CI_610102 - Короткострокові банк позики погашені","CF_ME":"3141","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.22","ERPCode":"2.2.05.12.22","ERPName":"Перевезення нафти та НП залізничним транспортом","CF_NAK":"CI_840411 - Залізничний транспорт","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.23","ERPCode":"2.2.05.12.23","ERPName":"Перевезення нафти та НП автомобільним транспортом","CF_NAK":"CI_840410 - Автомобільний транспорт","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"3.1.01.03","ERPCode":"3.1.01.03","ERPName":"Зарахування купленої валюти","CF_NAK":"","CF_ME":"3410","RK_Item":"Вплив зміни валютних курсів на залишок коштів","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.47","ERPCode":"2.2.05.10.47","ERPName":"Послуги оренди нерухомості","CF_NAK":"","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.26","ERPCode":"2.2.05.12.26","ERPName":"Перевалка нафти та НП","CF_NAK":"","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"НАК \"Нафтогаз України\" (ПСО)","ERPCode":"","ERPName":"НАК \"Нафтогаз України\" (ПСО)","CF_NAK":"","CF_ME":"","RK_Item":"Природний газ (НАК ПСО)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Альянс Холдинг","ERPCode":"","ERPName":"Альянс Холдинг","CF_NAK":"","CF_ME":"","RK_Item":"Гурт","MatchType":"key","IsActive":"Так"},{"MatchKey":"Укрнафта-Постач","ERPCode":"","ERPName":"Укрнафта-Постач","CF_NAK":"","CF_ME":"","RK_Item":"В2В Роздріб (Укрнафта-Постач)","MatchType":"key","IsActive":"Так"},{"MatchKey":"ГЛУСКО","ERPCode":"","ERPName":"ГЛУСКО","CF_NAK":"","CF_ME":"","RK_Item":"Гурт","MatchType":"key","IsActive":"Так"},{"MatchKey":"ДП ДОТ МОУ ДКУ","ERPCode":"","ERPName":"надходження коштів з ДКУ","CF_NAK":"","CF_ME":"","RK_Item":"АОЗ / МОУ","MatchType":"key","IsActive":"Так"},{"MatchKey":"ДП ДОТ МОУ","ERPCode":"","ERPName":"Контракти АОЗ","CF_NAK":"","CF_ME":"","RK_Item":"АОЗ / МОУ","MatchType":"key","IsActive":"Так"},{"MatchKey":"Непаливні продажі","ERPCode":"","ERPName":"Непаливні продажі АЗС","CF_NAK":"","CF_ME":"","RK_Item":"В2С Роздріб","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття банківські гарантії","ERPCode":"2.1.03.10","ERPName":"банківські гарантії","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття кредити","ERPCode":"2.1.03.10","ERPName":"кредит","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття акредитиви","ERPCode":"2.1.03.10","ERPName":"акредитиви","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття податкові векселі","ERPCode":"2.1.03.10","ERPName":"податкові векселі","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття постімпорт Укргазбанк","ERPCode":"2.1.03.10","ERPName":"Укргазбанк","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття постімпорт Ощадбанк","ERPCode":"2.1.03.10","ERPName":"Ощадбанк","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття постімпорт Сенс Банк","ERPCode":"2.1.03.10","ERPName":"Сенс Банк","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття постімпорт Укрексімбанк","ERPCode":"2.1.03.10","ERPName":"Укрексімбанк","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття постімпорт МТБ","ERPCode":"2.1.03.10","ERPName":"МТБ","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття постімпорт ПУМБ","ERPCode":"2.1.03.10","ERPName":"ПУМБ","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття постімпорт курсові","ERPCode":"3.1.01.01","ERPName":"курсові","CF_NAK":"CI_740904 - Курсові різниці переоцінка","CF_ME":"3410","RK_Item":"Вплив зміни валютних курсів на залишок коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття постімпорт Приватбанк","ERPCode":"2.1.03.10","ERPName":"Приват Банк","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"2.2.04.15.08 постімпорт аванс","ERPCode":"2.2.04.15.08","ERPName":"Придбання НП (постімпорт комерція)","CF_NAK":"CI_800204 - Продукти нафтогазопереробки (перепродаж)","CF_ME":"3110","RK_Item":"Нафтопродукти (закупівля)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття постімпорт","ERPCode":"0000","ERPName":"Розміщення покриття постімпорт","CF_NAK":"вимкнути до рішення по методології","CF_ME":"","RK_Item":"","MatchType":"key","IsActive":"Ні"},{"MatchKey":"Розміщення покриття постімпорт Укргазбанк","ERPCode":"2.2.07.15","ERPName":"Укргазбанк","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття постімпорт Ощадбанк","ERPCode":"2.2.07.15","ERPName":"Ощадбанк","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття постімпорт Сенс Банк","ERPCode":"2.2.07.15","ERPName":"Сенс Банк","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття постімпорт Укрексімбанк","ERPCode":"2.2.07.15","ERPName":"Укрексімбанк","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття постімпорт МТБ","ERPCode":"2.2.07.15","ERPName":"МТБ","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття постімпорт Укргазбанк (субліміт НАК)","ERPCode":"2.2.07.15","ERPName":"Укргазбанк (субліміт НАК)","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття постімпорт ПУМБ","ERPCode":"2.2.07.15","ERPName":"ПУМБ","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття постімпорт Приватбанк","ERPCode":"2.2.07.15","ERPName":"Приват Банк","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття постімпорт курсові різниці","ERPCode":"3.2.01.01","ERPName":"курсові різниці","CF_NAK":"CI_740904 - Курсові різниці переоцінка","CF_ME":"3410","RK_Item":"Вплив зміни валютних курсів на залишок коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Покриття під податкові векселі","ERPCode":"2.2.07.15","ERPName":"Покриття під податкові векселі","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Ні"},{"MatchKey":"митне оформлення обладнання","ERPCode":"1.2.01","ERPName":"митне оформлення обладнання","CF_NAK":"CI_—","CF_ME":"3271/1","RK_Item":"CAPEX","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття під банківські гарантії","ERPCode":"2.2.07.15","ERPName":"Покриття під банківські гарантії","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Розміщення покриття під акредитиви","ERPCode":"2.2.07.15","ERPName":"Покриття під акредитиви","CF_NAK":"CI_390301 - Перерахування Фінансового/тендерного забезпечення","CF_ME":"3170/1","RK_Item":"Інші витрачання (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"Отримано кредитних коштів ПУМБ","ERPCode":"","ERPName":"ПУМБ","CF_NAK":"","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Отримано кредитних коштів МТБ","ERPCode":"","ERPName":"МТБ","CF_NAK":"","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Отримано кредитних коштів УГБ","ERPCode":"","ERPName":"УГБ","CF_NAK":"","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Отримано кредитних коштів ОТП Банк","ERPCode":"","ERPName":"ОТП Банк","CF_NAK":"","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Отримано кредитних коштів КредоБанк","ERPCode":"","ERPName":"Кредо Банк","CF_NAK":"","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Отримано кредитних коштів Кредит Дніпро","ERPCode":"","ERPName":"Кредит Дніпро","CF_NAK":"","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Отримано кредитних коштів Сенс Банк","ERPCode":"","ERPName":"Сенс Банк","CF_NAK":"","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Отримано постімпортне фінансування Укргазбанк","ERPCode":"0000","ERPName":"Укргазбанк","CF_NAK":"вимкнути до рішення по методології","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Ні"},{"MatchKey":"Отримано постімпортне фінансування Ощадбанк","ERPCode":"0000","ERPName":"Ощадбанк","CF_NAK":"вимкнути до рішення по методології","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Ні"},{"MatchKey":"Отримано постімпортне фінансування Сенс Банк","ERPCode":"0000","ERPName":"Сенс Банк","CF_NAK":"вимкнути до рішення по методології","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Ні"},{"MatchKey":"Отримано постімпортне фінансування Укрексімбанк","ERPCode":"0000","ERPName":"Укрексімбанк","CF_NAK":"вимкнути до рішення по методології","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Ні"},{"MatchKey":"Отримано постімпортне фінансування МТБ","ERPCode":"0000","ERPName":"МТБ","CF_NAK":"вимкнути до рішення по методології","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Ні"},{"MatchKey":"Отримано постімпортне фінансування Укргазбанк (субліміт НАК)","ERPCode":"0000","ERPName":"Укргазбанк (субліміт НАК)","CF_NAK":"вимкнути до рішення по методології","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Ні"},{"MatchKey":"Отримано постімпортне фінансування ПУМБ","ERPCode":"0000","ERPName":"ПУМБ","CF_NAK":"вимкнути до рішення по методології","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Ні"},{"MatchKey":"Отримано постімпортне фінансування Приват Банк","ERPCode":"0000","ERPName":"Приват Банк","CF_NAK":"вимкнути до рішення по методології","CF_ME":"","RK_Item":"Залучення короткострокових кредитних коштів","MatchType":"key","IsActive":"Ні"},{"MatchKey":"Повернення кредиту ПУМБ","ERPCode":"","ERPName":"ПУМБ","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення кредиту МТБ","ERPCode":"","ERPName":"МТБ","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення кредиту УГБ","ERPCode":"","ERPName":"УГБ","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення кредиту ОТП Банк","ERPCode":"","ERPName":"ОТП Банк","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення кредиту КредоБанк","ERPCode":"","ERPName":"Кредо Банк","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення кредиту Кредит Дніпро","ERPCode":"","ERPName":"Кредит Дніпро","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення кредиту Сенс Банк","ERPCode":"","ERPName":"Сенс Банк","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Оплата по постімпорту Укргазбанк","ERPCode":"","ERPName":"Укргазбанк","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Оплата по постімпорту Ощадбанк","ERPCode":"","ERPName":"Ощадбанк","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Оплата по постімпорту Сенс Банк","ERPCode":"","ERPName":"Сенс Банк","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Оплата по постімпорту Укрексімбанк","ERPCode":"","ERPName":"Укрексімбанк","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Оплата по постімпорту МТБ","ERPCode":"","ERPName":"МТБ","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Оплата по постімпорту Укргазбанк (субліміт НАК)","ERPCode":"","ERPName":"Укргазбанк (субліміт НАК)","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Оплата по постімпорту ПУМБ","ERPCode":"","ERPName":"ПУМБ","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Оплата по постімпорту Приват Банк","ERPCode":"","ERPName":"Приват Банк","CF_NAK":"","CF_ME":"","RK_Item":"Повернення короткострокових кредитних коштів","MatchType":"key","IsActive":"Так"},{"MatchKey":"Повернення покриття постімпорт Укргазбанк (субліміт НАК)","ERPCode":"2.1.03.10","ERPName":"Укргазбанк (субліміт НАК)","CF_NAK":"CI_390302 - Повернення Фінансового/тендерного забезпечення","CF_ME":"3070/1","RK_Item":"Інші надходження (операційна діяльність)","MatchType":"key","IsActive":"Так"},{"MatchKey":"2.2.01.05","ERPCode":"2.2.01.05","ERPName":"Заборгованість по рентній платі за нафту, газ та ГК","CF_NAK":"CI_840190 - Інші податки та збори","CF_ME":"3157/3","RK_Item":"Податки. Рента інша","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.07","ERPCode":"2.2.01.07","ERPName":"Заборгованість по податку на прибуток","CF_NAK":"CI_980100 - Податок на прибуток","CF_ME":"3151","RK_Item":"Податки. Податок на прибуток","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.01.18","ERPCode":"2.2.01.18","ERPName":"Заборгованість по ПДВ","CF_NAK":"CI_642100 - ПДВ","CF_ME":"3152","RK_Item":"Податки. ПДВ","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.13","ERPCode":"2.2.05.12.13","ERPName":"Послуги зберігання природного газу","CF_NAK":"CI_840418 - Транспортування газу","CF_ME":"3110","RK_Item":"Транспортування газу","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.24","ERPCode":"2.2.05.12.24","ERPName":"Перевезення нафти та НП морським транспортом","CF_NAK":"CI_840427 - Транспортування нафти","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.25","ERPCode":"2.2.05.12.25","ERPName":"Транспортування нафти трубопроводом","CF_NAK":"CI_840427 - Транспортування нафти","CF_ME":"3110","RK_Item":"Транспортування НП та сировини","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.12.27","ERPCode":"2.2.05.12.27","ERPName":"Брокерські послуги","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.41","ERPCode":"2.2.05.10.41","ERPName":"Енергія (ТОВ «НЬЮ ЕНЕРДЖІ ЮКРЕЙН»)","CF_NAK":"CI_800301 - Електроенергія","CF_ME":"3110","RK_Item":"Електроенергія","MatchType":"code","IsActive":"Так"},{"MatchKey":"2.2.05.10.48","ERPCode":"2.2.05.10.48","ERPName":"Послуги оренди нерухомості (АЗС)","CF_NAK":"CI_840890 - Інші витрати операційної діяльності","CF_ME":"3110","RK_Item":"Операційні витрати","MatchType":"code","IsActive":"Так"}];
+
+    let DICT_RAW = DICT_FALLBACK;        /* сирі записи (з потоку або резервні) */
+    let DICT_SOURCE = 'резервний';       /* звідки взято DICT_RAW */
+    let DICT_INDEX = {};                 /* ключ → нормалізований запис (лише активні) */
+    let DICT_NORM = [];                  /* нормалізовані активні записи без дублів */
+    const DICT_OFF = new Map();          /* ключ → вимкнений запис (IsActive = Ні) */
+    const DICT_STATS = { total: 0, indexed: 0, byErpCode: 0, inactive: 0, noKey: 0, noRk: 0,
+                         fields: [], keyField: null, rkField: null, actField: null };
+
+    function normKey(s) {
+        return String(s == null ? '' : s)
+            .replace(/\u00A0|\u202F/g, ' ')
+            .replace(/[«»„“”"']/g, '"')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+    function decodeSpName(n) {
+        return String(n || '').replace(/_x([0-9a-fA-F]{4})_/g, (m, h) => String.fromCharCode(parseInt(h, 16)));
+    }
+    function pick(rec, names) {
+        for (const n of names) {
+            if (rec[n] != null && String(rec[n]).trim() !== '') return rec[n];
+        }
+        const map = {};
+        Object.keys(rec).forEach(k => {
+            map[k.toLowerCase()] = rec[k];
+            map[decodeSpName(k).toLowerCase()] = rec[k];
+        });
+        for (const n of names) {
+            const v = map[String(n).toLowerCase()];
+            if (v != null && String(v).trim() !== '') return v;
+        }
+        return '';
+    }
+    const isOffValue = v => {
+        const a = normKey(v).toLowerCase();
+        return a === 'ні' || a === 'хибність' || a === 'false' || a === '0' || a === 'no';
+    };
+
+    /* Колонка-ключ: поле, значення якого найчастіше збігаються з ключами зрізу */
+    function detectField(list, snapshotKeys, preferred) {
+        if (DICT_FIELD_OVERRIDE[preferred[0]]) return DICT_FIELD_OVERRIDE[preferred[0]];
+        const sample = list.slice(0, 600);
+        if (!sample.length) return preferred[0];
+        const fields = Object.keys(sample[0] || {});
+        for (const p of preferred) {
+            const f = fields.find(x => x === p || decodeSpName(x) === p || x.toLowerCase() === p.toLowerCase());
+            if (f && (!snapshotKeys.size || sample.some(r => snapshotKeys.has(normKey(r[f]))))) return f;
+        }
+        if (!snapshotKeys.size) return preferred[0];
+        let best = null, bestHits = 0;
+        fields.forEach(f => {
+            let hits = 0;
+            for (const r of sample) if (snapshotKeys.has(normKey(r[f]))) hits++;
+            if (hits > bestHits) { bestHits = hits; best = f; }
+        });
+        return bestHits >= 5 ? best : preferred[0];
+    }
+    /* Колонка «стаття РК»: поле, значення якого збігаються з мітками РК-презентації */
+    function detectRkField(list) {
+        if (DICT_FIELD_OVERRIDE.RK_Item) return DICT_FIELD_OVERRIDE.RK_Item;
+        const sample = list.slice(0, 600);
+        if (!sample.length) return 'RK_Item';
+        const labels = new Set(RK_LABELS.map(normKey));
+        let best = 'RK_Item', bestHits = 0;
+        Object.keys(sample[0] || {}).forEach(f => {
+            let hits = 0;
+            for (const r of sample) if (labels.has(normKey(r[f]))) hits++;
+            if (hits > bestHits) { bestHits = hits; best = f; }
+        });
+        return bestHits >= 5 ? best : 'RK_Item';
+    }
+    /* Колонка активності: усі непорожні значення — так/ні у будь-якому вигляді */
+    const YESNO = new Set(['так', 'ні', 'істина', 'хибність', 'true', 'false', 'yes', 'no', '1', '0']);
+    function detectActiveField(list) {
+        if (DICT_FIELD_OVERRIDE.IsActive) return DICT_FIELD_OVERRIDE.IsActive;
+        const sample = list.slice(0, 600);
+        if (!sample.length) return 'IsActive';
+        let best = 'IsActive', bestHits = 0;
+        Object.keys(sample[0] || {}).forEach(f => {
+            let hits = 0, bad = 0;
+            for (const r of sample) {
+                const v = normKey(r[f]).toLowerCase();
+                if (!v) continue;
+                if (YESNO.has(v)) hits++; else bad++;
+            }
+            if (!bad && hits > bestHits) { bestHits = hits; best = f; }
+        });
+        return bestHits >= 5 ? best : 'IsActive';
+    }
+
+    /* Еталонні ключі для автовизначення колонки-ключа: ключі поточного зрізу
+       плюс ключі резервного довідника — щоб визначення працювало й до
+       завантаження зрізу (наприклад, у панелі зворотного мапінгу) */
+    const FALLBACK_KEYS = new Set(DICT_FALLBACK.map(d => normKey(d.MatchKey)));
+    function snapshotKeys() {
+        const set = new Set(FALLBACK_KEYS);
+        const walk = ns => (ns || []).forEach(n => {
+            if (n.code) set.add(normKey(n.code));
+            if (n.children) walk(n.children);
+        });
+        if (SNAP) walk(SNAP.tree || []);
+        return set;
+    }
+
+    /* Перебудова індексу. Викликається і після завантаження довідника,
+       і після завантаження зрізу — бо для автовизначення потрібні обидва. */
+    function rebuildDictIndex() {
+        const list = Array.isArray(DICT_RAW) ? DICT_RAW : [];
+        const keys = snapshotKeys();
+        const fKey = detectField(list, keys, ['MatchKey', 'Ключ звірки з прогнозом']);
+        const fErp = detectField(list, keys, ['ERPCode', 'Title']);
+        const fRk  = detectRkField(list);
+        const fAct = detectActiveField(list);
+
+        const dict = {}, seen = new Set();
+        DICT_NORM = []; DICT_OFF.clear();
+        Object.assign(DICT_STATS, { total: list.length, indexed: 0, byErpCode: 0, inactive: 0, noKey: 0, noRk: 0,
+                                    fields: list.length ? Object.keys(list[0]) : [],
+                                    keyField: fKey, rkField: fRk, actField: fAct });
+
+        list.forEach(d => {
+            const mk  = normKey(d[fKey] != null ? d[fKey] : pick(d, ['MatchKey']));
+            const erp = normKey(d[fErp] != null ? d[fErp] : pick(d, ['ERPCode', 'Title']));
+            const rk  = normKey(d[fRk]  != null ? d[fRk]  : pick(d, ['RK_Item']));
+            const act = d[fAct] != null ? d[fAct] : pick(d, ['IsActive', 'Активна']);
+            const key = mk || erp;
+            if (!key) { DICT_STATS.noKey++; return; }
+
+            const rec = {
+                MatchKey:  key,
+                ERPCode:   erp,
+                ERPName:   pick(d, ['ERPName']),
+                CF_NAK:    pick(d, ['CF_NAK']),
+                CF_ME:     pick(d, ['CF_ME']),
+                RK_Item:   rk,
+                MatchType: pick(d, ['MatchType']) || (/^\d+(\.\d+)+$/.test(erp) ? 'code' : 'key'),
+                MapStatus: pick(d, ['MapStatus']) || (rk ? 'OK' : 'БЕЗ МАПІНГУ'),
+                IsActive:  isOffValue(act) ? 'Ні' : 'Так'
+            };
+
+            if (rec.IsActive === 'Ні') {
+                DICT_STATS.inactive++;
+                if (!DICT_OFF.has(key)) DICT_OFF.set(key, rec);
+                return;
+            }
+            if (!rk) DICT_STATS.noRk++;
+            if (!dict[key]) { dict[key] = rec; DICT_STATS.indexed++; }
+            if (erp && erp !== key && !dict[erp]) { dict[erp] = rec; DICT_STATS.byErpCode++; }
+            if (!seen.has(rec)) { seen.add(rec); DICT_NORM.push(rec); }
+        });
+        DICT_INDEX = dict;
+
+        if (window.console) console.log('CF_Dictionary [' + DICT_SOURCE + ']: записів', DICT_STATS.total,
+            '· ключ «' + fKey + '» · стаття РК «' + fRk + '» · активність «' + fAct + '»',
+            '· проіндексовано', DICT_STATS.indexed, '· вимкнено', DICT_STATS.inactive,
+            '· без ключа', DICT_STATS.noKey, '· без статті РК', DICT_STATS.noRk);
+    }
+
+    function setDictionary(arr, source) {
+        if (!Array.isArray(arr) || !arr.length) return false;
+        DICT_RAW = arr;
+        DICT_SOURCE = source;
+        rebuildDictIndex();
+        return true;
+    }
+
+    async function loadDictionary() {
+        if (!CONFIG.DICT_FLOW_URL) return;
+        try {
+            const res = await postJson(CONFIG.DICT_FLOW_URL, { dictionaryOnly: true });
+            const d = res.cfDictionary || res.dictionary || (Array.isArray(res) ? res : null);
+            if (!setDictionary(d, 'потік довідника'))
+                console.warn('Потік довідника не повернув масив записів — діє резервний довідник', res);
+        } catch (e) {
+            console.error('Довідник з Power Automate не завантажено — діє резервний:', e);
+        }
+    }
+
+    /* Діагностика з консолі: window.dictReport() */
+    window.dictReport = function () {
+        const info = {
+            'джерело довідника': DICT_SOURCE,
+            'записів': DICT_STATS.total,
+            'поля відповіді': DICT_STATS.fields.join(', ') || '—',
+            'колонка-ключ': DICT_STATS.keyField,
+            'колонка статті РК': DICT_STATS.rkField,
+            'колонка активності': DICT_STATS.actField,
+            'проіндексовано': DICT_STATS.indexed,
+            'вимкнено (IsActive)': DICT_STATS.inactive,
+            'без ключа': DICT_STATS.noKey,
+            'без статті РК': DICT_STATS.noRk,
+            'покриття зрізу': mapCoverage()
+        };
+        console.log(info);
+        return info;
+    };
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       5. ПОБУДОВА ДЕРЕВА (без змін)
+       ═══════════════════════════════════════════════════════════════════════ */
     const NORM_KEYS = ['T0','T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
     const nvals = r => NORM_KEYS.map(k => (r.values && r.values[k]) || 0);
     const nNonZero = v => v.some(x => Math.abs(x) >= 1);
@@ -521,34 +804,43 @@
         return roots.map(toPlain).filter(n => n.kind !== 'block' || (n.children && n.children.length));
     }
 
+    /* Індекс вузлів. Раніше батько шукався через list.find() для кожного вузла —
+       квадратична складність; тепер через Map. */
+    let NODE_BY_ID = new Map();
     function indexTree(tree) {
         const list = [];
+        NODE_BY_ID = new Map();
         const walk = (nodes, parentId, depth, prefix) => {
             (nodes || []).forEach((n, i) => {
                 const id = prefix + '/' + i;
                 const rec = { id, parentId, depth, node: n, name: n.name || '', kind: n.kind || '',
                               no: n.no, code: n.code, src_row: n.src_row, keep: n.keep, childIds: [] };
                 list.push(rec);
-                if (parentId != null) { const p = list.find(x => x.id === parentId); if (p) p.childIds.push(id); }
+                NODE_BY_ID.set(id, rec);
+                if (parentId != null) { const p = NODE_BY_ID.get(parentId); if (p) p.childIds.push(id); }
                 if (n.children && n.children.length) walk(n.children, id, depth + 1, id);
             });
         };
         walk(tree, null, 0, '');
         return list;
     }
-    const byId = id => NODES.find(n => n.id === id);
+    const byId = id => NODE_BY_ID.get(id);
 
+    /* ═══════════════════════════════════════════════════════════════════════
+       6. ЗАВАНТАЖЕННЯ ЗРІЗІВ
+       ═══════════════════════════════════════════════════════════════════════ */
     function applySnapshot(envelope, requestedIso) {
         const snap = extractSnapshotObject(envelope);
         if (!snap) throw new Error('у відповіді немає снапшоту (meta + tree)');
         SNAP = snap;
         TREE = buildTree(snap.rows || []);
         NODES = indexTree(TREE);
+        rebuildDictIndex();                         /* ключі зрізу змінилися */
         resetDefaultExpanded();
         document.getElementById('expandAll').checked = false;
         const m = snap.meta || {};
         const iso = m.forecast_date || requestedIso || '';
-        if (iso) { currentReportDate = iso; availableDates.add(iso); }
+        if (iso) { currentReportDate = iso; availableDates.add(iso); calViewDate = new Date(iso + 'T12:00:00'); }
         document.getElementById('navCurDate').textContent = iso ? dmy(iso) : '--';
         document.getElementById('hdrCur').textContent = iso ? dmy(iso) : '--';
         document.getElementById('lblSelectedDate').textContent = iso ? dmy(iso) : 'Обрати дату';
@@ -560,88 +852,58 @@
         render();
     }
 
-    async function loadDictionary() {
-        if (!CONFIG.DICT_FLOW_URL) return;
-        try {
-            const res = await fetch(CONFIG.DICT_FLOW_URL, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ dictionaryOnly: true })
-            });
-            const data = await res.json();
-            const dictArray = data.cfDictionary || data.dictionary;
-            if (Array.isArray(dictArray) && dictArray.length > 0) {
-                // Оновлюємо обидві системи мапінгу у вашому файлі:
-                if (typeof DICT !== 'undefined') DICT = dictArray; 
-                window.DYNAMIC_CF_DICT = {}; 
-                dictArray.forEach(d => {
-                    const k = (d.MatchKey || d.Title || '').trim();
-                    if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
-                        window.DYNAMIC_CF_DICT[k] = [d.RK_Item || '', d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ'), d.ERPName || ''];
-                    }
-                });
-            }
-        } catch(e) { console.warn("Помилка завантаження довідника", e); }
-    }
-
+    const SNAP_CACHE = new Map();
     async function fetchSnapshot(iso) {
-        if (typeof SNAP_CACHE !== 'undefined' && SNAP_CACHE.has(iso)) return SNAP_CACHE.get(iso);
-        
-        const res = await fetch(CONFIG.FLOW_URL, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso), includeDictionary: true })
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        
-        const dictArray = data.cfDictionary || data.dictionary;
-        if (Array.isArray(dictArray) && dictArray.length > 0) {
-            // Оновлюємо обидві системи мапінгу під час завантаження зрізу:
-            if (typeof DICT !== 'undefined') DICT = dictArray;
-            window.DYNAMIC_CF_DICT = {};
-            dictArray.forEach(d => {
-                const k = (d.MatchKey || d.Title || '').trim();
-                if (k && String(d.IsActive == null ? 'Так' : d.IsActive) !== 'Ні') {
-                    window.DYNAMIC_CF_DICT[k] = [d.RK_Item || '', d.MapStatus || (d.RK_Item ? 'OK' : 'БЕЗ МАПІНГУ'), d.ERPName || ''];
-                }
-            });
-        }
-        
-        // ВАЖЛИВО: Витягуємо сам зріз прогнозу з конверта сервера
-        // У попередній версії коду цього не було, через що дані таблиці були порожніми
-        let snap = null;
-        if (typeof extractSnapshot === 'function') snap = extractSnapshot(data);
-        else if (typeof extractSnapshotObject === 'function') snap = extractSnapshotObject(data);
-        
-        if (!snap) throw new Error('У відповіді немає снапшоту даних');
-        
-        if (typeof SNAP_CACHE !== 'undefined') SNAP_CACHE.set(iso, snap);
-        if (typeof availableDates !== 'undefined') availableDates.add(iso);
-        return snap;
+        if (SNAP_CACHE.has(iso)) return SNAP_CACHE.get(iso);
+        const data = await postJson(CONFIG.FLOW_URL, { reportDate: iso, reportDateDot: dmy(iso), includeDictionary: true });
+        if (!extractSnapshotObject(data)) throw new Error('у відповіді немає снапшоту');
+        /* довідник із потоку зрізів беремо лише тоді, коли потік довідника не спрацював */
+        const d = data.cfDictionary || data.dictionary;
+        if (DICT_SOURCE !== 'потік довідника') setDictionary(d, 'потік зрізів');
+        SNAP_CACHE.set(iso, data);
+        return data;
     }
 
+    /* Мережева помилка і помилка обробки розділені: раніше будь-який збій
+       рендеру виглядав як «зрізів не знайдено» */
     async function loadFromCloud(iso) {
-        setStatus('Завантаження…', 'bg-indigo-100 text-indigo-800');
+        setStatus('Завантаження зрізу ' + dmy(iso) + '…', 'bg-indigo-100 text-indigo-800');
+        let data;
+        try { data = await fetchSnapshot(iso); }
+        catch (e) {
+            console.error('Зріз ' + dmy(iso) + ' не отримано:', e);
+            setStatus('Зріз ' + dmy(iso) + ' не отримано: ' + e.message, 'bg-red-100 text-red-800');
+            return;
+        }
         try {
-            applySnapshot(await fetchSnapshot(iso), iso);
+            applySnapshot(data, iso);
             setStatus('Зріз ' + dmy(currentReportDate), 'bg-emerald-100 text-emerald-800');
-        } catch (err) {
-            setStatus('Дані недоступні: ' + err.message + ' — можна відкрити локальний JSON', 'bg-red-100 text-red-800');
+        } catch (e) {
+            console.error('Зріз отримано, але обробка впала:', e);
+            setStatus('Зріз ' + dmy(iso) + ' отримано, але не показався: ' + e.message, 'bg-red-100 text-red-800');
         }
     }
 
-    async function loadLatestMonday(weeksBack) {
+    async function loadLatestMonday() {
         let iso = mondayOf(new Date());
-        const limit = weeksBack || 8;
+        const problems = [];
         setStatus('Пошук останнього зрізу…', 'bg-indigo-100 text-indigo-800');
-        for (let i = 0; i < limit; i++) {
+        for (let i = 0; i < CONFIG.LATEST_LOOKBACK_WEEKS; i++) {
+            let data;
+            try { data = await fetchSnapshot(iso); }
+            catch (e) { problems.push(dmy(iso) + ': ' + e.message); iso = isoShift(iso, -7); continue; }
             try {
-                const data = await fetchSnapshot(iso);
                 applySnapshot(data, iso);
                 setStatus('Зріз ' + dmy(currentReportDate) + (i ? ' (останній наявний)' : ''), 'bg-emerald-100 text-emerald-800');
                 return iso;
-            } catch (e) { iso = isoShift(iso, -7); }
+            } catch (e) {
+                console.error('Зріз ' + dmy(iso) + ' завантажено, але обробка впала:', e);
+                setStatus('Зріз ' + dmy(iso) + ' отримано, але сторінка не змогла його показати: ' + e.message, 'bg-red-100 text-red-800');
+                return null;
+            }
         }
-        setStatus('Зрізів за останні ' + limit + ' тижнів не знайдено — можна відкрити локальний JSON', 'bg-red-100 text-red-800');
+        console.warn('Жоден зріз не завантажився:', problems);
+        setStatus('Зрізів за ' + CONFIG.LATEST_LOOKBACK_WEEKS + ' тижнів не знайдено — див. консоль або відкрийте локальний JSON', 'bg-red-100 text-red-800');
         return null;
     }
 
@@ -650,23 +912,16 @@
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-            try { applySnapshot(JSON.parse(reader.result), null); setStatus('Зріз ' + dmy(currentReportDate), 'bg-emerald-100 text-emerald-800'); }
+            try { applySnapshot(JSON.parse(reader.result), null); setStatus('Локальний зріз ' + dmy(currentReportDate), 'bg-emerald-100 text-emerald-800'); }
             catch (e) { setStatus('Не вдалося прочитати файл: ' + e.message, 'bg-red-100 text-red-800'); }
         };
         reader.readAsText(file, 'utf-8');
         input.value = '';
     }
 
-    async function init() {
-        document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
-        setViewMode('fluid');
-        renderCalendar();
-        render();
-        setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
-        await loadDictionary(); // <--- Завантажуємо свіжий довідник відразу при старті
-        if (typeof fetch === 'function') loadLatestMonday();
-    }
-
+    /* ═══════════════════════════════════════════════════════════════════════
+       7. ТАБЛИЦЯ, КОЛОНКИ, ФОРМАТУВАННЯ
+       ═══════════════════════════════════════════════════════════════════════ */
     const MONTHS = [
         { key: 'M1', weeks: ['T0', 'T1', 'T2', 'T3'] },
         { key: 'M2', weeks: ['T4', 'T5', 'T6', 'T7'] },
@@ -701,9 +956,11 @@
 
     function fmtCell(v) {
         if (v == null || isNaN(v)) return { txt: '', cls: 'zero' };
-        const r = Math.round(v / unitDiv());
-        if (r === 0) return { txt: '0', cls: 'zero' };
-        return { txt: (r < 0 ? '−' : '') + sp(Math.abs(r).toLocaleString('uk-UA')), cls: r < 0 ? 'neg' : '' };
+        const d = UNIT === 'mln' ? 1 : 0;
+        const r = v / unitDiv();
+        if (Math.abs(r) < (d ? 0.05 : 0.5)) return { txt: '0', cls: 'zero' };
+        return { txt: (r < 0 ? '−' : '') + sp(Math.abs(r).toLocaleString('uk-UA', { minimumFractionDigits: d, maximumFractionDigits: d })),
+                 cls: r < 0 ? 'neg' : '' };
     }
 
     function toggleMonth(k) { monthOpen[k] = !monthOpen[k]; render(); }
@@ -718,7 +975,10 @@
         expanded[id] = !isExpanded(id);
         render();
     }
-    const isExpanded = id => (document.getElementById('expandAll').checked ? true : !!expanded[id]);
+    const onlyGaps = () => { const b = document.getElementById('mapOnlyGaps'); return !!(b && b.checked); };
+    /* у режимі «лише без мапінгу» дерево розгортається повністю, інакше
+       незмаплені листки в згорнутих гілках були б невидимі */
+    const isExpanded = id => (document.getElementById('expandAll').checked || onlyGaps()) ? true : !!expanded[id];
 
     const KEY_ROWS = [/^Всього витрат/i, /^Всього видатків/i, /^Всього надходжень/i, /^Грошовий потік/i, /^Чистий грошовий потік/i];
     const BLUE_ROWS = [/^Доступні залишки/i, /^Залишки доступні до використання/i];
@@ -730,7 +990,8 @@
     function matches(rec) {
         const q = clean(document.getElementById('searchBox').value).toLowerCase();
         if (!q) return true;
-        return [rec.name, rec.code, rec.no].some(v => String(v == null ? '' : v).toLowerCase().includes(q));
+        const c = classify(rec, cutoff());
+        return [rec.name, rec.code, rec.no, c && c.rk].some(v => String(v == null ? '' : v).toLowerCase().includes(q));
     }
     const allZero = rec => !nNonZero(nvals(rec.node)) && !rec.childIds.some(id => nNonZero(nvals(byId(id).node)));
 
@@ -740,12 +1001,29 @@
         const q = clean(document.getElementById('searchBox').value);
         const hits = new Set();
         if (q) NODES.filter(matches).forEach(r => { let c = r; while (c) { hits.add(c.id); c = c.parentId ? byId(c.parentId) : null; } });
+        let gapKeep = null;
+        if (onlyGaps()) {
+            const cut = cutoff();
+            gapKeep = new Set();
+            NODES.forEach(r => {
+                const c = classify(r, cut);
+                if (c && (c.kind === 'nomap' || c.kind === 'missing')) {
+                    let p = r; while (p) { gapKeep.add(p.id); p = p.parentId ? byId(p.parentId) : null; }
+                }
+            });
+        }
         const out = [];
         const walk = ids => ids.forEach(id => {
             const rec = byId(id);
             if (!rec) return;
-            if (onlyKeep && rec.keep === false) return;
-            if (hideZero && allZero(rec)) return;
+            if (gapKeep) {
+                /* у режимі «лише без мапінгу» показуємо проблемні рядки навіть там,
+                   де їх ховає фільтр «лише статті звіту» (напр. фінансовий блок) */
+                if (!gapKeep.has(id)) return;
+            } else {
+                if (onlyKeep && rec.keep === false) return;
+                if (hideZero && allZero(rec)) return;
+            }
             if (q && !hits.has(id)) return;
             out.push(rec);
             if (rec.childIds.length && (q ? true : isExpanded(id))) walk(rec.childIds);
@@ -761,9 +1039,13 @@
     }
 
     function render() {
+        if (window.REV_ON) { renderReverse(); return; }
         const pane = document.getElementById('pane');
-        if (!SNAP) { pane.innerHTML = '<div class="text-xs text-slate-400 p-3">Дані ще не завантажені. Оберіть дату зрізу або відкрийте локальний файл.</div>'; return; }
+        if (!SNAP) { pane.innerHTML = '<div class="text-xs text-slate-400 p-3">Дані ще не завантажені. Оберіть дату зрізу або відкрийте локальний файл.</div>'; updateMapStats(); return; }
+
         const cols = SNAP.columns || {}, keys = activeColumns();
+        const cut = cutoff();
+        const showMap = document.getElementById('mapShow').checked;
 
         const head = `<tr><th class="nm-col">Стаття</th>${keys.map(k => {
             const c = cols[k] || {};
@@ -788,8 +1070,11 @@
             const lvl = rec.kind === 'block' ? 'lvl-block'
                       : rec.kind === 'item' ? 'lvl-item'
                       : (rec.kind === 'total' || rec.kind === 'subgroup') ? 'lvl-sub' : 'lvl-leaf';
-            const extra = (isKeyRow(n) ? ' row-key' : '') + (isCoverRow(n) ? ' row-cover' : '') + (isBlueRow(n) ? ' row-blue' : '');
+            const cm = classify(rec, cut);
+            const mapCls = !cm ? '' : (cm.kind === 'nomap' || cm.kind === 'missing') ? ' map-unmapped' : cm.kind === 'off' ? ' map-disabled' : '';
+            const extra = (isKeyRow(n) ? ' row-key' : '') + (isCoverRow(n) ? ' row-cover' : '') + (isBlueRow(n) ? ' row-blue' : '') + (showMap ? mapCls : '');
             const codeTxt = String(n.no == null ? '' : n.no).trim();
+            const tag = showMap && cm ? tagHtml(cm) : '';
             const cells = keys.map(k => {
                 const c = fmtCell((n.values || {})[k]);
                 const isMon = MONTH_KEYS.indexOf(k) >= 0;
@@ -800,15 +1085,203 @@
                 return `<td class="${cls}">${c.txt}</td>`;
             }).join('');
             return `<tr class="${lvl}${extra}" onclick="${hasKids ? `toggleNode('${esc(rec.id)}')` : ''}">
-                <td class="nm-col" style="padding-left:${6 + rec.depth * 16}px">${toggle}${codeTxt ? `<span class="an-code">${esc(codeTxt)}</span>` : ''}<span class="nm-txt">${esc(n.name)}</span></td>
+                <td class="nm-col" style="padding-left:${6 + rec.depth * 16}px">${toggle}${codeTxt ? `<span class="an-code">${esc(codeTxt)}</span>` : ''}<span class="nm-txt">${esc(n.name)}</span>${tag}</td>
                 ${cells}</tr>`;
         }).join('');
 
         pane.innerHTML = keys.length
             ? `<table class="an-table"><thead>${head}</thead><tbody>${body}</tbody></table>`
             : '<div class="text-xs text-slate-400 p-3">Оберіть хоча б одну групу колонок.</div>';
+
+        updateMapStats();
     }
 
+    /* ═══════════════════════════════════════════════════════════════════════
+       8. РК-МАПІНГ: класифікація вузлів, теги, лічильник
+       Лічильник рахується по ВСІХ листках зрізу, а не лише по видимих рядках —
+       раніше «змаплено X з Y» залежав від того, які гілки розгорнуто.
+       ═══════════════════════════════════════════════════════════════════════ */
+    function nodeHasValues(n) {
+        const v = (n && n.values) || {};
+        for (const k in v) if (typeof v[k] === 'number' && v[k] !== 0) return true;
+        return false;
+    }
+    function isLeaf(n) {
+        const kids = (n && n.children) || [];
+        if (!kids.length) return true;
+        return !kids.some(k => nodeHasValues(k) || (k.children || []).length);
+    }
+    let CUT_CACHE = { snap: null, val: Infinity };
+    function cutoff() {
+        if (CUT_CACHE.snap === SNAP) return CUT_CACHE.val;
+        let min = Infinity;
+        ((SNAP && SNAP.rows) || []).forEach(r => {
+            if (r && r.src_row && String(r.name || '').indexOf('Залишки на кінець періоду') === 0 && r.src_row < min) min = r.src_row;
+        });
+        CUT_CACHE = { snap: SNAP, val: min };
+        return min;
+    }
+
+    /* Набір рядків-вимірів рахується за деревом снапшоту (snap.tree) —
+       рівно тими правилами, що й у РК-презентації та build_cf_mapping.py.
+       Дерево відображення на цій сторінці будується евристикою і може
+       по-іншому групувати рядки, тому для мапінгу його не використовуємо:
+       так теги й лічильник тотожні РК-звіту. */
+    let MEASURE_ROWS = new Map(), MEASURE_SNAP = null;
+    function measureRows() {
+        if (MEASURE_SNAP === SNAP) return MEASURE_ROWS;
+        MEASURE_ROWS = new Map(); MEASURE_SNAP = SNAP;
+        if (!SNAP) return MEASURE_ROWS;
+        const cut = cutoff();
+        const walk = (n, path) => {
+            const inControl = n.name === 'КОНТРОЛЬ витрат по напрямках' || path.includes('КОНТРОЛЬ витрат по напрямках');
+            const code = normKey(n.code);
+            if (!inControl && !(n.src_row && n.src_row >= cut) && (n.kind === 'child' || n.kind === 'item') &&
+                code && isLeaf(n) && n.src_row) MEASURE_ROWS.set(n.src_row, code);
+            (n.children || []).forEach(c => walk(c, path.concat([n.name || ''])));
+        };
+        (SNAP.tree || []).forEach(r => walk(r, []));
+        return MEASURE_ROWS;
+    }
+
+    function classify(rec, cut) {
+        const n = (rec && rec.node) || {};
+        const code = measureRows().get(n.src_row);
+        if (!code) return null;
+
+        const d = DICT_INDEX[code];
+        if (d) return d.RK_Item
+            ? { kind: 'ok', code, rk: d.RK_Item, status: d.MapStatus }
+            : { kind: 'nomap', code, status: d.MapStatus };
+        const off = DICT_OFF.get(code);
+        if (off) return { kind: 'off', code, rk: off.RK_Item };
+        return { kind: 'missing', code };
+    }
+
+    function tagHtml(c) {
+        if (c.kind === 'ok') {
+            const sug = c.status === 'ПРОПОЗИЦІЯ';
+            return '<span class="map-tag ' + (sug ? 'map-sug' : 'map-ok') + '" title="Стаття РК-презентації 11-25' +
+                   (sug ? ' (пропозиція — потребує підтвердження)' : '') + '">' + esc(c.rk) + (sug ? ' ?' : '') + '</span>';
+        }
+        if (c.kind === 'nomap')
+            return '<span class="map-tag map-none" title="Ключ ' + esc(c.code) + ' є в довіднику CF_Dictionary, але статтю РК-презентації йому не призначено">немає статті РК</span>';
+        if (c.kind === 'off')
+            return '<span class="map-tag map-off" title="Запис вимкнено в довіднику (IsActive = Ні) — у звіт РК свідомо не входить' +
+                   (c.rk ? '. Стаття РК у довіднику: ' + esc(c.rk) : '') + '">вимкнено</span>';
+        if (c.kind === 'missing')
+            return '<span class="map-tag map-miss" title="Ключа ' + esc(c.code) + ' немає в довіднику CF_Dictionary — його треба додати">немає в довіднику</span>';
+        return '';
+    }
+
+    function mapCoverage() {
+        const out = { ok: 0, nomap: 0, off: 0, missing: 0, total: 0 };
+        if (!SNAP) return out;
+        const cut = cutoff();
+        NODES.forEach(r => {
+            const c = classify(r, cut);
+            if (!c) return;
+            out[c.kind]++; out.total++;
+        });
+        return out;
+    }
+
+    function updateMapStats() {
+        const stats = document.getElementById('mapStats');
+        if (!stats) return;
+        const c = mapCoverage();
+        if (!c.total) { stats.textContent = ''; return; }
+        stats.textContent = 'змаплено ' + c.ok + ' з ' + c.total +
+            (c.nomap ? ' · без статті РК ' + c.nomap : '') +
+            (c.missing ? ' · немає в довіднику ' + c.missing : '') +
+            (c.off ? ' · вимкнено ' + c.off : '') +
+            ' · довідник: ' + DICT_SOURCE;
+        stats.className = 'map-legend' + ((c.nomap + c.missing) ? ' text-amber-700 font-semibold' : '');
+    }
+
+    /* сумісність зі старими викликами */
+    window.__rkMap = { decorate: render };
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       9. ЗВОРОТНИЙ МАПІНГ: стаття РК → ключі довідника (як у РК-презентації)
+       ═══════════════════════════════════════════════════════════════════════ */
+    function toggleRev() {
+        window.REV_ON = !window.REV_ON;
+        document.getElementById('btnRev').className = 'ctl' + (window.REV_ON ? ' active' : '');
+        document.getElementById('revPane').classList.toggle('hidden', !window.REV_ON);
+        document.getElementById('pane').classList.toggle('hidden', window.REV_ON);
+        const mapBlock = document.getElementById('mapControlsBlock');
+        if (mapBlock) mapBlock.style.display = window.REV_ON ? 'none' : 'flex';
+        render();
+    }
+
+    /* ключі поточного зрізу, яких немає в довіднику зовсім */
+    function orphanKeys() {
+        if (!SNAP) return [];
+        const cut = cutoff(), out = [], seen = new Set();
+        NODES.forEach(r => {
+            const c = classify(r, cut);
+            if (c && c.kind === 'missing' && !seen.has(c.code)) { seen.add(c.code); out.push({ key: c.code, name: r.name }); }
+        });
+        return out;
+    }
+
+    function renderReverse() {
+        const q = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+        const all = DICT_NORM.concat(Array.from(DICT_OFF.values()));
+        const order = {}; RK_LABELS.forEach((l, i) => order[l] = i);
+        const groups = new Map();
+        RK_LABELS.forEach(l => groups.set(l, []));
+        all.forEach(d => {
+            const rk = d.RK_Item || '— БЕЗ МАПІНГУ —';
+            if (!groups.has(rk)) groups.set(rk, []);
+            groups.get(rk).push(d);
+        });
+        const entries = Array.from(groups.entries()).sort((a, b) => {
+            const oa = a[0] in order ? order[a[0]] : (a[0] === '— БЕЗ МАПІНГУ —' ? 999 : 998);
+            const ob = b[0] in order ? order[b[0]] : (b[0] === '— БЕЗ МАПІНГУ —' ? 999 : 998);
+            return oa !== ob ? oa - ob : a[0].localeCompare(b[0], 'uk');
+        });
+
+        const hit = s => String(s || '').toLowerCase().includes(q);
+        const rows = [];
+        entries.forEach(([rk, list]) => {
+            const shown = q ? list.filter(d => hit(d.MatchKey) || hit(d.ERPName) || hit(rk)) : list;
+            if (q && !shown.length && !hit(rk)) return;
+            const noMap = rk === '— БЕЗ МАПІНГУ —';
+            const active = list.filter(d => d.IsActive !== 'Ні').length;
+            rows.push(`<tr class="${noMap ? 'rev-nomap' : 'rev-head'}"><td class="nm-col">${esc(rk)}` +
+                (noMap ? '<span class="map-tag map-none">потребує статті РК</span>' : '') +
+                (!list.length ? '<span class="map-tag map-none">немає жодного ключа</span>' : '') +
+                `</td><td style="text-align:right">${active}${list.length > active ? ' + ' + (list.length - active) + ' вимк.' : ''}</td><td></td><td></td><td></td><td></td></tr>`);
+            shown.forEach(d => {
+                const off = d.IsActive === 'Ні';
+                const st = d.MapStatus === 'ПРОПОЗИЦІЯ' ? '<span class="map-tag map-sug">пропозиція</span>' : '';
+                rows.push(`<tr class="rev-row${off ? ' rev-off' : ''}"><td class="nm-col">${esc(d.MatchKey)}${st}` +
+                    (off ? '<span class="map-tag map-off">вимкнено</span>' : '') + `</td>` +
+                    `<td>${esc(d.MatchType)}</td><td>${esc(d.ERPName)}</td><td>${esc(d.CF_NAK)}</td><td>${esc(d.CF_ME)}</td>` +
+                    `<td style="text-align:center;font-weight:700;color:${off ? '#dc2626' : 'inherit'}">${esc(d.IsActive)}</td></tr>`);
+            });
+        });
+
+        const orph = orphanKeys().filter(u => !q || hit(u.key) || hit(u.name));
+        if (orph.length) {
+            rows.push(`<tr class="rev-section"><td class="nm-col">Ключі зрізу, яких немає в довіднику</td><td style="text-align:right">${orph.length}</td><td></td><td></td><td></td><td></td></tr>`);
+            orph.forEach(u => rows.push(`<tr class="rev-row"><td class="nm-col">${esc(u.key)}<span class="map-tag map-miss">додати в довідник</span></td>` +
+                `<td></td><td>${esc(u.name)}</td><td></td><td></td><td></td></tr>`));
+        }
+
+        document.getElementById('revPane').innerHTML = rows.length
+            ? '<table class="an-table"><thead><tr><th class="nm-col">Стаття РК → ключ довідника</th>' +
+              '<th style="text-align:left">Тип</th><th style="text-align:left">Назва в ERP</th>' +
+              '<th style="text-align:left">Стаття CF НАК</th><th style="text-align:left">CF МЕ</th>' +
+              '<th style="text-align:center">IsActive</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>'
+            : '<div class="text-xs text-slate-400 p-3">Нічого не знайдено в довіднику.</div>';
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       10. КАЛЕНДАР
+       ═══════════════════════════════════════════════════════════════════════ */
     function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
     function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
     function renderCalendar() {
@@ -820,249 +1293,30 @@
         for (let d = 1; d <= days; d++) {
             const iso = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const cur = iso === currentReportDate, known = availableDates.has(iso);
-            html += `<button onclick="selectDate('${iso}')" class="p-1 rounded-md ${cur ? 'bg-indigo-600 text-white font-bold' : known ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-100 text-slate-700'}">${d}</button>`;
+            const isMon = new Date(y, mo, d).getDay() === 1;
+            html += `<button onclick="selectDate('${iso}')" class="p-1 rounded-md ${cur ? 'bg-indigo-600 text-white font-bold' : known ? 'bg-indigo-50 text-indigo-700' : isMon ? 'text-slate-800 font-semibold hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-100'}">${d}</button>`;
         }
         document.getElementById('calendarDaysGrid').innerHTML = html;
     }
+    /* дата в заголовку міняється лише після успішного завантаження */
     function selectDate(iso) {
-        currentReportDate = iso;
-        calViewDate = new Date(iso + 'T00:00:00');
-        document.getElementById('lblSelectedDate').textContent = dmy(iso);
         document.getElementById('calendarDropdown').classList.add('hidden');
         loadFromCloud(iso);
     }
+    document.addEventListener('click', e => {
+        const drop = document.getElementById('calendarDropdown');
+        if (drop && !drop.classList.contains('hidden') && !e.target.closest('#calendarDropdown') &&
+            !e.target.closest('button[onclick="toggleCalendarDropdown()"]')) drop.classList.add('hidden');
+    });
 
-    function init() {
-        document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
-        setViewMode('fluid');
+    /* ═══════════════════════════════════════════════════════════════════════
+       11. СТАРТ
+       ═══════════════════════════════════════════════════════════════════════ */
+    (function init() {
+        rebuildDictIndex();          /* резервний довідник — одразу */
         renderCalendar();
         render();
-        setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
-        if (typeof fetch === 'function') loadLatestMonday();
-    }
-    window.addEventListener('DOMContentLoaded', init);
-    </script>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════════
-         ЗВОРОТНИЙ МАПІНГ НА РК-ПРЕЗЕНТАЦІЮ 11-25 — лейбли на рядках прогнозу.
-         ═══════════════════════════════════════════════════════════════════════ -->
-        var CF_DICT = {};
-        var d = (window.DYNAMIC_CF_DICT || CF_DICT)[code];
-      
-      var esc = function (s) {
-        return String(s == null ? '' : s)
-          .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-          .replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      };
-
-      var LAST_ERROR = null;
-
-      function g(name) {
-        try { return (0, eval)(name); } catch (e) { return undefined; }
-      }
-      function getRows() {
-        var f = g('visibleRows');
-        if (typeof f !== 'function') return null;
-        try { return f(); } catch (e) { return null; }
-      }
-
-      function nodeHasValues(n) {
-        var v = (n && n.values) || {}, k;
-        for (k in v) if (typeof v[k] === 'number' && v[k] !== 0) return true;
-        return false;
-      }
-
-      function isLeaf(n) {
-        var kids = (n && n.children) || [];
-        if (!kids.length) return true;
-        for (var i = 0; i < kids.length; i++) {
-          if (nodeHasValues(kids[i]) || ((kids[i].children || []).length)) return false;
-        }
-        return true;
-      }
-
-      function cutoff() {
-        var snap = g('SNAP');
-        var rows = (snap && snap.rows) || [];
-        var min = Infinity;
-        for (var i = 0; i < rows.length; i++) {
-          var r = rows[i];
-          if (r && r.src_row && String(r.name || '').indexOf('Залишки на кінець періоду') === 0) {
-            if (r.src_row < min) min = r.src_row;
-          }
-        }
-        return min;
-      }
-
-      function classify(rec, cut) {
-        var n = (rec && rec.node) || {};
-        var code = String(n.code == null ? '' : n.code).trim();
-        if (!code) return null;
-        if (n.kind !== 'child' && n.kind !== 'item') return null;
-        if (n.src_row && n.src_row >= cut) return null;
-        if (String(n.name || '').indexOf('КОНТРОЛЬ витрат по напрямках') === 0) return null;
-        if (!isLeaf(n)) return { kind: 'parent', code: code };
-
-        var d = (window.DYNAMIC_CF_DICT || CF_DICT)[code];
-        if (!d) return { kind: 'missing', code: code };
-        if (!d[0]) return { kind: 'nomap', code: code, status: d[1] };
-        return { kind: 'ok', code: code, rk: d[0], status: d[1] };
-      }
-
-      function tagHtml(c) {
-        if (c.kind === 'ok') {
-          var sug = c.status === 'ПРОПОЗИЦІЯ';
-          return '<span class="map-tag ' + (sug ? 'map-sug' : 'map-ok') + '" title="Стаття РК-презентації 11-25' +
-                 (sug ? ' (пропозиція — потребує підтвердження)' : '') + '">' + esc(c.rk) + (sug ? ' ?' : '') + '</span>';
-        }
-        if (c.kind === 'nomap') {
-          return '<span class="map-tag map-none" title="Ключ ' + esc(c.code) +
-                 ' є в довіднику CF_Dictionary, але статтю РК-презентації йому не призначено">немає мапінгу</span>';
-        }
-        if (c.kind === 'missing') {
-          return '<span class="map-tag map-miss" title="Ключа ' + esc(c.code) +
-                 ' немає в довіднику CF_Dictionary — його треба додати">немає в довіднику</span>';
-        }
-        return '';
-      }
-
-      function toolbar() {
-        var bars = document.querySelectorAll('div.bg-slate-50');
-        for (var i = 0; i < bars.length; i++) {
-          if (bars[i].querySelector('#searchBox, #onlyKeep, #hideZero')) return bars[i];
-        }
-        return bars.length ? bars[0] : null;
-      }
-
-      function injectControls() {
-        if (document.getElementById('mapShow')) return true;
-        var bar = toolbar();
-        if (!bar) return false;
-        var wrap = document.createElement('span');
-        wrap.className = 'flex items-center gap-3 border-l pl-4 border-slate-200';
-        wrap.innerHTML =
-          '<span class="text-xs text-slate-600">РК-мапінг:</span>' +
-          '<label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">' +
-            '<input type="checkbox" id="mapShow" checked> показувати</label>' +
-          '<label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer" ' +
-            'title="Залишає лише статті, яким не призначено статтю РК-презентації або яких немає в довіднику">' +
-            '<input type="checkbox" id="mapOnlyGaps"> лише без мапінгу</label>' +
-          '<span class="map-legend" id="mapStats"></span>';
-        bar.appendChild(wrap);
-        document.getElementById('mapShow').addEventListener('change', function () { decorate(); });
-        document.getElementById('mapOnlyGaps').addEventListener('change', function () { decorate(); });
-        return true;
-      }
-
-      var busy = false;
-      function decorate() {
-        if (busy) return;
-        var showBox = document.getElementById('mapShow');
-        if (!showBox) { injectControls(); showBox = document.getElementById('mapShow'); }
-        var stats = document.getElementById('mapStats');
-
-        var trs = document.querySelectorAll('#pane table tbody tr');
-        var recs = getRows();
-        if (!trs.length || !recs || recs.length !== trs.length) {
-          if (stats && !trs.length) stats.textContent = '';
-          return;
-        }
-
-        var cut = cutoff();
-        var show = !showBox || showBox.checked;
-        var gapsBox = document.getElementById('mapOnlyGaps');
-        var onlyGaps = gapsBox && gapsBox.checked;
-        var ok = 0, nomap = 0, missing = 0;
-
-        busy = true;
-        try {
-          for (var i = 0; i < trs.length; i++) {
-            var tr = trs[i];
-            tr.classList.remove('map-unmapped');
-            tr.style.removeProperty('display');
-
-            var old = tr.querySelector('.map-tag');
-            if (old && old.parentNode) old.parentNode.removeChild(old);
-
-            var c = classify(recs[i], cut);
-            if (c) {
-              if (c.kind === 'ok') ok++;
-              else if (c.kind === 'nomap') nomap++;
-              else if (c.kind === 'missing') missing++;
-            }
-
-            var isGap = !!(c && (c.kind === 'nomap' || c.kind === 'missing'));
-            if (onlyGaps && !isGap) { tr.style.display = 'none'; continue; }
-            if (!show || !c) continue;
-
-            var cell = tr.querySelector('td.nm-col') || tr.cells[0];
-            var html = tagHtml(c);
-            if (cell && html) cell.insertAdjacentHTML('beforeend', html);
-            if (isGap) tr.classList.add('map-unmapped');
-          }
-
-          if (stats) {
-            var tot = ok + nomap + missing;
-            stats.textContent = tot
-              ? 'змаплено ' + ok + ' з ' + tot +
-                (nomap ? ' · без статті РК ' + nomap : '') +
-                (missing ? ' · немає в довіднику ' + missing : '')
-              : '';
-            stats.className = 'map-legend' + ((nomap + missing) ? ' text-amber-700 font-semibold' : '');
-          }
-        } catch (e) {
-          LAST_ERROR = e;
-          if (window.console) console.warn('РК-мапінг:', e);
-        } finally {
-          busy = false;
-        }
-      }
-
-      var timer = null;
-      function schedule() {
-        if (busy) return;
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(function () { timer = null; decorate(); }, 60);
-      }
-
-      function start() {
-        try {
-          injectControls();
-          var pane = document.getElementById('pane');
-          if (!pane) { setTimeout(start, 500); return; }
-          new MutationObserver(schedule).observe(pane, { childList: true, subtree: true });
-          schedule();
-        } catch (e) {
-          LAST_ERROR = e;
-          if (window.console) console.warn('РК-мапінг (старт):', e);
-        }
-      }
-
-      window.__rkMap = {
-        decorate: function () { decorate(); },
-        debug: function () {
-          var recs = getRows();
-          var info = {
-            'записів у довіднику': Object.keys(CF_DICT).length,
-            'знайдено панель фільтрів': !!toolbar(),
-            'перемикачі додано': !!document.getElementById('mapShow'),
-            'visibleRows доступна': typeof g('visibleRows') === 'function',
-            'SNAP завантажено': !!g('SNAP'),
-            'рядків у таблиці': document.querySelectorAll('#pane table tbody tr').length,
-            'рядків з visibleRows': recs ? recs.length : null,
-            'межа інформаційної частини (src_row)': cutoff(),
-            'остання помилка': LAST_ERROR ? String(LAST_ERROR) : null
-          };
-          if (window.console) console.log(info);
-          return info;
-        }
-      };
-
-      if (document.readyState === 'loading') {
-        window.addEventListener('DOMContentLoaded', start);
-      } else {
-        start();
-      }
+        (async () => { await loadDictionary(); await loadLatestMonday(); })();
     })();
     </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Порівняння прогнозів CF — таблиці даних та графіки</title>
+    <title>Порівняння прогнозів CF — Аналітика відхилень</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -88,7 +88,7 @@
 <body>
     <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
         <div>
-            <h1 class="text-lg font-bold text-slate-800">Порівняння прогнозів CF — таблиці даних та графіки</h1>
+            <h1 class="text-lg font-bold text-slate-800">Порівняння прогнозів CF</h1>
             <p class="text-xs text-slate-500 mt-0.5">Поточний зріз: <span id="navCurDate" class="font-semibold text-indigo-600">--</span>
                 · попередній: <span id="navPrevDate" class="font-semibold text-slate-700">--</span></p>
         </div>
@@ -111,7 +111,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
-                <button onclick="generatePDF('Таблиці_даних_та_графіки_CF')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Вивантажити в PDF">PDF</button>
+                <button onclick="generatePDF('Порівняння_прогнозів_CF')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Вивантажити в PDF">PDF</button>
                 <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Друк звіту">Друк</button>
             </div>
             <div>

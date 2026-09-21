@@ -115,10 +115,10 @@
                 <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Друк звіту">Друк</button>
             </div>
             <div>
-                <a href="index.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Головна</a>
+                <a href="f13w.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Головна</a>
                 <a href="analytics.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Аналітика</a>
                 <a href="compare.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Порівняння</a>
-                <span class="text-gray-800 font-semibold text-xs mr-4">Таблиці даних</span>
+                <span class="text-gray-800 font-semibold text-xs">Таблиці даних</span>
             </div>
         </div>
     </nav>
@@ -358,7 +358,6 @@
         el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + cls;
     }
 
-    // Т-2 ПРИБРАНО: починаємо виключно з T-1
     const ALL_KEYS = ["T-1", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
     const vals = node => ALL_KEYS.map(k => {
@@ -366,7 +365,6 @@
         
         let v = 0;
         if (k === "T-1") {
-            // Беремо факт за Т-1, якщо він є, інакше прогноз або прямий ключ T-1
             v = node.values["Tm1_fact"] !== undefined ? node.values["Tm1_fact"] :
                 (node.values["Tm1_forecast"] !== undefined ? node.values["Tm1_forecast"] : node.values["T-1"]);
         } else {
@@ -564,7 +562,7 @@
 
         const addWeeks = (snap, role) => {
             ALL_KEYS.forEach((key, idx) => {
-                const offsetWeeks = idx - 1; // Т-1 -> offset -1, T0 -> 0, ...
+                const offsetWeeks = idx - 1;
                 const iso = isoAdd(snap.start, 7 * offsetWeeks);
                 weekMap[iso] = weekMap[iso] || { iso };
                 weekMap[iso][role] = idx;
@@ -734,7 +732,6 @@
             const container = document.getElementById(containerId);
             const mode = document.getElementById(selectId).value;
 
-            // Вимога 7: ховати мультиселект, якщо обрано "Всі статті (разом)"
             if (mode === 'all') {
                 container.classList.add('hidden');
                 return;
@@ -796,8 +793,6 @@
     }
 
     function renderCharts() {
-        // Вимога 6: передача лейблів у вигляді масиву рядків [код, дата]
-        // забезпечує перенос по рядках і суворо горизонтальне розташування
         const labels = M.weeks.map(w => {
             const tag = w.curKey ? w.curKey : w.prevKey;
             return [tag, dm(w.iso)];
@@ -898,7 +893,7 @@
         });
     }
 
-    // ---------- ТАБЛИЦІ (З ВИРІВНЮВАННЯМ ПО ВЕРТИКАЛІ ТА БІЛИМИ ПРОПУСКАМИ) ----------
+    // ---------- ТАБЛИЦІ ----------
     function isCollapsed(tableId, key) {
         const s = collapsed[tableId] || {};
         return s[key] !== undefined ? s[key] : !document.getElementById('showKids').checked;
@@ -909,7 +904,6 @@
         const P = dmy(M.prev.start), C = dmy(M.cur.start);
         const valueMode = mode === 'cur' || mode === 'prev';
 
-        // Усі 3 таблиці використовують єдину вісь M.weeks
         const cols = M.weeks.map((w, i) => {
             const hasData = (mode === 'delta') ? w.common : (w[mode] != null);
             const edge = !w.common && hasData;
@@ -935,7 +929,6 @@
              <span class="legend-chip"><i style="background:#fee2e2"></i>погіршує чистий потік</span>` :
             (hasEdge ? `<span class="legend-chip"><i style="background:#fef3c7"></i>тиждень поза спільним горизонтом</span>` : '');
 
-        // Єдина фіксована ширина стовпців для всіх таблиць
         const weekW = ((100 - 19 - 5.8 - 4.4) / Math.max(1, n)).toFixed(3);
 
         let head = `<th>Стаття</th>` + cols.map(c => {

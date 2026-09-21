@@ -270,34 +270,6 @@
             return arrays[0].map((_, colIdx) => arrays.reduce((sum, arr) => sum + (arr[colIdx] || 0), 0));
         }
 
-        function flattenTree(nodes, acc = []) {
-            if (!Array.isArray(nodes)) return acc;
-            nodes.forEach(n => { acc.push(n); if (n && n.children) flattenTree(n.children, acc); });
-            return acc;
-        }
-
-        function findSnapshotNode(tree, name) {
-            const target = String(name || '').trim().toLowerCase();
-            if (!target) return null;
-            const all = flattenTree(tree, []);
-            const nVals = n => (n && n.values) ? Object.keys(n.values).length : 0;
-            let exact = all.filter(n => String(n.name || '').trim().toLowerCase() === target);
-            if (exact.length) {
-                exact.sort((a, b) => (Number(!!b.keep) - Number(!!a.keep)) || (nVals(b) - nVals(a)));
-                return exact[0];
-            }
-            let partial = all.filter(n => String(n.name || '').trim().toLowerCase().includes(target));
-            if (partial.length) {
-                partial.sort((a, b) => (Number(!!b.keep) - Number(!!a.keep)) || (nVals(b) - nVals(a)));
-                return partial[0];
-            }
-            return null;
-        }
-
-        function findNodeInTree(nodes, targetName) {
-            return findSnapshotNode(nodes, targetName);
-        }
-
         function extractCleanDate(item) {
             if (!item) return null;
             let val = (typeof item === 'object') ? (item.ReportDate || item.reportDate || Object.values(item)[0] || '') : item;
@@ -323,15 +295,6 @@
             return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
         }
 
-        function isSnapshotFilled(snap) {
-            if (!snap || !Array.isArray(snap.tree)) return false;
-            const n = findSnapshotNode(snap.tree, "Доступні залишки") || findSnapshotNode(snap.tree, "Залишки доступні до використання");
-            if (!n || !n.values) return false;
-            let v = n.values.Tm1_fact;
-            if (typeof v !== 'number') v = parseFloat(String(v == null ? '' : v).replace(/[\s\u00A0]/g, '').replace(',', '.'));
-            return isFinite(v) && Math.abs(v) >= 1;
-        }
-
         function registerAvailableDate(iso) {
             const clean = extractCleanDate(iso);
             if (clean && !availableDatesWithData.includes(clean)) {
@@ -339,6 +302,54 @@
                 availableDatesWithData.sort();
             }
             return clean;
+        }
+
+        function extractSnapshotObject(payload, depth = 0) {
+            if (payload == null || depth > 5) return null;
+            if (typeof payload === 'string') {
+                try {
+                    const parsed = JSON.parse(payload);
+                    return extractSnapshotObject(parsed, depth + 1);
+                } catch(e) { return null; }
+            }
+            if (typeof payload !== 'object') return null;
+            if (payload.tree && Array.isArray(payload.tree)) return payload;
+            if (payload.snapshot) {
+                const r = extractSnapshotObject(payload.snapshot, depth + 1);
+                if (r) return r;
+            }
+            if (payload.snapshotTree) {
+                const r = extractSnapshotObject(payload.snapshotTree, depth + 1);
+                if (r) return r;
+            }
+            if (payload.body) {
+                const r = extractSnapshotObject(payload.body, depth + 1);
+                if (r) return r;
+            }
+            return null;
+        }
+
+        function findNodeInTree(nodes, targetName) {
+            if (!nodes || !nodes.length) return null;
+            const target = targetName.trim().toLowerCase();
+            for (const node of nodes) {
+                const name = (node.name || "").trim().toLowerCase();
+                if (name === target) return node;
+                if (node.children && node.children.length > 0) {
+                    const found = findNodeInTree(node.children, targetName);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function isSnapshotFilled(snap) {
+            if (!snap || !Array.isArray(snap.tree)) return false;
+            const n = findNodeInTree(snap.tree, "Доступні залишки") || findNodeInTree(snap.tree, "Залишки доступні до використання");
+            if (!n || !n.values) return false;
+            let v = n.values.Tm1_fact;
+            if (typeof v !== 'number') v = parseFloat(String(v == null ? '' : v).replace(/[\s\u00A0]/g, '').replace(',', '.'));
+            return isFinite(v) && Math.abs(v) >= 1;
         }
 
         function calculateDateRanges(anchorIsoDate) {
@@ -385,10 +396,10 @@
         function getFactValue(node) {
             if (!node || !node.values) return 0;
             if (node.values.Tm1_fact !== undefined && node.values.Tm1_fact !== null) {
-                return Math.round(node.values.Tm1_fact / 1000000);
+                return Math.round(Number(node.values.Tm1_fact) / 1000000);
             }
             if (node.values.Tm1_plan !== undefined && node.values.Tm1_plan !== null) {
-                return Math.round(node.values.Tm1_plan / 1000000);
+                return Math.round(Number(node.values.Tm1_plan) / 1000000);
             }
             return 0;
         }
@@ -404,9 +415,8 @@
                 });
                 if (!res.ok) return { iso, error: 'HTTP ' + res.status };
                 const json = await res.json();
-                const snap = json.snapshot || json;
-                const snapDate = (snap && snap.meta) ? extractCleanDate(snap.meta.forecast_date || snap.meta.plan_fact_date) : null;
-                const entry = { iso, flow: json, snap, snapDate, dateOk: !!snap && (!snapDate || snapDate === iso) };
+                const snap = extractSnapshotObject(json);
+                const entry = { iso, flow: json, snap: snap };
                 _flowCache.set(iso, entry);
                 return entry;
             } catch (e) {
@@ -460,7 +470,7 @@
                     const mainTm1Fact = getFactValue(mainNode);
                     
                     const histArr = [...histArrFromSnaps, mainTm1Fact];
-                    const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((mainNode.values[col] || 0) / 1000000) : 0);
+                    const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((Number(mainNode.values[col]) || 0) / 1000000) : 0);
 
                     activeCloudModel.inflows[name] = { history: histArr, forecast: foreArr };
                 });
@@ -479,7 +489,7 @@
                     const mainTm1Fact = getFactValue(mainNode);
                     
                     const histArr = [...histArrFromSnaps, mainTm1Fact];
-                    const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((mainNode.values[col] || 0) / 1000000) : 0);
+                    const foreArr = forecastCols.map(col => mainNode && mainNode.values ? Math.round((Number(mainNode.values[col]) || 0) / 1000000) : 0);
 
                     activeCloudModel.outflows[name] = { history: histArr, forecast: foreArr };
                 });
@@ -762,14 +772,14 @@
                 const iso = `${yy}-${mm}-${dd}`;
 
                 const e = await fetchFlowForDate(iso);
-                if (!e.error && e.snap && e.dateOk && isSnapshotFilled(e.snap)) {
+                if (!e.error && e.snap && isSnapshotFilled(e.snap)) {
                     registerAvailableDate(iso);
                     selectDate(iso);
                     return;
                 }
             }
 
-            // Фолбек: якщо за останні 4 тижні не знайдено, беремо останній день зі списку дат
+            // Фолбек: перевірка наявних дат
             try {
                 const res = await fetch(GET_METRICS_FLOW_URL, {
                     method: 'POST',
@@ -789,7 +799,6 @@
                 }
             } catch (err) {}
 
-            // Запасний варіант: якщо зв'язку немає взагалі
             registerAvailableDate(mon);
             selectDate(mon);
         }

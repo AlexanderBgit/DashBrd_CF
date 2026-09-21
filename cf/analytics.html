@@ -84,7 +84,7 @@
             text-align: left; 
             font-weight: 500; 
             white-space: nowrap; 
-            width: 24.3% !important;
+            width: 24.3% !important; 
             padding-left: 6px;
         }
 
@@ -106,7 +106,7 @@
                 height: 1122px !important; 
                 max-width: none !important; 
                 padding: 24px 30px 20px 30px !important; 
-                margin: 0 !important;
+                margin: 0 !important; 
             }
         }
     </style>
@@ -120,7 +120,7 @@
         </div>
         
         <div class="flex items-center gap-4">
-            <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Очікування хмари...</span>
+            <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
             
             <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
                 <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1 cursor-pointer shadow-sm" title="Вивантажити в PDF">
@@ -139,7 +139,7 @@
                 <div id="calendarDropdown" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
                     <div class="flex justify-between items-center mb-3">
                         <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&larr;</button>
-                        <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase">Серпень 2026</span>
+                        <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase">--</span>
                         <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&rarr;</button>
                     </div>
                     <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
@@ -150,8 +150,9 @@
             </div>
 
             <div>
-                <a href="f13w.html" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Головна</a>
-                <a href="analytics.html" class="text-gray-800 font-semibold text-xs">Аналітика</a>
+                <a href="/cf/f13w" class="text-blue-600 hover:underline mr-4 text-xs font-semibold">Головна</a>
+                <span class="text-gray-800 font-semibold text-xs mr-4">Аналітика</span>
+                <a href="/commerce/compare" class="text-blue-600 hover:underline text-xs font-semibold">Порівняння</a>
             </div>
         </div>
     </nav>
@@ -177,7 +178,6 @@
                 </div>
                 <div id="inflowCustomContainer" class="hidden flex flex-wrap items-center gap-3 bg-white p-2 border rounded text-xs">
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафта" checked onchange="updateChartAndTable()"> Нафта</label>
-                    <!-- Виправлено назву "Газ природній" на "Газ природний" -->
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Газ природний" checked onchange="updateChartAndTable()"> Газ</label>
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти ОПТ" checked onchange="updateChartAndTable()"> Нафтопродукти ОПТ</label>
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="Нафтопродукти АОЗ" checked onchange="updateChartAndTable()"> Нафтопродукти АОЗ</label>
@@ -231,10 +231,11 @@
         const labels = ["Т-4", "Т-3", "Т-2", "Т-1", "Т0", "Т1", "Т2", "Т3", "Т4", "Т5", "Т6", "Т7", "Т8", "Т9", "Т10", "Т11", "Т12"];
         let periodRanges = Array(17).fill("");
 
-        let currentReportDate = "2026-08-24";
-        let calViewDate = new Date(2026, 7, 24);
+        let currentReportDate = "";
+        let calViewDate = new Date();
+        let availableDatesWithData = [];
+        const _flowCache = new Map();
 
-        // Виправлено назву "Газ природній" на "Газ природний" згідно JSON
         let activeCloudModel = {
             inflows: {
                 "Нафта": { history: Array(4).fill(0), forecast: Array(13).fill(0) },
@@ -251,7 +252,7 @@
 
         const shortNamesMap = {
             "Нафта": "НФ",
-            "Газ природний": "ГП", // Виправлено
+            "Газ природний": "ГП",
             "Нафтопродукти ОПТ": "ОПТ",
             "Нафтопродукти АОЗ": "АОЗ",
             "Нафтопродукти роздріб АЗС": "АЗС",
@@ -269,19 +270,75 @@
             return arrays[0].map((_, colIdx) => arrays.reduce((sum, arr) => sum + (arr[colIdx] || 0), 0));
         }
 
-        function findNodeInTree(nodes, targetName) {
-            if (!nodes || !nodes.length) return null;
-            const target = targetName.trim().toLowerCase();
-            for (const node of nodes) {
-                const name = (node.name || "").trim().toLowerCase();
-                // Тільки точний збіг назви статті
-                if (name === target) return node;
-                if (node.children && node.children.length > 0) {
-                    const found = findNodeInTree(node.children, targetName);
-                    if (found) return found;
-                }
+        function flattenTree(nodes, acc = []) {
+            if (!Array.isArray(nodes)) return acc;
+            nodes.forEach(n => { acc.push(n); if (n && n.children) flattenTree(n.children, acc); });
+            return acc;
+        }
+
+        function findSnapshotNode(tree, name) {
+            const target = String(name || '').trim().toLowerCase();
+            if (!target) return null;
+            const all = flattenTree(tree, []);
+            const nVals = n => (n && n.values) ? Object.keys(n.values).length : 0;
+            let exact = all.filter(n => String(n.name || '').trim().toLowerCase() === target);
+            if (exact.length) {
+                exact.sort((a, b) => (Number(!!b.keep) - Number(!!a.keep)) || (nVals(b) - nVals(a)));
+                return exact[0];
+            }
+            let partial = all.filter(n => String(n.name || '').trim().toLowerCase().includes(target));
+            if (partial.length) {
+                partial.sort((a, b) => (Number(!!b.keep) - Number(!!a.keep)) || (nVals(b) - nVals(a)));
+                return partial[0];
             }
             return null;
+        }
+
+        function findNodeInTree(nodes, targetName) {
+            return findSnapshotNode(nodes, targetName);
+        }
+
+        function extractCleanDate(item) {
+            if (!item) return null;
+            let val = (typeof item === 'object') ? (item.ReportDate || item.reportDate || Object.values(item)[0] || '') : item;
+            const str = String(val).trim();
+            if (!str || str === 'null' || str === 'undefined') return null;
+            const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+            const dotParts = str.split('.');
+            if (dotParts.length === 3) {
+                const d = dotParts[0].trim().padStart(2, '0');
+                const m = dotParts[1].trim().padStart(2, '0');
+                const y = dotParts[2].trim().substring(0, 4);
+                if (y.length === 4) return `${y}-${m}-${d}`;
+            }
+            return null;
+        }
+
+        function getMostRecentMonday() {
+            const d = new Date();
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(d.setDate(diff));
+            return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+        }
+
+        function isSnapshotFilled(snap) {
+            if (!snap || !Array.isArray(snap.tree)) return false;
+            const n = findSnapshotNode(snap.tree, "Доступні залишки") || findSnapshotNode(snap.tree, "Залишки доступні до використання");
+            if (!n || !n.values) return false;
+            let v = n.values.Tm1_fact;
+            if (typeof v !== 'number') v = parseFloat(String(v == null ? '' : v).replace(/[\s\u00A0]/g, '').replace(',', '.'));
+            return isFinite(v) && Math.abs(v) >= 1;
+        }
+
+        function registerAvailableDate(iso) {
+            const clean = extractCleanDate(iso);
+            if (clean && !availableDatesWithData.includes(clean)) {
+                availableDatesWithData.push(clean);
+                availableDatesWithData.sort();
+            }
+            return clean;
         }
 
         function calculateDateRanges(anchorIsoDate) {
@@ -296,19 +353,15 @@
                 return `${dd}.${mm}`;
             };
 
-            // Розрахунок історичних періодів (Т-4 ... Т-1)
             for (let i = 0; i < 4; i++) {
                 const weeksBefore = 4 - i;
                 const targetDate = new Date(anchorDate);
-                // Прибрано "+ 6" для фіксації на понеділках
                 targetDate.setDate(anchorDate.getDate() - weeksBefore * 7);
                 periodRanges[i] = formatDateStr(targetDate);
             }
 
-            // Розрахунок поточного і прогнозних періодів (Т0 ... Т12)
             for (let i = 0; i < 13; i++) {
                 const targetDate = new Date(anchorDate);
-                // Прибрано "+ 6" для фіксації на понеділках
                 targetDate.setDate(anchorDate.getDate() + i * 7);
                 periodRanges[4 + i] = formatDateStr(targetDate);
             }
@@ -319,7 +372,6 @@
             if (parts.length !== 3 || parts.some(isNaN)) return [isoDate];
             const [y, m, d] = parts;
             const out = [];
-            // Виправлено: нам потрібні зрізи тільки для T-3, T-2, T-1 дат
             for (let i = 1; i <= 3; i++) {
                 const dt = new Date(y, m - 1, d - i * 7);
                 const yy = dt.getFullYear();
@@ -330,10 +382,8 @@
             return out.reverse(); 
         }
 
-        // Функція для безпечного отримання фактичних значень без підміни нуля
         function getFactValue(node) {
             if (!node || !node.values) return 0;
-            // Строга перевірка на undefined/null для факту, щоб не губити нулі
             if (node.values.Tm1_fact !== undefined && node.values.Tm1_fact !== null) {
                 return Math.round(node.values.Tm1_fact / 1000000);
             }
@@ -341,6 +391,27 @@
                 return Math.round(node.values.Tm1_plan / 1000000);
             }
             return 0;
+        }
+
+        async function fetchFlowForDate(iso) {
+            if (_flowCache.has(iso)) return _flowCache.get(iso);
+            try {
+                const dot = iso.split('-').reverse().join('.');
+                const res = await fetch(GET_METRICS_FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportDate: iso, reportDateDot: dot })
+                });
+                if (!res.ok) return { iso, error: 'HTTP ' + res.status };
+                const json = await res.json();
+                const snap = json.snapshot || json;
+                const snapDate = (snap && snap.meta) ? extractCleanDate(snap.meta.forecast_date || snap.meta.plan_fact_date) : null;
+                const entry = { iso, flow: json, snap, snapDate, dateOk: !!snap && (!snapDate || snapDate === iso) };
+                _flowCache.set(iso, entry);
+                return entry;
+            } catch (e) {
+                return { iso, error: e.message };
+            }
         }
 
         async function loadFullAnalyticsModel(selectedDateIso) {
@@ -351,45 +422,31 @@
             calculateDateRanges(selectedDateIso);
 
             try {
-                // Витягує 3 попередні дати (T-3, T-2, T-1)
                 const histDates = getHistoricalDates(selectedDateIso);
 
                 const historySnapshots = await Promise.all(
                     histDates.map(async (iso) => {
-                        try {
-                            const res = await fetch(GET_METRICS_FLOW_URL, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ reportDate: iso, reportDateDot: iso.split('-').reverse().join('.') })
-                            });
-                            if (!res.ok) return null;
-                            const json = await res.json();
-                            return json.snapshot || json;
-                        } catch (e) { return null; }
+                        const entry = await fetchFlowForDate(iso);
+                        return entry.snap || null;
                     })
                 );
 
-                const mainRes = await fetch(GET_METRICS_FLOW_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reportDate: selectedDateIso, reportDateDot: selectedDateIso.split('-').reverse().join('.') })
-                });
-                if (!mainRes.ok) throw new Error("Не вдалося отримати основний зріз.");
-                const mainJson = await mainRes.json();
-                const mainSnap = mainJson.snapshot || mainJson;
+                const mainEntry = await fetchFlowForDate(selectedDateIso);
+                if (mainEntry.error || !mainEntry.snap) throw new Error("Не вдалося отримати основний зріз.");
+                
+                const mainSnap = mainEntry.snap;
                 const mainTree = mainSnap.tree || [];
 
                 const inflowNames = Object.keys(activeCloudModel.inflows);
                 const outflowNames = Object.keys(activeCloudModel.outflows);
                 const forecastCols = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
-                // Отримуємо окремі гілки верхнього рівня з mainTree
                 const mainInflowBlock = findNodeInTree(mainTree, "Надходження");
                 const mainOutflowBlock = findNodeInTree(mainTree, "Видатки");
                 const mainInflowNodes = mainInflowBlock && mainInflowBlock.children ? mainInflowBlock.children : mainTree;
                 const mainOutflowNodes = mainOutflowBlock && mainOutflowBlock.children ? mainOutflowBlock.children : mainTree;
 
-                // 1. Обробка доходів (пошук тільки всередині Надходжень)
+                // 1. Обробка доходів
                 inflowNames.forEach(name => {
                     const histArrFromSnaps = historySnapshots.map(snap => {
                         if (!snap || !snap.tree) return 0;
@@ -399,7 +456,6 @@
                         return getFactValue(n);
                     });
 
-                    // Шукаємо виключно у гілці Надходжень поточного зрізу
                     const mainNode = findNodeInTree(mainInflowNodes, name);
                     const mainTm1Fact = getFactValue(mainNode);
                     
@@ -409,7 +465,7 @@
                     activeCloudModel.inflows[name] = { history: histArr, forecast: foreArr };
                 });
 
-                // 2. Обробка видатків (пошук тільки всередині Видатків)
+                // 2. Обробка видатків
                 outflowNames.forEach(name => {
                     const histArrFromSnaps = historySnapshots.map(snap => {
                         if (!snap || !snap.tree) return 0;
@@ -419,7 +475,6 @@
                         return getFactValue(n);
                     });
 
-                    // Шукаємо виключно у гілці Видатків поточного зрізу
                     const mainNode = findNodeInTree(mainOutflowNodes, name);
                     const mainTm1Fact = getFactValue(mainNode);
                     
@@ -643,23 +698,104 @@
                 const mStr = String(m + 1).padStart(2, '0');
                 const dateKey = `${y}-${mStr}-${dStr}`;
                 const isSel = currentReportDate === dateKey;
+                const hasData = availableDatesWithData.includes(dateKey);
 
-                grid.innerHTML += `<button onclick="selectDate('${dateKey}')" class="py-1 rounded text-xs font-semibold ${isSel ? 'bg-indigo-600 text-white' : 'hover:bg-slate-100'}">${day}</button>`;
+                let btnClass = "py-1 rounded text-xs font-semibold relative flex flex-col items-center justify-center cursor-pointer ";
+                if (isSel) {
+                    btnClass += "bg-indigo-600 text-white font-bold ";
+                } else if (hasData) {
+                    btnClass += "bg-emerald-100 text-emerald-800 font-bold hover:bg-emerald-200 ";
+                } else {
+                    btnClass += "text-slate-700 hover:bg-slate-100 ";
+                }
+
+                grid.innerHTML += `<button onclick="selectDate('${dateKey}')" class="${btnClass}">
+                    <span>${day}</span>
+                    ${hasData ? `<span class="w-1 h-1 rounded-full ${isSel ? 'bg-white' : 'bg-emerald-600'} absolute bottom-0.5"></span>` : ''}
+                </button>`;
             }
         }
 
         function selectDate(iso) {
             currentReportDate = iso;
             const [y, m, d] = iso.split('-');
+            calViewDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
             document.getElementById('lblSelectedDate').innerText = `${d}.${m}.${y}`;
             document.getElementById('headerReportDate').innerText = `${d}.${m}.${y}`;
             document.getElementById('pdfReportDate').innerText = `${d}.${m}.${y}`;
             document.getElementById('calendarDropdown').classList.add('hidden');
+            renderCalendar();
             loadFullAnalyticsModel(iso);
         }
 
+        async function loadAvailableDatesFromSPQuiet() {
+            try {
+                const res = await fetch(GET_METRICS_FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportDate: "" })
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
+                rawList.map(extractCleanDate)
+                       .filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
+                       .forEach(registerAvailableDate);
+                renderCalendar();
+            } catch (e) {}
+        }
+
+        const INITIAL_LOOKBACK_WEEKS = 4;
+        async function loadLatestFilledReport() {
+            loadAvailableDatesFromSPQuiet();
+            const mon = getMostRecentMonday();
+            const statusEl = document.getElementById('dataStatus');
+            statusEl.textContent = `Пошук останнього зрізу (від ${mon.split('-').reverse().join('.')})…`;
+            statusEl.className = "text-xs font-medium px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800";
+
+            for (let i = 0; i <= INITIAL_LOOKBACK_WEEKS; i++) {
+                const parts = mon.split('-').map(Number);
+                const dt = new Date(parts[0], parts[1] - 1, parts[2] - i * 7);
+                const yy = dt.getFullYear();
+                const mm = String(dt.getMonth() + 1).padStart(2, '0');
+                const dd = String(dt.getDate()).padStart(2, '0');
+                const iso = `${yy}-${mm}-${dd}`;
+
+                const e = await fetchFlowForDate(iso);
+                if (!e.error && e.snap && e.dateOk && isSnapshotFilled(e.snap)) {
+                    registerAvailableDate(iso);
+                    selectDate(iso);
+                    return;
+                }
+            }
+
+            // Фолбек: якщо за останні 4 тижні не знайдено, беремо останній день зі списку дат
+            try {
+                const res = await fetch(GET_METRICS_FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reportDate: "" })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
+                    const cleaned = [...new Set(rawList.map(extractCleanDate))].filter(Boolean).sort();
+                    if (cleaned.length) {
+                        const latest = cleaned[cleaned.length - 1];
+                        registerAvailableDate(latest);
+                        selectDate(latest);
+                        return;
+                    }
+                }
+            } catch (err) {}
+
+            // Запасний варіант: якщо зв'язку немає взагалі
+            registerAvailableDate(mon);
+            selectDate(mon);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            selectDate("2026-08-24");
+            loadLatestFilledReport();
         });
     </script>
 </body>

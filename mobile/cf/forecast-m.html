@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» на 13 тижнів</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        body { font-family: 'Helvetica', sans-serif; background-color: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
+        .executive-container {
+            width: 1587px; min-height: 900px; margin: 0 auto; background-color: #fff;
+            padding: 20px 26px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .card { background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+
+        .an-wrap { overflow: auto; max-height: 780px; }
+        .an-table { width: 100%; border-collapse: collapse; font-size: 9pt; font-variant-numeric: tabular-nums; }
+        .an-table th { font-size: 8.5pt; color: #475569; font-weight: 600; padding: 5px 5px; border-bottom: 1.5px solid #94a3b8;
+                       text-align: right; background: #f8fafc; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+        .an-table th.nm-col, .an-table td.nm-col { text-align: left; min-width: 420px; position: sticky; left: 0; background: #fff; z-index: 1; }
+        .an-table th.nm-col { z-index: 3; background: #f8fafc; }
+        .an-table th .th-period { display: block; font-size: 7pt; font-weight: 500; color: #94a3b8; line-height: 1.15; margin-top: 1px; }
+        .an-table td { padding: 3px 5px; text-align: right; color: #334155; border-bottom: 1px solid #eef2f6; white-space: nowrap; }
+        .an-table tbody tr:hover td { background-color: #f8fafc; }
+
+        tr.lvl-block td { background: #e0e7ff; font-weight: 700; color: #312e81; }
+        tr.lvl-item  td { font-weight: 700; color: #1e293b; background: #f8fafc; }
+        tr.lvl-sub   td { font-weight: 600; color: #334155; }
+        tr.lvl-leaf  td { color: #475569; }
+        tr.row-key   td { background: #dbeafe !important; color: #1e3a8a; font-weight: 700; border-top: 1px solid #93c5fd; border-bottom: 1px solid #93c5fd; }
+        tr.row-cover td { color: #047857; }
+        tr.row-blue td { color: #1d4ed8; font-weight: 600; }
+        tr.row-blue td.nm-col .nm-txt { color: #1d4ed8; }
+        tr.row-cover td.nm-col .nm-txt { color: #047857; font-weight: 600; }
+
+        td.col-mon, th.col-mon { background: #fafaff; color: #4338ca; font-weight: 600; }
+        td.col-sum, th.col-sum { border-left: 1.5px solid #cbd5e1; font-weight: 700; }
+        td.col-prev, th.col-prev { background: #fafafa; }
+        .an-table tbody td.neg { color: #dc2626 !important; }
+        .an-table tbody td.col-dev.pos { color: #047857 !important; font-weight: 600; }
+        .an-table tbody td.col-dev.neg { font-weight: 600; }
+        td.zero { color: #cbd5e1; }
+
+        .toggle-kids { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
+            font-size: 13px; font-weight: bold; line-height: 1; color: #3b82f6; background: #eff6ff; border: 1px solid #bfdbfe;
+            border-radius: 3px; cursor: pointer; user-select: none; flex: 0 0 auto; margin-right: 5px; }
+        .toggle-kids:hover { background: #dbeafe; color: #1d4ed8; }
+        .toggle-placeholder { display: inline-block; width: 20px; }
+        .mon-toggle { display: inline-block; margin-left: 5px; padding: 0 4px; border: 1px solid #c7d2fe; border-radius: 3px;
+            background: #eef2ff; color: #4338ca; cursor: pointer; font-size: 8pt; }
+        .mon-toggle:hover { background: #e0e7ff; }
+        .an-code { color: #64748b; font-size: 8pt; margin-right: 5px; }
+        .ctl { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; }
+        .ctl.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+
+        /* ---------- режими перегляду ---------- */
+        .view-a3 .executive-container, .view-a3 nav { width: 1587px !important; max-width: 1587px !important; }
+        .view-a3 .an-wrap { max-height: 780px; }
+        body.view-fluid { height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 10px; }
+        .view-fluid nav { width: 100% !important; max-width: 100% !important; margin-bottom: 8px !important; flex-shrink: 0; }
+        .view-fluid .executive-container { width: 100% !important; max-width: 100% !important; min-height: 0 !important;
+            flex: 1 1 0%; overflow: hidden; display: flex; flex-direction: column; padding: 14px 18px; }
+        .view-fluid .card { flex: 1 1 0%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; padding: 4px; }
+        .view-fluid .an-wrap { max-height: none !important; height: 100%; flex: 1 1 0%; }
+
+        /* ---------- ДРУК: сторінки збирає скрипт, масштаб підбирається під A3 ---------- */
+        #printRoot { display: none; }
+        #printMeasure { position: absolute; left: -30000px; top: 0; visibility: hidden; }
+        .print-page { position: relative; overflow: hidden; background: #fff; }
+        .print-scale { transform-origin: top left; }
+        /* таблиця друку: фіксовані ширини колонок, щоб на всіх сторінках вони збігалися */
+        .print-table { table-layout: fixed !important; }
+        .print-title { font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+        .print-title .sub { font-weight: 400; color: #475569; }
+
+        .print-table { width: auto !important; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 8.5pt; }
+        .print-table th, .print-table td { position: static !important; white-space: nowrap; }
+        .print-table th.nm-col, .print-table td.nm-col { min-width: 0 !important; max-width: 520px; white-space: normal; }
+        .print-table th { font-size: 8pt; padding: 3px 4px; border-bottom: 1.5px solid #475569; background: #f1f5f9 !important; }
+        .print-table td { padding: 2px 4px; border-bottom: 1px solid #e5e7eb; }
+        .print-table .toggle-kids, .print-table .toggle-placeholder, .print-table .mon-toggle { display: none !important; }
+        .print-table tr.lvl-block td { background: #e2e8f0 !important; color: #0f172a !important; }
+        .print-table tr.row-key td { background: #dbeafe !important; }
+
+        .preview-sheet { background: #fff; box-shadow: 0 25px 50px -12px rgba(0,0,0,.5); margin: 0 auto 18px auto;
+                         transform-origin: top center; transition: transform .15s ease-out; }
+
+        @page { size: A3 landscape; margin: 8mm; }
+        @media print {
+            html, body { width: auto !important; height: auto !important; overflow: visible !important;
+                         background: #fff !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+            body > *:not(#printRoot) { display: none !important; }
+            #printRoot { display: block !important; }
+            .print-page { page-break-after: always; break-after: page; }
+            .print-page:last-child { page-break-after: auto; break-after: auto; }
+        }
+
+        /* ================= МОБІЛЬНА ВЕРСІЯ (екран ≤ 860px) =================
+           Друк і попередній перегляд А3 не змінюються.                        */
+        #mFiltersBtn { display: none; }
+
+        @media screen and (max-width: 860px) {
+            html { -webkit-text-size-adjust: 100%; }
+
+            body, body.view-fluid {
+                height: auto !important;
+                display: block !important;
+                overflow: visible !important;
+                padding: 8px !important;
+            }
+
+            nav, body.view-fluid nav, .view-a3 nav {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex-wrap: wrap !important;
+                gap: 8px;
+                padding: 10px !important;
+                margin-bottom: 8px !important;
+            }
+            nav > div { min-width: 0; }
+            nav h1 { font-size: 14px !important; line-height: 1.25; }
+            nav .flex.items-center.gap-4 { flex-wrap: wrap; gap: 8px !important; width: 100%; }
+            nav .flex.items-center.gap-1\.5.border-l {
+                border-left: none !important; padding-left: 0 !important; flex-wrap: wrap; gap: 6px !important;
+            }
+            nav button, nav a { font-size: 12px !important; padding: 8px 12px !important; }
+            #viewToggleGroup { display: none !important; }   /* А3-режим не має сенсу на телефоні */
+
+            .executive-container,
+            body.view-fluid .executive-container,
+            .view-a3 .executive-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-height: 0 !important;
+                height: auto !important;
+                display: block !important;
+                overflow: visible !important;
+                padding: 12px 10px !important;
+            }
+            .executive-container > .flex.justify-between {
+                flex-direction: column; align-items: flex-start !important; gap: 4px;
+            }
+            .executive-container h1 { font-size: 15px !important; line-height: 1.3; }
+            .executive-container .text-right { text-align: left !important; }
+
+            /* Панель фільтрів — згортається */
+            #filtersBar {
+                display: none !important;
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 10px !important;
+                margin-top: 8px;
+            }
+            body.m-filters-open #filtersBar { display: flex !important; }
+            #filtersBar > span.flex {
+                border-left: none !important; padding-left: 0 !important;
+                flex-wrap: wrap; gap: 10px !important;
+                border-top: 1px solid #e2e8f0; padding-top: 8px;
+            }
+            #searchBox { width: 100% !important; font-size: 16px !important; padding: 10px !important; }
+            #filtersBar label { padding: 2px 0; }
+            #filtersBar input[type="checkbox"] { width: 16px; height: 16px; }
+            #mFiltersBtn {
+                display: flex !important;
+                align-items: center; justify-content: space-between; gap: 8px;
+                width: 100%; margin-top: 8px;
+                padding: 10px 12px; border-radius: 10px;
+                border: 1px solid #c7d2fe; background: #eef2ff; color: #3730a3;
+                font-size: 13px; font-weight: 700; cursor: pointer;
+            }
+
+            /* Таблиця */
+            .card, body.view-fluid .card { padding: 4px !important; display: block !important; overflow: visible !important; }
+            .an-wrap, body.view-fluid .an-wrap, .view-a3 .an-wrap {
+                max-height: 72vh !important;
+                height: auto !important;
+                overflow: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+            .an-table { font-size: 8pt; }
+            .an-table th { font-size: 7.5pt; padding: 4px 4px; }
+            .an-table td { padding: 3px 4px; }
+            .an-table th.nm-col, .an-table td.nm-col {
+                min-width: 150px !important;
+                max-width: 190px;
+                white-space: normal;
+                box-shadow: 1px 0 0 #e2e8f0;
+            }
+            .an-table td.nm-col .nm-txt { display: inline-block; line-height: 1.2; }
+            .an-code { font-size: 7pt; margin-right: 3px; }
+            .toggle-kids { width: 20px; height: 20px; font-size: 14px; }   /* зручний дотик */
+            .toggle-placeholder { width: 14px; }
+            .ctl { padding: 6px 12px; font-size: 12px; }
+
+            /* Прев'ю А3 на телефоні */
+            #printPreviewModal > div:first-child { flex-wrap: wrap; gap: 8px; padding: 10px !important; }
+            #printPreviewModal .flex.items-center.gap-2 { flex-wrap: wrap; gap: 6px !important; }
+            #previewScrollArea { padding: 10px !important; }
+        }
+    </style>
+</head>
+<body class="view-fluid">
+    <nav class="bg-white shadow p-3 mb-4 rounded-lg mx-auto flex justify-between items-center print-hide">
+        <div>
+            <h1 class="text-lg font-bold text-slate-800">ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» на 13 тижнів</h1>
+            <p class="text-xs text-slate-500 mt-0.5">станом на <span id="navCurDate" class="font-semibold text-indigo-600">--</span></p>
+        </div>
+        <div class="flex items-center gap-4">
+            <div id="viewToggleGroup" class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+                <button id="btnViewFluid" onclick="setViewMode('fluid')" class="ctl active border-none !py-1 !px-2.5 text-xs">На весь екран</button>
+                <button id="btnViewA3" onclick="setViewMode('a3')" class="ctl border-none !py-1 !px-2.5 text-xs">Формат А3</button>
+            </div>
+            <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Підготовка…</span>
+            <div class="relative">
+                <button onclick="toggleCalendarDropdown()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm">
+                    <span id="lblSelectedDate">Обрати дату</span>
+                </button>
+                <div id="calendarDropdown" class="absolute top-11 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden z-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&larr;</button>
+                        <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase">Вересень 2026</span>
+                        <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg font-bold">&rarr;</button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+                        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
+                    </div>
+                    <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+                <button onclick="document.getElementById('fileInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Завантажити JSON</button>
+                <input type="file" id="fileInput" accept=".json,application/json" class="hidden" onchange="loadLocalFile(this)">
+                <button onclick="openPrintPreview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm" title="Перегляд у пропорціях аркуша А3">Перегляд А3</button>
+                <button onclick="triggerDirectPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-sm">Друк</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="executive-container">
+        <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» 13 тижнів станом на <span id="hdrCur">--</span></h1>
+                <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Горизонт прогнозу: <span id="hdrRange">--</span></p>
+            </div>
+            <div class="text-right">
+                <div class="text-xs font-semibold text-slate-600" id="hdrUnit">тис. грн</div>
+                <div class="text-[10.5px] text-slate-400 mt-0.5" id="hdrCreated">--</div>
+            </div>
+        </div>
+
+        <button id="mFiltersBtn" type="button" onclick="mToggleFilters()">
+            <span>Фільтри та налаштування</span><span id="mFiltersChevron">▾</span>
+        </button>
+
+        <div id="filtersBar" class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-4 items-center print-hide">
+            <input id="searchBox" type="text" placeholder="Пошук статті або коду…" oninput="render()"
+                   class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 w-72">
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer" title="Ховає технічні та довідкові рядки аркуша, залишаючи статті звіту">
+                <input type="checkbox" id="onlyKeep" checked onchange="render()"> Показувати лише статті звіту
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" id="hideZero" onchange="render()"> Приховати нульові рядки
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                <input type="checkbox" id="expandAll" onchange="toggleExpandAll(this.checked)"> Розгорнути всі рівні
+            </label>
+            <span class="flex items-center gap-2 border-l pl-4 border-slate-200">
+                <span class="text-xs text-slate-600">Тиждень −1:</span>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_plan" checked onchange="render()"> план</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_forecast" onchange="render()"> прогноз</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="coldev_forecast" onchange="render()"> Δ прогноз − план</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="colTm1_fact" checked onchange="render()"> факт</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="coldev_fact" checked onchange="render()"> Δ факт − план</label>
+                <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="grpTotal" checked onchange="render()"> Разом 13 тижнів</label>
+            </span>
+            <span class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+                <span class="text-xs text-slate-600">Одиниці:</span>
+                <button class="ctl active" id="unitThs" onclick="setUnit('ths')">тис. грн</button>
+                <button class="ctl" id="unitMln" onclick="setUnit('mln')">млн грн</button>
+            </span>
+        </div>
+
+        <div class="card">
+            <div class="an-wrap" id="pane"></div>
+        </div>
+    </div>
+
+    <div id="printRoot"></div>
+    <div id="printMeasure"></div>
+
+    <div id="printPreviewModal" class="fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-50 hidden flex-col print-hide">
+        <div class="bg-slate-900 border-b border-slate-700 text-white px-5 py-3 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="font-bold text-sm text-slate-200">Попередній перегляд A3 landscape</span>
+                <span class="text-xs bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded font-mono" id="previewInfo">--</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="zoomPreview(-0.1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-bold border border-slate-700">−</button>
+                <button onclick="autoFitPreview()" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-semibold border border-slate-700">Вписати</button>
+                <button onclick="setPreviewZoom(1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-semibold border border-slate-700">100%</button>
+                <button onclick="zoomPreview(0.1)" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-bold border border-slate-700">+</button>
+                <div class="w-px h-5 bg-slate-700 mx-1"></div>
+                <button onclick="triggerDirectPrint()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1 rounded-lg font-semibold text-xs shadow-sm">Друкувати</button>
+                <button onclick="closePrintPreview()" class="bg-slate-700 hover:bg-red-600 text-white px-3 py-1 rounded-lg font-semibold text-xs transition-colors">Закрити (Esc)</button>
+            </div>
+        </div>
+        <div id="previewScrollArea" class="flex-1 overflow-auto p-6 bg-slate-950/60"></div>
+    </div>
+
+    <script>
+    const GET_METRICS_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+
+    let SNAP = null, NODES = [], TREE = null, expanded = {}, UNIT = 'ths';
+    let monthOpen = { M1: true, M2: false, M3: false };
+    const DAY = 86400000;
+    const isoOf = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const mondayOf = d => { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return isoOf(x); };
+    const isoShift = (iso, days) => isoOf(new Date(Date.parse(iso + 'T12:00:00') + days * DAY));
+
+    let currentReportDate = mondayOf(new Date());
+    let calViewDate = new Date(currentReportDate + 'T12:00:00');
+    const availableDates = new Set();
+
+    const dmy = iso => String(iso || '').split('-').reverse().join('.');
+    const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const sp = s => s.replace(/[\u202F\u00A0]/g, ' ');
+
+    function setViewMode(mode) {
+        const a3 = mode === 'a3';
+        document.body.classList.toggle('view-a3', a3);
+        document.body.classList.toggle('view-fluid', !a3);
+        document.getElementById('btnViewA3').classList.toggle('active', a3);
+        document.getElementById('btnViewFluid').classList.toggle('active', !a3);
+    }
+
+    // =====================================================================
+    //  ДРУК. Замість фіксованих кеглів — вимірюємо природний розмір таблиці
+    //  й підбираємо один масштаб так, щоб усі колонки влізли в ширину
+    //  аркуша A3 landscape, а всі рядки — у MAX_PAGES сторінок у висоту.
+    //  Рядки розкладаємо по сторінках самі (шапка повторюється на кожній).
+    // =====================================================================
+    const PX_PER_MM = 96 / 25.4;
+    const PAGE = { w: 420, h: 297, margin: 8 };   // A3 landscape, мм
+    const MAX_PAGES = 2;
+    const MIN_SCALE = 0.35;
+    const ROW_SLACK = 1.06;   // запас на перенос довгих назв статей при фіксованих ширинах
+    const ZOOM_OK = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('zoom', '2');
+    const pageW = () => (PAGE.w - 2 * PAGE.margin) * PX_PER_MM;
+    const pageH = () => (PAGE.h - 2 * PAGE.margin) * PX_PER_MM;
+
+    function printTitleHtml() {
+        const g = id => document.getElementById(id).textContent;
+        const created = g('hdrCreated');
+        return `<div class="print-title" style="font-size:13pt">
+            ПРОГНОЗ РУХУ КОШТІВ АТ «УКРНАФТА» 13 тижнів станом на ${esc(g('hdrCur'))}
+            <div class="sub" style="font-size:8.5pt;margin-top:2px">Горизонт прогнозу: ${esc(g('hdrRange'))} · ${esc(g('hdrUnit'))}${created && created !== '--' ? ' · ' + esc(created) : ''}</div>
+        </div>`;
+    }
+
+    function measureTable() {
+        const src = document.querySelector('#pane table');
+        if (!src) return null;
+        const holder = document.getElementById('printMeasure');
+        holder.innerHTML = '';
+        const title = document.createElement('div');
+        title.innerHTML = printTitleHtml();
+        const clone = src.cloneNode(true);
+        clone.className = 'an-table print-table';
+        holder.appendChild(title);
+        holder.appendChild(clone);
+
+        const natW = Math.max(clone.scrollWidth || 0, clone.offsetWidth || 0, 1);
+        const headCells = clone.tHead ? Array.from(clone.tHead.rows[0].cells) : [];
+        const colW = headCells.map(c => c.offsetWidth || 0);
+        const titleH = title.offsetHeight || 40;
+        const headH = clone.tHead ? (clone.tHead.offsetHeight || 24) : 0;
+        const rows = clone.tBodies[0] ? Array.from(clone.tBodies[0].rows) : [];
+        const rowH = rows.map(r => r.offsetHeight || 14);
+        const theadHtml = clone.tHead ? clone.tHead.outerHTML : '';
+        const rowsHtml = rows.map(r => r.outerHTML);
+        holder.innerHTML = '';
+        return { natW, colW, titleH, headH, rowH, theadHtml, rowsHtml, totalRowsH: rowH.reduce((a, b) => a + b, 0) };
+    }
+
+    function buildPrintPages() {
+        const root = document.getElementById('printRoot');
+        root.innerHTML = '';
+        const m = measureTable();
+        if (!m || !m.rowsHtml.length) return { pages: 0, scale: 1, natW: 0 };
+
+        const W = pageW(), H = pageH();
+        const scaleW = W / m.natW;                                           // всі колонки в ширину аркуша
+        const neededH = m.titleH + MAX_PAGES * m.headH + m.totalRowsH;       // заголовок + шапки + рядки
+        const scaleH = (MAX_PAGES * H) / neededH;                            // усі рядки у MAX_PAGES сторінок
+
+        // розкладка рядків по сторінках за заданим масштабом
+        const paginate = sc => {
+            const capacity = H / sc;                                         // ємність сторінки у «природних» px
+            const pages = [];
+            let cur = [], used = m.titleH + m.headH;                         // перша сторінка несе заголовок
+            m.rowH.forEach((h, i) => {
+                const hh = h * ROW_SLACK;
+                if (cur.length && used + hh > capacity) { pages.push(cur); cur = []; used = m.headH; }
+                cur.push(i); used += hh;
+            });
+            if (cur.length) pages.push(cur);
+            return pages;
+        };
+
+        // стартовий масштаб — теоретичний; далі зменшуємо, доки реальна
+        // розкладка не вкладеться рівно в MAX_PAGES сторінок
+        let scale = Math.max(MIN_SCALE, Math.min(scaleW, scaleH, 1));
+        let pagesRows = paginate(scale);
+        while (pagesRows.length > MAX_PAGES && scale > MIN_SCALE) {
+            scale = Math.max(MIN_SCALE, scale * 0.97);
+            pagesRows = paginate(scale);
+        }
+
+        // Ширина таблиці в «природних» пікселях, щоб після масштабування
+        // вона рівно заповнила сторінку по ширині
+        const targetW = W / scale;
+        const colSum = (m.colW || []).reduce((a, b) => a + b, 0);
+        const factor = colSum > 0 ? targetW / colSum : 1;
+        const widths = (m.colW && m.colW.length ? m.colW : []).map(w => Math.max(1, w * factor));
+        const colgroup = widths.length
+            ? '<colgroup>' + widths.map(w => '<col style="width:' + w.toFixed(2) + 'px">').join('') + '</colgroup>'
+            : '';
+
+        pagesRows.forEach((idxs, p) => {
+            const page = document.createElement('div');
+            page.className = 'print-page';
+            page.style.width = W + 'px';
+            page.style.height = H + 'px';
+            const inner = document.createElement('div');
+            inner.className = 'print-scale';
+            inner.style.width = targetW + 'px';
+            // zoom (а не transform) — браузер перераховує макет, тому текст
+            // растеризується у повній роздільності принтера й не «пливе»
+            if (ZOOM_OK) inner.style.zoom = scale;
+            else { inner.style.transform = 'scale(' + scale + ')'; inner.style.transformOrigin = 'top left'; }
+            inner.innerHTML = (p === 0 ? printTitleHtml() : '') +
+                '<table class="an-table print-table" style="width:' + targetW.toFixed(2) + 'px">' +
+                colgroup + m.theadHtml +
+                '<tbody>' + idxs.map(i => m.rowsHtml[i]).join('') + '</tbody></table>';
+            page.appendChild(inner);
+            root.appendChild(page);
+        });
+        return { pages: pagesRows.length, scale, natW: m.natW };
+    }
+
+    function triggerDirectPrint() {
+        buildPrintPages();
+        closePrintPreview();
+        window.print();
+    }
+
+    let previewZoom = 1;
+    function openPrintPreview() {
+        const info = buildPrintPages();
+        const area = document.getElementById('previewScrollArea');
+        area.innerHTML = '';
+        const mm = PAGE.margin * PX_PER_MM;
+        Array.from(document.getElementById('printRoot').children).forEach(p => {
+            const sheet = document.createElement('div');
+            sheet.className = 'preview-sheet';
+            sheet.style.width = (PAGE.w * PX_PER_MM) + 'px';
+            sheet.style.height = (PAGE.h * PX_PER_MM) + 'px';
+            sheet.style.padding = mm + 'px';
+            sheet.appendChild(p.cloneNode(true));
+            area.appendChild(sheet);
+        });
+        document.getElementById('previewInfo').textContent =
+            'сторінок: ' + info.pages + ' · масштаб таблиці: ' + Math.round(info.scale * 100) + '%';
+        const modal = document.getElementById('printPreviewModal');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        setTimeout(autoFitPreview, 40);
+    }
+    function closePrintPreview() {
+        const modal = document.getElementById('printPreviewModal');
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+    }
+    function setPreviewZoom(z) {
+        previewZoom = Math.max(0.2, Math.min(2, z));
+        const h = PAGE.h * PX_PER_MM;
+        document.querySelectorAll('.preview-sheet').forEach(s => {
+            s.style.transform = 'scale(' + previewZoom + ')';
+            s.style.marginBottom = (18 + h * (previewZoom - 1)) + 'px';
+        });
+    }
+    function zoomPreview(d) { setPreviewZoom(previewZoom + d); }
+    function autoFitPreview() {
+        const area = document.getElementById('previewScrollArea');
+        if (!area) return;
+        setPreviewZoom((area.clientWidth - 60) / (PAGE.w * PX_PER_MM));
+    }
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') closePrintPreview(); });
+
+    function setStatus(text, cls) {
+        const el = document.getElementById('dataStatus');
+        el.className = 'text-xs font-medium px-2.5 py-1 rounded-full ' + (cls || 'bg-slate-100 text-slate-700');
+        el.textContent = text;
+    }
+
+    function extractSnapshotObject(obj) {
+        if (!obj || typeof obj !== 'object') return null;
+        if (obj.tree && obj.meta) return obj;
+        const cand = [obj.snapshot, obj.content, obj.body, obj.value, obj.data, obj.result, obj.json];
+        for (const c of cand) {
+            if (!c) continue;
+            if (typeof c === 'string') { try { const r = extractSnapshotObject(JSON.parse(c)); if (r) return r; } catch (e) {} continue; }
+            const r = extractSnapshotObject(c);
+            if (r) return r;
+        }
+        if (Array.isArray(obj)) for (const it of obj) { const r = extractSnapshotObject(it); if (r) return r; }
+        return null;
+    }
+
+    // ---------- Відновлення ієрархії статей ----------
+    const NORM_KEYS = ['T0','T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+    const nvals = r => NORM_KEYS.map(k => (r.values && r.values[k]) || 0);
+    const nNonZero = v => v.some(x => Math.abs(x) >= 1);
+    const nSame = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1);
+    const nAdd = (a, b) => a.map((v, i) => v + b[i]);
+    const clean = s => String(s == null ? '' : s).replace(/\s+/g, ' ').replace(/[’']/g, "'").trim();
+    const SUMMARY_RE = /^(Всього|КОНТРОЛЬ|Контроль|Грошовий потік|Чистий грошовий|Доступн|Залишки|Заборгован|Різниця|Надходження \(|Видатки \(|\*Інформаційно|Придбання МЗНН)/;
+
+    // Рівні підсумкових рядків, де сума не дає однозначної вкладеності (структура як у друкованому звіті)
+    const LEVEL_HINTS = {
+        'Податки': 1, 'Державні податки': 2, 'Рентна плата': 3, 'Інші податки': 2, 'Місцеві податки': 3,
+        'Заробітна плата': 1, 'Енергія': 1, "Інші обов'язкові операційні платежі": 1
+    };
+    // Рядки, які не показуємо у звіті взагалі (разом із дочірніми)
+    const DROP_ROWS = [/^КОНТРОЛЬ витрат по напрямках/i];
+    // Останній рядок звіту — усе, що нижче, у звіт не потрапляє
+    const LAST_ROW_RE = /^\*?\s*Інформаційно: придбання НП/i;
+
+    function groupBySums(list) {
+        const n = list.length, memo = new Array(n).fill(null);
+        const node = i => {
+            if (memo[i]) return memo[i];
+            const r = list[i].row, own = nvals(r);
+            let out = { item: list[i], kids: [], next: i + 1 };
+            memo[i] = out;
+            if (nNonZero(own)) {
+                let k = i + 1, kids = [], cum = NORM_KEYS.map(() => 0);
+                while (k < n) {
+                    const c = node(k);
+                    if (kids.length && c.kids.length && (c.item.row.kind === 'total' || c.item.row.kind === 'subgroup')) break;
+                    kids.push(c); cum = nAdd(cum, nvals(c.item.row)); k = c.next;
+                    const enough = kids.length >= 2 || r.kind === 'total' || r.kind === 'subgroup';
+                    if (enough && nSame(cum, own)) {
+                        while (k < n && !nNonZero(nvals(list[k].row))) { const z = node(k); kids.push(z); k = z.next; }
+                        out = { item: list[i], kids, next: k }; memo[i] = out; break;
+                    }
+                }
+            }
+            return out;
+        };
+        const top = []; let i = 0;
+        while (i < n) { const c = node(i); top.push(c); i = c.next; }
+        return top;
+    }
+
+    // Для списків із відомою структурою (податки) — стек за рівнями,
+    // підсумок закривається, щойно сума його дітей зійшлася з його значенням.
+    function groupByHints(list) {
+        const top = [], stack = [];
+        const close = () => stack.pop();
+        list.forEach(entry => {
+            const r = entry.row, name = clean(r.name);
+            const hint = LEVEL_HINTS[name];
+            const nd = { item: entry, kids: [], cum: NORM_KEYS.map(() => 0), own: nvals(r) };
+            if (hint) { while (stack.length && stack[stack.length - 1].lvl >= hint) close(); }
+            const par = stack.length ? stack[stack.length - 1] : null;
+            (par ? par.node.kids : top).push(nd);
+            if (par) {
+                let p = stack.length - 1;
+                while (p >= 0) {
+                    stack[p].node.cum = nAdd(stack[p].node.cum, nvals(r));
+                    if (nNonZero(stack[p].node.own) && nSame(stack[p].node.cum, stack[p].node.own)) { stack.length = p; break; }
+                    p--;
+                }
+            }
+            const isGroup = r.kind === 'total' || r.kind === 'subgroup' || hint;
+            if (isGroup) stack.push({ lvl: hint || ((stack.length ? stack[stack.length - 1].lvl : 0) + 1), node: nd });
+        });
+        return top;
+    }
+
+    function buildTree(rows) {
+        // Рядок «КОНТРОЛЬ витрат по напрямках» прибираємо разом із дочірніми,
+        // а також безіменні технічні рядки аркуша.
+        let dropping = false, tailCut = false;
+        const lastIdx = rows.findIndex(r => LAST_ROW_RE.test(clean(r.name)));
+        const usable = rows.filter((r, i) => {
+            if (lastIdx >= 0 && i > lastIdx) return false;
+            if (r.kind === 'block') dropping = false;
+            if (DROP_ROWS.some(re => re.test(clean(r.name)))) { dropping = true; return false; }
+            if (dropping) return false;
+            return !!clean(r.name);
+        });
+        const mk = r => ({ row: r, children: [], pending: [] });
+        const roots = []; let stack = [], block = null, pend = null;
+        usable.forEach(r => {
+            const no = String(r.no == null ? '' : r.no).trim();
+            const nd = mk(r);
+            if (r.kind === 'block') { roots.push(nd); block = nd; stack = [{ lvl: 0, nd }]; pend = nd; }
+            else if (r.kind === 'item' && no) {
+                const lvl = 1 + Math.max(0, no.split('.').length - 1);
+                while (stack.length && stack[stack.length - 1].lvl >= lvl) stack.pop();
+                const par = stack.length ? stack[stack.length - 1].nd : null;
+                (par ? par.pending : roots).push(nd);
+                stack.push({ lvl, nd }); pend = nd;
+            } else if (r.kind === 'total' && !r.code && !no && SUMMARY_RE.test(clean(r.name)) && block) {
+                while (stack.length > 1) stack.pop();
+                block.pending.push(nd); pend = block;
+            } else (pend ? pend.pending : roots).push(nd);
+        });
+        const finalize = nd => {
+            if (nd.pending.length) {
+                const hinted = nd.pending.some(p => LEVEL_HINTS[clean(p.row.name)]);
+                const grouped = hinted ? groupByHints(nd.pending) : groupBySums(nd.pending);
+                const conv = g => { const c = g.item; finalize(c); c.children = g.kids.map(conv).concat(c.children); return c; };
+                nd.children = grouped.map(conv).concat(nd.children);
+            }
+            nd.pending = [];
+        };
+        roots.forEach(finalize);
+        const toPlain = nd => Object.assign({}, nd.row, { children: nd.children.map(toPlain) });
+        return roots.map(toPlain).filter(n => n.kind !== 'block' || (n.children && n.children.length));
+    }
+
+    function indexTree(tree) {
+        const list = [];
+        const walk = (nodes, parentId, depth, prefix) => {
+            (nodes || []).forEach((n, i) => {
+                const id = prefix + '/' + i;
+                const rec = { id, parentId, depth, node: n, name: n.name || '', kind: n.kind || '',
+                              no: n.no, code: n.code, src_row: n.src_row, keep: n.keep, childIds: [] };
+                list.push(rec);
+                if (parentId != null) { const p = list.find(x => x.id === parentId); if (p) p.childIds.push(id); }
+                if (n.children && n.children.length) walk(n.children, id, depth + 1, id);
+            });
+        };
+        walk(tree, null, 0, '');
+        return list;
+    }
+    const byId = id => NODES.find(n => n.id === id);
+
+    // ---------- Завантаження ----------
+    function applySnapshot(envelope, requestedIso) {
+        const snap = extractSnapshotObject(envelope);
+        if (!snap) throw new Error('у відповіді немає снапшоту (meta + tree)');
+        SNAP = snap;
+        TREE = buildTree(snap.rows || []);
+        NODES = indexTree(TREE);
+        resetDefaultExpanded();
+        document.getElementById('expandAll').checked = false;
+        const m = snap.meta || {};
+        const iso = m.forecast_date || requestedIso || '';
+        if (iso) { currentReportDate = iso; availableDates.add(iso); }
+        document.getElementById('navCurDate').textContent = iso ? dmy(iso) : '--';
+        document.getElementById('hdrCur').textContent = iso ? dmy(iso) : '--';
+        document.getElementById('lblSelectedDate').textContent = iso ? dmy(iso) : 'Обрати дату';
+        document.getElementById('hdrCreated').textContent = m.created_utc
+            ? 'створено: ' + String(m.created_utc).replace('T', ' ').slice(0, 19) + ' UTC' : '';
+        const c = snap.columns || {};
+        document.getElementById('hdrRange').textContent =
+            ((c.T0 && c.T0.date_range) || '') + ' – ' + ((c.T12 && c.T12.date_range) || '');
+        render();
+    }
+
+    async function fetchSnapshot(iso) {
+        const res = await fetch(GET_METRICS_FLOW_URL, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+    }
+
+    async function loadFromCloud(iso) {
+        setStatus('Завантаження…', 'bg-indigo-100 text-indigo-800');
+        try {
+            applySnapshot(await fetchSnapshot(iso), iso);
+            setStatus('Зріз ' + dmy(currentReportDate), 'bg-emerald-100 text-emerald-800');
+        } catch (err) {
+            setStatus('Дані недоступні: ' + err.message + ' — можна відкрити локальний JSON', 'bg-red-100 text-red-800');
+        }
+    }
+
+    // Понеділок поточного тижня, а якщо зрізу ще немає — найсвіжіший наявний понеділок
+    async function loadLatestMonday(weeksBack) {
+        let iso = mondayOf(new Date());
+        const limit = weeksBack || 8;
+        setStatus('Пошук останнього зрізу…', 'bg-indigo-100 text-indigo-800');
+        for (let i = 0; i < limit; i++) {
+            try {
+                const data = await fetchSnapshot(iso);
+                applySnapshot(data, iso);
+                setStatus('Зріз ' + dmy(currentReportDate) + (i ? ' (останній наявний)' : ''), 'bg-emerald-100 text-emerald-800');
+                return iso;
+            } catch (e) { iso = isoShift(iso, -7); }
+        }
+        setStatus('Зрізів за останні ' + limit + ' тижнів не знайдено — можна відкрити локальний JSON', 'bg-red-100 text-red-800');
+        return null;
+    }
+
+    function loadLocalFile(input) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try { applySnapshot(JSON.parse(reader.result), null); setStatus('Зріз ' + dmy(currentReportDate), 'bg-emerald-100 text-emerald-800'); }
+            catch (e) { setStatus('Не вдалося прочитати файл: ' + e.message, 'bg-red-100 text-red-800'); }
+        };
+        reader.readAsText(file, 'utf-8');
+        input.value = '';
+    }
+
+    // ---------- Колонки ----------
+    const MONTHS = [
+        { key: 'M1', weeks: ['T0', 'T1', 'T2', 'T3'] },
+        { key: 'M2', weeks: ['T4', 'T5', 'T6', 'T7'] },
+        { key: 'M3', weeks: ['T8', 'T9', 'T10', 'T11', 'T12'] }
+    ];
+    const PREV_KEYS = ['Tm1_plan', 'Tm1_forecast', 'dev_forecast', 'Tm1_fact', 'dev_fact'];
+    const MONTH_KEYS = MONTHS.map(m => m.key);
+    const DEV_KEYS = ['dev_forecast', 'dev_fact'];
+
+    function activeColumns() {
+        const cols = SNAP.columns || {}, keys = [];
+        PREV_KEYS.forEach(k => {
+            const box = document.getElementById('col' + k);
+            if (box && box.checked && cols[k]) keys.push(k);
+        });
+        MONTHS.forEach(m => {
+            if (monthOpen[m.key]) m.weeks.forEach(w => cols[w] && keys.push(w));
+            if (cols[m.key]) keys.push(m.key);
+        });
+        if (document.getElementById('grpTotal').checked && cols.TT0_12) keys.push('TT0_12');
+        return keys;
+    }
+
+    function setUnit(u) {
+        UNIT = u;
+        document.getElementById('unitThs').className = 'ctl' + (u === 'ths' ? ' active' : '');
+        document.getElementById('unitMln').className = 'ctl' + (u === 'mln' ? ' active' : '');
+        document.getElementById('hdrUnit').textContent = u === 'ths' ? 'тис. грн' : 'млн грн';
+        render();
+    }
+    const unitDiv = () => (UNIT === 'ths' ? 1e3 : 1e6);
+
+    function fmtCell(v) {
+        if (v == null || isNaN(v)) return { txt: '', cls: 'zero' };
+        const r = Math.round(v / unitDiv());
+        if (r === 0) return { txt: '0', cls: 'zero' };
+        return { txt: (r < 0 ? '−' : '') + sp(Math.abs(r).toLocaleString('uk-UA')), cls: r < 0 ? 'neg' : '' };
+    }
+
+    function toggleMonth(k) { monthOpen[k] = !monthOpen[k]; render(); }
+    function resetDefaultExpanded() {
+        expanded = {};
+        if (Array.isArray(TREE)) TREE.forEach((n, i) => { expanded['/' + i] = true; });
+    }
+    function toggleExpandAll(checked) { if (!checked) resetDefaultExpanded(); render(); }
+    function toggleNode(id) {
+        const box = document.getElementById('expandAll');
+        if (box.checked) { box.checked = false; NODES.forEach(n => { expanded[n.id] = true; }); }
+        expanded[id] = !isExpanded(id);
+        render();
+    }
+    const isExpanded = id => (document.getElementById('expandAll').checked ? true : !!expanded[id]);
+
+    // ---------- Рядки ----------
+    const KEY_ROWS = [/^Всього витрат/i, /^Всього видатків/i, /^Всього надходжень/i, /^Грошовий потік/i, /^Чистий грошовий потік/i];
+    const BLUE_ROWS = [/^Доступні залишки/i, /^Залишки доступні до використання/i];
+    const COVER_ROWS = [/^Повернення покриття/i, /^Розміщення покриття постімпорт/i, /^Оплата по постімпорту/i, /^постімпорт$/i];
+    const isKeyRow = n => KEY_ROWS.some(re => re.test(clean(n.name)));
+    const isCoverRow = n => COVER_ROWS.some(re => re.test(clean(n.name)));
+    const isBlueRow = n => BLUE_ROWS.some(re => re.test(clean(n.name)));
+
+    function matches(rec) {
+        const q = clean(document.getElementById('searchBox').value).toLowerCase();
+        if (!q) return true;
+        return [rec.name, rec.code, rec.no].some(v => String(v == null ? '' : v).toLowerCase().includes(q));
+    }
+    const allZero = rec => !nNonZero(nvals(rec.node)) && !rec.childIds.some(id => nNonZero(nvals(byId(id).node)));
+
+    function visibleRows() {
+        const onlyKeep = document.getElementById('onlyKeep').checked;
+        const hideZero = document.getElementById('hideZero').checked;
+        const q = clean(document.getElementById('searchBox').value);
+        const hits = new Set();
+        if (q) NODES.filter(matches).forEach(r => { let c = r; while (c) { hits.add(c.id); c = c.parentId ? byId(c.parentId) : null; } });
+        const out = [];
+        const walk = ids => ids.forEach(id => {
+            const rec = byId(id);
+            if (!rec) return;
+            if (onlyKeep && rec.keep === false) return;
+            if (hideZero && allZero(rec)) return;
+            if (q && !hits.has(id)) return;
+            out.push(rec);
+            if (rec.childIds.length && (q ? true : isExpanded(id))) walk(rec.childIds);
+        });
+        walk(NODES.filter(n => n.parentId === null).map(n => n.id));
+        return out;
+    }
+
+    function formatColumnLabel(k, label) {
+        if (k === 'dev_fact') return 'Відхилення,<br><span style="font-weight:500">+/− (факт − план)</span>';
+        if (k === 'dev_forecast') return 'Відхилення,<br><span style="font-weight:500">+/− (прогноз − план)</span>';
+        return esc(label);
+    }
+
+    function render() {
+        const pane = document.getElementById('pane');
+        if (!SNAP) { pane.innerHTML = '<div class="text-xs text-slate-400 p-3">Дані ще не завантажені. Оберіть дату зрізу або відкрийте локальний файл.</div>'; return; }
+        const cols = SNAP.columns || {}, keys = activeColumns();
+
+        const head = `<tr><th class="nm-col">Стаття</th>${keys.map(k => {
+            const c = cols[k] || {};
+            const isMon = MONTH_KEYS.indexOf(k) >= 0;
+            const cls = k === 'TT0_12' ? 'col-sum' : isMon ? 'col-mon'
+                      : DEV_KEYS.indexOf(k) >= 0 ? 'col-prev col-dev' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev' : '');
+            const label = formatColumnLabel(k, (c.label || k).replace(/\s+/g, ' ').trim());
+            const toggle = isMon
+                ? `<span class="mon-toggle" title="${monthOpen[k] ? 'Згорнути тижні місяця' : 'Показати тижні місяця'}" onclick="toggleMonth('${k}')">${monthOpen[k] ? '−' : '+'}</span>`
+                : '';
+            const main = c.date_range ? esc(c.date_range) : label;
+            const sub = c.date_range ? `<span class="th-period">${label}</span>` : '';
+            return `<th class="${cls}">${main}${toggle}${sub}</th>`;
+        }).join('')}</tr>`;
+
+        const recs = visibleRows();
+        const body = recs.map(rec => {
+            const n = rec.node, hasKids = rec.childIds.length > 0, open = isExpanded(rec.id);
+            const toggle = hasKids
+                ? `<span class="toggle-kids" onclick="event.stopPropagation(); toggleNode('${esc(rec.id)}')">${open ? '−' : '+'}</span>`
+                : '<span class="toggle-placeholder"></span>';
+            const lvl = rec.kind === 'block' ? 'lvl-block'
+                      : rec.kind === 'item' ? 'lvl-item'
+                      : (rec.kind === 'total' || rec.kind === 'subgroup') ? 'lvl-sub' : 'lvl-leaf';
+            const extra = (isKeyRow(n) ? ' row-key' : '') + (isCoverRow(n) ? ' row-cover' : '') + (isBlueRow(n) ? ' row-blue' : '');
+            const codeTxt = String(n.no == null ? '' : n.no).trim();
+            const cells = keys.map(k => {
+                const c = fmtCell((n.values || {})[k]);
+                const isMon = MONTH_KEYS.indexOf(k) >= 0;
+                const isDev = DEV_KEYS.indexOf(k) >= 0;
+                const base = k === 'TT0_12' ? 'col-sum ' : isMon ? 'col-mon '
+                           : isDev ? 'col-prev col-dev ' : (PREV_KEYS.indexOf(k) >= 0 ? 'col-prev ' : '');
+                const cls = base + c.cls + (isDev && c.cls === '' ? ' pos' : '');
+                return `<td class="${cls}">${c.txt}</td>`;
+            }).join('');
+            return `<tr class="${lvl}${extra}" onclick="${hasKids ? `toggleNode('${esc(rec.id)}')` : ''}">
+                <td class="nm-col" style="padding-left:${6 + rec.depth * 16}px">${toggle}${codeTxt ? `<span class="an-code">${esc(codeTxt)}</span>` : ''}<span class="nm-txt">${esc(n.name)}</span></td>
+                ${cells}</tr>`;
+        }).join('');
+
+        pane.innerHTML = keys.length
+            ? `<table class="an-table"><thead>${head}</thead><tbody>${body}</tbody></table>`
+            : '<div class="text-xs text-slate-400 p-3">Оберіть хоча б одну групу колонок.</div>';
+    }
+
+    // ---------- Календар ----------
+    function toggleCalendarDropdown() { document.getElementById('calendarDropdown').classList.toggle('hidden'); renderCalendar(); }
+    function changeCalendarMonth(d) { calViewDate.setMonth(calViewDate.getMonth() + d); renderCalendar(); }
+    function renderCalendar() {
+        const NAMES = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+        const y = calViewDate.getFullYear(), mo = calViewDate.getMonth();
+        document.getElementById('calendarMonthYear').textContent = `${NAMES[mo]} ${y}`;
+        const first = new Date(y, mo, 1), days = new Date(y, mo + 1, 0).getDate();
+        let html = '<span></span>'.repeat((first.getDay() + 6) % 7);
+        for (let d = 1; d <= days; d++) {
+            const iso = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const cur = iso === currentReportDate, known = availableDates.has(iso);
+            html += `<button onclick="selectDate('${iso}')" class="p-1 rounded-md ${cur ? 'bg-indigo-600 text-white font-bold' : known ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-100 text-slate-700'}">${d}</button>`;
+        }
+        document.getElementById('calendarDaysGrid').innerHTML = html;
+    }
+    function selectDate(iso) {
+        currentReportDate = iso;
+        calViewDate = new Date(iso + 'T00:00:00');
+        document.getElementById('lblSelectedDate').textContent = dmy(iso);
+        document.getElementById('calendarDropdown').classList.add('hidden');
+        loadFromCloud(iso);
+    }
+
+    function init() {
+        document.getElementById('lblSelectedDate').textContent = dmy(currentReportDate);
+        setViewMode('fluid');
+        renderCalendar();
+        render();
+        setStatus('Очікування даних…', 'bg-amber-100 text-amber-800');
+        if (typeof fetch === 'function') loadLatestMonday();
+    }
+    window.addEventListener('DOMContentLoaded', init);
+    </script>
+
+    <script>
+    // ======= МОБІЛЬНИЙ ШАР =======
+    (function () {
+        window.mToggleFilters = function () {
+            document.body.classList.toggle('m-filters-open');
+            var c = document.getElementById('mFiltersChevron');
+            if (c) c.textContent = document.body.classList.contains('m-filters-open') ? '▴' : '▾';
+        };
+        // На вузькому екрані завжди гумовий режим (формат А3 лишається у прев'ю та друці)
+        function forceFluid() {
+            if (window.matchMedia('(max-width: 860px)').matches && typeof setViewMode === 'function') {
+                try { setViewMode('fluid'); } catch (e) {}
+            }
+        }
+        window.addEventListener('load', function () { setTimeout(forceFluid, 0); });
+        window.addEventListener('orientationchange', function () { setTimeout(forceFluid, 200); });
+    })();
+    </script>
+</body>
+</html>

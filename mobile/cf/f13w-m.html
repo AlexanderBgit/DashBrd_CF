@@ -117,6 +117,28 @@
         .is-generating { animation: pulse-fast 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; cursor: wait !important; pointer-events: none; }
         .force-hide { display: none !important; }
 
+        /* ===== Графік на весь екран ===== */
+        #blockChart.chart-fs {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 95 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            border: none !important;
+            padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px !important;
+            background: #fff !important;
+            box-shadow: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        body.chart-fs-on { overflow: hidden !important; }
+        body.chart-fs-on #mFab, body.chart-fs-on #ctrlPanel, body.chart-fs-on #mPanelBackdrop { display: none !important; }
+        #blockChart.chart-fs > div[style*="flex-grow"] { flex: 1 1 auto !important; min-height: 0 !important; }
+        #btnChartFs { font-size: 13px; line-height: 1; }
+        #chartFsHint { display: none; }
+        #blockChart.chart-fs #chartFsHint { display: block; font-size: 10px; color: #94a3b8; margin-top: 2px; }
+        @media print { #btnChartFs { display: none !important; } }
+
         /* ================= МОБІЛЬНА ВЕРСІЯ (екран ≤ 860px) =================
            Не торкається друку та режиму прев'ю A3 — там лишається оригінальний
            макет 1587×1122. Усе нижче діє лише на вузькому екрані.            */
@@ -463,8 +485,9 @@
 
                 <div class="block-container flex-grow flex flex-col overflow-hidden relative" id="blockChart">
                     <div class="flex justify-between items-start mb-1 shrink-0">
-                        <h2 class="block-title" style="margin-bottom: 0;" id="titleChart"></h2>
-                        <div class="print-hide flex space-x-1.5 opacity-60 hover:opacity-100 transition-opacity z-10">
+                        <div><h2 class="block-title" style="margin-bottom: 0;" id="titleChart"></h2><div id="chartFsHint">Поверніть телефон горизонтально для більшого масштабу · Esc або кнопка «Згорнути» — вихід</div></div>
+                        <div class="print-hide flex space-x-1.5 items-center opacity-60 hover:opacity-100 transition-opacity z-10">
+                            <button id="btnChartFs" onclick="toggleChartFullscreen()" class="pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded shadow-sm font-bold cursor-pointer" title="Розгорнути графік на весь екран">⛶ На весь екран</button>
                             <button onclick="changeChartPadding(-5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X-</button>
                             <button onclick="changeChartPadding(5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X+</button>
                             <button onclick="changeStackGap(-2)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Щільніше підписи (менший спільний відступ)">⇕-</button>
@@ -3629,6 +3652,28 @@
         if (t) setTimeout(window.mClosePanel, 60);
     });
 })();
+</script>
+
+<script>
+// ======= Графік на весь екран =======
+function toggleChartFullscreen(force) {
+    var block = document.getElementById('blockChart');
+    if (!block) return;
+    var on = (typeof force === 'boolean') ? force : !block.classList.contains('chart-fs');
+    block.classList.toggle('chart-fs', on);
+    document.body.classList.toggle('chart-fs-on', on);
+    var btn = document.getElementById('btnChartFs');
+    if (btn) btn.innerHTML = on ? '✕ Згорнути' : '⛶ На весь екран';
+    if (typeof window.mClosePanel === 'function') window.mClosePanel();
+    setTimeout(function () { if (typeof safeUpdateChart === 'function') safeUpdateChart(); }, 60);
+    setTimeout(function () { if (typeof safeUpdateChart === 'function') safeUpdateChart(); }, 350);
+}
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') toggleChartFullscreen(false);
+});
+window.addEventListener('orientationchange', function () {
+    setTimeout(function () { if (typeof safeUpdateChart === 'function') safeUpdateChart(); }, 300);
+});
 </script>
 </body>
 </html>

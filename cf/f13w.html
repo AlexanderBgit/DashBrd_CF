@@ -89,15 +89,15 @@
         .block-title { font-size: 13.5pt; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
         
         .exec-table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
-        .exec-table th { font-size: 10.5pt; color: #64748b; font-weight: 600; padding: 2px 5px; border-bottom: 1.5px solid #94a3b8; text-align: right; }
+        .exec-table th { font-size: 10.5pt; color: #64748b; font-weight: 600; padding: 1px 5px; border-bottom: 1.5px solid #94a3b8; text-align: right; }
         .exec-table th:first-child { text-align: left; }
         .exec-table th .th-period { display: block; font-size: 6.8pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.2px; white-space: nowrap; line-height: 1.15; margin-top: 1px; }
-        .exec-table td { padding: 1.5px 5px; text-align: right; color: #334155; border-bottom: none; white-space: nowrap; }
+        .exec-table td { padding: 0.5px 5px; text-align: right; color: #334155; border-bottom: none; white-space: nowrap; }
         .exec-table td:first-child { text-align: left; font-weight: 500; white-space: nowrap; letter-spacing: -0.3px; }
-        .exec-table tr.sub-row td { font-size: 9.5pt; color: #64748b; padding-top: 0.5px; padding-bottom: 0.5px; }
+        .exec-table tr.sub-row td { font-size: 9.5pt; color: #64748b; padding-top: 0.0px; padding-bottom: 0.0px; }
         
         .row-main td { font-weight: 700; color: #0f172a; }
-        .row-total td { font-weight: 700; color: #0f172a; border-top: 1.5px solid #94a3b8 !important; padding-top: 2px; }
+        .row-total td { font-weight: 700; color: #0f172a; border-top: 1.5px solid #94a3b8 !important; padding-top: 1.5px; }
         .exec-table td.neg-bright { color: #dc2626 !important; font-weight: 700 !important; } 
         .exec-table td.neg-green { color: #059669 !important; font-weight: 700 !important; } 
         .exec-table td.neg-green-cool { color: #0d9488 !important; font-weight: 700 !important; } 
@@ -1444,6 +1444,7 @@
         return [
             { title: { uk: "Бензин", en: "Gasoline" }, current: 0, delta: 0 },
             { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 0, delta: 0 },
+            { title: { uk: "Арктичний дизель", en: "Arctic diesel" }, current: 0, delta: 0 },
             { title: { uk: "Газ комерційний (млн м³)", en: "Commercial gas (mln m³)" }, current: 0, delta: 0 },
             { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 0, delta: 0 },
             { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 0, delta: 0 }
@@ -2816,14 +2817,14 @@
         }
 
         const fuelInventories = [];
-        for(let i = 11; i <= 15; i++) {
+        for(let i = 11; i <= 16; i++) {
             if(operSheet[i] && operSheet[i][0] !== undefined && String(operSheet[i][0]).trim() !== '') {
                 fuelInventories.push({ title: getBilingualText(operSheet[i][0]), current: parseNumberValue(operSheet[i][1]), delta: parseNumberValue(operSheet[i][2]) });
             }
         }
 
         const creditLimits = [];
-        for(let i = 16; i <= 20; i++) {
+        for(let i = 17; i <= 20; i++) {
             if(operSheet[i] && operSheet[i][0] !== undefined && String(operSheet[i][0]).trim() !== '') {
                 creditLimits.push({ title: getBilingualText(operSheet[i][0]), limit: parseNumberValue(operSheet[i][1]), drawn: parseNumberValue(operSheet[i][2]), available: parseNumberValue(operSheet[i][3]) });
             }
@@ -2915,6 +2916,7 @@
             fuelInventories: [
                 { title: { uk: "Бензин", en: "Gasoline" }, current: 44, delta: 3 },
                 { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 50, delta: -32 },
+                { title: { uk: "Арктичний дизель", en: "Arctic diesel" }, current: 15, delta: 2 },
                 { title: { uk: "Газ комерційний (млн м³)", en: "Commercial gas (mln m³)" }, current: 120, delta: 5 },
                 { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 85, delta: 0 },
                 { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 35, delta: -2 }

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дашборд CashFlow — Казначейство UKRNAFTA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brand-navy: #081b2e;
+  --brand-navy-light: #0f2d4a;
+  --brand-card-bg: rgba(15, 45, 74, 0.65);
+  --brand-card-border: rgba(255, 255, 255, 0.12);
+  --brand-green: #25b84c;
+  --brand-green-hover: #1f9e40;
+  --brand-yellow: #ffcc00;
+  --text-main: #ffffff;
+  --text-muted: #9bb1c9;
+  --line-color: rgba(255, 255, 255, 0.1);
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background-color: var(--brand-navy);
+  background-image: 
+    radial-gradient(circle at 10% 15%, rgba(37, 184, 76, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 60%, rgba(255, 204, 0, 0.05) 0%, transparent 45%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* Шапка сайту */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(8, 27, 46, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--brand-card-border);
+  padding: 16px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo-wrap svg {
+  height: 28px;
+  width: auto;
+  fill: #ffffff;
+}
+.pulse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(37, 184, 76, 0.15);
+  border: 1px solid rgba(37, 184, 76, 0.35);
+  color: var(--brand-green);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand-green);
+  box-shadow: 0 0 8px var(--brand-green);
+  animation: pulse 1.5s infinite alternate;
+}
+@keyframes pulse {
+  from { opacity: 0.4; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+nav a {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+  position: relative;
+  padding: 6px 0;
+}
+nav a:hover, nav a:focus-visible {
+  color: var(--brand-green);
+}
+
+/* Hero та Відео Секція */
+.hero-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 24px 40px;
+}
+.hero-top {
+  text-align: center;
+  max-width: 840px;
+  margin: 0 auto 50px;
+}
+.hero-badge {
+  display: inline-block;
+  background: rgba(255, 204, 0, 0.12);
+  color: var(--brand-yellow);
+  border: 1px solid rgba(255, 204, 0, 0.3);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+.hero-top h1 {
+  font-size: clamp(32px, 4.5vw, 52px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0 0 16px;
+}
+.hero-top h1 span {
+  color: var(--brand-green);
+}
+.hero-top p {
+  color: var(--text-muted);
+  font-size: 18px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Відео контейнер */
+.video-card {
+  background: var(--brand-card-bg);
+  border: 1px solid var(--brand-card-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  margin-bottom: 50px;
+  backdrop-filter: blur(10px);
+}
+.video-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.video-card-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.video-card-header h3::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  background: var(--brand-yellow);
+  border-radius: 2px;
+}
+.video-duration {
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 30px;
+  color: var(--text-muted);
+}
+.video-container {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 */
+  height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000;
+}
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Статистичні картки */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 60px;
+}
+.stat-card {
+  background: var(--brand-card-bg);
+  border: 1px solid var(--brand-card-border);
+  border-radius: var(--radius-md);
+  padding: 24px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(37, 184, 76, 0.4);
+}
+.stat-card::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand-green), transparent);
+}
+.stat-num {
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.stat-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Розділи дашборду */
+.section-block {
+  max-width: 1200px;
+  margin: 0 auto 50px;
+  padding: 0 24px;
+}
+.section-title {
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-color);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.section-title h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.section-title span {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Сітка модулів */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 20px;
+}
+.module-card {
+  background: var(--brand-card-bg);
+  border: 1px solid var(--brand-card-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+.module-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--brand-green);
+  box-shadow: 0 10px 25px rgba(37, 184, 76, 0.12);
+}
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.badge-code {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--brand-yellow);
+}
+.status-tag {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 204, 0, 0.15);
+  color: var(--brand-yellow);
+  border: 1px solid rgba(255, 204, 0, 0.3);
+}
+.module-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0 0 8px;
+  color: #fff;
+}
+.module-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 16px;
+  flex-grow: 1;
+}
+.card-footer-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-green);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Callout банер */
+.closing-card {
+  max-width: 1200px;
+  margin: 60px auto 40px;
+  padding: 36px 30px;
+  background: linear-gradient(135deg, rgba(15, 45, 74, 0.8), rgba(8, 27, 46, 0.95));
+  border: 1px solid var(--brand-card-border);
+  border-left: 5px solid var(--brand-green);
+  border-radius: var(--radius-md);
+  margin-left: 24px;
+  margin-right: 24px;
+}
+.closing-card p {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.4;
+}
+
+/* Footer */
+footer {
+  max-width: 1200px;
+  margin: 60px auto 0;
+  padding: 24px;
+  border-top: 1px solid var(--line-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  header { padding: 14px 20px; flex-direction: column; align-items: stretch; }
+  nav { justify-content: center; gap: 14px; flex-wrap: wrap; }
+  .hero-wrapper { padding: 36px 16px; }
+  .video-card { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Хедер -->
+<header>
+  <a class="logo-wrap" href="https://cashflow-ukrnafta.unft.workers.dev/cf/f13w.html" target="_blank" rel="noopener" aria-label="UKRNAFTA">
+    <svg viewBox="0 0 3576.39 346" role="img" aria-hidden="true">
+      <path d="M988.38,0h-75V256.59a17,17,0,0,1-17.3,17.3H787.730a17,17,0,0,1-17.3-17.3V0h-75V299.83L741.6,346H942.26l46.13-46.130V0Z"/>
+      <path d="M1387.67,0h-77.84L1244.1,129.73c-5.19,9.8-10.38,15.57-23.64,15.57h-31.71a17,17,0,0,1-17.3-17.3V0H1098.8V346h72.65V222.56a17,17,0,0,1,17.3-17.3h35.17c11.53,0,16.72,5.19,21.91,15.57L1307,346h81.88l-105.52-209.3,2.31,60.54Z"/>
+      <path d="M1689.81,217.38l49.59-50.17V46.13L1693.27,0H1468.4V346h69.77V235.25a17,17,0,0,1,17.3-17.3h42.67c9.23,0,14.41,2.88,20.76,15l55.93,113h79.570Zm-134.35-57.09a17,17,0,0,1-17.3-17.3V82.45a17,17,0,0,1,17.3-17.3h97.44a17,17,0,0,1,17.3,17.3V143a17,17,0,0,1-17.3,17.3h-97.44Z"/>
+      <path d="M2503.68,0H2305.33L2259.2,46.13V346h70.92V235.25a17,17,0,0,1,17.3-17.3h114.16a17,17,0,0,1,17.3,17.3V346h70.93V46.13ZM2347.42,160.29a17,17,0,0,1-17.3-17.3V84.18a17,17,0,0,1,17.3-17.3h114.16a17,17,0,0,1,17.3,17.3V143a17,17,0,0,1-17.3,17.3H2347.42Z"/>
+      <path d="M3530.31,0H3332l-46.13,46.13V346h70.92V235.25A17,17,0,0,1,3374,218h114.17a17,17,0,0,1,17.3,17.3V346h70.92V46.13ZM3374,160.29a17,17,0,0,1-17.3-17.3V84.18a17,17,0,0,1,17.3-17.3h114.17a17,17,0,0,1,17.3,17.3V143a17,17,0,0,1-17.3,17.3H3374Z"/>
+      <path d="M2885.1,69.19V0H2660.22V346h70.92V235.25a17,17,0,0,1,17.3-17.3h125.12V156.84H2748.44a17,17,0,0,1-17.3-17.3v-53a17,17,0,0,1,17.3-17.3H2885.1Z"/>
+      <path d="M3028.67,69.19a17,17,0,0,1,17.3,17.3V346h73.8V86.49a17,17,0,0,1,17.3-17.3h91.68V0H2937V69.19h91.68Z"/>
+      <path d="M2148.78,0h-68V221.42c0,12.11-12.11,13.26-17.870,4L1936.59,0h-89.95V346h68V124.54c0-12.11,12.11-13.26,17.87-4L2058.83,346h89.95V0Z"/>
+      <path d="M0,0V346H346V0H0ZM96,265.81L173,64l77,201.79H96Z"/>
+    </svg>
+    <div class="pulse-badge"><span class="pulse-dot"></span> LIVE DATA</div>
+  </a>
+  <nav aria-label="Розділи">
+    <a href="#video">Відеоогляд</a>
+    <a href="#overview">Огляд F13</a>
+    <a href="#budget">Бюджетування</a>
+    <a href="#analysts">Аналітика</a>
+    <a href="#config">Налаштування</a>
+  </nav>
+</header>
+
+<main>
+  <div class="hero-wrapper">
+    <div class="hero-top">
+      <div class="hero-badge">Цифрова трансформація фінансів</div>
+      <h1>Дашборд CashFlow <span>UKRNAFTA</span></h1>
+      <p>Централізований цифровий простір Казначейства для оперативного моніторингу ліквідності, сценарного моделювання та трансформації прогнозів у звітність.</p>
+    </div>
+
+    <!-- Відео-презентація системи -->
+    <div class="video-card" id="video">
+      <div class="video-card-header">
+        <h3>Відеоогляд можливостей екосистеми F13 Forecast</h3>
+        <span class="video-duration">2:20 хв</span>
+      </div>
+      <div class="video-container">
+        <!-- Замініть VIDEO_ID на реальний ID вашого відео на YouTube -->
+        <!-- src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0" -->
+        <iframe 
+          src="https://ukrnaftaoffice365.sharepoint.com/:v:/r/sites/CashFlow/Shared%20Documents/Media/%D0%A6%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B5_%D0%BA%D0%B0%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%B9%D1%81%D1%82%D0%B2%D0%BE__%D0%AF%D0%BA_%D0%BF%D1%80%D0%B0%D1%86%D1%8E%D1%94_%D0%B4%D0%B0%D1%88%D0%B1%D0%BE%D1%80%D0%B4_%D0%A3%D0%9A%D0%A0%D0%9D%D0%90%D0%A4%D0%A2%D0%98.mp4?d=w78866e82b731416caeca23aea5f1eb98&csf=1&web=1&share=IQCCboZ4MbdsQa7KI66l8euYAfPPF_vXudEI3EzFP9EWpHQ"
+          title="Цифрова трансформація казначейства: Дашборд Cash Flow АТ Укрнафта" 
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+          allowfullscreen>
+        </iframe>
+      </div>
+    </div>
+
+    <!-- Ключові метрики системи -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num">13</div>
+        <div class="stat-desc">тижнів становить горизонт оперативного планування ліквідності</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">4</div>
+        <div class="stat-desc">комплексні інтерактивні звіти для аналізу потоків грошей</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">3</div>
+        <div class="stat-desc">автоматизовані формати для департаменту бюджетування</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">4</div>
+        <div class="stat-desc">аналітичні модулі в процесі розробки та калібрування</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. Навігація / Огляд -->
+  <section class="section-block" id="overview">
+    <div class="section-title">
+      <h2>Основні звіти F13 Forecast</h2>
+      <span>Базові інструменти моніторингу</span>
+    </div>
+    <div class="modules-grid">
+      <a class="module-card" href="https://cashflow-ukrnafta.unft.workers.dev/cf/f13w.html" target="_blank" rel="noopener">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">f13w</span>
+          </div>
+          <h4 class="module-title">Головна оглядова панель</h4>
+          <p class="module-desc">Швидкий огляд доступної ліквідності, кредитного портфеля та миттєвий перехід до детальних звітів.</p>
+        </div>
+        <span class="card-footer-link">Відкрити звіт &rarr;</span>
+      </a>
+
+      <a class="module-card" href="https://cashflow-ukrnafta.unft.workers.dev/commerce/compare" target="_blank" rel="noopener">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">compare</span>
+          </div>
+          <h4 class="module-title">Порівняння прогнозів CF</h4>
+          <p class="module-desc">Графічний аналіз дельти та відхилень грошових потоків між поточним і попередніми зрізами.</p>
+        </div>
+        <span class="card-footer-link">Перейти до порівняння &rarr;</span>
+      </a>
+
+      <a class="module-card" href="https://cashflow-ukrnafta.unft.workers.dev/cf/forecast" target="_blank" rel="noopener">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">forecast</span>
+          </div>
+          <h4 class="module-title">Прогноз на 13 тижнів</h4>
+          <p class="module-desc">Повний помісячний і потижневий розпис надходжень та видатків за деталізованими статтями.</p>
+        </div>
+        <span class="card-footer-link">Деталізувати статті &rarr;</span>
+      </a>
+
+      <a class="module-card" href="https://cashflow-ukrnafta.unft.workers.dev/cf/analytics" target="_blank" rel="noopener">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">analytics</span>
+          </div>
+          <h4 class="module-title">BI-Аналітика руху коштів</h4>
+          <p class="module-desc">Інтерактивна візуалізація трендів надходжень і видатків для контролю бюджету в динаміці.</p>
+        </div>
+        <span class="card-footer-link">Аналізувати тренди &rarr;</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- 2. Бюджетування -->
+  <section class="section-block" id="budget">
+    <div class="section-title">
+      <h2>Для департаменту бюджетування</h2>
+      <span>Трансформація тижневих даних у помісячні стандарти</span>
+    </div>
+    <div class="modules-grid">
+      <a class="module-card" href="https://cashflow-ukrnafta.unft.workers.dev/plan-budg/sop-home" target="_blank" rel="noopener">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">sop-home</span>
+          </div>
+          <h4 class="module-title">Помісячний грошовий потік</h4>
+          <p class="module-desc">Агреговані показники для розрахунку та моделювання руху коштів непрямим методом.</p>
+        </div>
+        <span class="card-footer-link">Перейти до модуля &rarr;</span>
+      </a>
+
+      <a class="module-card" href="https://cashflow-ukrnafta.unft.workers.dev/plan-budg/sop-credit" target="_blank" rel="noopener">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">sop-credit</span>
+          </div>
+          <h4 class="module-title">Кредити та постімпорт</h4>
+          <p class="module-desc">Формування помісячного плану фінансової діяльності на базі оперативного 13-тижневого прогнозу.</p>
+        </div>
+        <span class="card-footer-link">Переглянути графіки &rarr;</span>
+      </a>
+
+      <a class="module-card" href="https://cashflow-ukrnafta.unft.workers.dev/plan-budg/rk-present.html" target="_blank" rel="noopener">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">rk-present</span>
+          </div>
+          <h4 class="module-title">Формат «РК-презентація»</h4>
+          <p class="module-desc">Підготовка структурованого звіту про рух коштів для Ради директорів та керівного комітету.</p>
+        </div>
+        <span class="card-footer-link">Згенерувати звіт &rarr;</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- 3. Аналітикам -->
+  <section class="section-block" id="analysts">
+    <div class="section-title">
+      <h2>Аналітичний блок Казначейства</h2>
+      <span>Моделі в процесі розробки та стрес-тестування</span>
+    </div>
+    <div class="modules-grid">
+      <div class="module-card">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">freecash</span>
+            <span class="status-tag">в розробці</span>
+          </div>
+          <h4 class="module-title">Вільний грошовий потік (FCF)</h4>
+          <p class="module-desc">Моніторинг чистого кешу після капітальних інвестицій (CAPEX) та оцінка інвестиційного потенціалу.</p>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">liquidity</span>
+            <span class="status-tag">в розробці</span>
+          </div>
+          <h4 class="module-title">Платоспроможність 3–6 міс.</h4>
+          <p class="module-desc">Сценарне стрес-тестування ліквідності та виявлення ризиків касових розривів на випередження.</p>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">trends</span>
+            <span class="status-tag">в розробці</span>
+          </div>
+          <h4 class="module-title">Довгострокові фінансові тренди</h4>
+          <p class="module-desc">Виявлення фактору сезонності в продажах пального та оптимізація термінів регулярних платежів.</p>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">forecast-rk</span>
+            <span class="status-tag">в розробці</span>
+          </div>
+          <h4 class="module-title">Прогноз із мапінгом РК</h4>
+          <p class="module-desc">Синхронізація тижневих операційних статей із форматами презентацій вищого керівництва.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Налаштування -->
+  <section class="section-block" id="config">
+    <div class="section-title">
+      <h2>Configuration</h2>
+      <span>Системні налаштування та довідники</span>
+    </div>
+    <div class="modules-grid">
+      <div class="module-card">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">SYS_ARCH</span>
+            <span class="status-tag">в розробці</span>
+          </div>
+          <h4 class="module-title">Архітектура та правила</h4>
+          <p class="module-desc">Опис інтеграцій даних, конфігурації автоматичних зрізів та алгоритмів розрахунку буфера ліквідності.</p>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div>
+          <div class="card-top">
+            <span class="badge-code">DATA_FLOW</span>
+            <span class="status-tag">в розробці</span>
+          </div>
+          <h4 class="module-title">Довідники та потоки даних</h4>
+          <p class="module-desc">Централізований каталог статей CF, кредиторів, банківських лімітів та зв'язків з ERP-системою.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Заключна плашка -->
+  <div class="closing-card">
+    <p>«Один інтегрований прогноз — від оперативного потижневого контролю до стратегічної помісячної звітності бюджетування UKRNAFTA.»</p>
+  </div>
+</main>
+
+<!-- Футер -->
+<footer>
+  <span>Казначейство АТ «Укрнафта» · Цифрова система CashFlow</span>
+  <span>Горизонт планування: F13 (13 тижнів)</span>
+</footer>
+
+</body>
+</html>

@@ -488,8 +488,8 @@
     Chart.register(ChartDataLabels);
 
     // ═════════════════════ ЗАХИСТ ДОСТУПУ ТА РЕЖИМИ (PIN + SHA-256) ═════════════════════
-    // Хеш SHA-256 для PIN "2408":
-    const PIN_HASH = "80f83713d33f20da1bc10b27be76cb3d4b684cb63c0ab4c330f6a5b78cb47230";
+    // Точний SHA-256 хеш для PIN "xxxx":
+    const PIN_HASH = "a7f9ba5d3d0fbe3d240d912ff969963e66ef0b0b8c6a2e411bc2fe5621453ef0";
     let isReadOnly = true;
 
     async function sha256(str) {
@@ -530,7 +530,7 @@
 
     async function promptForPin() {
         const input = prompt("Введіть PIN-код для ввімкнення режиму редагування:");
-        if (!input) return false;
+        if (input === null || input.trim() === "") return false;
 
         const hash = await sha256(input.trim());
         if (hash === PIN_HASH) {
@@ -547,7 +547,10 @@
         if (isReadOnly) {
             const isAuthed = sessionStorage.getItem('cf_editor_authenticated') === 'true';
             let granted = isAuthed;
-            if (!isAuthed) granted = await promptForPin();
+            
+            if (!isAuthed) {
+                granted = await promptForPin();
+            }
 
             if (granted) {
                 isReadOnly = false;

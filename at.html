@@ -47,7 +47,7 @@
             overflow-x: hidden;
         }
         
-        body.preview-mode .executive-container {
+        body.preview-mode .executive-container { 
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
             transform-origin: top center;
             transform: scale(var(--preview-scale, 1));
@@ -76,6 +76,9 @@
         
         body.preview-mode .print-hide { display: none !important; }
 
+        /* Захист режиму перегляду */
+        body.readonly-mode .editor-only { display: none !important; }
+
         .kpi-card { position: relative; background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
         .kpi-title { font-size: 11.5pt; font-weight: 600; color: #64748b; margin-bottom: 2px; }
         .kpi-value { font-size: 38pt; font-weight: 700; color: #0f172a; line-height: 1; } 
@@ -89,15 +92,15 @@
         .block-title { font-size: 13.5pt; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
         
         .exec-table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
-        .exec-table th { font-size: 10.5pt; color: #64748b; font-weight: 600; padding: 2px 5px; border-bottom: 1.5px solid #94a3b8; text-align: right; }
+        .exec-table th { font-size: 10.5pt; color: #64748b; font-weight: 600; padding: 1px 5px; border-bottom: 1.5px solid #94a3b8; text-align: right; }
         .exec-table th:first-child { text-align: left; }
         .exec-table th .th-period { display: block; font-size: 6.8pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.2px; white-space: nowrap; line-height: 1.15; margin-top: 1px; }
-        .exec-table td { padding: 1.5px 5px; text-align: right; color: #334155; border-bottom: none; white-space: nowrap; }
+        .exec-table td { padding: 0.5px 5px; text-align: right; color: #334155; border-bottom: none; white-space: nowrap; }
         .exec-table td:first-child { text-align: left; font-weight: 500; white-space: nowrap; letter-spacing: -0.3px; }
-        .exec-table tr.sub-row td { font-size: 9.5pt; color: #64748b; padding-top: 0.5px; padding-bottom: 0.5px; }
+        .exec-table tr.sub-row td { font-size: 9.5pt; color: #64748b; padding-top: 0.0px; padding-bottom: 0.0px; }
         
         .row-main td { font-weight: 700; color: #0f172a; }
-        .row-total td { font-weight: 700; color: #0f172a; border-top: 1.5px solid #94a3b8 !important; padding-top: 2px; }
+        .row-total td { font-weight: 700; color: #0f172a; border-top: 1.5px solid #94a3b8 !important; padding-top: 1.5px; }
         .exec-table td.neg-bright { color: #dc2626 !important; font-weight: 700 !important; } 
         .exec-table td.neg-green { color: #059669 !important; font-weight: 700 !important; } 
         .exec-table td.neg-green-cool { color: #0d9488 !important; font-weight: 700 !important; } 
@@ -176,18 +179,19 @@
             </div>
         </div>
 
-        <button onclick="toggleUploadModal(true)" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer">
+        <!-- Кнопки керування даними (доступні лише в режимі редагування) -->
+        <button onclick="toggleUploadModal(true)" class="editor-only bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
             <span>Excel</span>
         </button>
-        <button onclick="loadDemoDashboard()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
+        <button onclick="loadDemoDashboard()" class="editor-only bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
             <span>Демо</span>
         </button>
         <button onclick="refreshSharePointData()" id="btnRefreshSP" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             <span>SharePoint</span>
         </button>
-        <button onclick="openOperationalEditor()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
+        <button onclick="openOperationalEditor()" class="editor-only bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
             <span>Внести дані</span>
         </button>
 
@@ -241,6 +245,12 @@
             </div>
         </div>
 
+        <!-- Кнопка блокування / розблокування режиму редагування (PIN-захист) -->
+        <button onclick="handleAccessToggle()" id="btnAccessLock" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-500 shadow-inner transition-all" title="Режим доступу">
+            <span id="lblAccessIcon">🔒</span>
+            <span id="lblAccessText">Перегляд</span>
+        </button>
+
         <button onclick="toggleLanguage()" id="langBtn" class="bg-slate-800 text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer">EN</button>
         <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full cursor-pointer" title="PDF">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -260,8 +270,8 @@
         <button onclick="togglePreview()" class="bg-slate-600 hover:bg-slate-500 text-white px-5 py-2 rounded-full font-bold shadow transition-colors cursor-pointer mr-1">Закрити прев'ю</button>
     </div>
 
-    <!-- Модальне вікно Drag & Drop -->
-    <div id="uploadZone" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 print-hide hidden">
+    <!-- Модальне вікно Drag & Drop (тільки для редактора) -->
+    <div id="uploadZone" class="editor-only fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 print-hide hidden">
         <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center border-2 border-dashed border-slate-300 hover:border-indigo-500 transition-all relative">
             <button onclick="toggleUploadModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
             <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -354,7 +364,7 @@
                     <div class="flex justify-between items-start mb-1">
                         <h2 class="block-title" style="margin-bottom: 0;" id="titleSummary"></h2>
                         <div class="print-hide flex items-center space-x-1.5 z-30">
-                            <button onclick="openSummaryEditor()" class="pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1">
+                            <button onclick="openSummaryEditor()" class="editor-only pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1">
                                 ✏️ Редагувати
                             </button>
                             <div class="relative inline-block text-left">
@@ -435,8 +445,8 @@
         </div>
     </div>
 
-    <!-- Модальне вікно оперативних даних -->
-    <div id="operationalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
+    <!-- Модальне вікно оперативних даних (тільки для редактора) -->
+    <div id="operationalModal" class="editor-only fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
                 <h3 class="text-lg font-bold text-slate-800">Внесення даних на дату: <span id="operationalDateLabel" class="text-indigo-600"></span></h3>
@@ -450,8 +460,8 @@
         </div>
     </div>
 
-    <!-- Модальне вікно резюме -->
-    <div id="editorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
+    <!-- Модальне вікно резюме (тільки для редактора) -->
+    <div id="editorModal" class="editor-only fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
         <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 text-left">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-800">Редагування резюме на дату: <span id="editorDateLabel" class="text-indigo-600"></span></h3>
@@ -477,6 +487,122 @@
 <script>
     Chart.register(ChartDataLabels);
 
+    // ═════════════════════ ЗАХИСТ ДОСТУПУ ТА РЕЖИМИ (PIN + SHA-256) ═════════════════════
+    // Хеш SHA-256 для PIN "2408":
+    const PIN_HASH = "80f83713d33f20da1bc10b27be76cb3d4b684cb63c0ab4c330f6a5b78cb47230";
+    let isReadOnly = true;
+
+    async function sha256(str) {
+        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function initAccessControl() {
+        const params = new URLSearchParams(window.location.search);
+        const requestedMode = params.get('mode');
+        const isAuthedSession = sessionStorage.getItem('cf_editor_authenticated') === 'true';
+
+        if (requestedMode === 'edit') {
+            if (isAuthedSession) {
+                isReadOnly = false;
+            } else {
+                const success = await promptForPin();
+                if (!success) {
+                    forceViewUrl();
+                    isReadOnly = true;
+                } else {
+                    isReadOnly = false;
+                }
+            }
+        } else {
+            isReadOnly = true;
+            forceViewUrl();
+        }
+
+        applyAccessDOM();
+    }
+
+    function forceViewUrl() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', 'view');
+        window.history.replaceState({}, '', url);
+    }
+
+    async function promptForPin() {
+        const input = prompt("Введіть PIN-код для ввімкнення режиму редагування:");
+        if (!input) return false;
+
+        const hash = await sha256(input.trim());
+        if (hash === PIN_HASH) {
+            sessionStorage.setItem('cf_editor_authenticated', 'true');
+            showSuccess("Режим редагування розблоковано");
+            return true;
+        } else {
+            showError("Невірний PIN-код. Доступ заблоковано.");
+            return false;
+        }
+    }
+
+    async function handleAccessToggle() {
+        if (isReadOnly) {
+            const isAuthed = sessionStorage.getItem('cf_editor_authenticated') === 'true';
+            let granted = isAuthed;
+            if (!isAuthed) granted = await promptForPin();
+
+            if (granted) {
+                isReadOnly = false;
+                const url = new URL(window.location.href);
+                url.searchParams.set('mode', 'edit');
+                window.history.replaceState({}, '', url);
+                applyAccessDOM();
+            }
+        } else {
+            isReadOnly = true;
+            sessionStorage.removeItem('cf_editor_authenticated');
+            forceViewUrl();
+            applyAccessDOM();
+            showInfo("Режим редагування заблоковано (тільки перегляд)");
+        }
+    }
+
+    function applyAccessDOM() {
+        const btn = document.getElementById('btnAccessLock');
+        const ico = document.getElementById('lblAccessIcon');
+        const txt = document.getElementById('lblAccessText');
+
+        if (isReadOnly) {
+            document.body.classList.add('readonly-mode');
+            window.addEventListener('drop', preventDrops, true);
+            window.addEventListener('dragover', preventDrops, true);
+
+            if (btn && ico && txt) {
+                btn.className = "bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-500 shadow-inner";
+                ico.textContent = "🔒";
+                txt.textContent = "Перегляд";
+                btn.title = "Натисніть для введення PIN-коду та розблокування";
+            }
+        } else {
+            document.body.classList.remove('readonly-mode');
+            window.removeEventListener('drop', preventDrops, true);
+            window.removeEventListener('dragover', preventDrops, true);
+
+            if (btn && ico && txt) {
+                btn.className = "bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md";
+                ico.textContent = "🔓";
+                txt.textContent = "Редагування";
+                btn.title = "Натисніть для завершення сесії редагування";
+            }
+        }
+    }
+
+    function preventDrops(e) {
+        if (isReadOnly) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }
+    // ═════════════════════════════════════════════════════════════════════════════════
+
     let currentLang = 'uk';
     let globalData = null;
     let myLiquidityChart = null;
@@ -493,14 +619,14 @@
     let currentStackGap = 20;
     let lineLabelConfig = {
         totalLiquidity:      { align: 'top',    offset: 8 },
-        ownCash:             { align: 'bottom', offset: 8 },
-        ownCashMznn:         { align: 'top',    offset: 6 },
+        ownCash:              { align: 'bottom', offset: 8 },
+        ownCashMznn:          { align: 'top',    offset: 6 },
         postImportLiquidity: { align: 'bottom', offset: 6 }
     };
     const LINE_META = [
-        { key: 'totalLiquidity',      prio: 1, label: { uk: 'Доступна ліквідність',       en: 'Available liquidity' } },
-        { key: 'ownCash',             prio: 2, label: { uk: 'Грошові залишки',             en: 'Cash balances' } },
-        { key: 'ownCashMznn',         prio: 3, label: { uk: 'МЗНН та Страт. резерв',       en: 'Own cash (MOS/Strat)' } },
+        { key: 'totalLiquidity',      prio: 1, label: { uk: 'Доступна ліквідність',        en: 'Available liquidity' } },
+        { key: 'ownCash',              prio: 2, label: { uk: 'Грошові залишки',              en: 'Cash balances' } },
+        { key: 'ownCashMznn',          prio: 3, label: { uk: 'МЗНН та Страт. резерв',        en: 'Own cash (MOS/Strat)' } },
         { key: 'postImportLiquidity', prio: 4, label: { uk: 'Ліквідність з постімпортом',  en: 'Liquidity with post-import' } }
     ];
     const getPrio = (key) => { const m = LINE_META.find(x => x.key === key); return m ? m.prio : 99; };
@@ -654,6 +780,7 @@
     }
 
     function toggleUploadModal(show) {
+        if (isReadOnly) return;
         const modal = document.getElementById('uploadZone');
         if (show) modal.classList.remove('hidden');
         else modal.classList.add('hidden');
@@ -1030,8 +1157,6 @@
         }).filter(Boolean);
     }
 
-    // Середньодобова база (млн грн), з якою рахувався звіт НА ДАТУ iso.
-    // Детермінована: та сама дата → та сама база, хоч для плитки, хоч для дельти.
     const _baseCache = new Map();
     async function resolveBaseMln(iso) {
         if (_baseCache.has(iso)) return _baseCache.get(iso);
@@ -1039,7 +1164,6 @@
         const flow = (entry && !entry.error) ? entry.flow : null;
         let base = dailyExpenseBaseMln(iso, flow), src = 'month';
         if (!(base > 0)) {
-            // Фолбек — ковзні 4 тижні ВІД ЦІЄЇ дати (як рахував її власний звіт)
             const snap = (entry && entry.dateOk) ? entry.snap : null;
             const cur = snap ? snapshotKpiValues(snap) : null;
             const prior = await collectPriorVals(iso, flow, true);
@@ -1444,6 +1568,7 @@
         return [
             { title: { uk: "Бензин", en: "Gasoline" }, current: 0, delta: 0 },
             { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 0, delta: 0 },
+            { title: { uk: "Арктичний дизель", en: "Arctic diesel" }, current: 0, delta: 0 },
             { title: { uk: "Газ комерційний (млн м³)", en: "Commercial gas (mln m³)" }, current: 0, delta: 0 },
             { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 0, delta: 0 },
             { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 0, delta: 0 }
@@ -1751,6 +1876,7 @@
     function setText(id, txt) { const el = document.getElementById(id); if (el) el.innerText = txt; }
 
     function openOperationalEditor() {
+        if (isReadOnly) return;
         if (!globalData) { alert("Спочатку завантажте дані дашборду."); return; }
         document.getElementById('operationalDateLabel').innerText = currentReportDate;
         const lang = currentLang;
@@ -1885,6 +2011,11 @@
     }
 
     async function saveOperationalData() {
+        if (isReadOnly) {
+            showBanner("Дія відхилена: сторінка перебуває в режимі перегляду.", "error");
+            return;
+        }
+
         const btn = document.getElementById('btnSaveOperational');
         commitOperational();
         updateLanguageDOM();
@@ -2019,6 +2150,7 @@
         "Газ комерційний (тис м³)": "Commercial gas (ths m³)",
         "Газ в заставі": "Gas pledged as collateral",
         "Газ в заставі (млн м³)": "Gas pledged as collateral (mln m³)",
+        "Арктичний дизель": "Arctic diesel",
         "Товарна нафта": "Stock-tank oil",
         "Кредитні лінії": "Credit lines",
         "Постімпорт": "Post-import",
@@ -2612,6 +2744,7 @@
     }
 
     function handleFile(files) {
+        if (isReadOnly) return;
         if (!files || !files.length) return;
         const file = files[0];
 
@@ -2815,14 +2948,14 @@
         }
 
         const fuelInventories = [];
-        for(let i = 11; i <= 15; i++) {
+        for(let i = 11; i <= 16; i++) {
             if(operSheet[i] && operSheet[i][0] !== undefined && String(operSheet[i][0]).trim() !== '') {
                 fuelInventories.push({ title: getBilingualText(operSheet[i][0]), current: parseNumberValue(operSheet[i][1]), delta: parseNumberValue(operSheet[i][2]) });
             }
         }
 
         const creditLimits = [];
-        for(let i = 16; i <= 20; i++) {
+        for(let i = 17; i <= 20; i++) {
             if(operSheet[i] && operSheet[i][0] !== undefined && String(operSheet[i][0]).trim() !== '') {
                 creditLimits.push({ title: getBilingualText(operSheet[i][0]), limit: parseNumberValue(operSheet[i][1]), drawn: parseNumberValue(operSheet[i][2]), available: parseNumberValue(operSheet[i][3]) });
             }
@@ -2914,6 +3047,7 @@
             fuelInventories: [
                 { title: { uk: "Бензин", en: "Gasoline" }, current: 44, delta: 3 },
                 { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 50, delta: -32 },
+                { title: { uk: "Арктичний дизель", en: "Arctic diesel" }, current: 15, delta: 2 },
                 { title: { uk: "Газ комерційний (млн м³)", en: "Commercial gas (mln m³)" }, current: 120, delta: 5 },
                 { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 85, delta: 0 },
                 { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 35, delta: -2 }
@@ -3329,6 +3463,7 @@
     }
 
     function openSummaryEditor() {
+        if (isReadOnly) return;
         document.getElementById('editorDateLabel').innerText = currentReportDate;
         const ukText = globalData?.summary?.uk?.join('\n') || '';
         const enText = globalData?.summary?.en?.join('\n') || '';
@@ -3342,6 +3477,11 @@
     }
 
     async function saveSummaryToSharePoint() {
+        if (isReadOnly) {
+            showBanner("Дія відхилена: сторінка перебуває в режимі перегляду.", "error");
+            return;
+        }
+
         const btn = document.getElementById('btnSaveSummary');
         btn.innerText = "Збереження...";
         btn.disabled = true;
@@ -3388,6 +3528,7 @@
     dropZone.addEventListener('drop', e => { 
         e.preventDefault(); 
         e.stopPropagation(); 
+        if (isReadOnly) return;
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
             handleFile(e.dataTransfer.files); 
         }
@@ -3418,7 +3559,8 @@
         await loadAvailableDatesFromSP();
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
+        await initAccessControl();
         initEmptyDashboard();
         loadLatestFilledReport();
     });

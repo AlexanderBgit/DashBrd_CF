@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cashflow-ukrnafta",
+  "compatibility_date": "2026-09-21",
+  "assets": {
+    // Вкажіть папку, де лежить index.html та інші публічні файли.
+    // Якщо всі HTML/JS файли лежать просто в корені репозиторію, вкажіть "./"
+    // Але якщо вони в папці dist, public або build — обов'язково вкажіть її:
+    "directory": "./"
+  }
+}

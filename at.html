@@ -489,8 +489,7 @@
 
     // ═════════════════════ ЗАХИСТ ДОСТУПУ ТА РЕЖИМИ (PIN + SHA-256) ═════════════════════
     // Точний SHA-256 хеш для PIN "xxxx":
-// ═════════════════════ ЗАХИСТ ДОСТУПУ ТА РЕЖИМИ (PIN "2408") ═════════════════════
-    const PIN_HASH = "a7f9ba5d3d0fbe3d240d912ff969963e66ef0b0b8c6a2e411bc2fe5621453ef0";
+    const PIN_HASH = "45c7b309a477a1b496fdfe08084fdc6da0c987de0c479176a966b19cdad41d4d"; 
     let isReadOnly = true;
 
     // Автономний SHA-256 (працює навіть у file:// та http:// без обмежень Secure Context)
@@ -606,21 +605,38 @@
         window.history.replaceState({}, '', url);
     }
 
+    function normalizePin(raw) {
+        return String(raw == null ? '' : raw)
+            .normalize('NFKC')          // повноширинні цифри → звичайні
+            .replace(/[^\d]/g, '');     // лишаємо тільки цифри
+    }
+
     function promptForPin() {
         const input = prompt("Введіть PIN-код для ввімкнення режиму редагування:");
-        if (input === null || String(input).trim() === "") return false;
+        if (input === null) return false;
 
-        const cleanInput = String(input).trim();
+        const cleanInput = normalizePin(input);
+        if (!cleanInput) {
+            showError("PIN-код не введено.");
+            return false;
+        }
+
         const hash = sha256Sync(cleanInput);
 
         if (hash === PIN_HASH) {
             sessionStorage.setItem('cf_editor_authenticated', 'true');
             showSuccess("Режим редагування розблоковано");
             return true;
-        } else {
-            showError("Невірний PIN-код. Доступ заблоковано.");
-            return false;
         }
+
+        console.warn('[PIN] Невідповідність хешу', {
+            введено_символів: String(input).length,
+            після_очищення: cleanInput.length,
+            обчислений_хеш: hash,
+            очікуваний_хеш: PIN_HASH
+        });
+        showError("Невірний PIN-код. Доступ заблоковано.");
+        return false;
     }
 
     async function handleAccessToggle() {

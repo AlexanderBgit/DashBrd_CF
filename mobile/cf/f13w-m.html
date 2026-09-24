@@ -2882,30 +2882,61 @@
                 creditLimits.push({ title: getBilingualText(operSheet[i][0]), limit: parseNumberValue(operSheet[i][1]), drawn: parseNumberValue(operSheet[i][2]), available: parseNumberValue(operSheet[i][3]) });
             }
         }
+        // Визначаємо дату звіту з аркуша Excel (або беремо поточну активну)
+        const rawDateVal = (kpiSheet[1] && kpiSheet[1][4]) ? kpiSheet[1][4] : undefined;
+        let dateUkFormatted = formatExcelDate(rawDateVal, 'uk');
+        let dateEnFormatted = formatExcelDate(rawDateVal, 'en');
+
+        // Синхронізуємо currentReportDate в ISO-форматі (YYYY-MM-DD)
+        const parsedIso = extractCleanDate(dateUkFormatted);
+        if (parsedIso) {
+            currentReportDate = parsedIso;
+            registerAvailableDate(currentReportDate);
+        }
 
         globalData = {
             meta: {
                 uk: { 
-                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Прогноз ліквідності</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${currentReportDate} · млн грн</span>`, 
-                    titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме", 
-                    titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн" 
+                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateUkFormatted} · млн грн</span>`, 
+                    titleChart: "Прогноз ліквідності", 
+                    titleMainTable: "Прогноз грошових потоків", 
+                    titleSummary: "Управлінське резюме", 
+                    titleWC: "Оборотний капітал", 
+                    titleFuel: "Запаси, тис. т", 
+                    titleLimits: "Ресурси фінансування, млн грн" 
                 },
                 en: { 
-                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Liquidity forecast</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${currentReportDate} · UAH mln</span>`, 
-                    titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary", 
-                    titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln" 
+                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateEnFormatted} · UAH mln</span>`, 
+                    titleChart: "Liquidity Forecast", 
+                    titleMainTable: "Cash Flow Forecast", 
+                    titleSummary: "Executive Summary", 
+                    titleWC: "Working Capital", 
+                    titleFuel: "Reserves, ths t", 
+                    titleLimits: "Financing resources, UAH mln" 
                 }
             },
-            kpis: kpis, chart: { labels: labels, ownCash: ownCash, ownCashMznn: ownCashMznn, totalLiquidity: totalLiquidity, postImportLiquidity: postImportLiquidity, minThreshold: minThreshold, periods: periods },
+            kpis: kpis, 
+            chart: { labels: labels, ownCash: ownCash, ownCashMznn: ownCashMznn, totalLiquidity: totalLiquidity, postImportLiquidity: postImportLiquidity, minThreshold: minThreshold, periods: periods },
             periodMap: periodMap,
-            summary: { uk: summaryUk, en: summaryEn }, mainTable: { headers: cfHeaders, rows: cfRows },
-            workingCapital: workingCapital, fuelInventories: fuelInventories, creditLimits: creditLimits
+            summary: { uk: summaryUk, en: summaryEn }, 
+            mainTable: { headers: cfHeaders, rows: cfRows },
+            workingCapital: workingCapital, 
+            fuelInventories: fuelInventories, 
+            creditLimits: creditLimits
         };
+
+        // Оновлюємо відображення поточної дати в селекторі та шапці
+        const lbl = document.getElementById('lblSelectedDate');
+        if (lbl) lbl.innerText = dateUkFormatted;
+        const mNav = document.getElementById('mNavDate');
+        if (mNav) {
+            const parts = dateUkFormatted.split('.');
+            mNav.innerText = parts.length >= 2 ? `${parts[0]}.${parts[1]}` : dateUkFormatted;
+        }
 
         toggleUploadModal(false);
         updateLanguageDOM(); 
         buildChart();
-    }
 
     function getBilingualText(rawText) {
         if (rawText === undefined || rawText === null || String(rawText).trim() === "") return { uk: "", en: "" };
@@ -2914,7 +2945,24 @@
         const prefixMatch = cleanStr.match(/^([\s\-–—•*◦]+)/);
         const prefix = prefixMatch ? prefixMatch[1] : '';
         const coreText = cleanStr.substring(prefix.length).trim();
-        let englishTranslation = translationDictionary[coreText] || translationDictionary[cleanStr] || coreText;
+
+        let englishTranslation = "";
+        const normAcronym = coreText.toUpperCase().replace(/А/g, 'A').replace(/О/g, 'O').replace(/З/g, 'Z');
+
+        if (normAcronym === "AOZ") {
+            englishTranslation = "DPA";
+        } else if (normAcronym === "МОУ / AOZ" || normAcronym === "МОУ/AOZ" || normAcronym === "MOU / AOZ" || normAcronym === "MOU/AOZ") {
+            englishTranslation = "MoD / DPA";
+        } else {
+            englishTranslation = translationDictionary[coreText] || translationDictionary[cleanStr] || coreText;
+        }
+
+        englishTranslation = englishTranslation
+            .replace(/(\d+)\s*днів/gi, '$1 days')
+            .replace(/(\d+)\s*дни/gi, '$1 days')
+            .replace(/(\d+)\s*день/gi, '$1 day')
+            .replace(/(\d+)\s*млн грн/gi, '$1 UAH mln');
+
         return { uk: textStr, en: prefix + englishTranslation };
     }
 

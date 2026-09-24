@@ -2937,7 +2937,8 @@
         toggleUploadModal(false);
         updateLanguageDOM(); 
         buildChart();
-
+    }
+    
     function getBilingualText(rawText) {
         if (rawText === undefined || rawText === null || String(rawText).trim() === "") return { uk: "", en: "" };
         let textStr = String(rawText);

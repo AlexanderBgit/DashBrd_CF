@@ -362,7 +362,7 @@
         </div>
     </div>
 
-    <!-- ЄДИНА ПАНЕЛЬ КЕРУВАННЯ (ДЕСКТОП + МОБІЛЬНЕ ВИСУВНЕ МЕНЮ) -->
+    <!-- ЄДИНА ПАНЕЛЬ КЕРУВАННЯ -->
     <div id="ctrlPanel" class="fixed top-4 right-6 flex items-center space-x-2 print-hide z-50 bg-white/95 backdrop-blur-md p-1.5 rounded-full shadow-xl border border-slate-200">
         <!-- Навігація на інші сторінки -->
         <div class="flex items-center gap-0.5 pr-1.5 mr-0.5 border-r border-slate-200">
@@ -720,7 +720,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНЕ ВІКНО ВВЕДЕННЯ ПІН-КОДУ (UI/UX PIN-PAD ДЛЯ МОБІЛЬНИХ ТА ДЕСКТОПУ) -->
+    <!-- МОДАЛЬНЕ ВІКНО ВВЕДЕННЯ ПІН-КОДУ (UI/UX PIN-PAD) -->
     <div id="pinModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden flex items-center justify-center z-[200] p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-xs w-full p-6 text-center border border-slate-100">
             <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner text-xl">
@@ -729,7 +729,6 @@
             <h3 class="text-base font-bold text-slate-800">Режим редагування</h3>
             <p class="text-xs text-slate-500 mt-1 mb-4">Введіть PIN-код доступу</p>
 
-            <!-- Індикатори цифр PIN -->
             <div class="flex justify-center gap-3 mb-6" id="pinDots">
                 <span class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white transition-all"></span>
                 <span class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white transition-all"></span>
@@ -737,7 +736,6 @@
                 <span class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white transition-all"></span>
             </div>
 
-            <!-- Цифрова клавіатура -->
             <div class="grid grid-cols-3 gap-2.5 max-w-[240px] mx-auto mb-4">
                 <button onclick="pinAppend('1')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">1</button>
                 <button onclick="pinAppend('2')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">2</button>
@@ -790,27 +788,15 @@
     let currentPinInput = "";
     let pinResolveCallback = null;
 
-    // Синхронний автономний SHA-256
     function sha256Sync(ascii) {
-        function rightRotate(value, amount) {
-            return (value >>> amount) | (value << (32 - amount));
-        }
-        let mathPow = Math.pow;
-        let maxWord = mathPow(2, 32);
-        let lengthProperty = 'length';
-        let i, j;
-        let result = '';
-        let words = [];
-        let asciiBitLength = ascii[lengthProperty] * 8;
-        let hash = [];
-        let k = [];
-        let primeCounter = 0;
-        let isComposite = {};
+        function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
+        let mathPow = Math.pow, maxWord = mathPow(2, 32), lengthProperty = 'length';
+        let i, j, result = '', words = [], asciiBitLength = ascii[lengthProperty] * 8;
+        let hash = [], k = [], primeCounter = 0, isComposite = {};
+
         for (let candidate = 2; primeCounter < 64; candidate++) {
             if (!isComposite[candidate]) {
-                for (i = 0; i < 313; i += candidate) {
-                    isComposite[i] = candidate;
-                }
+                for (i = 0; i < 313; i += candidate) isComposite[i] = candidate;
                 hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
                 k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
             }
@@ -824,33 +810,19 @@
         }
         words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
         words[words[lengthProperty]] = (asciiBitLength | 0);
+
         for (j = 0; j < words[lengthProperty];) {
-            let w = words.slice(j, j += 16);
-            let oldHash = hash;
+            let w = words.slice(j, j += 16), oldHash = hash;
             hash = hash.slice(0, 8);
             for (i = 0; i < 64; i++) {
-                let i2 = i + j;
-                let w15 = w[i - 15], w2 = w[i - 2];
+                let i2 = i + j, w15 = w[i - 15], w2 = w[i - 2];
                 let a = hash[0], e = hash[4];
-                let temp1 = hash[7]
-                    + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
-                    + ((e & hash[5]) ^ ((~e) & hash[6]))
-                    + k[i]
-                    + (w[i] = (i < 16) ? w[i] : (
-                            w[i - 16]
-                            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
-                            + w[i - 7]
-                            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
-                        ) | 0
-                    );
-                let temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
-                    + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+                let temp1 = hash[7] + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) + ((e & hash[5]) ^ ((~e) & hash[6])) + k[i] + (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))) | 0);
+                let temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
                 hash = [(temp1 + temp2) | 0].concat(hash);
                 hash[4] = (hash[4] + temp1) | 0;
             }
-            for (i = 0; i < 8; i++) {
-                hash[i] = (hash[i] + oldHash[i]) | 0;
-            }
+            for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
         }
         for (i = 0; i < 8; i++) {
             for (j = 3; j + 1; j--) {
@@ -1188,13 +1160,24 @@
         }
         const str = String(val).trim();
         const dmyMatch = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-        if (dmyMatch) {
-            return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
-        }
-        if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-            return str.substring(0, 10);
-        }
+        if (dmyMatch) return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
         return str;
+    }
+
+    // ─── Допоміжні функції для розрахунків зі Snapshot ───
+    function getMlnValue(node, colKey) {
+        if (!node || !node.values) return 0;
+        let v = node.values[colKey];
+        if (v === undefined || v === null || v === '') return 0;
+        if (typeof v === 'string') {
+            v = v.replace(/[\s\u00A0\u202F\u2009]/g, '').replace(/\u2212/g, '-');
+            if (v.indexOf('.') >= 0 && v.indexOf(',') >= 0) v = v.replace(/,/g, '');
+            else v = v.replace(',', '.');
+        }
+        const n = Number(v);
+        if (!isFinite(n)) return 0;
+        return Math.round(n / 1000000);
     }
 
     function toggleUploadModal(show) {
@@ -2783,6 +2766,147 @@
         });
     }
 
+    function processWorkbookData(workbook) {
+        if (!workbook.Sheets['KPI_Summary'] || !workbook.Sheets['Cash_Flow_Forecast'] || !workbook.Sheets['Chart_Data'] || !workbook.Sheets['Operational']) {
+            throw new Error("Відсутні потрібні листи Excel!");
+        }
+
+        const kpiSheet = XLSX.utils.sheet_to_json(workbook.Sheets['KPI_Summary'], {header: 1});
+        const cfSheet = XLSX.utils.sheet_to_json(workbook.Sheets['Cash_Flow_Forecast'], {header: 1});
+        const chartSheet = XLSX.utils.sheet_to_json(workbook.Sheets['Chart_Data'], {header: 1});
+        const operSheet = XLSX.utils.sheet_to_json(workbook.Sheets['Operational'], {header: 1});
+
+        const kpis = [];
+        for(let i = 1; i <= 4; i++) {
+            if(kpiSheet[i] && kpiSheet[i].length >= 4) {
+                let rawKpiTitle = String(kpiSheet[i][0]);
+                if (rawKpiTitle.includes("Використання лімітів") || rawKpiTitle.includes("Доступні кредитні ліміти")) rawKpiTitle = "Доступні кредитні лінії";
+                if (rawKpiTitle.includes("Точність прогнозу")) rawKpiTitle = "Доступний постімпорт";
+
+                const trendStr = String(kpiSheet[i][3]);
+                const isPos = trendStr.includes('+') || (!trendStr.includes('-'));
+                let cleanTrendEn = trendStr.replace('млн грн', ' UAH mln').replace(/днів|дні/g, ' days').replace('день', ' day').trim();
+
+                kpis.push({
+                    title: getBilingualText(rawKpiTitle), value: parseNumberValue(kpiSheet[i][1]), unit: getBilingualText(kpiSheet[i][2]),
+                    trend: { isPositive: isPos, text: { uk: (isPos ? '▲ ' : '▼ ') + trendStr, en: (isPos ? '▲ ' : '▼ ') + cleanTrendEn } },
+                    isGray: false
+                });
+            }
+        }
+
+        const summaryUk = [], summaryEn = [];
+        for(let i = 8; i < kpiSheet.length; i++) {
+            if(kpiSheet[i] && kpiSheet[i][0] !== undefined && i !== 7) {
+                let textUk = String(kpiSheet[i][0]).trim();
+                let textEn = (kpiSheet[i][1] && String(kpiSheet[i][1]).trim() !== '') ? String(kpiSheet[i][1]).trim() : textUk;
+                if (textUk.startsWith('#')) textUk = '&nbsp;';
+                if (textEn.startsWith('#')) textEn = '&nbsp;';
+                summaryUk.push(textUk);
+                summaryEn.push(textEn);
+            }
+        }
+
+        const cfHeaders = cfSheet[0].map(h => {
+            let str = String(h);
+            let enStr = str.replace('Т-', 'T-').replace('Т0', 'T0').replace('Т1', 'T1').replace('Т2', 'T2').replace('Т3', 'T3');
+            if (str.toLowerCase().includes('стаття')) { str = ""; enStr = ""; }
+            if (str.toLowerCase().includes('всього')) enStr = "Total";
+            return { uk: str, en: enStr };
+        });
+
+        const cfRows = [];
+        for(let i = 1; i < cfSheet.length; i++) {
+            const row = cfSheet[i];
+            if(!row || !row.length || row[0] === undefined) continue;
+            const rowName = String(row[0]).trim();
+            let type = "sub";
+            if(["Надходження", "Виплати", "Грошові залишки"].includes(rowName)) type = "main";
+            if(["Чистий грошовий потік"].includes(rowName)) type = "total";
+            if(["Операційний + інвестиційний потік", "Фінансова діяльність"].includes(rowName)) type = "semibold";
+
+            const rowValues = [];
+            for (let col = 1; col < cfHeaders.length; col++) {
+                let v = row[col];
+                rowValues.push((v === undefined || v === null || String(v).trim() === '' || String(v).trim() === '-') ? (rowName === "Грошові залишки" ? '' : '-') : parseNumberValue(v));
+            }
+
+            cfRows.push({ title: getBilingualText(row[0]), type: type, values: rowValues, highlightNeg: ["Надходження", "Чистий грошовий потік"].includes(rowName) });
+        }
+        
+        const cc = { label: 0, period: 1, own: 2, total: 3, post: 4, min: 5, mznn: 6 };
+        const labels = [], ownCash = [], totalLiquidity = [], postImportLiquidity = [], ownCashMznn = [], periods = [];
+        const periodMap = {};
+        for(let i = 1; i < chartSheet.length; i++) {
+            if(!chartSheet[i] || chartSheet[i][cc.label] === undefined) continue;
+            const lbl = String(chartSheet[i][cc.label]);
+            labels.push(lbl);             
+            ownCash.push(parseNumberValue(chartSheet[i][cc.own]));         
+            ownCashMznn.push(parseNumberValue(chartSheet[i][cc.mznn]));         
+            totalLiquidity.push(parseNumberValue(chartSheet[i][cc.total]));   
+            postImportLiquidity.push(parseNumberValue(chartSheet[i][cc.post])); 
+
+            const raw = chartSheet[i][cc.period];
+            const per = (raw !== undefined && raw !== null) ? String(raw).trim() : '';
+            periods.push(per);
+            if (per) periodMap[normalizePeriodKey(lbl)] = per;
+        }
+        const minThreshold = (chartSheet[1] && chartSheet[1][cc.min] !== undefined) ? parseNumberValue(chartSheet[1][cc.min]) : 2500;
+
+        const workingCapital = [];
+        for(let i = 1; i <= 7; i++) {
+            if(operSheet[i] && operSheet[i][0] !== undefined) {
+                const rawName = String(operSheet[i][0]);
+                const cleanName = rawName.replace(/[\u00A0\u200B]/g, ' ').trim();
+                workingCapital.push({ 
+                    title: getBilingualText(rawName), 
+                    current: parseNumberValue(operSheet[i][1]), 
+                    delta: parseNumberValue(operSheet[i][2]), 
+                    isSub: cleanName.startsWith('-') || rawName.startsWith(' ') || rawName.startsWith('-'), 
+                    isTotal: i === 7,
+                    isGray: false
+                });
+            }
+        }
+
+        const fuelInventories = [];
+        for(let i = 11; i <= 16; i++) {
+            if(operSheet[i] && operSheet[i][0] !== undefined && String(operSheet[i][0]).trim() !== '') {
+                fuelInventories.push({ title: getBilingualText(operSheet[i][0]), current: parseNumberValue(operSheet[i][1]), delta: parseNumberValue(operSheet[i][2]) });
+            }
+        }
+
+        const creditLimits = [];
+        for(let i = 17; i <= 20; i++) {
+            if(operSheet[i] && operSheet[i][0] !== undefined && String(operSheet[i][0]).trim() !== '') {
+                creditLimits.push({ title: getBilingualText(operSheet[i][0]), limit: parseNumberValue(operSheet[i][1]), drawn: parseNumberValue(operSheet[i][2]), available: parseNumberValue(operSheet[i][3]) });
+            }
+        }
+
+        globalData = {
+            meta: {
+                uk: { 
+                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Прогноз ліквідності</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${currentReportDate} · млн грн</span>`, 
+                    titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме", 
+                    titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн" 
+                },
+                en: { 
+                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Liquidity forecast</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${currentReportDate} · UAH mln</span>`, 
+                    titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary", 
+                    titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln" 
+                }
+            },
+            kpis: kpis, chart: { labels: labels, ownCash: ownCash, ownCashMznn: ownCashMznn, totalLiquidity: totalLiquidity, postImportLiquidity: postImportLiquidity, minThreshold: minThreshold, periods: periods },
+            periodMap: periodMap,
+            summary: { uk: summaryUk, en: summaryEn }, mainTable: { headers: cfHeaders, rows: cfRows },
+            workingCapital: workingCapital, fuelInventories: fuelInventories, creditLimits: creditLimits
+        };
+
+        toggleUploadModal(false);
+        updateLanguageDOM(); 
+        buildChart();
+    }
+
     function getBilingualText(rawText) {
         if (rawText === undefined || rawText === null || String(rawText).trim() === "") return { uk: "", en: "" };
         let textStr = String(rawText);
@@ -2871,336 +2995,6 @@
 
     function forceTableRebuild() {
         if(globalData) updateLanguageDOM();
-    }
-
-    function processSnapshotJson(snapshot) {
-        if (!snapshot || !snapshot.tree) throw new Error("Некоректний формат JSON");
-        const tree = snapshot.tree;
-        const cols = snapshot.meta && snapshot.columns ? snapshot.columns : (snapshot.columns || {});
-        const meta = snapshot.meta || {};
-        const forecastDate = extractCleanDate(meta.forecast_date) || extractCleanDate(meta.plan_fact_date) || currentReportDate || "2026-08-24";
-        registerAvailableDate(forecastDate);
-
-        const nodeCash   = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
-        const nodeCredit = findSnapshotNode(tree, "Доступні кредитні ліміти") || findSnapshotNode(tree, "Доступні кредитні лінії");
-        const nodePost   = findSnapshotNode(tree, "Доступний ліміт постімпорт");
-        const nodeMznn   = findSnapshotNode(tree, "Доступні залишки з врахуванням МЗНН та Страт резерву") || findSnapshotNode(tree, "Залишки з обмеженим доступом");
-
-        const tm1Key = (nodeCash && nodeCash.values && nodeCash.values.Tm1_fact !== undefined) ? "Tm1_fact"
-                     : (nodeCash && nodeCash.values && nodeCash.values.Tm1_forecast !== undefined) ? "Tm1_forecast" : "Tm1_plan";
-        const weekKeys   = [tm1Key, "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
-        const chartLabels = ["Т-1", "Т0", "Т1", "Т2", "Т3", "Т4", "Т5", "Т6", "Т7", "Т8", "Т9", "Т10", "Т11", "Т12"];
-
-        const periodRange = (k) => {
-            if (cols[k] && cols[k].date_range) return cols[k].date_range;
-            if (k.indexOf("Tm1") === 0) {
-                return (cols.Tm1_fact && cols.Tm1_fact.date_range) || (cols.Tm1_forecast && cols.Tm1_forecast.date_range) || "";
-            }
-            return "";
-        };
-
-        const ownCash = [], totalLiquidity = [], postImportLiquidity = [], ownCashMznn = [], periods = [];
-        weekKeys.forEach(k => {
-            const cash = getMlnValue(nodeCash, k);
-            const cred = getMlnValue(nodeCredit, k);
-            const post = getMlnValue(nodePost, k);
-            const hasMznn = nodeMznn && nodeMznn.values && nodeMznn.values[k] !== undefined && nodeMznn.values[k] !== null;
-
-            ownCash.push(cash);
-            totalLiquidity.push(cash + cred);
-            postImportLiquidity.push(cash + cred + post);
-            ownCashMznn.push(hasMznn ? getMlnValue(nodeMznn, k) : null);
-            periods.push(periodRange(k));
-        });
-
-        const curCash   = ownCash[0];
-        const curCred   = getMlnValue(nodeCredit, tm1Key) || getMlnValue(nodeCredit, "T0");
-        const curPost   = getMlnValue(nodePost, tm1Key) || getMlnValue(nodePost, "T0");
-        const curTotLiq = curCash + curCred;
-
-        const baseMln = dailyExpenseBaseMln(forecastDate, null);
-        const bufferDays = (baseMln && baseMln > 0) ? Math.round(curTotLiq / baseMln) : 0;
-
-        const kpis = [
-            { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: trendPending(), isGray: false },
-            { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: bufferDays, unit: { uk: daysFormUk(bufferDays), en: daysFormEn(bufferDays) }, trend: trendPending(), isGray: false },
-            { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: curCred, unit: { uk: "млн грн", en: "UAH mln" }, trend: trendPending(), isGray: false },
-            { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: (curPost === 0 ? '-' : curPost), unit: { uk: "млн грн", en: "UAH mln" }, trend: trendPending(), isGray: false }
-        ];
-
-        const tm1DevKey = (tm1Key.indexOf("forecast") >= 0) ? "dev_forecast" : "dev_fact";
-        const cfCols = [tm1Key, tm1DevKey, "T0", "T1", "T2", "T3", "M1", "M2", "M3", "TT0_12"];
-
-        const cfMapping = [
-            { name: "Надходження", target: "Всього надходжень", type: "main", neg: true },
-            { name: "Виплати", target: "Всього витрат (1+2+3+4+5)", type: "main" },
-            { name: "Обов’язкові платежі (ЗП, податки, енергія)", target: "Обов’язкові платежі", type: "sub" },
-            { name: "Переробка та виробництво", target: "Переробка", type: "sub" },
-            { name: "Закупівля нафтопродуктів", target: "Комерційний оборотний капітал", type: "sub" },
-            { name: "Стратегічні інвестиції", target: "Стратегічні інвестиції", type: "sub" },
-            { name: "Інші виплати", target: "Інші видатки", type: "sub" },
-            { name: "Фінансова діяльність", target: "Фінансова діяльність", type: "semibold" },
-            { name: "Чистий грошовий потік", target: "Чистий грошовий потік", type: "total", neg: true },
-            { name: "Грошові залишки", target: "Доступні залишки", type: "main" },
-            { name: "Доступні кредитні лінії", target: "Доступні кредитні ліміти", type: "sub" },
-            { name: "Доступний постімпорт", target: "Доступний ліміт постімпорт", type: "sub" }
-        ];
-
-        const cfRows = cfMapping.map(item => {
-            const n = findSnapshotNode(tree, item.target);
-            const vals = cfCols.map(k => getMlnValue(n, k));
-            return {
-                title: getBilingualText(item.name),
-                type: item.type,
-                values: vals,
-                highlightNeg: !!item.neg
-            };
-        });
-
-        const cfHeaders = [
-            { uk: "Стаття", en: "Item" },
-            { uk: "Т-1", en: "T-1" }, { uk: "Δ", en: "Δ" },
-            { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" },
-            { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" },
-            { uk: "M1", en: "M1" }, { uk: "M2", en: "M2" }, { uk: "M3", en: "M3" },
-            { uk: "Всього", en: "Total" }
-        ];
-
-        const dParts = String(forecastDate).split("-");
-        const dateFormatted = dParts.length === 3 ? `${dParts[2]}.${dParts[1]}.${dParts[0]}` : forecastDate;
-        currentReportDate = forecastDate;
-
-        globalData = {
-            meta: {
-                uk: {
-                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Прогноз ліквідності</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${dateFormatted} · млн грн</span>`,
-                    titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме",
-                    titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн"
-                },
-                en: {
-                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Liquidity forecast</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${dateFormatted} · UAH mln</span>`,
-                    titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary",
-                    titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln"
-                }
-            },
-            kpis: kpis,
-            chart: { labels: chartLabels, ownCash: ownCash, ownCashMznn: ownCashMznn, totalLiquidity: totalLiquidity, postImportLiquidity: postImportLiquidity, minThreshold: 2500, periods: periods },
-            periodMap: { "T-1": periodRange(tm1Key), "T0": periodRange("T0"), "T1": periodRange("T1"), "T2": periodRange("T2"), "T3": periodRange("T3") },
-            summary: { uk: [`Дані на ${dateFormatted} консолідовано зі зрізу.`], en: [`Data as of ${dateFormatted} consolidated from snapshot.`] },
-            mainTable: { headers: cfHeaders, rows: cfRows },
-            workingCapital: defaultWorkingCapital(),
-            fuelInventories: defaultFuelInventories(),
-            creditLimits: defaultCreditLimits()
-        };
-        window.globalData = globalData;
-        syncHeaderDate();
-        return globalData;
-    }
-
-    function loadDemoDashboard() {
-        if (isReadOnly) return;
-        const demoData = {
-            meta: {
-                uk: {
-                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Прогноз ліквідності</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · 21.08.2026 · млн грн</span>`,
-                    titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме",
-                    titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн"
-                },
-                en: {
-                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Liquidity forecast</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · Aug 21, 2026 · UAH mln</span>`,
-                    titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary",
-                    titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln"
-                }
-            },
-            kpis: [
-                { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: 6889, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "▲ +450 млн грн", en: "▲ +450 UAH mln" } }, isGray: false },
-                { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: 34, unit: { uk: "дні", en: "days" }, trend: { isPositive: true, text: { uk: "▲ +3 дні", en: "▲ +3 days" } }, isGray: false },
-                { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: 2100, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: false, text: { uk: "▼ -100 млн грн", en: "▼ -100 UAH mln" } }, isGray: false },
-                { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: 850, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "▲ +50 млн грн", en: "▲ +50 UAH mln" } }, isGray: false }
-            ],
-            chart: {
-                labels: ["T0", "T1", "T2", "T3", "M1", "M2", "M3"],
-                ownCash: [4789, 4500, 4300, 4100, 3900, 3700, 3600],
-                ownCashMznn: [3200, 3100, 3000, 2900, 2800, 2750, 2700],
-                totalLiquidity: [6889, 6600, 6400, 6200, 6000, 5800, 5700],
-                postImportLiquidity: [7739, 7450, 7250, 7050, 6850, 6650, 6550],
-                minThreshold: 2500,
-                periods: ["21.08", "28.08", "04.09", "11.09", "Вересень", "Жовтень", "Листопад"]
-            },
-            periodMap: { "T0": "21.08", "T1": "28.08", "T2": "04.09", "T3": "11.09" },
-            summary: {
-                uk: [
-                    "Ключові фактори тижня:\n• Забезпечено стабільний залишок ліквідності на рівні 6.8 млрд грн.\n• Здійснено планове фінансування операційної діяльності та податкових зобов'язань.",
-                    "Оборотний капітал та запаси:\n• Рівень запасів нафтопродуктів відповідає цільовому нормативу.\n• Кредиторська заборгованість обслуговується згідно з графіком платежів."
-                ],
-                en: [
-                    "Key Weekly Factors:\n• Maintained a stable liquidity balance at UAH 6.8 bln.\n• Completed planned operational funding and tax obligations.",
-                    "Working Capital & Reserves:\n• Inventory levels match the targeted operating thresholds.\n• Accounts payable are serviced according to payment schedule."
-                ]
-            },
-            mainTable: {
-                headers: [{ uk: "Стаття", en: "Item" }, { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" }, { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" }, { uk: "Δ", en: "Δ" }],
-                rows: [
-                    { title: { uk: "Надходження", en: "Inflows" }, type: "main", values: [1200, 950, 890, 1100, 150], highlightNeg: true },
-                    { title: { uk: "Виплати", en: "Outflows" }, type: "main", values: [-950, -1100, -820, -900, -80], highlightNeg: false },
-                    { title: { uk: "Чистий грошовий потік", en: "Net cash flow" }, type: "total", values: [250, -150, 70, 200, 70], highlightNeg: true },
-                    { title: { uk: "Грошові залишки", en: "Cash balances" }, type: "main", values: [4789, 4639, 4709, 4909, 250], highlightNeg: false }
-                ]
-            },
-            workingCapital: defaultWorkingCapital(),
-            fuelInventories: defaultFuelInventories(),
-            creditLimits: defaultCreditLimits()
-        };
-        globalData = demoData;
-        updateLanguageDOM();
-        buildChart();
-        showInfo("Завантажено демо-дані");
-    }
-
-    function updateLanguageDOM() {
-        if (!globalData) return;
-        const lang = currentLang, meta = globalData.meta[lang];
-
-        document.getElementById('dashboardTitle').innerHTML = meta.title; 
-        ['titleChart', 'titleMainTable', 'titleSummary', 'titleWC', 'titleFuel', 'titleLimits'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.innerText = meta[id];
-        });
-        
-        const thWC = document.getElementById('thWCCurrent');
-        if (thWC) thWC.innerText = lang === 'uk' ? 'Поточний' : 'Current';
-        const thFuel = document.getElementById('thFuelCurrent');
-        if (thFuel) thFuel.innerText = lang === 'uk' ? 'Поточні' : 'Current';
-        renderCompareUi();
-
-        document.getElementById('kpiContainer').innerHTML = globalData.kpis.map((kpi, idx) => `
-            <div class="kpi-card">
-                <button onclick="toggleKpiColor(${idx})" class="absolute top-2 right-2 print-hide text-slate-300 hover:text-slate-500 cursor-pointer p-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12v12z"/></svg></button>
-                <span class="kpi-title">${kpi.title[lang]}</span>
-                <div class="flex items-baseline justify-center gap-1.5 mt-0.5 mb-0.5">
-                    <span class="kpi-value">${formatNum(kpi.value)}</span>
-                    <span class="unit-label">${kpi.unit[lang]}</span>
-                </div>
-                <span class="${(kpi.isGray || kpi.trendNA) ? 'gray-trend' : (kpi.trend.isPositive ? 'positive-trend' : 'negative-trend')}">${kpi.trend.text[lang]}</span>
-            </div>`).join('');
-
-        document.getElementById('summaryTexts').innerHTML = globalData.summary[lang].map(t => {
-            const lines = t.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            let htmlContent = '';
-            let inList = false;
-
-            lines.forEach(line => {
-                if (/^[\s\u00A0]*[•◦\-*–—]/.test(line)) {
-                    let text = line.replace(/^[•◦\-*–—\s\u00A0]+/, '');
-                    if (!inList) {
-                        htmlContent += '<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px;">';
-                        inList = true;
-                    }
-                    htmlContent += `<li style="line-height: 1.2;"><span style="color: #94a3b8; margin-right: 6px; font-weight: bold;">•</span><span class="bullet-text">${text}</span></li>`;
-                } else {
-                    if (inList) { htmlContent += '</ul>'; inList = false; }
-                    let pStyle = isSummaryHeadersBold ? "font-weight: 700; color: #0f172a;" : "font-weight: 500; color: #334155;";
-                    htmlContent += `<p style="margin: 0; line-height: 1.25; ${pStyle}">${line}</p>`;
-                }
-            });
-            if (inList) htmlContent += '</ul>';
-            return `<div class="summary-row"><div class="summary-cell">${htmlContent}</div></div>`;
-        }).join('');
-        
-        applySummaryFontSize(); 
-        applySummaryGap();
-        applyLetterSpacing();
-        renderLineLabelMenu();
-        scheduleSummaryFit(false);
-
-        const wcMenu = document.getElementById('wcMenu');
-        if (wcMenu) {
-            wcMenu.innerHTML = globalData.workingCapital.map((row, idx) => `
-                <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-xs font-medium">
-                    <input type="checkbox" ${row.isGray ? 'checked' : ''} onchange="toggleWcDeltaColor(${idx})" class="w-3.5 h-3.5 text-indigo-600 rounded">
-                    <span class="truncate">${row.title[lang]}</span>
-                </label>
-            `).join('');
-        }
-
-        document.getElementById('thLimitsHead').innerHTML = (lang === 'uk' ? ['','Ліміт','Вибрано','Доступно'] : ['','Limit','Drawn','Available']).map(h => `<th>${h}</th>`).join('');
-
-        let html = '', deltaValIndex = globalData.mainTable.headers.findIndex(h => h.uk === 'Δ') - 1;
-        const showTableDates = document.getElementById('chk_table_dates') ? document.getElementById('chk_table_dates').checked : false;
-
-        document.getElementById('mainForecastTable').querySelector('thead tr').innerHTML = globalData.mainTable.headers.map(h => {
-            const per = globalData.periodMap ? globalData.periodMap[normalizePeriodKey(h.uk)] : '';
-            return `<th>${h[lang]}${(per && showTableDates) ? `<span class="th-period">${per}</span>` : ''}</th>`;
-        }).join('');
-        
-        const totalOutflowsRow = globalData.mainTable.rows.find(r => r.title.uk.trim() === "Виплати");
-        const totalOutflowsValues = totalOutflowsRow ? totalOutflowsRow.values : [];
-
-        const activeHighlightMap = {
-            mandatory: document.getElementById('chk_mandatory') ? document.getElementById('chk_mandatory').checked : true,
-            production: document.getElementById('chk_production') ? document.getElementById('chk_production').checked : false,
-            fuel: document.getElementById('chk_fuel') ? document.getElementById('chk_fuel').checked : false,
-            strategic: document.getElementById('chk_strategic') ? document.getElementById('chk_strategic').checked : false,
-            others: document.getElementById('chk_others') ? document.getElementById('chk_others').checked : false
-        };
-
-        const verifyHighlightActivation = (titleObj) => {
-            const ukText = titleObj.uk.toLowerCase();
-            if (ukText.includes("обов’язкові платежі") && activeHighlightMap.mandatory) return true;
-            if (ukText.includes("переробка") && activeHighlightMap.production) return true;
-            if (ukText.includes("закупівля нафтопродуктів") && activeHighlightMap.fuel) return true;
-            if (ukText.includes("стратегічні інвестиції") && activeHighlightMap.strategic) return true;
-            if (ukText.includes("інші виплати") && activeHighlightMap.others) return true;
-            return false;
-        };
-
-        globalData.mainTable.rows.forEach(row => {
-            html += `<tr class="${row.type === 'main' ? 'row-main' : (row.type === 'total' ? 'row-total' : (row.type === 'semibold' ? 'font-semibold' : 'sub-row'))}"><td>${row.title[lang]}</td>`;
-            row.values.forEach((v, idx) => {
-                let cellClass = "";
-                if ((row.highlightNeg && v < 0) || (row.title.uk.trim() === "Виплати" && idx === deltaValIndex && v < 0)) {
-                    cellClass = 'class="neg-bright"';
-                } else if (verifyHighlightActivation(row.title) && idx !== deltaValIndex) {
-                    const referenceOutflow = totalOutflowsValues[idx];
-                    if (referenceOutflow && referenceOutflow !== 0 && typeof v === 'number') {
-                        if (Math.abs(v) > (Math.abs(referenceOutflow) * 0.45)) cellClass = 'class="neg-bright"';
-                    }
-                }
-                let formatted = formatNum(v);
-                html += `<td ${cellClass}>${(idx === deltaValIndex && formatted === '-') ? '' : formatted}</td>`;
-            });
-            html += `</tr>`;
-        });
-        document.getElementById('mainForecastTable').querySelector('tbody').innerHTML = html;
-
-        document.getElementById('tableWC').querySelector('tbody').innerHTML = globalData.workingCapital.map(row => {
-            const isAdvancesPaid = row.title.uk.trim().includes("Аванси видані");
-            let colorClass = (row.delta < 0 && !row.isGray && isAdvancesPaid) ? 'neg-green-cool' : '';
-            let textClass = row.isGray ? '!text-slate-400 !font-normal' : '';
-            return `<tr class="${row.isSub ? 'sub-row' : (row.isTotal ? 'row-total' : '')}">
-                <td>${row.title[lang]}</td>
-                <td>${formatNum(row.current)}</td>
-                <td class="whitespace-nowrap ${colorClass} ${textClass}">${formatNum(row.delta)}</td>
-            </tr>`;
-        }).join('');
-
-        document.getElementById('tableFuel').querySelector('tbody').innerHTML = globalData.fuelInventories.map(row => 
-            `<tr><td>${row.title[lang]}</td><td>${formatNum(row.current)}</td><td>${formatNum(row.delta)}</td></tr>`
-        ).join('');
-
-        document.getElementById('tableLimits').querySelector('tbody').innerHTML = globalData.creditLimits.map(row => {
-            let cls = (row.title.uk === 'Всього' || row.title.en === 'Total') ? 'row-total' : 'row-main';
-            return `<tr class="${cls}"><td>${row.title[lang]}</td><td>${formatNum(row.limit)}</td><td>${formatNum(row.drawn)}</td><td>${formatNum(row.available)}</td></tr>`;
-        }).join('');
-
-        if (myLiquidityChart) {
-            myLiquidityChart.data.datasets[0].label = chartTranslations[lang].totalLiquidity;
-            myLiquidityChart.data.datasets[1].label = chartTranslations[lang].ownCash;
-            myLiquidityChart.data.datasets[2].label = chartTranslations[lang].ownCashMznn;
-            myLiquidityChart.data.datasets[3].label = chartTranslations[lang].postImport;
-            myLiquidityChart.data.datasets[4].label = chartTranslations[lang].minLimit;
-            myLiquidityChart.update('none');
-        }
     }
 
     function toggleLanguage() {

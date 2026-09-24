@@ -16,14 +16,16 @@
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body { 
-            font-family: 'Helvetica', sans-serif; 
-            background-color: #f3f4f6; 
-            padding: 12px; 
+            font-family: 'Helvetica', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: #f1f5f9; 
             color: #334155; 
-            line-height: 1.15; 
+            line-height: 1.25; 
+            margin: 0;
+            padding: 12px;
             transition: background-color 0.3s;
         }
         
@@ -33,7 +35,7 @@
             margin: 0 auto; 
             display: flex; 
             flex-direction: column; 
-            background-color: #f3f4f6; 
+            background-color: #f8fafc; 
             padding: 25px 30px 15px 35px; 
             box-sizing: border-box; 
             overflow: hidden; 
@@ -41,14 +43,14 @@
         }
         
         body.preview-mode { 
-            background-color: #1e293b; 
+            background-color: #0f172a; 
             padding: 20px 0; 
             display: flex; 
             justify-content: center; 
             overflow-x: hidden;
         }
         
-        body.preview-mode .executive-container {
+        body.preview-mode .executive-container { 
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
             transform-origin: top center;
             transform: scale(var(--preview-scale, 1));
@@ -70,105 +72,112 @@
                 border: none !important; page-break-inside: avoid !important; 
                 background-color: #ffffff !important;
             }
-            .print-hide, .pdf-hide { display: none !important; }
+            .print-hide, .pdf-hide, #mobileBottomBar, #pinModal { display: none !important; }
             .kpi-card, .block-container { background-color: #ffffff !important; }
-            .summary-block { background-color: #e5e7eb !important; } 
+            .summary-block { background-color: #e2e8f0 !important; } 
         }
         
         body.preview-mode .print-hide { display: none !important; }
 
-        .kpi-card { position: relative; background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        /* Захист режиму перегляду (Read-Only) */
+        body.readonly-mode .editor-only { display: none !important; }
+
+        .kpi-card { position: relative; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .kpi-title { font-size: 11.5pt; font-weight: 600; color: #64748b; margin-bottom: 2px; }
         .kpi-value { font-size: 38pt; font-weight: 700; color: #0f172a; line-height: 1; } 
         .unit-label { font-size: 10.5pt; text-transform: lowercase; color: #94a3b8; font-weight: 500; } 
         
-        .positive-trend { color: #059669; opacity: 0.6; font-weight: 500; font-size: 10.5pt; margin-top: 2px; }
-        .negative-trend { color: #dc2626; opacity: 0.6; font-weight: 500; font-size: 10.5pt; margin-top: 2px; }
-        .gray-trend { color: #64748b !important; opacity: 0.7; font-weight: 500; font-size: 10.5pt; margin-top: 2px; }
+        .positive-trend { color: #059669; opacity: 0.85; font-weight: 600; font-size: 10.5pt; margin-top: 2px; }
+        .negative-trend { color: #dc2626; opacity: 0.85; font-weight: 600; font-size: 10.5pt; margin-top: 2px; }
+        .gray-trend { color: #64748b !important; opacity: 0.8; font-weight: 500; font-size: 10.5pt; margin-top: 2px; }
 
-        .block-container { background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .block-container { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .block-title { font-size: 13.5pt; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
         
         .exec-table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
-        .exec-table th { font-size: 10.5pt; color: #64748b; font-weight: 600; padding: 1px 5px; border-bottom: 1.5px solid #94a3b8; text-align: right; }
+        .exec-table th { font-size: 10.5pt; color: #64748b; font-weight: 600; padding: 3px 6px; border-bottom: 1.5px solid #94a3b8; text-align: right; }
         .exec-table th:first-child { text-align: left; }
-        .exec-table th .th-period { display: block; font-size: 6.8pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.2px; white-space: nowrap; line-height: 1.15; margin-top: 1px; }
-        .exec-table td { padding: 0.5px 5px; text-align: right; color: #334155; border-bottom: none; white-space: nowrap; }
+        .exec-table th .th-period { display: block; font-size: 7.2pt; font-weight: 500; color: #94a3b8; letter-spacing: -0.2px; white-space: nowrap; line-height: 1.15; margin-top: 1px; }
+        .exec-table td { padding: 1.5px 6px; text-align: right; color: #334155; border-bottom: none; white-space: nowrap; }
         .exec-table td:first-child { text-align: left; font-weight: 500; white-space: nowrap; letter-spacing: -0.3px; }
-        .exec-table tr.sub-row td { font-size: 9.5pt; color: #64748b; padding-top: 0.0px; padding-bottom: 0.0px; }
+        .exec-table tr.sub-row td { font-size: 9.5pt; color: #64748b; }
         
         .row-main td { font-weight: 700; color: #0f172a; }
-        .row-total td { font-weight: 700; color: #0f172a; border-top: 1.5px solid #94a3b8 !important; padding-top: 1.5px; }
+        .row-total td { font-weight: 700; color: #0f172a; border-top: 1.5px solid #94a3b8 !important; padding-top: 3px; }
         .exec-table td.neg-bright { color: #dc2626 !important; font-weight: 700 !important; } 
         .exec-table td.neg-green { color: #059669 !important; font-weight: 700 !important; } 
         .exec-table td.neg-green-cool { color: #0d9488 !important; font-weight: 700 !important; } 
         
-        .summary-block { background-color: #e5e7eb; border: 1px solid #d1d5db; box-shadow: 0 2px 4px rgba(0,0,0,0.04); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; height: 100%; }
-        .summary-content { display: flex; flex-grow: 1; flex-direction: column; justify-content: flex-start; gap: 8px; border-collapse: collapse; margin: 0; padding: 0; width: 100%; height: 100%; }
+        .summary-block { background-color: #e2e8f0; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; height: 100%; }
+        .summary-content { display: flex; flex-grow: 1; flex-direction: column; justify-content: flex-start; gap: 8px; margin: 0; padding: 0; width: 100%; height: 100%; }
         .summary-row { display: table-row !important; }
-        .summary-cell { display: table-cell !important; vertical-align: middle; padding: 4px 0; }
+        .summary-cell { display: table-cell !important; vertical-align: middle; padding: 2px 0; }
         
-        .summary-block p { font-size: 11pt; font-weight: 500; color: #334155; line-height: 1.0; margin: 0; text-align: left; white-space: normal; word-wrap: break-word; }
+        .summary-block p { font-size: 11pt; font-weight: 500; color: #334155; line-height: 1.25; margin: 0; text-align: left; }
         .summary-block ul { margin: 0; padding: 0; list-style: none; }
-        .summary-block li { margin: 0; padding: 0; text-indent: 0; }
-        .summary-block li span.bullet-text { font-weight: 500; color: #334155; line-height: 1.0; text-align: left; white-space: normal; word-wrap: break-word; }
+        .summary-block li { margin: 0; padding: 0; }
+        .summary-block li span.bullet-text { font-weight: 500; color: #334155; line-height: 1.2; text-align: left; }
 
         @keyframes pulse-fast { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .is-generating { animation: pulse-fast 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; cursor: wait !important; pointer-events: none; }
         .force-hide { display: none !important; }
 
-        /* ===== Графік на весь екран ===== */
+        /* Повноекранний режим графіка */
         #blockChart.chart-fs {
             position: fixed !important;
             inset: 0 !important;
-            z-index: 95 !important;
+            z-index: 120 !important;
             margin: 0 !important;
             border-radius: 0 !important;
             border: none !important;
-            padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px !important;
-            background: #fff !important;
+            padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px)) 14px !important;
+            background: #ffffff !important;
             box-shadow: none !important;
             display: flex !important;
             flex-direction: column !important;
         }
         body.chart-fs-on { overflow: hidden !important; }
-        body.chart-fs-on #mFab, body.chart-fs-on #ctrlPanel, body.chart-fs-on #mPanelBackdrop { display: none !important; }
+        body.chart-fs-on #ctrlPanel, 
+        body.chart-fs-on #mobileBottomBar, 
+        body.chart-fs-on #mPanelBackdrop { display: none !important; }
         #blockChart.chart-fs > div[style*="flex-grow"] { flex: 1 1 auto !important; min-height: 0 !important; }
-        #btnChartFs { font-size: 13px; line-height: 1; }
         #chartFsHint { display: none; }
-        #blockChart.chart-fs #chartFsHint { display: block; font-size: 10px; color: #94a3b8; margin-top: 2px; }
+        #blockChart.chart-fs #chartFsHint { display: block; font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 500; }
         @media print { #btnChartFs { display: none !important; } }
 
-        /* ================= МОБІЛЬНА ВЕРСІЯ (екран ≤ 860px) =================
-           Не торкається друку та режиму прев'ю A3 — там лишається оригінальний
-           макет 1587×1122. Усе нижче діє лише на вузькому екрані.            */
-        #mFab, #mPanelBackdrop { display: none; }
+        /* ================= МОБІЛЬНА ВЕРСІЯ (Screen <= 860px) ================= */
+        #mobileBottomBar { display: none; }
 
         @media screen and (max-width: 860px) {
             html { -webkit-text-size-adjust: 100%; }
 
             body:not(.preview-mode) {
-                padding: 8px 8px calc(84px + env(safe-area-inset-bottom, 0px)) 8px;
+                padding: 10px 10px calc(80px + env(safe-area-inset-bottom, 0px)) 10px;
+                background-color: #f1f5f9;
                 overflow-x: hidden;
             }
 
-            /* Контейнер A3 → гумовий потік */
             body:not(.preview-mode) .executive-container {
                 width: 100% !important;
                 height: auto !important;
                 min-height: 0 !important;
-                padding: 10px 10px 14px 10px !important;
+                padding: 10px 10px 18px 10px !important;
                 overflow: visible !important;
-                background-color: #f3f4f6;
+                background-color: transparent !important;
             }
-            body:not(.preview-mode) #dashboardTitle { font-size: 15px !important; line-height: 1.25 !important; }
 
-            /* Дві колонки A3 → одна колонка */
+            body:not(.preview-mode) #dashboardTitle { 
+                font-size: 17px !important; 
+                line-height: 1.3 !important; 
+                margin-bottom: 8px;
+            }
+
             body:not(.preview-mode) .executive-container .grid.grid-cols-12 {
                 display: flex !important;
                 flex-direction: column !important;
-                gap: 10px !important;
+                gap: 12px !important;
             }
+
             body:not(.preview-mode) .executive-container .col-span-9,
             body:not(.preview-mode) .executive-container .col-span-3 {
                 width: 100% !important;
@@ -176,72 +185,102 @@
                 height: auto !important;
                 min-height: 0 !important;
             }
-            body:not(.preview-mode) #rightColumn { gap: 10px; }
+
+            body:not(.preview-mode) #rightColumn { 
+                display: flex !important; 
+                flex-direction: column !important; 
+                gap: 12px !important; 
+            }
             body:not(.preview-mode) #rightColumn > * { margin-bottom: 0 !important; }
 
-            /* KPI-плитки: 2 у ряд */
+            /* KPI-плитки */
             body:not(.preview-mode) #kpiContainer {
                 display: grid !important;
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                gap: 8px !important;
+                gap: 10px !important;
             }
-            body:not(.preview-mode) .kpi-card { padding: 8px 6px; min-height: 84px; }
-            body:not(.preview-mode) .kpi-title { font-size: 9.5px; line-height: 1.2; margin-bottom: 4px; }
-            body:not(.preview-mode) .kpi-value { font-size: 24px; }
-            body:not(.preview-mode) .unit-label { font-size: 9px; }
+            body:not(.preview-mode) .kpi-card { 
+                padding: 12px 10px; 
+                min-height: 96px; 
+                border-radius: 12px;
+            }
+            body:not(.preview-mode) .kpi-title { font-size: 11px; line-height: 1.25; margin-bottom: 4px; }
+            body:not(.preview-mode) .kpi-value { font-size: 26px; }
+            body:not(.preview-mode) .unit-label { font-size: 10px; }
             body:not(.preview-mode) .positive-trend,
             body:not(.preview-mode) .negative-trend,
-            body:not(.preview-mode) .gray-trend { font-size: 9px; }
+            body:not(.preview-mode) .gray-trend { font-size: 10px; }
 
-            /* Графік */
-            body:not(.preview-mode) #blockChart { min-height: 300px; }
-            body:not(.preview-mode) #blockChart > div[style*="flex-grow"] { min-height: 240px !important; }
+            /* Блок графіка */
+            body:not(.preview-mode) #blockChart { 
+                min-height: 330px; 
+                border-radius: 12px; 
+                padding: 12px 10px;
+            }
+            body:not(.preview-mode) #blockChart > div[style*="flex-grow"] { min-height: 260px !important; }
 
-            /* Блоки й таблиці */
+            /* Блоки та таблиці з горизонтальним плавним скролом */
             body:not(.preview-mode) .block-container,
-            body:not(.preview-mode) .summary-block { padding: 10px; }
-            body:not(.preview-mode) .block-title { font-size: 13px; }
+            body:not(.preview-mode) .summary-block { 
+                padding: 12px; 
+                border-radius: 12px;
+            }
+            body:not(.preview-mode) .block-title { font-size: 14px; margin-bottom: 6px; }
 
             body:not(.preview-mode) #blockMainTable {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
+                overscroll-behavior-x: contain;
+                padding-bottom: 6px;
             }
-            body:not(.preview-mode) #mainForecastTable { min-width: 640px; }
-            body:not(.preview-mode) .exec-table { font-size: 11px; }
-            body:not(.preview-mode) .exec-table th { font-size: 10px; padding: 2px 4px; }
-            body:not(.preview-mode) .exec-table td { padding: 2px 4px; }
-            body:not(.preview-mode) .exec-table tr.sub-row td { font-size: 10px; }
-            body:not(.preview-mode) .summary-block p,
-            body:not(.preview-mode) .summary-block li span.bullet-text { font-size: 12px !important; line-height: 1.35 !important; }
-            body:not(.preview-mode) .summary-cell { padding: 5px 0; }
+            body:not(.preview-mode) #mainForecastTable { min-width: 660px; }
+            body:not(.preview-mode) .exec-table { font-size: 11.5px; }
+            body:not(.preview-mode) .exec-table th { font-size: 10.5px; padding: 4px 6px; }
+            body:not(.preview-mode) .exec-table td { padding: 4px 6px; }
+            body:not(.preview-mode) .exec-table tr.sub-row td { font-size: 10.5px; }
 
-            /* ---- Панель керування → нижній «шухляда»-лист ---- */
+            body:not(.preview-mode) .summary-block p,
+            body:not(.preview-mode) .summary-block li span.bullet-text { 
+                font-size: 12.5px !important; 
+                line-height: 1.4 !important; 
+            }
+
+            /* Верхня панель (перетворюється на висувне меню) */
             body:not(.preview-mode) #ctrlPanel {
                 position: fixed !important;
                 top: auto !important;
-                right: 8px !important;
-                left: 8px !important;
-                bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+                right: 12px !important;
+                left: 12px !important;
+                bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
                 display: none !important;
                 flex-wrap: wrap !important;
-                align-items: stretch !important;
-                gap: 6px;
-                padding: 10px !important;
-                border-radius: 16px !important;
-                max-height: 56vh;
+                gap: 8px;
+                padding: 14px !important;
+                border-radius: 20px !important;
+                max-height: 65vh;
                 overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                background: #ffffff !important;
+                z-index: 100 !important;
             }
             body:not(.preview-mode).m-panel-open #ctrlPanel { display: flex !important; }
-            body:not(.preview-mode) #ctrlPanel > * { margin: 0 !important; }
             body:not(.preview-mode) #ctrlPanel button,
-            body:not(.preview-mode) #ctrlPanel a { font-size: 12px !important; padding: 8px 12px !important; }
+            body:not(.preview-mode) #ctrlPanel a { 
+                font-size: 13px !important; 
+                padding: 10px 14px !important; 
+                min-height: 42px;
+                border-radius: 10px !important;
+            }
             body:not(.preview-mode) #ctrlPanel > div:first-child {
-                border-right: none !important; padding-right: 0 !important; margin-right: 0 !important;
-                width: 100%; gap: 6px;
+                border-right: none !important; 
+                padding-right: 0 !important; 
+                margin-right: 0 !important;
+                width: 100%; 
+                display: flex;
+                gap: 8px;
             }
 
-            /* Усі випадні меню → на всю ширину екрана */
+            /* Випадаючі списки як Bottom Sheets */
             body:not(.preview-mode) #calendarDropdown,
             body:not(.preview-mode) #compareMenu,
             body:not(.preview-mode) #blockMenu,
@@ -250,66 +289,72 @@
             body:not(.preview-mode) #summarySettingsDropdown,
             body:not(.preview-mode) #wcMenu {
                 position: fixed !important;
-                left: 8px !important;
-                right: 8px !important;
+                left: 12px !important;
+                right: 12px !important;
                 top: auto !important;
                 bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
                 width: auto !important;
                 max-width: none !important;
-                max-height: 62vh;
+                max-height: 68vh;
                 overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-                z-index: 60 !important;
+                border-radius: 20px !important;
+                z-index: 110 !important;
+                box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35) !important;
             }
 
-            /* Кнопка виклику панелі */
-            #mFab {
+            /* Нижній Navigation Bar */
+            #mobileBottomBar {
                 display: flex !important;
                 position: fixed;
-                right: 12px;
-                bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-                z-index: 70;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: calc(60px + env(safe-area-inset-bottom, 0px));
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+                background: rgba(255, 255, 255, 0.94);
+                backdrop-filter: blur(12px);
+                border-top: 1px solid #e2e8f0;
+                z-index: 90;
+                justify-content: space-around;
                 align-items: center;
-                gap: 8px;
-                padding: 12px 16px;
-                border-radius: 999px;
-                border: none;
-                background: #4f46e5;
-                color: #fff;
-                font-weight: 700;
-                font-size: 13px;
-                box-shadow: 0 10px 25px -5px rgba(15, 23, 42, .45);
+                box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
+            }
+            .m-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                flex: 1;
+                height: 100%;
+                color: #64748b;
+                font-size: 10px;
+                font-weight: 600;
                 cursor: pointer;
             }
-            body.m-panel-open #mFab { background: #0f172a; }
-            body.preview-mode #mFab { display: none !important; }
+            .m-nav-item.active { color: #4f46e5; }
+            .m-nav-item svg { width: 20px; height: 20px; margin-bottom: 2px; }
 
             #mPanelBackdrop {
                 display: none;
                 position: fixed;
                 inset: 0;
-                background: rgba(15, 23, 42, .35);
-                z-index: 40;
+                background: rgba(15, 23, 42, 0.55);
+                backdrop-filter: blur(2px);
+                z-index: 95;
             }
             body.m-panel-open #mPanelBackdrop { display: block; }
-
-            /* Модальні вікна */
-            body:not(.preview-mode) #operationalModal > div,
-            body:not(.preview-mode) #editorModal > div,
-            body:not(.preview-mode) #uploadZone > div { max-height: 88vh; }
-            body:not(.preview-mode) #statusBanner { top: 8px; width: 94%; }
         }
 
-        @media screen and (max-width: 420px) {
+        @media screen and (max-width: 440px) {
             body:not(.preview-mode) #kpiContainer { grid-template-columns: 1fr !important; }
-            body:not(.preview-mode) .kpi-value { font-size: 28px; }
+            body:not(.preview-mode) .kpi-value { font-size: 32px; }
         }
     </style>
 </head>
-<body class="bg-slate-100">
+<body class="bg-slate-100 readonly-mode">
 
-    <!-- Банер повідомлень про помилки / статус завантаження -->
-    <div id="statusBanner" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] hidden max-w-xl w-[92%] print-hide">
+    <!-- Банер повідомлень -->
+    <div id="statusBanner" class="fixed top-4 left-1/2 -translate-x-1/2 z-[150] hidden max-w-xl w-[92%] print-hide">
         <div id="statusBannerInner" class="flex items-start gap-3 px-4 py-2.5 rounded-xl shadow-2xl border text-sm font-medium">
             <span id="statusBannerIcon" class="mt-0.5 shrink-0"></span>
             <span id="statusBannerText" class="flex-1 leading-snug"></span>
@@ -317,12 +362,12 @@
         </div>
     </div>
 
-    <!-- ЄДИНА ПАНЕЛЬ КЕРУВАННЯ -->
+    <!-- ЄДИНА ПАНЕЛЬ КЕРУВАННЯ (ДЕСКТОП + МОБІЛЬНЕ ВИСУВНЕ МЕНЮ) -->
     <div id="ctrlPanel" class="fixed top-4 right-6 flex items-center space-x-2 print-hide z-50 bg-white/95 backdrop-blur-md p-1.5 rounded-full shadow-xl border border-slate-200">
         <!-- Навігація на інші сторінки -->
         <div class="flex items-center gap-0.5 pr-1.5 mr-0.5 border-r border-slate-200">
-            <a href="https://cashflow-ukrnafta.unft.workers.dev/commerce/compare" class="text-indigo-700 hover:bg-indigo-50 px-2.5 py-1.5 rounded-full font-semibold text-xs" title="Порівняння прогнозів">Порівняння</a>
-            <a href="https://cashflow-ukrnafta.unft.workers.dev/cf/analytics" class="text-indigo-700 hover:bg-indigo-50 px-2.5 py-1.5 rounded-full font-semibold text-xs" title="Аналітика">Аналітика</a>
+            <a href="https://cashflow-ukrnafta.unft.workers.dev/commerce/compare" class="text-indigo-700 hover:bg-indigo-50 px-2.5 py-1.5 rounded-full font-semibold text-xs transition-colors" title="Порівняння прогнозів">Порівняння</a>
+            <a href="https://cashflow-ukrnafta.unft.workers.dev/cf/analytics" class="text-indigo-700 hover:bg-indigo-50 px-2.5 py-1.5 rounded-full font-semibold text-xs transition-colors" title="Аналітика">Аналітика</a>
         </div>
 
         <!-- Інтерактивний вибір дати -->
@@ -337,9 +382,9 @@
             <!-- Спливаючий календар -->
             <div id="calendarDropdown" class="absolute top-11 left-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-72 hidden origin-top-left z-50">
                 <div class="flex justify-between items-center mb-3">
-                    <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-600 font-bold">&larr;</button>
+                    <button onclick="changeCalendarMonth(-1)" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 font-bold">&larr;</button>
                     <span id="calendarMonthYear" class="font-bold text-xs text-slate-800 uppercase tracking-wider">Серпень 2026</span>
-                    <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-600 font-bold">&rarr;</button>
+                    <button onclick="changeCalendarMonth(1)" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 font-bold">&rarr;</button>
                 </div>
                 <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
                     <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span>
@@ -352,9 +397,9 @@
             </div>
         </div>
 
-        <!-- Дата порівняння для дельт плиток і блоків -->
+        <!-- Дата порівняння для дельт -->
         <div class="relative">
-            <button onclick="toggleCompareMenu()" id="btnCompareTrigger" class="bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-amber-300" title="Дата, з якою порівнюються дельти плиток, оборотного капіталу та запасів">
+            <button onclick="toggleCompareMenu()" id="btnCompareTrigger" class="bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-amber-300" title="Дата порівняння">
                 <span>Δ</span><span id="lblCompareDate">—</span>
                 <svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
@@ -365,22 +410,25 @@
             </div>
         </div>
 
-        <button onclick="toggleUploadModal(true)" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-            <span>Excel</span>
-        </button>
-        <button onclick="loadDemoDashboard()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
-            <span>Демо</span>
-        </button>
-        <button onclick="refreshSharePointData()" id="btnRefreshSP" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer">
+        <!-- Оновлення з SharePoint (доступно всім) -->
+        <button onclick="refreshSharePointData()" id="btnRefreshSP" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer transition-colors">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             <span>SharePoint</span>
         </button>
-        <button onclick="openOperationalEditor()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer">
+
+        <!-- Кнопки модифікації даних (лише для авторизованого редактора) -->
+        <button onclick="toggleUploadModal(true)" class="editor-only bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs flex items-center gap-1 cursor-pointer transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <span>Excel</span>
+        </button>
+        <button onclick="loadDemoDashboard()" class="editor-only bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer transition-colors">
+            <span>Демо</span>
+        </button>
+        <button onclick="openOperationalEditor()" class="editor-only bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs cursor-pointer transition-colors">
             <span>Внести дані</span>
         </button>
 
-        <!-- Меню блоків -->
+        <!-- Меню видимості блоків -->
         <div class="relative group">
             <button onclick="toggleBlockMenu()" class="bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-full cursor-pointer" title="Видимість блоків">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
@@ -421,7 +469,7 @@
 
         <!-- Підписи ліній графіка -->
         <div class="relative">
-            <button onclick="toggleChartLabelMenu()" class="bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-full cursor-pointer" title="Підписи ліній: сторона та відступ">
+            <button onclick="toggleChartLabelMenu()" class="bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-full cursor-pointer" title="Підписи ліній">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
             </button>
             <div id="chartLabelMenu" class="absolute top-10 right-0 bg-white border border-slate-200 rounded-xl shadow-xl p-3 w-80 hidden origin-top-right z-50">
@@ -429,6 +477,12 @@
                 <div id="chartLabelMenuBody"></div>
             </div>
         </div>
+
+        <!-- Кнопка авторизації доступу (PIN-код) -->
+        <button onclick="handleAccessToggle()" id="btnAccessLock" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-500 shadow-inner transition-all" title="Режим доступу">
+            <span id="lblAccessIcon">🔒</span>
+            <span id="lblAccessText">Перегляд</span>
+        </button>
 
         <button onclick="toggleLanguage()" id="langBtn" class="bg-slate-800 text-white px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer">EN</button>
         <button onclick="generatePDF()" class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full cursor-pointer" title="PDF">
@@ -449,22 +503,22 @@
         <button onclick="togglePreview()" class="bg-slate-600 hover:bg-slate-500 text-white px-5 py-2 rounded-full font-bold shadow transition-colors cursor-pointer mr-1">Закрити прев'ю</button>
     </div>
 
-    <!-- Модальне вікно Drag & Drop -->
-    <div id="uploadZone" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 print-hide hidden">
-        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center border-2 border-dashed border-slate-300 hover:border-indigo-500 transition-all relative">
+    <!-- Модальне вікно завантаження файлів (лише редактор) -->
+    <div id="uploadZone" class="editor-only fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 print-hide hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center border-2 border-dashed border-slate-300 hover:border-indigo-500 transition-all relative">
             <button onclick="toggleUploadModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
             <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             <h3 class="text-lg font-bold text-slate-800 mb-2">Імпорт даних дашборду</h3>
-            <p class="text-sm text-slate-500 mb-4">Перетягніть файл сюди або оберіть джерело: <span class="font-semibold">JSON-зріз</span> (SharePoint snapshots) чи <span class="font-semibold">Excel</span> (.xlsx)</p>
+            <p class="text-sm text-slate-500 mb-4">Оберіть джерело для імпорту звіту:</p>
             <input type="file" id="excelFile" accept=".xlsx" class="hidden" onchange="handleFile(this.files)">
             <input type="file" id="jsonFile" accept=".json,application/json" class="hidden" onchange="handleFile(this.files)">
             <div class="flex flex-col gap-2.5">
-                <button onclick="document.getElementById('jsonFile').click()" class="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-emerald-700 transition-all cursor-pointer flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-6 4h4"></path></svg>
-                    Завантажити JSON
+                <button onclick="document.getElementById('jsonFile').click()" class="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow hover:bg-emerald-700 transition-all cursor-pointer flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    Завантажити JSON (Зріз SP)
                 </button>
-                <button onclick="document.getElementById('excelFile').click()" class="bg-slate-800 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow hover:bg-slate-700 transition-all cursor-pointer">Завантажити Excel (.xlsx)</button>
-                <button onclick="toggleUploadModal(false)" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-semibold text-sm hover:bg-slate-300 transition-all cursor-pointer">Скасувати</button>
+                <button onclick="document.getElementById('excelFile').click()" class="bg-slate-800 text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow hover:bg-slate-700 transition-all cursor-pointer">Завантажити Excel (.xlsx)</button>
+                <button onclick="toggleUploadModal(false)" class="bg-slate-100 text-slate-700 px-6 py-2 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-all cursor-pointer">Скасувати</button>
             </div>
         </div>
     </div>
@@ -472,7 +526,7 @@
     <!-- Основний контейнер дашборду (Формат A3) -->
     <div class="executive-container" id="dashboardContent">
         <!-- Шапка -->
-        <div class="w-full flex justify-between items-center mb-2.5 pt-1 shrink-0">
+        <div class="w-full flex justify-between items-center mb-2 pt-1 shrink-0">
             <div class="flex flex-col items-start text-left">
                 <h1 class="text-slate-800 leading-none" id="dashboardTitle"></h1>
             </div>
@@ -485,13 +539,16 @@
 
                 <div class="block-container flex-grow flex flex-col overflow-hidden relative" id="blockChart">
                     <div class="flex justify-between items-start mb-1 shrink-0">
-                        <div><h2 class="block-title" style="margin-bottom: 0;" id="titleChart"></h2><div id="chartFsHint">Поверніть телефон горизонтально для більшого масштабу · Esc або кнопка «Згорнути» — вихід</div></div>
-                        <div class="print-hide flex space-x-1.5 items-center opacity-60 hover:opacity-100 transition-opacity z-10">
-                            <button id="btnChartFs" onclick="toggleChartFullscreen()" class="pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded shadow-sm font-bold cursor-pointer" title="Розгорнути графік на весь екран">⛶ На весь екран</button>
-                            <button onclick="changeChartPadding(-5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X-</button>
-                            <button onclick="changeChartPadding(5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X+</button>
-                            <button onclick="changeStackGap(-2)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Щільніше підписи (менший спільний відступ)">⇕-</button>
-                            <button onclick="changeStackGap(2)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Розрідити підписи (більший спільний відступ)">⇕+</button>
+                        <div>
+                            <h2 class="block-title" style="margin-bottom: 0;" id="titleChart"></h2>
+                            <div id="chartFsHint">Esc або кнопка «Згорнути» для виходу · Поверніть пристрій горизонтально</div>
+                        </div>
+                        <div class="print-hide flex space-x-1.5 items-center opacity-70 hover:opacity-100 transition-opacity z-10">
+                            <button id="btnChartFs" onclick="toggleChartFullscreen()" class="pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-md shadow-sm font-bold text-xs cursor-pointer">⛶ На весь екран</button>
+                            <button onclick="changeChartPadding(-5)" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-0.5 rounded text-xs font-bold cursor-pointer">X-</button>
+                            <button onclick="changeChartPadding(5)" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-0.5 rounded text-xs font-bold cursor-pointer">X+</button>
+                            <button onclick="changeStackGap(-2)" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-0.5 rounded text-xs font-bold cursor-pointer" title="Щільніше підписи">⇕-</button>
+                            <button onclick="changeStackGap(2)" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-0.5 rounded text-xs font-bold cursor-pointer" title="Розрідити підписи">⇕+</button>
                         </div>
                     </div>
                     <div style="position: relative; flex-grow: 1; width: 100%; min-height: 200px;">
@@ -502,10 +559,9 @@
                 <div class="block-container shrink-0" id="blockMainTable">
                     <div class="flex justify-between items-center mb-1">
                         <h2 class="block-title" id="titleMainTable"></h2>
-                        
                         <div class="print-hide relative inline-block text-left z-30">
-                            <button onclick="toggleDropdown('outflowHighlightDropdown')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-1 rounded text-xs transition-all flex items-center gap-1.5 cursor-pointer">
-                                📊 Контроль статей виплат <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            <button onclick="toggleDropdown('outflowHighlightDropdown')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1.5 cursor-pointer border border-slate-300">
+                                📊 Контроль статей <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
                             <div id="outflowHighlightDropdown" class="absolute right-0 mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-xl p-2 hidden flex flex-col gap-1">
                                 <label class="flex items-center space-x-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
@@ -544,11 +600,11 @@
                     <div class="flex justify-between items-start mb-1">
                         <h2 class="block-title" style="margin-bottom: 0;" id="titleSummary"></h2>
                         <div class="print-hide flex items-center space-x-1.5 z-30">
-                            <button onclick="openSummaryEditor()" class="pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1">
+                            <button onclick="openSummaryEditor()" class="editor-only pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1">
                                 ✏️ Редагувати
                             </button>
                             <div class="relative inline-block text-left">
-                                <button onclick="toggleDropdown('summarySettingsDropdown')" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-600 p-1.5 rounded shadow-sm transition-colors cursor-pointer" title="Налаштування тексту резюме">
+                                <button onclick="toggleDropdown('summarySettingsDropdown')" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-600 p-1.5 rounded shadow-sm transition-colors cursor-pointer" title="Налаштування шрифту">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                                 </button>
                                 <div id="summarySettingsDropdown" class="absolute right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl p-2 hidden flex flex-col gap-2 w-44 z-40">
@@ -568,10 +624,10 @@
                                         </div>
                                     </div>
                                     <div class="flex justify-between items-center px-1">
-                                        <span class="text-xs font-medium text-slate-700">Ширина літер</span>
+                                        <span class="text-xs font-medium text-slate-700">Ущільнення</span>
                                         <div class="flex space-x-1">
-                                            <button onclick="changeLetterSpacing(-0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold" title="Ущільнити шрифт">T-</button>
-                                            <button onclick="changeLetterSpacing(0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold" title="Розрідити шрифт">T+</button>
+                                            <button onclick="changeLetterSpacing(-0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold" title="Ущільнити">T-</button>
+                                            <button onclick="changeLetterSpacing(0.1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 flex justify-center items-center rounded text-xs font-bold" title="Розрідити">T+</button>
                                         </div>
                                     </div>
                                     <div class="border-t border-slate-200 my-1 mx-1"></div>
@@ -579,8 +635,8 @@
                                         <span class="text-xs font-medium text-slate-700">Жирні заголовки</span>
                                         <input type="checkbox" checked id="chk_summary_bold" onchange="toggleSummaryBold()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     </label>
-                                    <label class="flex items-center justify-between px-1 cursor-pointer hover:bg-slate-50 p-1 rounded" title="При завантаженні даних шрифт, відступи й ущільнення підбираються так, щоб усі блоки вмістились на сторінці A3">
-                                        <span class="text-xs font-medium text-slate-700">Автопідбір під сторінку</span>
+                                    <label class="flex items-center justify-between px-1 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                                        <span class="text-xs font-medium text-slate-700">Автопідбір</span>
                                         <input type="checkbox" checked id="chk_summary_autofit" onchange="toggleSummaryAutoFit()" class="w-3.5 h-3.5 text-indigo-600 rounded">
                                     </label>
                                     <button onclick="autoFitSummary(true)" class="mx-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs font-semibold">Підібрати зараз</button>
@@ -596,7 +652,7 @@
                     <div class="flex justify-between items-start mb-1">
                         <h2 class="block-title" style="margin-bottom: 0;" id="titleWC"></h2>
                         <div class="print-hide relative z-20">
-                            <button onclick="toggleWcMenu()" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-xs font-bold cursor-pointer">Δ 🎨</button>
+                            <button onclick="toggleWcMenu()" class="pdf-hide bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-0.5 rounded text-xs font-bold cursor-pointer">Δ 🎨</button>
                             <div id="wcMenu" class="absolute top-6 right-0 bg-white border border-slate-200 rounded-lg shadow-xl p-2 flex flex-col gap-1 w-52 hidden text-left font-normal text-xs normal-case z-30"></div>
                         </div>
                     </div>
@@ -625,24 +681,24 @@
         </div>
     </div>
 
-    <!-- Модальне вікно оперативних даних -->
-    <div id="operationalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+    <!-- Модальне вікно оперативного введення даних (лише редактор) -->
+    <div id="operationalModal" class="editor-only fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 shrink-0">
                 <h3 class="text-lg font-bold text-slate-800">Внесення даних на дату: <span id="operationalDateLabel" class="text-indigo-600"></span></h3>
                 <button onclick="closeOperationalEditor()" class="text-slate-400 hover:text-slate-600 font-bold text-2xl leading-none cursor-pointer">&times;</button>
             </div>
             <div id="operationalFormBody" class="px-6 py-4 overflow-y-auto space-y-6"></div>
             <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 shrink-0">
-                <button onclick="closeOperationalEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
-                <button onclick="saveOperationalData()" id="btnSaveOperational" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer">Зберегти</button>
+                <button onclick="closeOperationalEditor()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold cursor-pointer">Скасувати</button>
+                <button onclick="saveOperationalData()" id="btnSaveOperational" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold cursor-pointer">Зберегти</button>
             </div>
         </div>
     </div>
 
-    <!-- Модальне вікно резюме -->
-    <div id="editorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
-        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 text-left">
+    <!-- Модальне вікно резюме (лише редактор) -->
+    <div id="editorModal" class="editor-only fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 print-hide">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 text-left">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-800">Редагування резюме на дату: <span id="editorDateLabel" class="text-indigo-600"></span></h3>
                 <button onclick="closeSummaryEditor()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
@@ -650,23 +706,325 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Резюме (Українська версія):</label>
-                    <textarea id="editSummaryUk" rows="6" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"></textarea>
+                    <textarea id="editSummaryUk" rows="6" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-sans"></textarea>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Summary (English version):</label>
-                    <textarea id="editSummaryEn" rows="5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"></textarea>
+                    <textarea id="editSummaryEn" rows="5" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-sans"></textarea>
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-5">
-                <button onclick="closeSummaryEditor()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer">Скасувати</button>
-                <button onclick="saveSummaryToSharePoint()" id="btnSaveSummary" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2 cursor-pointer">Зберегти в SharePoint</button>
+                <button onclick="closeSummaryEditor()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold cursor-pointer">Скасувати</button>
+                <button onclick="saveSummaryToSharePoint()" id="btnSaveSummary" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 cursor-pointer">Зберегти в SharePoint</button>
             </div>
         </div>
     </div>
 
+    <!-- МОДАЛЬНЕ ВІКНО ВВЕДЕННЯ ПІН-КОДУ (UI/UX PIN-PAD ДЛЯ МОБІЛЬНИХ ТА ДЕСКТОПУ) -->
+    <div id="pinModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden flex items-center justify-center z-[200] p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-xs w-full p-6 text-center border border-slate-100">
+            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner text-xl">
+                🔒
+            </div>
+            <h3 class="text-base font-bold text-slate-800">Режим редагування</h3>
+            <p class="text-xs text-slate-500 mt-1 mb-4">Введіть PIN-код доступу</p>
+
+            <!-- Індикатори цифр PIN -->
+            <div class="flex justify-center gap-3 mb-6" id="pinDots">
+                <span class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white transition-all"></span>
+                <span class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white transition-all"></span>
+                <span class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white transition-all"></span>
+                <span class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white transition-all"></span>
+            </div>
+
+            <!-- Цифрова клавіатура -->
+            <div class="grid grid-cols-3 gap-2.5 max-w-[240px] mx-auto mb-4">
+                <button onclick="pinAppend('1')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">1</button>
+                <button onclick="pinAppend('2')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">2</button>
+                <button onclick="pinAppend('3')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">3</button>
+                <button onclick="pinAppend('4')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">4</button>
+                <button onclick="pinAppend('5')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">5</button>
+                <button onclick="pinAppend('6')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">6</button>
+                <button onclick="pinAppend('7')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">7</button>
+                <button onclick="pinAppend('8')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">8</button>
+                <button onclick="pinAppend('9')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">9</button>
+                <button onclick="closePinModal()" class="h-12 rounded-2xl bg-slate-100 text-slate-500 font-bold text-xs active:scale-95 transition-all">Скасувати</button>
+                <button onclick="pinAppend('0')" class="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-lg border border-slate-200/80 active:scale-95 transition-all">0</button>
+                <button onclick="pinBackspace()" class="h-12 rounded-2xl bg-slate-100 text-slate-700 font-bold text-base active:scale-95 transition-all flex items-center justify-center">⌫</button>
+            </div>
+            <div id="pinErrorMsg" class="text-xs text-red-500 font-semibold h-4"></div>
+        </div>
+    </div>
+
+    <!-- МОБІЛЬНИЙ ШАР: Fixed Bottom Navigation Bar -->
+    <div id="mPanelBackdrop" onclick="mClosePanel()"></div>
+    <nav id="mobileBottomBar" class="print-hide">
+        <button class="m-nav-item" onclick="toggleCalendarDropdown()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span id="mNavDate">Дата</span>
+        </button>
+        <button class="m-nav-item" onclick="toggleChartFullscreen()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+            <span>Графік</span>
+        </button>
+        <button class="m-nav-item" onclick="toggleLanguage()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path></svg>
+            <span id="mNavLang">UA / EN</span>
+        </button>
+        <button class="m-nav-item" onclick="handleAccessToggle()" id="mNavAccess">
+            <span class="text-base leading-none mb-0.5" id="mNavAccessIcon">🔒</span>
+            <span id="mNavAccessText">Доступ</span>
+        </button>
+        <button class="m-nav-item" onclick="mTogglePanel()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <span>Меню</span>
+        </button>
+    </nav>
+
 <script>
     Chart.register(ChartDataLabels);
 
+    // ═════════════════════ ЗАХИСТ ДОСТУПУ (PIN + SHA-256) ═════════════════════
+    const PIN_HASH = "45c7b309a477a1b496fdfe08084fdc6da0c987de0c479176a966b19cdad41d4d"; 
+    let isReadOnly = true;
+    let currentPinInput = "";
+    let pinResolveCallback = null;
+
+    // Синхронний автономний SHA-256
+    function sha256Sync(ascii) {
+        function rightRotate(value, amount) {
+            return (value >>> amount) | (value << (32 - amount));
+        }
+        let mathPow = Math.pow;
+        let maxWord = mathPow(2, 32);
+        let lengthProperty = 'length';
+        let i, j;
+        let result = '';
+        let words = [];
+        let asciiBitLength = ascii[lengthProperty] * 8;
+        let hash = [];
+        let k = [];
+        let primeCounter = 0;
+        let isComposite = {};
+        for (let candidate = 2; primeCounter < 64; candidate++) {
+            if (!isComposite[candidate]) {
+                for (i = 0; i < 313; i += candidate) {
+                    isComposite[i] = candidate;
+                }
+                hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+                k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
+            }
+        }
+        ascii += '\x80';
+        while (ascii[lengthProperty] % 64 - 56) ascii += '\x00';
+        for (i = 0; i < ascii[lengthProperty]; i++) {
+            j = ascii.charCodeAt(i);
+            if (j >> 8) return;
+            words[i >> 2] |= j << ((3 - i) % 4) * 8;
+        }
+        words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
+        words[words[lengthProperty]] = (asciiBitLength | 0);
+        for (j = 0; j < words[lengthProperty];) {
+            let w = words.slice(j, j += 16);
+            let oldHash = hash;
+            hash = hash.slice(0, 8);
+            for (i = 0; i < 64; i++) {
+                let i2 = i + j;
+                let w15 = w[i - 15], w2 = w[i - 2];
+                let a = hash[0], e = hash[4];
+                let temp1 = hash[7]
+                    + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+                    + ((e & hash[5]) ^ ((~e) & hash[6]))
+                    + k[i]
+                    + (w[i] = (i < 16) ? w[i] : (
+                            w[i - 16]
+                            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+                            + w[i - 7]
+                            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+                        ) | 0
+                    );
+                let temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+                    + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+                hash = [(temp1 + temp2) | 0].concat(hash);
+                hash[4] = (hash[4] + temp1) | 0;
+            }
+            for (i = 0; i < 8; i++) {
+                hash[i] = (hash[i] + oldHash[i]) | 0;
+            }
+        }
+        for (i = 0; i < 8; i++) {
+            for (j = 3; j + 1; j--) {
+                let b = (hash[i] >> (j * 8)) & 255;
+                result += ((b < 16) ? 0 : '') + b.toString(16);
+            }
+        }
+        return result;
+    }
+
+    async function initAccessControl() {
+        const params = new URLSearchParams(window.location.search);
+        const requestedMode = params.get('mode');
+        const isAuthedSession = sessionStorage.getItem('cf_editor_authenticated') === 'true';
+
+        if (requestedMode === 'edit') {
+            if (isAuthedSession) {
+                isReadOnly = false;
+            } else {
+                const success = await requestPinAuth();
+                if (!success) {
+                    forceViewUrl();
+                    isReadOnly = true;
+                } else {
+                    isReadOnly = false;
+                }
+            }
+        } else {
+            isReadOnly = true;
+            forceViewUrl();
+        }
+        applyAccessDOM();
+    }
+
+    function forceViewUrl() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', 'view');
+        window.history.replaceState({}, '', url);
+    }
+
+    function requestPinAuth() {
+        return new Promise((resolve) => {
+            currentPinInput = "";
+            pinResolveCallback = resolve;
+            updatePinDots();
+            document.getElementById('pinErrorMsg').innerText = "";
+            document.getElementById('pinModal').classList.remove('hidden');
+        });
+    }
+
+    function closePinModal(success = false) {
+        document.getElementById('pinModal').classList.add('hidden');
+        if (pinResolveCallback) {
+            pinResolveCallback(success);
+            pinResolveCallback = null;
+        }
+    }
+
+    function pinAppend(digit) {
+        if (currentPinInput.length < 4) {
+            currentPinInput += digit;
+            updatePinDots();
+            if (currentPinInput.length === 4) {
+                setTimeout(verifyPin, 100);
+            }
+        }
+    }
+
+    function pinBackspace() {
+        if (currentPinInput.length > 0) {
+            currentPinInput = currentPinInput.slice(0, -1);
+            updatePinDots();
+        }
+    }
+
+    function updatePinDots() {
+        const dots = document.querySelectorAll('#pinDots span');
+        dots.forEach((dot, idx) => {
+            if (idx < currentPinInput.length) {
+                dot.className = "w-3.5 h-3.5 rounded-full bg-indigo-600 border-2 border-indigo-600 scale-110 transition-all";
+            } else {
+                dot.className = "w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white transition-all";
+            }
+        });
+    }
+
+    function verifyPin() {
+        const cleanInput = currentPinInput.trim();
+        const hash = sha256Sync(cleanInput);
+
+        if (hash === PIN_HASH) {
+            sessionStorage.setItem('cf_editor_authenticated', 'true');
+            showSuccess("Режим редагування розблоковано");
+            closePinModal(true);
+        } else {
+            document.getElementById('pinErrorMsg').innerText = "Невірний PIN-код";
+            currentPinInput = "";
+            updatePinDots();
+        }
+    }
+
+    async function handleAccessToggle() {
+        if (isReadOnly) {
+            const isAuthed = sessionStorage.getItem('cf_editor_authenticated') === 'true';
+            let granted = isAuthed;
+            
+            if (!isAuthed) {
+                granted = await requestPinAuth();
+            }
+
+            if (granted) {
+                isReadOnly = false;
+                const url = new URL(window.location.href);
+                url.searchParams.set('mode', 'edit');
+                window.history.replaceState({}, '', url);
+                applyAccessDOM();
+            }
+        } else {
+            isReadOnly = true;
+            sessionStorage.removeItem('cf_editor_authenticated');
+            forceViewUrl();
+            applyAccessDOM();
+            showInfo("Режим редагування заблоковано (тільки перегляд)");
+        }
+    }
+
+    function applyAccessDOM() {
+        const btn = document.getElementById('btnAccessLock');
+        const ico = document.getElementById('lblAccessIcon');
+        const txt = document.getElementById('lblAccessText');
+        const mIco = document.getElementById('mNavAccessIcon');
+        const mTxt = document.getElementById('mNavAccessText');
+
+        if (isReadOnly) {
+            document.body.classList.add('readonly-mode');
+            window.addEventListener('drop', preventDrops, true);
+            window.addEventListener('dragover', preventDrops, true);
+
+            if (btn && ico && txt) {
+                btn.className = "bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-500 shadow-inner";
+                ico.textContent = "🔒";
+                txt.textContent = "Перегляд";
+                btn.title = "Натисніть для введення PIN-коду";
+            }
+            if (mIco && mTxt) {
+                mIco.textContent = "🔒";
+                mTxt.textContent = "Перегляд";
+            }
+        } else {
+            document.body.classList.remove('readonly-mode');
+            window.removeEventListener('drop', preventDrops, true);
+            window.removeEventListener('dragover', preventDrops, true);
+
+            if (btn && ico && txt) {
+                btn.className = "bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md";
+                ico.textContent = "🔓";
+                txt.textContent = "Редагування";
+                btn.title = "Натисніть для блокування";
+            }
+            if (mIco && mTxt) {
+                mIco.textContent = "🔓";
+                mTxt.textContent = "Редагування";
+            }
+        }
+    }
+
+    function preventDrops(e) {
+        if (isReadOnly) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }
+
+    // ═════════════════════ ОСНОВНА ЛОГІКА ДАШБОРДУ ═════════════════════
     let currentLang = 'uk';
     let globalData = null;
     let myLiquidityChart = null;
@@ -678,36 +1036,32 @@
     let isSummaryHeadersBold = true; 
     let useCommaFormatEn = false;
 
-    // ---- Підписи ліній графіка ----
     let currentLabelSpread = 0;
     let currentStackGap = 20;
     let lineLabelConfig = {
         totalLiquidity:      { align: 'top',    offset: 8 },
-        ownCash:             { align: 'bottom', offset: 8 },
-        ownCashMznn:         { align: 'top',    offset: 6 },
+        ownCash:              { align: 'bottom', offset: 8 },
+        ownCashMznn:          { align: 'top',    offset: 6 },
         postImportLiquidity: { align: 'bottom', offset: 6 }
     };
     const LINE_META = [
-        { key: 'totalLiquidity',      prio: 1, label: { uk: 'Доступна ліквідність',       en: 'Available liquidity' } },
-        { key: 'ownCash',             prio: 2, label: { uk: 'Грошові залишки',             en: 'Cash balances' } },
-        { key: 'ownCashMznn',         prio: 3, label: { uk: 'МЗНН та Страт. резерв',       en: 'Own cash (MOS/Strat)' } },
+        { key: 'totalLiquidity',      prio: 1, label: { uk: 'Доступна ліквідність',        en: 'Available liquidity' } },
+        { key: 'ownCash',              prio: 2, label: { uk: 'Грошові залишки',              en: 'Cash balances' } },
+        { key: 'ownCashMznn',          prio: 3, label: { uk: 'МЗНН та Страт. резерв',        en: 'Own cash (MOS/Strat)' } },
         { key: 'postImportLiquidity', prio: 4, label: { uk: 'Ліквідність з постімпортом',  en: 'Liquidity with post-import' } }
     ];
     const getPrio = (key) => { const m = LINE_META.find(x => x.key === key); return m ? m.prio : 99; };
 
-    // ---- Дата порівняння дельт ----
     let compareMode = 'week';
     let compareCustomDate = null;
     let compareInfo = null;
     let _cmpToken = 0;
     let _pendingLoadNote = '';
 
-    // ---- Автопідбір резюме ----
     let summaryAutoFit = true;
     let _summaryFitSig = '';
     let _summaryFitRaf = 0;
 
-    // ---- Дати: чиста ISO-арифметика в UTC ----
     const DT = (() => {
         const DAY = 86400000;
         const add = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * DAY).toISOString().slice(0, 10);
@@ -844,6 +1198,7 @@
     }
 
     function toggleUploadModal(show) {
+        if (isReadOnly) return;
         const modal = document.getElementById('uploadZone');
         if (show) modal.classList.remove('hidden');
         else modal.classList.add('hidden');
@@ -889,7 +1244,7 @@
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
         for (let i = 0; i < firstDayIndex; i++) {
-            grid.innerHTML += `<span class="py-1.5 text-transparent select-none">0</span>`;
+            grid.innerHTML += `<span class="py-2 text-transparent select-none">0</span>`;
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
@@ -899,7 +1254,7 @@
             const hasData = filledDatesInCurrentMonth.includes(dateKey);
             const isSelected = (cleanDateKey(currentReportDate) === dateKey);
 
-            let btnClass = "py-1.5 rounded-lg text-xs font-semibold transition-all relative flex flex-col items-center justify-center cursor-pointer ";
+            let btnClass = "py-2 rounded-xl text-xs font-semibold transition-all relative flex flex-col items-center justify-center cursor-pointer min-h-[36px] ";
             
             if (isSelected) {
                 btnClass += "bg-indigo-600 text-white font-bold shadow-md scale-105 z-10 ";
@@ -914,7 +1269,7 @@
                 : '';
 
             grid.innerHTML += `
-                <button type="button" onclick="selectDateFromCalendar('${dateKey}')" class="${btnClass}" title="${hasData ? 'Є збережені дані' : 'Немає даних'}">
+                <button type="button" onclick="selectDateFromCalendar('${dateKey}')" class="${btnClass}">
                     <span>${day}</span>
                     ${dot}
                 </button>
@@ -962,6 +1317,8 @@
         
         const lbl = document.getElementById('lblSelectedDate');
         if (lbl) lbl.innerText = dotDate;
+        const mNav = document.getElementById('mNavDate');
+        if (mNav) mNav.innerText = `${d}.${m}`;
         
         const cal = document.getElementById('calendarDropdown');
         if (cal) cal.classList.add('hidden');
@@ -971,39 +1328,6 @@
         renderCalendar();
 
         loadMetricsForSelectedDate(dateKey, dotDate);
-    }
-
-    async function fetchSnapshotFromSharePoint(targetDate) {
-        const spSiteUrl = "https://ukrnaftaoffice365.sharepoint.com/sites/CashFlow";
-        const folderPath = "/sites/CashFlow/Shared Documents/[_cf] CF_working/F13_Dashboard_DB/db/snapshots";
-        const filesApiUrl = `${spSiteUrl}/_api/web/GetFolderByServerRelativeUrl('${encodeURIComponent(folderPath)}')/Files?$select=Name,ServerRelativeUrl`;
-
-        const listRes = await fetch(filesApiUrl, {
-            headers: { 'Accept': 'application/json;odata=nometadata' },
-            credentials: 'include'
-        });
-        if (!listRes.ok) {
-            throw new Error(`SharePoint REST недоступний (HTTP ${listRes.status}). Ймовірно CORS або відсутня авторизація — використовуйте потік Power Automate або завантажте файл вручну.`);
-        }
-        const listData = await listRes.json();
-        const files = listData.value || [];
-        let targetFileRelativeUrl = null;
-        const matchedFile = files.find(f => f.Name && f.Name.includes(targetDate) && f.Name.toLowerCase().endsWith('.json'));
-        if (matchedFile) targetFileRelativeUrl = matchedFile.ServerRelativeUrl;
-
-        if (!targetFileRelativeUrl) {
-            throw new Error(`У папці snapshots не знайдено JSON-файл на дату ${targetDate}.`);
-        }
-
-        const fileContentUrl = `${spSiteUrl}/_api/web/GetFileByServerRelativeUrl('${encodeURIComponent(targetFileRelativeUrl)}')/$value`;
-        const contentRes = await fetch(fileContentUrl, {
-            headers: { 'Accept': 'application/json' },
-            credentials: 'include'
-        });
-        if (!contentRes.ok) {
-            throw new Error(`Не вдалося прочитати файл snapshot (HTTP ${contentRes.status}).`);
-        }
-        return await contentRes.json();
     }
 
     function b64ToUtf8(b64) {
@@ -1089,21 +1413,6 @@
                 en: delta === 0 ? "\u2014 no change" : `${arrow}${num} ${uEn}`
             }
         };
-    }
-
-    function getFourTargetDates(isoDate) {
-        const parts = String(isoDate).split('-').map(Number);
-        if (parts.length !== 3 || parts.some(isNaN)) return [isoDate];
-        const [y, m, d] = parts;
-        const out = [];
-        for (let i = 0; i < 4; i++) {
-            const dt = new Date(y, m - 1, d - i * 7);
-            const yy = dt.getFullYear();
-            const mm = String(dt.getMonth() + 1).padStart(2, '0');
-            const dd = String(dt.getDate()).padStart(2, '0');
-            out.push(`${yy}-${mm}-${dd}`);
-        }
-        return out;
     }
 
     function extractSnapshotWeeklyExpenses(snap) {
@@ -1220,8 +1529,6 @@
         }).filter(Boolean);
     }
 
-    // Середньодобова база (млн грн), з якою рахувався звіт НА ДАТУ iso.
-    // Детермінована: та сама дата → та сама база, хоч для плитки, хоч для дельти.
     const _baseCache = new Map();
     async function resolveBaseMln(iso) {
         if (_baseCache.has(iso)) return _baseCache.get(iso);
@@ -1229,7 +1536,6 @@
         const flow = (entry && !entry.error) ? entry.flow : null;
         let base = dailyExpenseBaseMln(iso, flow), src = 'month';
         if (!(base > 0)) {
-            // Фолбек — ковзні 4 тижні ВІД ЦІЄЇ дати (як рахував її власний звіт)
             const snap = (entry && entry.dateOk) ? entry.snap : null;
             const cur = snap ? snapshotKpiValues(snap) : null;
             const prior = await collectPriorVals(iso, flow, true);
@@ -1272,11 +1578,10 @@
         } catch (e) { console.warn('refineKpisAndBuffer:', e); }
     }
 
-    // ═════════════════════ ДАТА ПОРІВНЯННЯ ДЕЛЬТ ═════════════════════
     const COMPARE_MODES = [
         { key: 'week',   uk: 'Тиждень',            en: 'Week',          hintUk: '−7 днів: попередній понеділок', hintEn: '−7 days: previous Monday' },
         { key: 'month',  uk: 'Місяць',             en: 'Month',         hintUk: '−1 календарний місяць, найближчий понеділок', hintEn: '−1 calendar month, nearest Monday' },
-        { key: 'mtd',    uk: 'З початку місяця',   en: 'Month-to-date', hintUk: 'перший зріз місяця за календарем trends (місяць = тижні до неділі, найближчої до кінця місяця)', hintEn: 'first snapshot of the month (trends calendar)' },
+        { key: 'mtd',    uk: 'З початку місяця',   en: 'Month-to-date', hintUk: 'перший зріз місяця за календарем trends', hintEn: 'first snapshot of the month (trends calendar)' },
         { key: 'custom', uk: 'Власна дата',        en: 'Custom date',   hintUk: 'будь-яка дата раніше за дату звіту', hintEn: 'any date before the report date' }
     ];
 
@@ -1353,7 +1658,6 @@
         const { snapEntry, metricsEntry, errors } = await loadCompareData(target, iso);
         if (token !== _cmpToken || gd !== globalData) return;
 
-        // --- Плитки ---
         const prev = ready || (snapEntry ? Object.assign(snapshotKpiValues(snapEntry.snap) || {}, { reportDate: snapEntry.iso }) : null);
         const snapDate = ready ? target : (snapEntry ? snapEntry.iso : null);
         if (base) {
@@ -1378,7 +1682,6 @@
             }
         }
 
-        // --- Оборотний капітал і запаси ---
         const idx = metricsEntry ? metricsIndex(metricsEntry.flow) : new Map();
         const manualOk = compareMode === 'week';
         let missingRows = 0;
@@ -1407,9 +1710,6 @@
                         state: (snapDate || metricsEntry) ? 'ok' : 'none', missingRows, errors };
         renderCompareUi();
         updateLanguageDOM();
-        if (compareInfo.state === 'none') {
-            showBanner(`На дату порівняння ${DT.dmy(target)} (±6 днів раніше) даних немає — дельти не розраховано.`, 'warn');
-        }
     }
 
     function setCompareMode(mode) {
@@ -1439,7 +1739,7 @@
         if (ci.state === 'loading') return lang === 'uk' ? `Δ — розрахунок до ${DT.dmy(ci.target)}…` : `Δ — calculating vs ${DT.dmy(ci.target)}…`;
         if (ci.state === 'invalid' || ci.state === 'none') return lang === 'uk' ? `Δ — немає даних на ${DT.dmy(ci.target)}` : `Δ — no data for ${DT.dmy(ci.target)}`;
         const used = ci.snapDate || ci.metricsDate;
-        const near = used && used !== ci.target ? (lang === 'uk' ? ` (найближчий зріз до ${DT.dm(ci.target)})` : ` (nearest to ${DT.dm(ci.target)})`) : '';
+        const near = used && used !== ci.target ? (lang === 'uk' ? ` (найближчий до ${DT.dm(ci.target)})` : ` (nearest to ${DT.dm(ci.target)})`) : '';
         return lang === 'uk' ? `· Δ — зміна з ${DT.dmy(used)}${near} · ${mode.uk.toLowerCase()}`
                              : `· Δ — change since ${DT.dmy(used)}${near} · ${mode.en.toLowerCase()}`;
     }
@@ -1472,16 +1772,6 @@
                         </span>${dateCtl}
                     </label>`;
         }).join('');
-        const note = document.getElementById('compareMenuNote');
-        if (note) {
-            const ci = compareInfo;
-            let t = lang === 'uk'
-                ? 'Дельти плиток — проти ФАКТУ Т-1 зрізу на дату порівняння; оборотний капітал і запаси — проти значень, внесених на ту дату.'
-                : 'Tile deltas use the T-1 FACT of the comparison snapshot; working capital and inventories use values recorded on that date.';
-            if (ci && ci.state === 'ok' && ci.missingRows) t += lang === 'uk' ? ` Без даних на дату порівняння рядків: ${ci.missingRows}.` : ` Rows without comparison data: ${ci.missingRows}.`;
-            if (ci && ci.metricsDate && ci.snapDate && ci.metricsDate !== ci.snapDate) t += lang === 'uk' ? ` Метрики блоків — на ${DT.dmy(ci.metricsDate)}.` : ` Block metrics as of ${DT.dmy(ci.metricsDate)}.`;
-            note.textContent = t;
-        }
     }
 
     function consumeLoadNote() { const n = _pendingLoadNote; _pendingLoadNote = ''; return n ? ' ' + n : ''; }
@@ -1521,35 +1811,13 @@
                 _flowCache.set(isoDate, makeFlowEntry(isoDate, flow));
             }
             flowData = flow;
-
             snapshot = extractSnapshotObject(flow.snapshotTree || flow.snapshot || flow.snapshotJson || flow);
 
-            if (!snapshot) {
-                if (flow && flow.error) {
-                    flowError = String(flow.error) + (flow.detail ? (" — " + String(flow.detail).replace(/\s+/g, ' ').slice(0, 400)) : "");
-                } else {
-                    const shape = (flow && typeof flow === 'object')
-                        ? ("ключі: [" + Object.keys(flow).join(", ") + "]")
-                        : ("тип: " + typeof flow);
-                    throw new Error(`потік повернув 200, але зрізу (tree) не знайдено. Форма відповіді — ${shape}. Перевірте Body дії «Відповідь 2».`);
-                }
+            if (!snapshot && flow && flow.error) {
+                flowError = String(flow.error);
             }
         } catch (e) {
             errors.push("Power Automate: " + e.message);
-        }
-
-        if (!snapshot && !flowError) {
-            const host = (location.hostname || "").toLowerCase();
-            if (host.endsWith("sharepoint.com")) {
-                try {
-                    const direct = await fetchSnapshotFromSharePoint(isoDate);
-                    snapshot = extractSnapshotObject(direct);
-                } catch (e) {
-                    errors.push("SharePoint REST: " + e.message);
-                }
-            } else {
-                errors.push("Прямий доступ до SharePoint неможливий із локального файлу через CORS — дані надходять лише через потік Power Automate.");
-            }
         }
 
         const hasMetricsPayload = flowData && (
@@ -1575,42 +1843,14 @@
                 buildChart();
                 document.getElementById('dashboardContent')?.classList.remove('hidden');
                 document.getElementById('uploadZone')?.classList.add('hidden');
-
-                const missing = [];
-                if (!snapshot) {
-                    missing.push("немає зрізу (графік і прогноз коштів)" + (flowError ? ` — потік: ${flowError}` : ""));
-                } else if (!globalData.chart.totalLiquidity.some(v => v)) {
-                    const cashNode = findSnapshotNode(snapshot.tree, "Доступні залишки") || findSnapshotNode(snapshot.tree, "Залишки доступні до використання");
-                    const valKeys = cashNode && cashNode.values ? Object.keys(cashNode.values) : [];
-                    missing.push(!cashNode ? "зріз без вузла «Доступні залишки»"
-                        : (valKeys.length === 0 ? "зріз без значень" : "значення зрізу не читаються; ключі: [" + valKeys.slice(0, 8).join(", ") + "]"));
-                }
-                if (!hasMetricsPayload) {
-                    missing.push("немає оперативних метрик (оборотний капітал / запаси / фінансування / резюме)");
-                }
-
-                const loadNote = consumeLoadNote();
-                if (missing.length === 0) {
-                    if (loadNote) showBanner(`Дані на ${dot} завантажено.${loadNote}`, 'info');
-                    else showSuccess(`Дані на ${dot} завантажено.`);
-                } else {
-                    showBanner(`Дані на ${dot} завантажено частково. Бракує: ${missing.join("; ")}. Показано те, що наявне на цю дату.${loadNote}`, 'warn');
-                }
-            } else if (flowError) {
-                prepareEmptyForecastForDate(isoDate);
-                globalData.summary = { uk: [`На дату ${dot} даних немає.`], en: [`No data for ${dot}.`] };
-                updateLanguageDOM();
-                buildChart();
-                document.getElementById('dashboardContent')?.classList.remove('hidden');
-                showBanner(`На дату ${dot} даних немає. Потік повідомив: ${flowError}`, 'warn');
+                showSuccess(`Дані на ${dot} завантажено.`);
             } else {
                 prepareEmptyForecastForDate(isoDate);
                 globalData.summary = { uk: [`На дату ${dot} даних немає.`], en: [`No data for ${dot}.`] };
                 updateLanguageDOM();
                 buildChart();
                 document.getElementById('dashboardContent')?.classList.remove('hidden');
-                const detail = errors.length ? (" Деталі: " + errors.join("; ")) : "";
-                showError(`На дату ${dot} даних немає (блоки очищено).${detail}`);
+                showBanner(`На дату ${dot} даних немає.`, 'warn');
             }
         } catch (err) {
             showError(`Помилка обробки даних на ${dot}: ${err.message}`);
@@ -1666,12 +1906,10 @@
             rows: []
         };
         globalData.kpis = globalData.kpis.map(k => ({ ...k, value: 0, isGray: true, trend: { isPositive: true, text: { uk: "-", en: "-" } } }));
-
         globalData.workingCapital = defaultWorkingCapital();
         globalData.fuelInventories = defaultFuelInventories();
         globalData.creditLimits = defaultCreditLimits();
         globalData.summary = { uk: ["—"], en: ["—"] };
-
         window.globalData = globalData;
         syncHeaderDate();
     }
@@ -1682,15 +1920,9 @@
         const ukRaw = (data?.summaryUk || '').trim();
         const enRaw = (data?.summaryEn || '').trim();
 
-        window.currentSummaryUk = ukRaw;
-        window.currentSummaryEn = enRaw;
-
         if (ukRaw || enRaw) {
             globalData.summary.uk = ukRaw ? ukRaw.split('\n').filter(l => l.trim().length > 0) : [`На дату ${targetDate} резюме відсутнє.`];
             globalData.summary.en = enRaw ? enRaw.split('\n').filter(l => l.trim().length > 0) : [`No executive summary for ${targetDate}.`];
-        } else {
-            globalData.summary.uk = [`На дату ${targetDate} управлінське резюме ще не внесено.`];
-            globalData.summary.en = [`No executive summary recorded for ${targetDate}.`];
         }
 
         const metricsList = Array.isArray(data?.metrics) ? data.metrics : [];
@@ -1717,25 +1949,9 @@
             }
         });
 
-        if (wcRows.length) {
-            if (!wcRows.some(r => r.isTotal)) {
-                let tc = 0, td = 0;
-                wcRows.forEach(r => { const s = wcSign(r.title.uk); if (!r.isSub && s !== 0) { tc += s * r.current; td += s * r.delta; } });
-                wcRows.push({ title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: tc, previous: tc - td, delta: td, isSub: false, isTotal: true, isGray: false, _computedTotal: true });
-            }
-            globalData.workingCapital = wcRows;
-        }
-        if (fuelRows.length) {
-            globalData.fuelInventories = fuelRows;
-        }
-        if (finRows.length) {
-            if (!finRows.some(r => r.isTotal)) {
-                let tl = 0, tdr = 0;
-                finRows.forEach(r => { tl += r.limit; tdr += r.drawn; });
-                finRows.push({ title: { uk: "Всього", en: "Total" }, limit: tl, drawn: tdr, available: tl - tdr, isTotal: true });
-            }
-            globalData.creditLimits = finRows;
-        }
+        if (wcRows.length) globalData.workingCapital = wcRows;
+        if (fuelRows.length) globalData.fuelInventories = fuelRows;
+        if (finRows.length) globalData.creditLimits = finRows;
 
         updateLanguageDOM();
     }
@@ -1747,10 +1963,12 @@
         const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const dateEn = `${monthsEn[parseInt(m, 10) - 1]} ${d}, ${y}`;
 
-        globalData.meta.uk.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateUk} · млн грн</span>`;
-        globalData.meta.en.title = `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateEn} · UAH mln</span>`;
+        globalData.meta.uk.title = `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Прогноз ліквідності</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${dateUk} · млн грн</span>`;
+        globalData.meta.en.title = `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Liquidity forecast</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${dateEn} · UAH mln</span>`;
         
         document.getElementById('dashboardTitle').innerHTML = globalData.meta[currentLang].title;
+        const mNav = document.getElementById('mNavDate');
+        if (mNav) mNav.innerText = `${d}.${m}`;
     }
 
     function extractCleanDate(item) {
@@ -1758,12 +1976,8 @@
         let val = (typeof item === 'object') ? (item.ReportDate || item.reportDate || Object.values(item)[0] || '') : item;
         const str = String(val).trim();
         if (!str || str === 'null' || str === 'undefined') return null;
-
         const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (isoMatch) {
-            return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
-        }
-
+        if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
         const dotParts = str.split('.');
         if (dotParts.length === 3) {
             const d = dotParts[0].trim().padStart(2, '0');
@@ -1771,7 +1985,6 @@
             const y = dotParts[2].trim().substring(0, 4);
             if (y.length === 4) return `${y}-${m}-${d}`;
         }
-
         return null;
     }
 
@@ -1797,28 +2010,16 @@
 
     async function loadAvailableDatesFromSP() {
         try {
-            let res;
-            for (let attempt = 1; attempt <= 3; attempt++) {
-                res = await fetch(GET_METRICS_FLOW_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reportDate: "" })
-                });
-                if (res.ok || res.status < 500) break;
-                if (attempt < 3) await new Promise(r => setTimeout(r, 1500));
-            }
-
-            if (!res.ok) throw new Error("потік повернув HTTP " + res.status);
-
+            const res = await fetch(GET_METRICS_FLOW_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reportDate: "" })
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
             const raw = await res.text();
-            let data;
-            try { data = raw ? JSON.parse(raw) : {}; }
-            catch (e) { throw new Error("некоректний JSON зі списком дат"); }
-
+            const data = raw ? JSON.parse(raw) : {};
             const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
-            const cleaned = [...new Set(rawList.map(extractCleanDate))]
-                .filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d));
-            
+            const cleaned = [...new Set(rawList.map(extractCleanDate))].filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d));
             cleaned.forEach(registerAvailableDate);
 
             if (availableDatesWithData.length > 0) {
@@ -1827,9 +2028,7 @@
             } else {
                 throw new Error("Список дат порожній");
             }
-
         } catch (err) {
-            console.warn(`Не вдалося отримати список дат (${err.message}). Автоматично обрано останній понеділок.`);
             const fallbackDate = getMostRecentMonday();
             registerAvailableDate(fallbackDate);
             applyDateSelection(fallbackDate);
@@ -1842,8 +2041,6 @@
         await loadAvailableDatesFromSPQuiet();
         if (currentReportDate) {
             await loadMetricsForSelectedDate(currentReportDate);
-        } else {
-            showInfo("Оберіть дату у календарі або завантажте JSON-файл.");
         }
     }
 
@@ -1854,31 +2051,21 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reportDate: "" })
             });
-            if (!res.ok) throw new Error("HTTP " + res.status);
+            if (!res.ok) return;
             const raw = await res.text();
             const data = raw ? JSON.parse(raw) : {};
             const rawList = Array.isArray(data.availableDates) ? data.availableDates : [];
-            rawList.map(extractCleanDate)
-                   .filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
-                   .forEach(registerAvailableDate);
+            rawList.map(extractCleanDate).filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)).forEach(registerAvailableDate);
             updateCalendarTriggerDot();
             renderCalendar();
-        } catch (e) {
-            // не критично
-        }
+        } catch (e) {}
     }
 
     function initEmptyDashboard() {
         globalData = {
             meta: {
-                uk: { 
-                    title: "", titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", 
-                    titleSummary: "Управлінське резюме", titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн" 
-                },
-                en: { 
-                    title: "", titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", 
-                    titleSummary: "Executive Summary", titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln" 
-                }
+                uk: { title: "", titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме", titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн" },
+                en: { title: "", titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary", titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln" }
             },
             kpis: [
                 { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: 0, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "-", en: "-" } }, isGray: true },
@@ -1888,14 +2075,8 @@
             ],
             chart: { labels: ["Т-1","Т0","Т1","Т2","Т3","Т4","Т5","Т6","Т7","Т8","Т9","Т10","Т11","Т12"], ownCash: Array(14).fill(0), ownCashMznn: Array(14).fill(null), totalLiquidity: Array(14).fill(0), postImportLiquidity: Array(14).fill(0), minThreshold: 2500, periods: [] },
             periodMap: {},
-            summary: {
-                uk: ["Оберіть файл Excel або завантажте дані з SharePoint."],
-                en: ["Select an Excel file or load data from SharePoint."]
-            },
-            mainTable: {
-                headers: [{ uk: "Стаття", en: "Item" }, { uk: "Т-1", en: "T-1" }, { uk: "Δ", en: "Δ" }, { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" }, { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" }, { uk: "M1", en: "M1" }, { uk: "M2", en: "M2" }, { uk: "M3", en: "M3" }, { uk: "Всього", en: "Total" }],
-                rows: []
-            },
+            summary: { uk: ["Завантажте звіт або оберіть дату."], en: ["Load report or choose date."] },
+            mainTable: { headers: [{ uk: "Стаття", en: "Item" }, { uk: "Т-1", en: "T-1" }, { uk: "Δ", en: "Δ" }, { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" }, { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" }, { uk: "M1", en: "M1" }, { uk: "M2", en: "M2" }, { uk: "M3", en: "M3" }, { uk: "Всього", en: "Total" }], rows: [] },
             workingCapital: defaultWorkingCapital(),
             fuelInventories: defaultFuelInventories(),
             creditLimits: defaultCreditLimits()
@@ -1920,33 +2101,27 @@
         return 0;
     }
 
-    function opFmt(v) {
-        return Math.round(v).toLocaleString('uk-UA').replace(/\u202F/g, ' ');
-    }
-
+    function opFmt(v) { return Math.round(v).toLocaleString('uk-UA').replace(/\u202F/g, ' '); }
     function opInput(group, idx, field, value) {
         return `<input type="number" step="any" data-group="${group}" data-idx="${idx}" data-field="${field}"
             value="${value}" oninput="recalcOperational()"
-            class="w-full border border-slate-300 rounded-md px-2 py-1 text-sm text-right focus:ring-2 focus:ring-indigo-500 outline-none">`;
+            class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm text-right focus:ring-2 focus:ring-indigo-500 outline-none">`;
     }
-
     function opCalcCell(id, bold) {
-        return `<span id="${id}" class="block px-2 py-1 text-sm text-right ${bold ? 'font-bold text-slate-700' : 'font-semibold text-slate-500'} bg-slate-100 rounded-md"></span>`;
+        return `<span id="${id}" class="block px-2.5 py-1.5 text-sm text-right ${bold ? 'font-bold text-slate-700' : 'font-semibold text-slate-500'} bg-slate-100 rounded-lg"></span>`;
     }
-
     function getInputVal(group, idx, field) {
         const el = document.querySelector(`#operationalFormBody input[data-group="${group}"][data-idx="${idx}"][data-field="${field}"]`);
         return el ? parseNumberValue(el.value) : 0;
     }
-
     function setText(id, txt) { const el = document.getElementById(id); if (el) el.innerText = txt; }
 
     function openOperationalEditor() {
+        if (isReadOnly) return;
         if (!globalData) { alert("Спочатку завантажте дані дашборду."); return; }
         document.getElementById('operationalDateLabel').innerText = currentReportDate;
         const lang = currentLang;
         let html = '';
-
         const prevOf = (r) => (r.previous !== undefined ? r.previous : (r.current - r.delta));
 
         html += `<div>
@@ -2008,7 +2183,6 @@
     function recalcOperational() {
         if (!globalData) return;
         let totalCur = 0, totalPrev = 0;
-
         globalData.workingCapital.forEach((r, i) => {
             if (r.isTotal) return;
             const cur = getInputVal('wc', i, 'current');
@@ -2076,6 +2250,11 @@
     }
 
     async function saveOperationalData() {
+        if (isReadOnly) {
+            showBanner("Сторінка перебуває в режимі перегляду.", "error");
+            return;
+        }
+
         const btn = document.getElementById('btnSaveOperational');
         commitOperational();
         updateLanguageDOM();
@@ -2128,31 +2307,19 @@
             order += 10;
         });
 
-        const payload = {
-            reportDate: currentReportDate,
-            metrics: itemsToSave
-        };
-
         try {
             const response = await fetch(SAVE_OPERATIONAL_FLOW_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ reportDate: currentReportDate, metrics: itemsToSave })
             });
 
             if (!response.ok) throw new Error("Помилка HTTP " + response.status);
-
-            const curClean = cleanDateKey(currentReportDate);
-            if (!availableDatesWithData.includes(curClean)) {
-                availableDatesWithData.push(curClean);
-                updateCalendarTriggerDot();
-            }
-
             closeOperationalEditor();
-            alert("Дані успішно збережено в SharePoint!");
+            showSuccess("Дані успішно збережено в SharePoint");
         } catch (err) {
             closeOperationalEditor();
-            alert("Дані оновлено локально, але сталася помилка запису в SharePoint: " + err.message);
+            showError("Помилка запису в SharePoint: " + err.message);
         } finally {
             btn.innerText = "Зберегти";
             btn.disabled = false;
@@ -2181,12 +2348,8 @@
         "Буфер ліквідності": "Liquidity buffer",
         "Доступні кредитні лінії": "Available credit lines",
         "Доступний постімпорт": "Available post-import",
-        "днів": "days",
-        "дні": "days",
-        "день": "day",
-        "млн грн": "UAH mln",
-        "Надходження": "Inflows",
-        "Виплати": "Outflows",
+        "днів": "days", "дні": "days", "день": "day", "млн грн": "UAH mln",
+        "Надходження": "Inflows", "Виплати": "Outflows",
         "Обов’язкові платежі": "Mandatory payments",
         "Платежі виробничого ланцюга": "Production chain payments",
         "Комерційний оборотний капітал": "Commercial working capital",
@@ -2197,103 +2360,39 @@
         "Чистий грошовий потік": "Net cash flow",
         "Грошові залишки": "Cash balances",
         "Дебіторська заборгованість": "Accounts receivable",
-        "НАК Нафтогаз": "NJSC Naftogaz",
-        "АОЗ": "DPA",
-        "МОУ / АОЗ": "MoD / DPA",
-        "МОУ/АОЗ": "MoD/DPA",
-        "Аванси видані": "Advances paid",
-        "Кредиторська заборгованість": "Accounts payable",
-        "Аванси отримані": "Advances received",
-        "Оборотний капітал (без запасів)": "Working capital (excluding inventories)",
-        "Бензин": "Gasoline",
-        "Дизельне пальне": "Diesel fuel",
-        "Газ комерційний (тис м³)": "Commercial gas (ths m³)",
-        "Газ в заставі": "Gas pledged as collateral",
-        "Газ в заставі (млн м³)": "Gas pledged as collateral (mln m³)",
-        "Арктичний дизель": "Arctic diesel",
-        "Товарна нафта": "Stock-tank oil",
-        "Кредитні лінії": "Credit lines",
-        "Постімпорт": "Post-import",
-        "Всього": "Total",
-        "Обов’язкові платежі (ЗП, податки, енергія)":"Mandatory payments (salary, taxes, energy)",
-        "Переробка та виробництво":"Refining and production",
-        "Закупівля нафтопродуктів":"Purchase of petroleum products",
-        "Інші виплати":"Other payments",
-        "Газ комерційний (млн м³)":"Commercial gas (mln m³)"
+        "НАК Нафтогаз": "NJSC Naftogaz", "АОЗ": "DPA", "МОУ / АОЗ": "MoD / DPA",
+        "Аванси видані": "Advances paid", "Кредиторська заборгованість": "Accounts payable",
+        "Аванси отримані": "Advances received", "Оборотний капітал (без запасів)": "Working capital (excluding inventories)",
+        "Бензин": "Gasoline", "Дизельне пальне": "Diesel fuel", "Арктичний дизель": "Arctic diesel",
+        "Газ комерційний (млн м³)": "Commercial gas (mln m³)", "Газ в заставі (млн м³)": "Gas pledged as collateral (mln m³)",
+        "Товарна нафта": "Stock-tank oil", "Кредитні лінії": "Credit lines", "Постімпорт": "Post-import", "Всього": "Total"
     };
 
     function toggleDropdown(id) { document.getElementById(id).classList.toggle('hidden'); }
     function toggleBlockMenu() { document.getElementById('blockMenu').classList.toggle('hidden'); }
     function toggleWcMenu() { document.getElementById('wcMenu').classList.toggle('hidden'); }
 
-    document.addEventListener('click', function(event) {
-        const menu = document.getElementById('blockMenu');
-        if (menu) {
-            const btn = menu.previousElementSibling;
-            if (!menu.contains(event.target) && !btn.contains(event.target)) menu.classList.add('hidden');
-        }
-        const wcMenu = document.getElementById('wcMenu');
-        if (wcMenu) {
-            const wcBtn = wcMenu.previousElementSibling;
-            if (!wcMenu.contains(event.target) && !wcBtn.contains(event.target)) wcMenu.classList.add('hidden');
-        }
-        const outflowMenu = document.getElementById('outflowHighlightDropdown');
-        if (outflowMenu) {
-            const outflowBtn = outflowMenu.previousElementSibling;
-            if (!outflowMenu.contains(event.target) && !outflowBtn.contains(event.target)) outflowMenu.classList.add('hidden');
-        }
-        const summaryMenu = document.getElementById('summarySettingsDropdown');
-        if (summaryMenu) {
-            const summaryBtn = summaryMenu.previousElementSibling;
-            if (!summaryMenu.contains(event.target) && !summaryBtn.contains(event.target)) summaryMenu.classList.add('hidden');
-        }
-        const path = event.composedPath ? event.composedPath() : [];
-        ['chartLabelMenu', 'compareMenu'].forEach(id => {
-            const m = document.getElementById(id);
-            if (!m || m.classList.contains('hidden')) return;
-            const btn = m.previousElementSibling;
-            if (!path.includes(m) && !path.includes(btn) && !m.contains(event.target) && !(btn && btn.contains(event.target))) m.classList.add('hidden');
-        });
-    });
-
     function toggleVisibility(blockId, checkbox) {
         const block = document.getElementById(blockId);
         if (block) {
             checkbox.checked ? block.classList.remove('force-hide') : block.classList.add('force-hide');
         }
-        if (blockId === 'blockMainTable') {
-            const chartBlock = document.getElementById('blockChart');
-            if (chartBlock) {
-                if (!checkbox.checked) {
-                    chartBlock.style.setProperty('margin-bottom', '0px', 'important');
-                } else {
-                    chartBlock.style.removeProperty('margin-bottom');
-                }
-            }
-        }
-        setTimeout(safeUpdateChart, 20);
-        setTimeout(safeUpdateChart, 150);
+        setTimeout(safeUpdateChart, 50);
         if (summaryAutoFit) scheduleSummaryFit(true);
     }
 
     function changeSummaryFontSize(delta) {
-        currentSummaryFontSize += delta;
-        if (currentSummaryFontSize < 8) currentSummaryFontSize = 8;
-        if (currentSummaryFontSize > 18) currentSummaryFontSize = 18;
+        currentSummaryFontSize = Math.max(8, Math.min(18, currentSummaryFontSize + delta));
         applySummaryFontSize();
     }
-
     function applySummaryFontSize() {
         document.querySelectorAll('#summaryTexts p, #summaryTexts span.bullet-text').forEach(el => el.style.fontSize = `${currentSummaryFontSize}pt`);
     }
 
     function changeSummaryGap(delta) {
-        currentSummaryGap += delta;
-        if (currentSummaryGap < 0) currentSummaryGap = 0;
-        if (currentSummaryGap > 40) currentSummaryGap = 40;
+        currentSummaryGap = Math.max(0, Math.min(40, currentSummaryGap + delta));
         applySummaryGap();
     }
-
     function applySummaryGap() {
         const summaryContent = document.getElementById('summaryTexts');
         if (summaryContent) summaryContent.style.gap = `${currentSummaryGap}px`;
@@ -2301,11 +2400,9 @@
 
     function changeLetterSpacing(delta) {
         currentLetterSpacing = Math.round((currentLetterSpacing + delta) * 10) / 10;
-        if (currentLetterSpacing < -1) currentLetterSpacing = -1;
-        if (currentLetterSpacing > 2) currentLetterSpacing = 2;
+        currentLetterSpacing = Math.max(-1, Math.min(2, currentLetterSpacing));
         applyLetterSpacing();
     }
-
     function applyLetterSpacing() {
         document.querySelectorAll('#summaryTexts p, #summaryTexts span.bullet-text, #summaryTexts li').forEach(el => {
             el.style.letterSpacing = `${currentLetterSpacing}px`;
@@ -2313,9 +2410,7 @@
     }
 
     function changeChartPadding(delta) {
-        currentXPadding += delta;
-        if (currentXPadding < 0) currentXPadding = 0; 
-        if (currentXPadding > 150) currentXPadding = 150; 
+        currentXPadding = Math.max(0, Math.min(150, currentXPadding + delta));
         if (myLiquidityChart) {
             myLiquidityChart.options.scales.x.ticks.padding = currentXPadding;
             myLiquidityChart.update();
@@ -2323,28 +2418,30 @@
     }
 
     function changeStackGap(delta) {
-        currentLabelSpread += delta;
-        if (currentLabelSpread < -6) currentLabelSpread = -6;
-        if (currentLabelSpread > 30) currentLabelSpread = 30;
+        currentLabelSpread = Math.max(-6, Math.min(30, currentLabelSpread + delta));
         currentStackGap = Math.max(8, 20 + currentLabelSpread);
         if (myLiquidityChart) myLiquidityChart.update('none');
     }
+
     function setLineAlign(key, align) {
         if (lineLabelConfig[key]) lineLabelConfig[key].align = align;
         if (myLiquidityChart) myLiquidityChart.update('none');
         renderLineLabelMenu();
     }
+
     function changeLineOffset(key, delta) {
         if (!lineLabelConfig[key]) return;
         lineLabelConfig[key].offset = Math.min(60, Math.max(0, lineLabelConfig[key].offset + delta));
         if (myLiquidityChart) myLiquidityChart.update('none');
         renderLineLabelMenu();
     }
+
     function toggleChartLabelMenu() {
         const el = document.getElementById('chartLabelMenu');
         el.classList.toggle('hidden');
         if (!el.classList.contains('hidden')) renderLineLabelMenu();
     }
+
     function renderLineLabelMenu() {
         const body = document.getElementById('chartLabelMenuBody');
         if (!body) return;
@@ -2355,12 +2452,11 @@
             return `<div class="py-2 border-b border-slate-100 last:border-0">
                 <div class="text-xs font-semibold text-slate-700 mb-1.5 truncate">${m.label[lang]}</div>
                 <div class="flex items-center justify-between gap-2">
-                    <div class="flex rounded-md overflow-hidden border border-slate-300 text-[11px] font-medium">
+                    <div class="flex rounded-lg overflow-hidden border border-slate-300 text-[11px] font-medium">
                         <button onclick="setLineAlign('${m.key}','top')" class="px-2.5 py-1 ${topSel ? onCls : offCls}">${lang === 'uk' ? 'Зверху' : 'Top'}</button>
                         <button onclick="setLineAlign('${m.key}','bottom')" class="px-2.5 py-1 ${!topSel ? onCls : offCls}">${lang === 'uk' ? 'Знизу' : 'Bottom'}</button>
                     </div>
                     <div class="flex items-center gap-1">
-                        <span class="text-[10px] text-slate-400 mr-0.5">${lang === 'uk' ? 'відступ' : 'offset'}</span>
                         <button onclick="changeLineOffset('${m.key}',-2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 rounded text-xs font-bold">−</button>
                         <span class="text-xs w-6 text-center tabular-nums font-semibold text-slate-700">${cfg.offset}</span>
                         <button onclick="changeLineOffset('${m.key}',2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-6 h-6 rounded text-xs font-bold">+</button>
@@ -2368,8 +2464,6 @@
                 </div>
             </div>`;
         }).join('');
-        const title = document.getElementById('lblChartLabelTitle');
-        if (title) title.innerText = lang === 'uk' ? 'Підписи ліній' : 'Line labels';
     }
 
     const SUMMARY_FIT_STEPS = (() => {
@@ -2392,35 +2486,19 @@
         return col.scrollHeight > col.clientHeight + 1 || box.scrollHeight > box.clientHeight + 1;
     }
 
-    function summaryFitSignature() {
-        if (!globalData) return '';
-        const vis = ['blockSummary', 'blockWC', 'blockFuel', 'blockLimits'].map(id => {
-            const el = document.getElementById(id); return el && el.classList.contains('force-hide') ? 0 : 1; }).join('');
-        return [currentLang, vis, (globalData.summary[currentLang] || []).join('\n'),
-                (globalData.workingCapital || []).length, (globalData.fuelInventories || []).length,
-                (globalData.creditLimits || []).length, isSummaryHeadersBold ? 1 : 0].join('|');
+    function autoFitSummary(force) {
+        if (!globalData || window.innerWidth <= 860) return false;
+        const col = document.getElementById('rightColumn');
+        if (!col || col.clientHeight === 0) return false;
+        let i = 0;
+        applySummaryState(SUMMARY_FIT_STEPS[0]);
+        while (summaryOverflows() && i < SUMMARY_FIT_STEPS.length - 1) applySummaryState(SUMMARY_FIT_STEPS[++i]);
+        return true;
     }
 
     function applySummaryState(st) {
         currentSummaryFontSize = st.f; currentSummaryGap = st.g; currentLetterSpacing = st.ls;
         applySummaryFontSize(); applySummaryGap(); applyLetterSpacing();
-    }
-
-    function autoFitSummary(force) {
-        if (!globalData) return false;
-        const sig = summaryFitSignature();
-        if (!force && (!summaryAutoFit || sig === _summaryFitSig)) return false;
-        const col = document.getElementById('rightColumn');
-        if (!col || col.clientHeight === 0) return false;
-        _summaryFitSig = sig;
-        let i = 0;
-        applySummaryState(SUMMARY_FIT_STEPS[0]);
-        while (summaryOverflows() && i < SUMMARY_FIT_STEPS.length - 1) applySummaryState(SUMMARY_FIT_STEPS[++i]);
-        const info = document.getElementById('summaryFitInfo');
-        const over = summaryOverflows();
-        if (info) info.textContent = `${currentSummaryFontSize} pt · відступ ${currentSummaryGap} px · літери ${currentLetterSpacing} px${over ? ' · не вміщується' : ''}`;
-        if (over) showBanner('Управлінське резюме задовге: навіть мінімальний шрифт не вміщує всі блоки на сторінку. Скоротіть текст або приховайте блок.', 'warn');
-        return true;
     }
 
     function scheduleSummaryFit(force) {
@@ -2434,7 +2512,10 @@
     }
 
     function safeUpdateChart() {
-        if (myLiquidityChart) { myLiquidityChart.resize(); myLiquidityChart.update('none'); }
+        if (myLiquidityChart) { 
+            myLiquidityChart.resize(); 
+            myLiquidityChart.update('none'); 
+        }
     }
 
     function togglePreview() {
@@ -2473,7 +2554,7 @@
                 html2canvas: { 
                     scale: 3, useCORS: true, logging: false, backgroundColor: '#ffffff',
                     onclone: (doc) => {
-                        doc.querySelectorAll('.print-hide, .pdf-hide').forEach(el => el.remove());
+                        doc.querySelectorAll('.print-hide, .pdf-hide, #mobileBottomBar').forEach(el => el.remove());
                     }
                 }, 
                 jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: true } 
@@ -2529,7 +2610,7 @@
             const slot = (x.right - x.left) / Math.max(per.length, 1);
 
             ctx.save();
-            let size = 10;
+            let size = window.innerWidth <= 860 ? 8 : 10;
             ctx.font = `500 ${size}px Helvetica, sans-serif`;
             let maxW = 0;
             per.forEach(t => { if (t) maxW = Math.max(maxW, ctx.measureText(t).width); });
@@ -2552,6 +2633,7 @@
         const ctx = document.getElementById('liquidityChart').getContext('2d');
         const paleColor = '#94a3b8';
         const yAxis = calcYAxis();
+        const isMobile = window.innerWidth <= 860;
 
         const getHighlightColor = (data, index, mainColor) => {
             const nums = data.filter(v => typeof v === 'number' && isFinite(v));
@@ -2561,7 +2643,6 @@
         };
 
         const roundV = (v) => (typeof v === 'number' && isFinite(v)) ? Math.round(v) : null;
-
         const distinctDisplay = (selfKey, higherKeys) => (c) => {
             const i = c.dataIndex;
             const self = roundV(globalData.chart[selfKey] ? globalData.chart[selfKey][i] : null);
@@ -2597,13 +2678,20 @@
         };
 
         const labelsFor = (key, color, size, weightPale, displayFn) => ({
-            display: displayFn,
+            display: (c) => {
+                if (isMobile && !document.getElementById('blockChart').classList.contains('chart-fs')) {
+                    const i = c.dataIndex;
+                    const len = globalData.chart.labels.length;
+                    return (i === 0 || i === len - 1 || i % 3 === 0);
+                }
+                return typeof displayFn === 'function' ? displayFn(c) : displayFn;
+            },
             clamp: true,
             align: lineAlign(key),
             anchor: lineAnchor(key),
             offset: lineOffset(key),
             color: (c) => getHighlightColor(globalData.chart[key], c.dataIndex, color),
-            font: (c) => ({ weight: getHighlightColor(globalData.chart[key], c.dataIndex, 'bold') === 'bold' ? '700' : weightPale, size: size }),
+            font: (c) => ({ weight: getHighlightColor(globalData.chart[key], c.dataIndex, 'bold') === 'bold' ? '700' : weightPale, size: isMobile ? size * 0.8 : size }),
             formatter: (v) => formatNum(v)
         });
 
@@ -2618,7 +2706,7 @@
                         borderColor: '#1E3A8A', 
                         borderWidth: 3, pointRadius: 2, pointBackgroundColor: '#1E3A8A', 
                         fill: false, clip: false, order: 1, 
-                        datalabels: labelsFor('totalLiquidity', '#1E3A8A', 14.6, '200', true)
+                        datalabels: labelsFor('totalLiquidity', '#1E3A8A', 14, '200', true)
                     },
                     { 
                         label: chartTranslations[currentLang].ownCash, 
@@ -2626,7 +2714,7 @@
                         borderColor: '#6B7280', 
                         borderWidth: 1.5, pointRadius: 2, pointBackgroundColor: '#ffffff', 
                         fill: false, clip: false, order: 2, 
-                        datalabels: labelsFor('ownCash', '#6B7280', 14.6, '500', distinctDisplay('ownCash', ['totalLiquidity']))
+                        datalabels: labelsFor('ownCash', '#6B7280', 14, '500', distinctDisplay('ownCash', ['totalLiquidity']))
                     },
                     { 
                         label: chartTranslations[currentLang].ownCashMznn, 
@@ -2634,7 +2722,7 @@
                         borderColor: '#C2410C', 
                         borderWidth: 1.5, pointRadius: 2, pointBackgroundColor: '#ffffff', 
                         borderDash: [5, 5], fill: false, clip: false, order: 3, 
-                        datalabels: labelsFor('ownCashMznn', '#C2410C', 13, '500', distinctDisplay('ownCashMznn', ['totalLiquidity', 'ownCash']))
+                        datalabels: labelsFor('ownCashMznn', '#C2410C', 12.5, '500', distinctDisplay('ownCashMznn', ['totalLiquidity', 'ownCash']))
                     },
                     { 
                         label: chartTranslations[currentLang].postImport, 
@@ -2642,7 +2730,7 @@
                         borderColor: '#475569', 
                         borderWidth: 1.5, pointRadius: 1.5, pointBackgroundColor: '#475569', 
                         borderDash: [12, 6], fill: false, clip: false, order: 4, 
-                        datalabels: labelsFor('postImportLiquidity', '#475569', 14.6, '500', distinctDisplay('postImportLiquidity', ['totalLiquidity', 'ownCash', 'ownCashMznn']))
+                        datalabels: labelsFor('postImportLiquidity', '#475569', 14, '500', distinctDisplay('postImportLiquidity', ['totalLiquidity', 'ownCash', 'ownCashMznn']))
                     },
                     { 
                         label: chartTranslations[currentLang].minLimit, 
@@ -2660,19 +2748,19 @@
                 responsive: true, 
                 maintainAspectRatio: false,
                 devicePixelRatio: Math.max(2, window.devicePixelRatio || 1),
-                layout: { padding: { left: 26, right: 26, top: 34, bottom: 4 } }, 
+                layout: { padding: { left: 16, right: 16, top: 28, bottom: 4 } }, 
                 scales: {
                     x: { 
                         grid: { display: false }, 
-                        ticks: { font: { size: 14 }, padding: currentXPadding },
+                        ticks: { font: { size: isMobile ? 11 : 13 }, padding: currentXPadding },
                         afterFit: (scale) => { if (hasPeriods()) scale.height += PERIOD_ROW_HEIGHT; }
                     },
                     y: { 
                         beginAtZero: true, 
                         max: yAxis.max,
-                        ticks: { stepSize: yAxis.step, font: { size: 14 }, callback: (v) => formatNum(v) }, 
+                        ticks: { stepSize: yAxis.step, font: { size: isMobile ? 11 : 13 }, callback: (v) => formatNum(v) }, 
                         border: { display: false }, 
-                        grid: { color: 'rgba(0, 0, 0, 0.03)' } 
+                        grid: { color: 'rgba(0, 0, 0, 0.04)' } 
                     }
                 },
                 plugins: {
@@ -2681,70 +2769,18 @@
                         display: true, position: 'bottom', align: 'start', 
                         labels: { 
                             usePointStyle: false, 
-                            boxWidth: 16, 
+                            boxWidth: 14, 
                             boxHeight: 3, 
-                            font: { size: 13 }, 
-                            padding: 24, 
+                            font: { size: isMobile ? 10.5 : 12.5 }, 
+                            padding: isMobile ? 12 : 20, 
                             filter: (item) => item.text !== chartTranslations[currentLang].minLimit 
                         } 
                     },
-                    tooltip: { enabled: false }
+                    tooltip: { enabled: true }
                 }
             },
-            plugins: [{
-                id: 'customLabels',
-                afterDraw: (chart) => {
-                    const { ctx, chartArea, scales: { x, y } } = chart;
-                    const txt = chartTranslations[currentLang].minLimit;
-                    ctx.save();
-                    ctx.font = '600 12pt Helvetica';
-                    const textW = ctx.measureText(txt).width;
-                    const textH = 20, pad = 6;
-                    const rightX = chartArea.right, leftX = rightX - textW;
-                    const tY = y.getPixelForValue(globalData.chart.minThreshold);
-
-                    const centers = [];
-                    const n = globalData.chart.labels.length;
-                    for (let i = 0; i < n; i++) {
-                        if (x.getPixelForTick(i) < leftX - 12) continue;
-                        LINE_META.forEach(m => {
-                            const v = globalData.chart[m.key] ? globalData.chart[m.key][i] : null;
-                            if (typeof v !== 'number' || !isFinite(v)) return;
-                            const cfg = lineLabelConfig[m.key];
-                            const dir = cfg.align === 'top' ? -1 : 1;
-                            centers.push(y.getPixelForValue(v) + dir * (cfg.offset + currentLabelSpread + 10));
-                        });
-                    }
-                    const bandAbove = [tY - pad - textH, tY - pad];
-                    const bandBelow = [tY + pad, tY + pad + textH];
-                    const hits = (band) => centers.filter(cy => cy >= band[0] - textH / 2 && cy <= band[1] + textH / 2).length;
-                    let placeBelow = hits(bandBelow) <= hits(bandAbove);
-                    if (bandAbove[0] < chartArea.top) placeBelow = true;
-                    if (bandBelow[1] > chartArea.bottom) placeBelow = false;
-
-                    ctx.textAlign = 'right';
-                    ctx.fillStyle = '#991B1B';
-                    ctx.textBaseline = placeBelow ? 'top' : 'bottom';
-                    ctx.fillText(txt, rightX, placeBelow ? tY + pad : tY - pad);
-                    ctx.restore();
-                }
-            }, periodAxisPlugin]
+            plugins: [periodAxisPlugin]
         });
-    }
-
-    function formatExcelDate(val, lang) {
-        if (val === undefined || val === null || String(val).trim() === '') return lang === 'uk' ? "21.08.2026" : "Aug 21, 2026";
-        if (isNaN(val)) return String(val).trim();
-        const serial = Number(val);
-        const date = new Date((serial - 25569) * 86400 * 1000);
-        const day = date.getDate(), year = date.getFullYear();
-        if (lang === 'uk') {
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            return `${String(day).padStart(2, '0')}.${month}.${year}`;
-        } else {
-            const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            return `${monthsEn[date.getMonth()]} ${day}, ${year}`;
-        }
     }
 
     function getBilingualText(rawText) {
@@ -2754,31 +2790,12 @@
         const prefixMatch = cleanStr.match(/^([\s\-–—•*◦]+)/);
         const prefix = prefixMatch ? prefixMatch[1] : '';
         const coreText = cleanStr.substring(prefix.length).trim();
-
-        let englishTranslation = "";
-        const normAcronym = coreText.toUpperCase().replace(/А/g, 'A').replace(/О/g, 'O').replace(/З/g, 'Z');
-
-        if (normAcronym === "AOZ") {
-            englishTranslation = "DPA";
-        } else if (normAcronym === "МОУ / AOZ" || normAcronym === "МОУ/AOZ" || normAcronym === "MOU / AOZ" || normAcronym === "MOU/AOZ") {
-            englishTranslation = "MoD / DPA";
-        } else {
-            englishTranslation = translationDictionary[coreText] || translationDictionary[cleanStr] || coreText;
-        }
-
-        englishTranslation = englishTranslation
-            .replace(/(\d+)\s*днів/gi, '$1 days')
-            .replace(/(\d+)\s*дни/gi, '$1 days')
-            .replace(/(\d+)\s*день/gi, '$1 day')
-            .replace(/(\d+)\s*млн грн/gi, '$1 UAH mln');
-
+        let englishTranslation = translationDictionary[coreText] || translationDictionary[cleanStr] || coreText;
         return { uk: textStr, en: prefix + englishTranslation };
     }
 
     function normalizePeriodKey(raw) {
-        return String(raw == null ? '' : raw)
-            .replace(/\u0422/g, 'T').replace(/\u041C/g, 'M')
-            .replace(/\s+/g, '').trim().toUpperCase();
+        return String(raw == null ? '' : raw).replace(/\u0422/g, 'T').replace(/\u041C/g, 'M').replace(/\s+/g, '').trim().toUpperCase();
     }
 
     const parseNumberValue = (val) => {
@@ -2804,6 +2821,7 @@
     }
 
     function handleFile(files) {
+        if (isReadOnly) return;
         if (!files || !files.length) return;
         const file = files[0];
 
@@ -2811,29 +2829,17 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 let parsedJson;
-                try {
-                    parsedJson = JSON.parse(e.target.result);
-                } catch (err) {
-                    showError("Файл не є коректним JSON: " + err.message);
-                    return;
-                }
+                try { parsedJson = JSON.parse(e.target.result); } 
+                catch (err) { showError("Файл не є коректним JSON"); return; }
                 const snap = extractSnapshotObject(parsedJson) || parsedJson;
                 try {
                     processSnapshotJson(snap);
-
                     document.getElementById("uploadZone")?.classList.add("hidden");
-                    document.getElementById("dashboardContent")?.classList.remove("hidden");
-
                     updateLanguageDOM();
                     buildChart();
-
-                    const d = extractCleanDate(snap.meta && (snap.meta.forecast_date || snap.meta.plan_fact_date));
-                    showSuccess(d ? `Завантажено зріз на ${d.split('-').reverse().join('.')}.` : "JSON-зріз завантажено.");
-                } catch (err) {
-                    showError("Помилка обробки JSON-зрізу: " + err.message);
-                }
+                    showSuccess("Зріз успішно завантажено.");
+                } catch (err) { showError("Помилка JSON: " + err.message); }
             };
-            reader.onerror = function() { showError("Не вдалося прочитати файл."); };
             reader.readAsText(file);
             return;
         }
@@ -2844,17 +2850,15 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: "array" });
                 processWorkbookData(workbook);
-            } catch (err) {
-                console.error("Помилка Excel:", err);
-                alert("Помилка обробки файлу Excel: " + err.message);
-            }
+            } catch (err) { showError("Помилка Excel: " + err.message); }
         };
         reader.readAsArrayBuffer(file);
     }
 
     function toggleKpiColor(idx) {
         if (globalData && globalData.kpis[idx]) {
-            globalData.kpis[idx].isGray = !globalData.kpis[idx].isGray; updateLanguageDOM();
+            globalData.kpis[idx].isGray = !globalData.kpis[idx].isGray; 
+            updateLanguageDOM();
         }
     }
 
@@ -2869,285 +2873,12 @@
         if(globalData) updateLanguageDOM();
     }
 
-    function processWorkbookData(workbook) {
-        if (!workbook.Sheets['KPI_Summary'] || !workbook.Sheets['Cash_Flow_Forecast'] || !workbook.Sheets['Chart_Data'] || !workbook.Sheets['Operational']) {
-            throw new Error("Відсутні потрібні листи Excel!");
-        }
-
-        const kpiSheet = XLSX.utils.sheet_to_json(workbook.Sheets['KPI_Summary'], {header: 1});
-        const cfSheet = XLSX.utils.sheet_to_json(workbook.Sheets['Cash_Flow_Forecast'], {header: 1});
-        const chartSheet = XLSX.utils.sheet_to_json(workbook.Sheets['Chart_Data'], {header: 1});
-        const operSheet = XLSX.utils.sheet_to_json(workbook.Sheets['Operational'], {header: 1});
-
-        const kpis = [];
-        for(let i = 1; i <= 4; i++) {
-            if(kpiSheet[i] && kpiSheet[i].length >= 4) {
-                let rawKpiTitle = String(kpiSheet[i][0]);
-                if (rawKpiTitle.includes("Використання лімітів") || rawKpiTitle.includes("Доступні кредитні ліміти")) rawKpiTitle = "Доступні кредитні лінії";
-                if (rawKpiTitle.includes("Точність прогнозу")) rawKpiTitle = "Доступний постімпорт";
-
-                const trendStr = String(kpiSheet[i][3]);
-                const isPos = trendStr.includes('+') || (!trendStr.includes('-'));
-                let cleanTrendEn = trendStr.replace('млн грн', ' UAH mln').replace(/днів|дні/g, ' days').replace('день', ' day').trim();
-
-                kpis.push({
-                    title: getBilingualText(rawKpiTitle), value: parseNumberValue(kpiSheet[i][1]), unit: getBilingualText(kpiSheet[i][2]),
-                    trend: { isPositive: isPos, text: { uk: (isPos ? '▲ ' : '▼ ') + trendStr, en: (isPos ? '▲ ' : '▼ ') + cleanTrendEn } },
-                    isGray: false
-                });
-            }
-        }
-
-        const summaryUk = [], summaryEn = [];
-        for(let i = 8; i < kpiSheet.length; i++) {
-            if(kpiSheet[i] && kpiSheet[i][0] !== undefined && i !== 7) {
-                let textUk = String(kpiSheet[i][0]).trim();
-                let textEn = (kpiSheet[i][1] && String(kpiSheet[i][1]).trim() !== '') ? String(kpiSheet[i][1]).trim() : textUk;
-
-                if (textUk.startsWith('#')) textUk = '&nbsp;';
-                if (textEn.startsWith('#')) textEn = '&nbsp;';
-
-                summaryUk.push(textUk);
-                summaryEn.push(textEn);
-            }
-        }
-
-        const cfHeaders = cfSheet[0].map(h => {
-            let str = String(h);
-            let enStr = str.replace('Т-', 'T-').replace('Т0', 'T0').replace('Т1', 'T1').replace('Т2', 'T2').replace('Т3', 'T3');
-            if (str.toLowerCase().includes('стаття')) { str = ""; enStr = ""; }
-            if (str.toLowerCase().includes('всього')) enStr = "Total";
-            return { uk: str, en: enStr };
-        });
-
-        const cfRows = [];
-        for(let i = 1; i < cfSheet.length; i++) {
-            const row = cfSheet[i];
-            if(!row || !row.length || row[0] === undefined) continue;
-             
-            const rowName = String(row[0]).trim();
-            let type = "sub";
-            if(["Надходження", "Виплати", "Грошові залишки"].includes(rowName)) type = "main";
-            if(["Чистий грошовий потік"].includes(rowName)) type = "total";
-            if(["Операційний + інвестиційний потік", "Фінансова діяльність"].includes(rowName)) type = "semibold";
-
-            const rowValues = [];
-            for (let col = 1; col < cfHeaders.length; col++) {
-                let v = row[col];
-                rowValues.push((v === undefined || v === null || String(v).trim() === '' || String(v).trim() === '-') ? (rowName === "Грошові залишки" ? '' : '-') : parseNumberValue(v));
-            }
-
-            cfRows.push({ title: getBilingualText(row[0]), type: type, values: rowValues, highlightNeg: ["Надходження", "Чистий грошовий потік"].includes(rowName) });
-        }
-        
-        const cc = { label: 0, period: 1, own: 2, total: 3, post: 4, min: 5, mznn: 6 };
-        if (chartSheet[0]) {
-            const found = {};
-            chartSheet[0].forEach((h, idx) => {
-                const s = String(h === undefined || h === null ? '' : h).toLowerCase();
-                if (!s) return;
-                let key = null;
-                if (s.includes('дати')) key = 'period';
-                else if (s.includes('власні') && !s.includes('мзнн') && !s.includes('страт')) key = 'own';
-                else if (s.includes('загальна')) key = 'total';
-                else if (s.includes('постімпорт')) key = 'post';
-                else if (s.includes('threshold')) key = 'min';
-                else if (s.includes('період')) key = 'label';
-                else if (s.includes('мзнн') || s.includes('страт')) key = 'mznn';
-                if (key && found[key] === undefined) found[key] = idx;
-            });
-            Object.keys(found).forEach(k => cc[k] = found[k]);
-        }
-
-        const labels = [], ownCash = [], totalLiquidity = [], postImportLiquidity = [], ownCashMznn = [], periods = [];
-        const periodMap = {};
-        for(let i = 1; i < chartSheet.length; i++) {
-            if(!chartSheet[i] || chartSheet[i][cc.label] === undefined) continue;
-            const lbl = String(chartSheet[i][cc.label]);
-            labels.push(lbl);             
-            ownCash.push(parseNumberValue(chartSheet[i][cc.own]));         
-            ownCashMznn.push(parseNumberValue(chartSheet[i][cc.mznn]));         
-            totalLiquidity.push(parseNumberValue(chartSheet[i][cc.total]));   
-            postImportLiquidity.push(parseNumberValue(chartSheet[i][cc.post])); 
-
-            const raw = chartSheet[i][cc.period];
-            const per = (raw !== undefined && raw !== null) ? String(raw).trim() : '';
-            periods.push(per);
-            if (per) periodMap[normalizePeriodKey(lbl)] = per;
-        }
-        const minThreshold = (chartSheet[1] && chartSheet[1][cc.min] !== undefined) ? parseNumberValue(chartSheet[1][cc.min]) : 2500;
-
-        const AGG_KEYS = ['M1', 'M2', 'M3', 'ВСЬОГО', 'TOTAL'];
-        for(let i = 1; i < chartSheet.length; i++) {
-            const row = chartSheet[i];
-            if(!row || row[cc.label] !== undefined) continue;
-            for(let j = 0; j < row.length - 1; j++) {
-                if(row[j] === undefined || row[j + 1] === undefined) continue;
-                const key = normalizePeriodKey(row[j]);
-                if(AGG_KEYS.indexOf(key) === -1) continue;
-                periodMap[key] = String(row[j + 1]).trim();
-            }
-        }
-
-        const workingCapital = [];
-        for(let i = 1; i <= 7; i++) {
-            if(operSheet[i] && operSheet[i][0] !== undefined) {
-                const rawName = String(operSheet[i][0]);
-                const cleanName = rawName.replace(/[\u00A0\u200B]/g, ' ').trim();
-                
-                workingCapital.push({ 
-                    title: getBilingualText(rawName), 
-                    current: parseNumberValue(operSheet[i][1]), 
-                    delta: parseNumberValue(operSheet[i][2]), 
-                    isSub: cleanName.startsWith('-') || rawName.startsWith(' ') || rawName.startsWith('-'), 
-                    isTotal: i === 7,
-                    isGray: false
-                });
-            }
-        }
-
-        const fuelInventories = [];
-        for(let i = 11; i <= 16; i++) {
-            if(operSheet[i] && operSheet[i][0] !== undefined && String(operSheet[i][0]).trim() !== '') {
-                fuelInventories.push({ title: getBilingualText(operSheet[i][0]), current: parseNumberValue(operSheet[i][1]), delta: parseNumberValue(operSheet[i][2]) });
-            }
-        }
-
-        const creditLimits = [];
-        for(let i = 17; i <= 20; i++) {
-            if(operSheet[i] && operSheet[i][0] !== undefined && String(operSheet[i][0]).trim() !== '') {
-                creditLimits.push({ title: getBilingualText(operSheet[i][0]), limit: parseNumberValue(operSheet[i][1]), drawn: parseNumberValue(operSheet[i][2]), available: parseNumberValue(operSheet[i][3]) });
-            }
-        }
-
-        globalData = {
-            meta: {
-                uk: { 
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${formatExcelDate((kpiSheet[1] && kpiSheet[1][4]) ? kpiSheet[1][4] : undefined, 'uk')} · млн грн</span>`, 
-                    titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме", 
-                    titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн" 
-                },
-                en: { 
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${formatExcelDate((kpiSheet[1] && kpiSheet[1][5]) ? kpiSheet[1][5] : undefined, 'en')} · UAH mln</span>`, 
-                    titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary", 
-                    titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln" 
-                }
-            },
-            kpis: kpis, chart: { labels: labels, ownCash: ownCash, ownCashMznn: ownCashMznn, totalLiquidity: totalLiquidity, postImportLiquidity: postImportLiquidity, minThreshold: minThreshold, periods: periods },
-            periodMap: periodMap,
-            summary: { uk: summaryUk, en: summaryEn }, mainTable: { headers: cfHeaders, rows: cfRows },
-            workingCapital: workingCapital, fuelInventories: fuelInventories, creditLimits: creditLimits
-        };
-
-        toggleUploadModal(false);
-        updateLanguageDOM(); 
-        buildChart();
-    }
-
-    function loadDemoDashboard() {
-        const demoData = {
-            meta: {
-                uk: {
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · 21.08.2026 · млн грн</span>`,
-                    titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме",
-                    titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн"
-                },
-                en: {
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · Aug 21, 2026 · UAH mln</span>`,
-                    titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary",
-                    titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln"
-                }
-            },
-            kpis: [
-                { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: 6889, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "▲ +450 млн грн", en: "▲ +450 UAH mln" } }, isGray: false },
-                { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: 34, unit: { uk: "дні", en: "days" }, trend: { isPositive: true, text: { uk: "▲ +3 дні", en: "▲ +3 days" } }, isGray: false },
-                { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: 2100, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: false, text: { uk: "▼ -100 млн грн", en: "▼ -100 UAH mln" } }, isGray: false },
-                { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: 850, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "▲ +50 млн грн", en: "▲ +50 UAH mln" } }, isGray: false }
-            ],
-            chart: {
-                labels: ["T0", "T1", "T2", "T3", "M1", "M2", "M3"],
-                ownCash: [4789, 4500, 4300, 4100, 3900, 3700, 3600],
-                ownCashMznn: [3200, 3100, 3000, 2900, 2800, 2750, 2700],
-                totalLiquidity: [6889, 6600, 6400, 6200, 6000, 5800, 5700],
-                postImportLiquidity: [7739, 7450, 7250, 7050, 6850, 6650, 6550],
-                minThreshold: 2500,
-                periods: ["21.08", "28.08", "04.09", "11.09", "Вересень", "Жовтень", "Листопад"]
-            },
-            periodMap: { "T0": "21.08", "T1": "28.08", "T2": "04.09", "T3": "11.09" },
-            summary: {
-                uk: [
-                    "Ключові фактори тижня:\n• Забезпечено стабільний залишок ліквідності на рівні 6.8 млрд грн.\n• Здійснено планове фінансування операційної діяльності та податкових зобов'язань.",
-                    "Оборотний капітал та запаси:\n• Рівень запасів нафтопродуктів відповідає цільовому нормативу.\n• Кредиторська заборгованість обслуговується згідно з графіком платежів."
-                ],
-                en: [
-                    "Key Weekly Factors:\n• Maintained a stable liquidity balance at UAH 6.8 bln.\n• Completed planned operational funding and tax obligations.",
-                    "Working Capital & Reserves:\n• Inventory levels match the targeted operating thresholds.\n• Accounts payable are serviced according to payment schedule."
-                ]
-            },
-            mainTable: {
-                headers: [{ uk: "Стаття", en: "Item" }, { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" }, { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" }, { uk: "Δ", en: "Δ" }],
-                rows: [
-                    { title: { uk: "Надходження", en: "Inflows" }, type: "main", values: [1200, 950, 890, 1100, 150], highlightNeg: true },
-                    { title: { uk: "Виплати", en: "Outflows" }, type: "main", values: [-950, -1100, -820, -900, -80], highlightNeg: false },
-                    { title: { uk: "Обов’язкові платежі (ЗП, податки, енергія)", en: "Mandatory payments" }, type: "sub", values: [-400, -500, -350, -420, -20], highlightNeg: false },
-                    { title: { uk: "Чистий грошовий потік", en: "Net cash flow" }, type: "total", values: [250, -150, 70, 200, 70], highlightNeg: true },
-                    { title: { uk: "Грошові залишки", en: "Cash balances" }, type: "main", values: [4789, 4639, 4709, 4909, 250], highlightNeg: false }
-                ]
-            },
-            workingCapital: [
-                { title: { uk: "Дебіторська заборгованість", en: "Accounts receivable" }, current: 3450, delta: -120, isSub: false, isTotal: false, isGray: false },
-                { title: { uk: "- НАК Нафтогаз", en: "- NJSC Naftogaz" }, current: 1200, delta: -50, isSub: true, isTotal: false, isGray: false },
-                { title: { uk: "- МОУ / АОЗ", en: "- MoD / DPA" }, current: 850, delta: 10, isSub: true, isTotal: false, isGray: false },
-                { title: { uk: "Аванси видані", en: "Advances paid" }, current: 520, delta: -35, isSub: false, isTotal: false, isGray: false },
-                { title: { uk: "Кредиторська заборгованість", en: "Accounts payable" }, current: 4120, delta: 85, isSub: false, isTotal: false, isGray: false },
-                { title: { uk: "Аванси отримані", en: "Advances received" }, current: 520, delta: 25, isSub: false, isTotal: false, isGray: false },
-                { title: { uk: "Оборотний капітал (без запасів)", en: "Working capital (excl. inventories)" }, current: -670, delta: -265, isSub: false, isTotal: true, isGray: false }
-            ],
-            fuelInventories: [
-                { title: { uk: "Бензин", en: "Gasoline" }, current: 44, delta: 3 },
-                { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 50, delta: -32 },
-                { title: { uk: "Арктичний дизель", en: "Arctic diesel" }, current: 15, delta: 2 },
-                { title: { uk: "Газ комерційний (млн м³)", en: "Commercial gas (mln m³)" }, current: 120, delta: 5 },
-                { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 85, delta: 0 },
-                { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 35, delta: -2 }
-            ],
-            creditLimits: [
-                { title: { uk: "Кредитні лінії", en: "Credit lines" }, limit: 5000, drawn: 2900, available: 2100 },
-                { title: { uk: "Постімпорт", en: "Post-import" }, limit: 1200, drawn: 350, available: 850 },
-                { title: { uk: "Всього", en: "Total" }, limit: 6200, drawn: 3250, available: 2950 }
-            ]
-        };
-
-        globalData = demoData;
-        toggleUploadModal(false);
-        updateLanguageDOM();
-        buildChart();
-    }
-
-    function getMlnValue(node, colKey) {
-        if (!node || !node.values) return 0;
-        let v = node.values[colKey];
-        if (v === undefined || v === null || v === '') return 0;
-        if (typeof v === 'string') {
-            v = v.replace(/[\s\u00A0\u202F\u2009]/g, '').replace(/\u2212/g, '-');
-            if (v.indexOf('.') >= 0 && v.indexOf(',') >= 0) v = v.replace(/,/g, '');
-            else v = v.replace(',', '.');
-        }
-        const n = Number(v);
-        if (!isFinite(n)) return 0;
-        return Math.round(n / 1000000);
-    }
-
     function processSnapshotJson(snapshot) {
-        if (!snapshot || !snapshot.tree) {
-            throw new Error("Некоректний формат JSON: відсутній вузол 'tree'");
-        }
-
+        if (!snapshot || !snapshot.tree) throw new Error("Некоректний формат JSON");
         const tree = snapshot.tree;
         const cols = snapshot.meta && snapshot.columns ? snapshot.columns : (snapshot.columns || {});
         const meta = snapshot.meta || {};
         const forecastDate = extractCleanDate(meta.forecast_date) || extractCleanDate(meta.plan_fact_date) || currentReportDate || "2026-08-24";
-
         registerAvailableDate(forecastDate);
 
         const nodeCash   = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
@@ -3163,13 +2894,12 @@
         const periodRange = (k) => {
             if (cols[k] && cols[k].date_range) return cols[k].date_range;
             if (k.indexOf("Tm1") === 0) {
-                return (cols.Tm1_fact && cols.Tm1_fact.date_range) || (cols.Tm1_forecast && cols.Tm1_forecast.date_range) || (cols.Tm1_plan && cols.Tm1_plan.date_range) || "";
+                return (cols.Tm1_fact && cols.Tm1_fact.date_range) || (cols.Tm1_forecast && cols.Tm1_forecast.date_range) || "";
             }
             return "";
         };
 
         const ownCash = [], totalLiquidity = [], postImportLiquidity = [], ownCashMznn = [], periods = [];
-
         weekKeys.forEach(k => {
             const cash = getMlnValue(nodeCash, k);
             const cred = getMlnValue(nodeCredit, k);
@@ -3183,31 +2913,13 @@
             periods.push(periodRange(k));
         });
 
-        const iTm1 = 0;
-        const curCash   = ownCash[iTm1];
+        const curCash   = ownCash[0];
         const curCred   = getMlnValue(nodeCredit, tm1Key) || getMlnValue(nodeCredit, "T0");
         const curPost   = getMlnValue(nodePost, tm1Key) || getMlnValue(nodePost, "T0");
         const curTotLiq = curCash + curCred;
 
-        const nMandatory  = findSnapshotNode(tree, "Обов’язкові платежі") || findSnapshotNode(tree, "Обов'язкові платежі");
-        const nProcessing = findSnapshotNode(tree, "Переробка");
-        const nCommercial = findSnapshotNode(tree, "Комерційний оборотний капітал");
-        const nAllOut     = findSnapshotNode(tree, "Всього витрат (1+2+3+4+5)") || findSnapshotNode(tree, "Всього видатків");
-        const weeklyCoreOut = (key) => {
-            let s = Math.abs(getMlnValue(nMandatory, key)) + Math.abs(getMlnValue(nProcessing, key)) + Math.abs(getMlnValue(nCommercial, key));
-            if (s === 0) s = Math.abs(getMlnValue(nAllOut, key));
-            return s;
-        };
-
         const baseMln = dailyExpenseBaseMln(forecastDate, null);
-        let bufferDays;
-        if (baseMln && baseMln > 0) {
-            bufferDays = Math.round(curTotLiq / baseMln);
-        } else {
-            const curWeeklyExp = weeklyCoreOut(tm1Key) || weeklyCoreOut("T0");
-            const dailyExp = curWeeklyExp > 0 ? curWeeklyExp / 7 : 0;
-            bufferDays = dailyExp > 0 ? Math.round(curTotLiq / dailyExp) : 0;
-        }
+        const bufferDays = (baseMln && baseMln > 0) ? Math.round(curTotLiq / baseMln) : 0;
 
         const kpis = [
             { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: curTotLiq, unit: { uk: "млн грн", en: "UAH mln" }, trend: trendPending(), isGray: false },
@@ -3254,107 +2966,95 @@
             { uk: "Всього", en: "Total" }
         ];
 
-        const cfPeriodMap = {
-            "T-1": periodRange(tm1Key),
-            "T0": periodRange("T0"), "T1": periodRange("T1"),
-            "T2": periodRange("T2"), "T3": periodRange("T3"),
-            "M1": (cols.M1 && cols.M1.date_range) || "",
-            "M2": (cols.M2 && cols.M2.date_range) || "",
-            "M3": (cols.M3 && cols.M3.date_range) || "",
-            "ВСЬОГО": (cols.TT0_12 && cols.TT0_12.date_range) || ""
-        };
-
         const dParts = String(forecastDate).split("-");
         const dateFormatted = dParts.length === 3 ? `${dParts[2]}.${dParts[1]}.${dParts[0]}` : forecastDate;
-
         currentReportDate = forecastDate;
 
         globalData = {
             meta: {
                 uk: {
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Прогноз ліквідності</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateFormatted} · млн грн</span>`,
-                    titleChart: "Прогноз ліквідності",
-                    titleMainTable: "Прогноз грошових потоків",
-                    titleSummary: "Управлінське резюме",
-                    titleWC: "Оборотний капітал",
-                    titleFuel: "Запаси, тис. т",
-                    titleLimits: "Ресурси фінансування, млн грн"
+                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Прогноз ліквідності</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${dateFormatted} · млн грн</span>`,
+                    titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме",
+                    titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн"
                 },
                 en: {
-                    title: `<span style="font-family: Helvetica, sans-serif; font-weight: bold; font-size: 25pt;">F13</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 21pt;">Liquidity forecast</span> <span style="font-family: Helvetica, sans-serif; font-weight: normal; font-size: 16pt; color: #64748b;"> · ${dateFormatted} · UAH mln</span>`,
-                    titleChart: "Liquidity Forecast",
-                    titleMainTable: "Cash Flow Forecast",
-                    titleSummary: "Executive Summary",
-                    titleWC: "Working Capital",
-                    titleFuel: "Reserves, ths t",
-                    titleLimits: "Financing resources, UAH mln"
+                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Liquidity forecast</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · ${dateFormatted} · UAH mln</span>`,
+                    titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary",
+                    titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln"
                 }
             },
             kpis: kpis,
-            chart: {
-                labels: chartLabels,
-                ownCash: ownCash,
-                ownCashMznn: ownCashMznn,
-                totalLiquidity: totalLiquidity,
-                postImportLiquidity: postImportLiquidity,
-                minThreshold: 2500,
-                periods: periods
-            },
-            periodMap: cfPeriodMap,
-            summary: {
-                uk: [`Дані на ${dateFormatted} консолідовано зі зрізу.`],
-                en: [`Data as of ${dateFormatted} consolidated from snapshot.`]
-            },
-            mainTable: {
-                headers: cfHeaders,
-                rows: cfRows
-            },
+            chart: { labels: chartLabels, ownCash: ownCash, ownCashMznn: ownCashMznn, totalLiquidity: totalLiquidity, postImportLiquidity: postImportLiquidity, minThreshold: 2500, periods: periods },
+            periodMap: { "T-1": periodRange(tm1Key), "T0": periodRange("T0"), "T1": periodRange("T1"), "T2": periodRange("T2"), "T3": periodRange("T3") },
+            summary: { uk: [`Дані на ${dateFormatted} консолідовано зі зрізу.`], en: [`Data as of ${dateFormatted} consolidated from snapshot.`] },
+            mainTable: { headers: cfHeaders, rows: cfRows },
             workingCapital: defaultWorkingCapital(),
             fuelInventories: defaultFuelInventories(),
             creditLimits: defaultCreditLimits()
         };
         window.globalData = globalData;
-
-        const lbl = document.getElementById('lblSelectedDate');
-        if (lbl) lbl.innerText = dateFormatted;
-        const [yy, mm] = forecastDate.split('-');
-        if (yy && mm) calViewDate = new Date(parseInt(yy, 10), parseInt(mm, 10) - 1, 1);
-        updateCalendarTriggerDot();
-        renderCalendar();
-
+        syncHeaderDate();
         return globalData;
     }
 
-    async function loadSnapshotFromSharePoint(fileName) {
-        const targetFile = fileName || "PRK13W_2026-08-24_planfact_2026-08-24_20260831_081216_Oleksandr.Borovyk.json";
-        const spSiteUrl = "https://ukrnaftaoffice365.sharepoint.com/sites/CashFlow";
-        const serverRelativePath = `/sites/CashFlow/Shared Documents/[_cf] CF_working/F13_Dashboard_DB/db/snapshots/${targetFile}`;
-        const requestUrl = `${spSiteUrl}/_api/web/GetFileByServerRelativeUrl('${encodeURIComponent(serverRelativePath)}')/$value`;
-
-        try {
-            const response = await fetch(requestUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json;odata=verbose'
+    function loadDemoDashboard() {
+        if (isReadOnly) return;
+        const demoData = {
+            meta: {
+                uk: {
+                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Прогноз ліквідності</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · 21.08.2026 · млн грн</span>`,
+                    titleChart: "Прогноз ліквідності", titleMainTable: "Прогноз грошових потоків", titleSummary: "Управлінське резюме",
+                    titleWC: "Оборотний капітал", titleFuel: "Запаси, тис. т", titleLimits: "Ресурси фінансування, млн грн"
+                },
+                en: {
+                    title: `<span style="font-weight: 800; font-size: 24pt;">F13</span> <span style="font-weight: 600; font-size: 20pt;">Liquidity forecast</span> <span style="font-weight: 500; font-size: 15pt; color: #64748b;"> · Aug 21, 2026 · UAH mln</span>`,
+                    titleChart: "Liquidity Forecast", titleMainTable: "Cash Flow Forecast", titleSummary: "Executive Summary",
+                    titleWC: "Working Capital", titleFuel: "Reserves, ths t", titleLimits: "Financing resources, UAH mln"
                 }
-            });
-
-            if (!response.ok) throw new Error(`HTTP помилка: ${response.status} ${response.statusText}`);
-
-            const snapshotJson = await response.json();
-            const snap = extractSnapshotObject(snapshotJson) || snapshotJson;
-
-            processSnapshotJson(snap);
-
-            document.getElementById('uploadZone').classList.add('hidden');
-            document.getElementById('dashboardContent').classList.remove('hidden');
-
-            updateLanguageDOM();
-            buildChart();
-            showSuccess("Зріз завантажено з SharePoint.");
-        } catch (err) {
-            showError("Помилка завантаження зрізу з SharePoint: " + err.message);
-        }
+            },
+            kpis: [
+                { title: { uk: "Доступна ліквідність", en: "Available liquidity" }, value: 6889, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "▲ +450 млн грн", en: "▲ +450 UAH mln" } }, isGray: false },
+                { title: { uk: "Буфер ліквідності", en: "Liquidity buffer" }, value: 34, unit: { uk: "дні", en: "days" }, trend: { isPositive: true, text: { uk: "▲ +3 дні", en: "▲ +3 days" } }, isGray: false },
+                { title: { uk: "Доступні кредитні лінії", en: "Available credit lines" }, value: 2100, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: false, text: { uk: "▼ -100 млн грн", en: "▼ -100 UAH mln" } }, isGray: false },
+                { title: { uk: "Доступний постімпорт", en: "Available post-import" }, value: 850, unit: { uk: "млн грн", en: "UAH mln" }, trend: { isPositive: true, text: { uk: "▲ +50 млн грн", en: "▲ +50 UAH mln" } }, isGray: false }
+            ],
+            chart: {
+                labels: ["T0", "T1", "T2", "T3", "M1", "M2", "M3"],
+                ownCash: [4789, 4500, 4300, 4100, 3900, 3700, 3600],
+                ownCashMznn: [3200, 3100, 3000, 2900, 2800, 2750, 2700],
+                totalLiquidity: [6889, 6600, 6400, 6200, 6000, 5800, 5700],
+                postImportLiquidity: [7739, 7450, 7250, 7050, 6850, 6650, 6550],
+                minThreshold: 2500,
+                periods: ["21.08", "28.08", "04.09", "11.09", "Вересень", "Жовтень", "Листопад"]
+            },
+            periodMap: { "T0": "21.08", "T1": "28.08", "T2": "04.09", "T3": "11.09" },
+            summary: {
+                uk: [
+                    "Ключові фактори тижня:\n• Забезпечено стабільний залишок ліквідності на рівні 6.8 млрд грн.\n• Здійснено планове фінансування операційної діяльності та податкових зобов'язань.",
+                    "Оборотний капітал та запаси:\n• Рівень запасів нафтопродуктів відповідає цільовому нормативу.\n• Кредиторська заборгованість обслуговується згідно з графіком платежів."
+                ],
+                en: [
+                    "Key Weekly Factors:\n• Maintained a stable liquidity balance at UAH 6.8 bln.\n• Completed planned operational funding and tax obligations.",
+                    "Working Capital & Reserves:\n• Inventory levels match the targeted operating thresholds.\n• Accounts payable are serviced according to payment schedule."
+                ]
+            },
+            mainTable: {
+                headers: [{ uk: "Стаття", en: "Item" }, { uk: "T0", en: "T0" }, { uk: "T1", en: "T1" }, { uk: "T2", en: "T2" }, { uk: "T3", en: "T3" }, { uk: "Δ", en: "Δ" }],
+                rows: [
+                    { title: { uk: "Надходження", en: "Inflows" }, type: "main", values: [1200, 950, 890, 1100, 150], highlightNeg: true },
+                    { title: { uk: "Виплати", en: "Outflows" }, type: "main", values: [-950, -1100, -820, -900, -80], highlightNeg: false },
+                    { title: { uk: "Чистий грошовий потік", en: "Net cash flow" }, type: "total", values: [250, -150, 70, 200, 70], highlightNeg: true },
+                    { title: { uk: "Грошові залишки", en: "Cash balances" }, type: "main", values: [4789, 4639, 4709, 4909, 250], highlightNeg: false }
+                ]
+            },
+            workingCapital: defaultWorkingCapital(),
+            fuelInventories: defaultFuelInventories(),
+            creditLimits: defaultCreditLimits()
+        };
+        globalData = demoData;
+        updateLanguageDOM();
+        buildChart();
+        showInfo("Завантажено демо-дані");
     }
 
     function updateLanguageDOM() {
@@ -3375,11 +3075,11 @@
 
         document.getElementById('kpiContainer').innerHTML = globalData.kpis.map((kpi, idx) => `
             <div class="kpi-card">
-                <button onclick="toggleKpiColor(${idx})" class="absolute top-1.5 right-1.5 print-hide text-slate-300 hover:text-slate-500 cursor-pointer"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12v12z"/></svg></button>
+                <button onclick="toggleKpiColor(${idx})" class="absolute top-2 right-2 print-hide text-slate-300 hover:text-slate-500 cursor-pointer p-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12v12z"/></svg></button>
                 <span class="kpi-title">${kpi.title[lang]}</span>
-                <div class="flex items-baseline justify-center gap-1.5 mt-1 mb-0.5">
+                <div class="flex items-baseline justify-center gap-1.5 mt-0.5 mb-0.5">
                     <span class="kpi-value">${formatNum(kpi.value)}</span>
-                    <span class="unit-label" style="margin-top: 0;">${kpi.unit[lang]}</span>
+                    <span class="unit-label">${kpi.unit[lang]}</span>
                 </div>
                 <span class="${(kpi.isGray || kpi.trendNA) ? 'gray-trend' : (kpi.trend.isPositive ? 'positive-trend' : 'negative-trend')}">${kpi.trend.text[lang]}</span>
             </div>`).join('');
@@ -3393,24 +3093,18 @@
                 if (/^[\s\u00A0]*[•◦\-*–—]/.test(line)) {
                     let text = line.replace(/^[•◦\-*–—\s\u00A0]+/, '');
                     if (!inList) {
-                        htmlContent += '<ul style="margin: 0px !important; padding: 0px !important; list-style: none; display: flex; flex-direction: column; gap: 1.5px;">';
+                        htmlContent += '<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px;">';
                         inList = true;
                     }
-                    htmlContent += `<li style="margin: 0px !important; padding: 0px !important; text-indent: 0; text-align: left; line-height: 0.95;"><span style="color: #94a3b8; margin-right: 6px; font-weight: bold;">•</span><span class="bullet-text">${text}</span></li>`;
+                    htmlContent += `<li style="line-height: 1.2;"><span style="color: #94a3b8; margin-right: 6px; font-weight: bold;">•</span><span class="bullet-text">${text}</span></li>`;
                 } else {
-                    if (inList) {
-                        htmlContent += '</ul>';
-                        inList = false;
-                    }
-                    let pStyle = isSummaryHeadersBold 
-                        ? "font-weight: 700; color: #0f172a;" 
-                        : "font-weight: 500; color: #334155;";
-                    htmlContent += `<p style="margin: 0px !important; padding: 0px !important; line-height: 1.0; ${pStyle}">${line}</p>`;
+                    if (inList) { htmlContent += '</ul>'; inList = false; }
+                    let pStyle = isSummaryHeadersBold ? "font-weight: 700; color: #0f172a;" : "font-weight: 500; color: #334155;";
+                    htmlContent += `<p style="margin: 0; line-height: 1.25; ${pStyle}">${line}</p>`;
                 }
             });
             if (inList) htmlContent += '</ul>';
-
-            return `<div class="summary-row"><div class="summary-cell" style="padding: 0px !important; margin: 0px !important;">${htmlContent}</div></div>`;
+            return `<div class="summary-row"><div class="summary-cell">${htmlContent}</div></div>`;
         }).join('');
         
         applySummaryFontSize(); 
@@ -3422,7 +3116,7 @@
         const wcMenu = document.getElementById('wcMenu');
         if (wcMenu) {
             wcMenu.innerHTML = globalData.workingCapital.map((row, idx) => `
-                <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-1 rounded text-slate-700 text-xs font-medium">
+                <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-1.5 rounded text-slate-700 text-xs font-medium">
                     <input type="checkbox" ${row.isGray ? 'checked' : ''} onchange="toggleWcDeltaColor(${idx})" class="w-3.5 h-3.5 text-indigo-600 rounded">
                     <span class="truncate">${row.title[lang]}</span>
                 </label>
@@ -3462,7 +3156,6 @@
 
         globalData.mainTable.rows.forEach(row => {
             html += `<tr class="${row.type === 'main' ? 'row-main' : (row.type === 'total' ? 'row-total' : (row.type === 'semibold' ? 'font-semibold' : 'sub-row'))}"><td>${row.title[lang]}</td>`;
-            
             row.values.forEach((v, idx) => {
                 let cellClass = "";
                 if ((row.highlightNeg && v < 0) || (row.title.uk.trim() === "Виплати" && idx === deltaValIndex && v < 0)) {
@@ -3470,12 +3163,9 @@
                 } else if (verifyHighlightActivation(row.title) && idx !== deltaValIndex) {
                     const referenceOutflow = totalOutflowsValues[idx];
                     if (referenceOutflow && referenceOutflow !== 0 && typeof v === 'number') {
-                        if (Math.abs(v) > (Math.abs(referenceOutflow) * 0.45)) {
-                            cellClass = 'class="neg-bright"';
-                        }
+                        if (Math.abs(v) > (Math.abs(referenceOutflow) * 0.45)) cellClass = 'class="neg-bright"';
                     }
                 }
-
                 let formatted = formatNum(v);
                 html += `<td ${cellClass}>${(idx === deltaValIndex && formatted === '-') ? '' : formatted}</td>`;
             });
@@ -3487,9 +3177,8 @@
             const isAdvancesPaid = row.title.uk.trim().includes("Аванси видані");
             let colorClass = (row.delta < 0 && !row.isGray && isAdvancesPaid) ? 'neg-green-cool' : '';
             let textClass = row.isGray ? '!text-slate-400 !font-normal' : '';
-            
             return `<tr class="${row.isSub ? 'sub-row' : (row.isTotal ? 'row-total' : '')}">
-                <td>${(lang === 'en' && row.isTotal) ? `<span style="display: inline-block; transform: scaleX(0.85); transform-origin: left; letter-spacing: -0.2px; white-space: nowrap;">${row.title[lang]}</span>` : row.title[lang]}</td>
+                <td>${row.title[lang]}</td>
                 <td>${formatNum(row.current)}</td>
                 <td class="whitespace-nowrap ${colorClass} ${textClass}">${formatNum(row.delta)}</td>
             </tr>`;
@@ -3505,7 +3194,6 @@
         }).join('');
 
         if (myLiquidityChart) {
-            myLiquidityChart.options.scales.x.ticks.padding = currentXPadding; 
             myLiquidityChart.data.datasets[0].label = chartTranslations[lang].totalLiquidity;
             myLiquidityChart.data.datasets[1].label = chartTranslations[lang].ownCash;
             myLiquidityChart.data.datasets[2].label = chartTranslations[lang].ownCashMznn;
@@ -3518,15 +3206,16 @@
     function toggleLanguage() {
         currentLang = currentLang === 'uk' ? 'en' : 'uk';
         document.getElementById('langBtn').innerText = currentLang === 'uk' ? 'EN' : 'UA';
+        const mNav = document.getElementById('mNavLang');
+        if (mNav) mNav.innerText = currentLang === 'uk' ? 'EN' : 'UA';
         updateLanguageDOM();
     }
 
     function openSummaryEditor() {
+        if (isReadOnly) return;
         document.getElementById('editorDateLabel').innerText = currentReportDate;
-        const ukText = globalData?.summary?.uk?.join('\n') || '';
-        const enText = globalData?.summary?.en?.join('\n') || '';
-        document.getElementById('editSummaryUk').value = ukText;
-        document.getElementById('editSummaryEn').value = enText;
+        document.getElementById('editSummaryUk').value = globalData?.summary?.uk?.join('\n') || '';
+        document.getElementById('editSummaryEn').value = globalData?.summary?.en?.join('\n') || '';
         document.getElementById('editorModal').classList.remove('hidden');
     }
 
@@ -3535,6 +3224,11 @@
     }
 
     async function saveSummaryToSharePoint() {
+        if (isReadOnly) {
+            showBanner("Сторінка перебуває в режимі перегляду.", "error");
+            return;
+        }
+
         const btn = document.getElementById('btnSaveSummary');
         btn.innerText = "Збереження...";
         btn.disabled = true;
@@ -3558,122 +3252,66 @@
                 globalData.summary.uk = payload.summaryUk.split('\n').filter(l => l.trim().length > 0);
                 globalData.summary.en = payload.summaryEn.split('\n').filter(l => l.trim().length > 0);
             }
-            
             updateLanguageDOM();
             closeSummaryEditor();
-            alert("Резюме успішно збережено в SharePoint!");
+            showSuccess("Резюме успішно збережено в SharePoint");
         } catch (err) {
-            alert("Не вдалося зберегти: " + err.message);
+            showError("Не вдалося зберегти: " + err.message);
         } finally {
             btn.innerText = "Зберегти в SharePoint";
             btn.disabled = false;
         }
     }
 
-    const dropZone = document.getElementById('uploadZone');
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, e => { 
-            e.preventDefault(); 
-            e.stopPropagation(); 
-        }, false);
-    });
-
-    dropZone.addEventListener('drop', e => { 
-        e.preventDefault(); 
-        e.stopPropagation(); 
-        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-            handleFile(e.dataTransfer.files); 
-        }
-    }, false);
-
     const INITIAL_LOOKBACK_WEEKS = 4;
     async function loadLatestFilledReport() {
         loadAvailableDatesFromSPQuiet();
         const mon = getMostRecentMonday();
-        showLoading(`Пошук останнього заповненого звіту (від ${DT.dmy(mon)})…`);
-        const skipped = [];
+        showLoading(`Пошук останнього заповненого звіту…`);
         for (let i = 0; i <= INITIAL_LOOKBACK_WEEKS; i++) {
             const iso = DT.add(mon, -7 * i);
             const e = await fetchFlowForDate(iso);
-            if (e.error) {
-                if (i === 0) break;
-                skipped.push(`${DT.dmy(iso)} (помилка)`); continue;
-            }
             if (e.snap && e.dateOk && isSnapshotFilled(e.snap)) {
-                if (skipped.length) {
-                    _pendingLoadNote = `Звіт на ${skipped.join(', ')} ще не заповнений — показано останній заповнений тиждень ${DT.dmy(iso)}.`;
-                }
                 applyDateSelection(iso);
                 return;
             }
-            skipped.push(DT.dmy(iso));
         }
         await loadAvailableDatesFromSP();
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-        initEmptyDashboard();
-        loadLatestFilledReport();
-    });
-</script>
-
-<!-- ======= МОБІЛЬНИЙ ШАР: кнопка панелі керування ======= -->
-<div id="mPanelBackdrop" onclick="mClosePanel()"></div>
-<button id="mFab" type="button" onclick="mTogglePanel()" aria-label="Панель керування">
-    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-    <span id="mFabLabel">Керування</span>
-</button>
-<script>
-(function () {
-    var mq = window.matchMedia('(max-width: 860px)');
-
+    // ═════════════════════ МОБІЛЬНЕ КЕРУВАННЯ ═════════════════════
     window.mTogglePanel = function () {
         document.body.classList.toggle('m-panel-open');
-        var l = document.getElementById('mFabLabel');
-        if (l) l.textContent = document.body.classList.contains('m-panel-open') ? 'Закрити' : 'Керування';
     };
     window.mClosePanel = function () {
         document.body.classList.remove('m-panel-open');
-        var l = document.getElementById('mFabLabel');
-        if (l) l.textContent = 'Керування';
     };
 
-    // На телефоні графік нижчий і без зайвих підписів — оновлюємо при повороті
-    function refresh() {
-        if (typeof safeUpdateChart === 'function') safeUpdateChart();
+    function toggleChartFullscreen(force) {
+        var block = document.getElementById('blockChart');
+        if (!block) return;
+        var on = (typeof force === 'boolean') ? force : !block.classList.contains('chart-fs');
+        block.classList.toggle('chart-fs', on);
+        document.body.classList.toggle('chart-fs-on', on);
+        var btn = document.getElementById('btnChartFs');
+        if (btn) btn.innerHTML = on ? '✕ Згорнути' : '⛶ На весь екран';
+        mClosePanel();
+        setTimeout(safeUpdateChart, 100);
+        setTimeout(safeUpdateChart, 350);
     }
-    window.addEventListener('orientationchange', function () { setTimeout(refresh, 250); });
-    window.addEventListener('resize', function () { clearTimeout(window._mRs); window._mRs = setTimeout(refresh, 250); });
 
-    // Вибір дати/файлу з панелі — закриваємо шухляду, щоб було видно дашборд
-    document.addEventListener('click', function (e) {
-        if (!mq.matches) return;
-        var t = e.target.closest ? e.target.closest('#calendarDaysGrid button, #compareMenuBody button, #ctrlPanel a') : null;
-        if (t) setTimeout(window.mClosePanel, 60);
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') toggleChartFullscreen(false);
     });
-})();
-</script>
+    window.addEventListener('orientationchange', function () {
+        setTimeout(safeUpdateChart, 300);
+    });
 
-<script>
-// ======= Графік на весь екран =======
-function toggleChartFullscreen(force) {
-    var block = document.getElementById('blockChart');
-    if (!block) return;
-    var on = (typeof force === 'boolean') ? force : !block.classList.contains('chart-fs');
-    block.classList.toggle('chart-fs', on);
-    document.body.classList.toggle('chart-fs-on', on);
-    var btn = document.getElementById('btnChartFs');
-    if (btn) btn.innerHTML = on ? '✕ Згорнути' : '⛶ На весь екран';
-    if (typeof window.mClosePanel === 'function') window.mClosePanel();
-    setTimeout(function () { if (typeof safeUpdateChart === 'function') safeUpdateChart(); }, 60);
-    setTimeout(function () { if (typeof safeUpdateChart === 'function') safeUpdateChart(); }, 350);
-}
-document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') toggleChartFullscreen(false);
-});
-window.addEventListener('orientationchange', function () {
-    setTimeout(function () { if (typeof safeUpdateChart === 'function') safeUpdateChart(); }, 300);
-});
+    window.addEventListener('DOMContentLoaded', async () => {
+        await initAccessControl();
+        initEmptyDashboard();
+        loadLatestFilledReport();
+    });
 </script>
 </body>
 </html>

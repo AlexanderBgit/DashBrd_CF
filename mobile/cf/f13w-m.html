@@ -268,7 +268,7 @@
             body:not(.preview-mode) #ctrlPanel a { 
                 font-size: 13px !important; 
                 padding: 10px 14px !important; 
-                min-height: 42px;
+                min-height: 42px; 
                 border-radius: 10px !important;
             }
             body:not(.preview-mode) #ctrlPanel > div:first-child {
@@ -276,7 +276,7 @@
                 padding-right: 0 !important; 
                 margin-right: 0 !important;
                 width: 100%; 
-                display: flex;
+                display: flex; 
                 gap: 8px;
             }
 
@@ -1563,9 +1563,9 @@
 
     const COMPARE_MODES = [
         { key: 'week',   uk: 'Тиждень',            en: 'Week',          hintUk: '−7 днів: попередній понеділок', hintEn: '−7 days: previous Monday' },
-        { key: 'month',  uk: 'Місяць',             en: 'Month',         hintUk: '−1 календарний місяць, найближчий понеділок', hintEn: '−1 calendar month, nearest Monday' },
+        { key: 'month',  uk: 'Місяць',             en: 'Month',          hintUk: '−1 календарний місяць, найближчий понеділок', hintEn: '−1 calendar month, nearest Monday' },
         { key: 'mtd',    uk: 'З початку місяця',   en: 'Month-to-date', hintUk: 'перший зріз місяця за календарем trends', hintEn: 'first snapshot of the month (trends calendar)' },
-        { key: 'custom', uk: 'Власна дата',        en: 'Custom date',   hintUk: 'будь-яка дата раніше за дату звіту', hintEn: 'any date before the report date' }
+        { key: 'custom', uk: 'Власна дата',        en: 'Custom date',    hintUk: 'будь-яка дата раніше за дату звіту', hintEn: 'any date before the report date' }
     ];
 
     function compareTargetFor(iso, mode) {
@@ -1969,6 +1969,18 @@
             if (y.length === 4) return `${y}-${m}-${d}`;
         }
         return null;
+    }
+
+    function formatExcelDate(val, lang) {
+        if (!val) return currentReportDate ? currentReportDate.split('-').reverse().join('.') : '21.08.2026';
+        if (typeof val === 'number') {
+            const date = new Date(Math.round((val - (25567 + 2)) * 86400 * 1000));
+            const d = String(date.getDate()).padStart(2, '0');
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = date.getFullYear();
+            return `${d}.${m}.${y}`;
+        }
+        return String(val);
     }
 
     function getMostRecentMonday() {
@@ -2937,8 +2949,8 @@
         toggleUploadModal(false);
         updateLanguageDOM(); 
         buildChart();
-    }
-    
+    } // <-- ОСЬ ТУТ БУЛА ПРОПУЩЕНА ДУЖКА!
+
     function getBilingualText(rawText) {
         if (rawText === undefined || rawText === null || String(rawText).trim() === "") return { uk: "", en: "" };
         let textStr = String(rawText);
@@ -3103,6 +3115,150 @@
         } finally {
             btn.innerText = "Зберегти в SharePoint";
             btn.disabled = false;
+        }
+    }
+
+    // ─── Парсинг зрізу JSON зі структурою tree ───
+    function processSnapshotJson(snapshot) {
+        if (!snapshot || !snapshot.tree) return;
+        const tree = snapshot.tree;
+        const cols = ["Tm1_fact", "delta", "T0", "T1", "T2", "T3", "M1", "M2", "M3", "total"];
+        const cfRows = [];
+
+        const readRow = (name, type, hl) => {
+            const node = findSnapshotNode(tree, name);
+            if (!node) return;
+            const vals = cols.map(c => {
+                let v = node.values ? node.values[c] : 0;
+                return (v === undefined || v === null || v === '') ? '-' : Math.round(Number(v) / 1e6);
+            });
+            cfRows.push({ title: getBilingualText(node.name || name), type: type || 'sub', values: vals, highlightNeg: !!hl });
+        };
+
+        readRow("Надходження", "main", true);
+        readRow("Виплати", "main", false);
+        readRow("Обов’язкові платежі", "sub", false);
+        readRow("Платежі виробничого ланцюга", "sub", false);
+        readRow("Комерційний оборотний капітал", "sub", false);
+        readRow("Стратегічні інвестиції", "sub", false);
+        readRow("Інші операційні видатки", "sub", false);
+        readRow("Операційний + інвестиційний потік", "semibold", true);
+        readRow("Фінансова діяльність", "semibold", false);
+        readRow("Чистий грошовий потік", "total", true);
+        readRow("Грошові залишки", "main", false);
+
+        if (cfRows.length) {
+            globalData.mainTable.rows = cfRows;
+        }
+
+        const weeks = ["Tm1_fact", "T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+        const nodeCash = findSnapshotNode(tree, "Доступні залишки") || findSnapshotNode(tree, "Залишки доступні до використання");
+        const nodeCred = findSnapshotNode(tree, "Доступні кредитні ліміти") || findSnapshotNode(tree, "Доступні кредитні лінії");
+        const nodePost = findSnapshotNode(tree, "Доступний ліміт постімпорт");
+
+        if (nodeCash && nodeCash.values) {
+            const ownCash = weeks.map(w => getMlnValue(nodeCash, w));
+            const credVal = nodeCred ? getMlnValue(nodeCred, 'T0') : 0;
+            const postVal = nodePost ? getMlnValue(nodePost, 'T0') : 0;
+            const totalLiq = ownCash.map(c => c + credVal);
+            const postLiq = totalLiq.map(t => t + postVal);
+
+            globalData.chart.ownCash = ownCash;
+            globalData.chart.totalLiquidity = totalLiq;
+            globalData.chart.postImportLiquidity = postLiq;
+        }
+    }
+
+    // ─── Оновлення DOM для таблиць, KPI та блоків ───
+    function updateLanguageDOM() {
+        if (!globalData) return;
+        const lang = currentLang;
+
+        const elTitle = document.getElementById('dashboardTitle');
+        if (elTitle && globalData.meta && globalData.meta[lang]) elTitle.innerHTML = globalData.meta[lang].title;
+
+        ['Chart', 'MainTable', 'Summary', 'WC', 'Fuel', 'Limits'].forEach(k => {
+            const el = document.getElementById('title' + k);
+            if (el && globalData.meta && globalData.meta[lang]) el.innerText = globalData.meta[lang]['title' + k] || '';
+        });
+
+        const kpiBox = document.getElementById('kpiContainer');
+        if (kpiBox && globalData.kpis) {
+            kpiBox.innerHTML = globalData.kpis.map((k, idx) => `
+                <div class="kpi-card" onclick="toggleKpiColor(${idx})">
+                    <span class="kpi-title">${k.title[lang]}</span>
+                    <span class="kpi-value">${k.value === '-' ? '-' : formatNum(k.value)}</span>
+                    <span class="unit-label">${k.unit ? k.unit[lang] : ''}</span>
+                    <span class="${k.isGray ? 'gray-trend' : (k.trend && k.trend.isPositive ? 'positive-trend' : 'negative-trend')}">${k.trend ? k.trend.text[lang] : ''}</span>
+                </div>
+            `).join('');
+        }
+
+        const sumBox = document.getElementById('summaryTexts');
+        if (sumBox && globalData.summary && globalData.summary[lang]) {
+            sumBox.innerHTML = globalData.summary[lang].map(p => {
+                if (p.trim().startsWith('•') || p.trim().startsWith('-')) {
+                    return `<li class="flex items-start gap-1.5"><span class="bullet-text">${p}</span></li>`;
+                }
+                return `<p>${p}</p>`;
+            }).join('');
+            applySummaryFontSize();
+            applySummaryGap();
+            applyLetterSpacing();
+        }
+
+        const headTr = document.getElementById('mainTableHead');
+        if (headTr && globalData.mainTable && globalData.mainTable.headers) {
+            headTr.innerHTML = globalData.mainTable.headers.map(h => `<th>${h[lang] || ''}</th>`).join('');
+        }
+        const bodyTb = document.getElementById('mainTableBody');
+        if (bodyTb && globalData.mainTable && globalData.mainTable.rows) {
+            bodyTb.innerHTML = globalData.mainTable.rows.map(r => `
+                <tr class="row-${r.type || 'sub'}">
+                    <td>${r.title[lang] || ''}</td>
+                    ${r.values.map(v => `<td class="${(r.highlightNeg && typeof v === 'number' && v < 0) ? 'neg-bright' : ''}">${typeof v === 'number' ? formatNum(v) : v}</td>`).join('')}
+                </tr>
+            `).join('');
+        }
+
+        const wcBody = document.getElementById('mainTableBodyWC');
+        if (wcBody && globalData.workingCapital) {
+            const thCur = document.getElementById('thWCCurrent');
+            if (thCur) thCur.innerText = lang === 'uk' ? 'Поточний' : 'Current';
+            wcBody.innerHTML = globalData.workingCapital.map((r, i) => `
+                <tr class="${r.isTotal ? 'row-total' : (r.isSub ? 'sub-row' : '')}">
+                    <td class="${r.isSub ? 'pl-2 text-slate-500' : ''}">${r.title[lang] || ''}</td>
+                    <td>${formatNum(r.current)}</td>
+                    <td class="${r.isGray ? 'gray-trend' : (r.delta < 0 ? 'neg-bright' : (r.delta > 0 ? 'neg-green' : ''))}" onclick="toggleWcDeltaColor(${i})">${formatNum(r.delta)}</td>
+                </tr>
+            `).join('');
+        }
+
+        const fuelBody = document.getElementById('mainTableBodyFuel');
+        if (fuelBody && globalData.fuelInventories) {
+            const thFuel = document.getElementById('thFuelCurrent');
+            if (thFuel) thFuel.innerText = lang === 'uk' ? 'Залишок' : 'Balance';
+            fuelBody.innerHTML = globalData.fuelInventories.map(r => `
+                <tr>
+                    <td>${r.title[lang] || ''}</td>
+                    <td>${formatNum(r.current)}</td>
+                    <td class="${r.delta < 0 ? 'neg-bright' : (r.delta > 0 ? 'neg-green' : '')}">${formatNum(r.delta)}</td>
+                </tr>
+            `).join('');
+        }
+
+        const limHead = document.getElementById('thLimitsHead');
+        const limBody = document.getElementById('mainTableBodyLimits');
+        if (limHead && limBody && globalData.creditLimits) {
+            limHead.innerHTML = `<th></th><th>${lang === 'uk' ? 'Ліміт' : 'Limit'}</th><th>${lang === 'uk' ? 'Вибрано' : 'Drawn'}</th><th>${lang === 'uk' ? 'Доступно' : 'Available'}</th>`;
+            limBody.innerHTML = globalData.creditLimits.map(r => `
+                <tr class="${r.isTotal ? 'row-total' : ''}">
+                    <td>${r.title[lang] || ''}</td>
+                    <td>${formatNum(r.limit)}</td>
+                    <td>${formatNum(r.drawn)}</td>
+                    <td class="font-bold text-slate-800">${formatNum(r.available)}</td>
+                </tr>
+            `).join('');
         }
     }
 

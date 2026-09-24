@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Помісячні показники CF для непрямого методу (Cloud)</title>
+    <title>Показники для непрямого методу CF — помісячно</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -63,7 +63,7 @@
 
 <nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
     <div>
-        <h1 class="text-lg font-bold text-slate-800">Помісячні показники для непрямого методу CF (Хмара)</h1>
+        <h1 class="text-lg font-bold text-slate-800">Показники для непрямого методу CF — помісячно</h1>
         <p class="text-xs text-slate-500 mt-0.5">Зріз прогнозу: <span id="navDate" class="font-semibold text-indigo-600">--</span></p>
     </div>
     <div class="flex items-center gap-4">
@@ -79,11 +79,9 @@
             <button onclick="copyTable()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Копіювати</button>
             <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк</button>
         </div>
-        <div>
-            <a href="index.html" class="text-blue-600 hover:underline mr-3 text-xs font-semibold">Головна</a>
-            <a href="analytics.html" class="text-blue-600 hover:underline mr-3 text-xs font-semibold">Аналітика</a>
-            <a href="compare.html" class="text-blue-600 hover:underline mr-3 text-xs font-semibold">Порівняння</a>
-            <a href="monthly.html" class="text-gray-800 font-semibold text-xs">Помісячно</a>
+        <div id="navLinks">
+            <a href="sop-home" class="mr-3 text-xs font-semibold">CF Показники</a>
+            <a href="sop-credit" class="text-xs font-semibold">Кредити</a>
         </div>
     </div>
 </nav>
@@ -144,6 +142,11 @@
     </div>
 
     <div class="overflow-x-auto"><table class="m-table" id="monthTable"></table></div>
+
+    <div>
+        <h2 class="text-sm font-bold text-slate-800 mb-1 mt-2">Прямий CF (казначейство)</h2>
+        <div class="overflow-x-auto"><table class="m-table" id="directTable"></table></div>
+    </div>
     <p class="text-[10px] text-slate-500 leading-relaxed" id="note"></p>
 
     <div id="weekSection" class="hidden">
@@ -202,6 +205,26 @@ const SPECS = [
       tests: [/^заборгован\p{L}*\s+по\s+податку\s+на\s+прибуток/iu], optional: true },
     { id: 'crDebt', title: 'Заборгованність по кредитн. лініям', scope: 'any', kind: 'total', tests: [/^заборгован\p{L}*\s+по\s+кредитн/iu] },
     { id: 'piDebt', title: 'Заборгованність по постімпорту',     scope: 'any', kind: 'total', tests: [/^заборгован\p{L}*\s+по\s+пост-?імпорт/iu] },
+    // ---- прямий CF (казначейство) ----
+    { id: 'in1', title: 'Надходження ст. 1 «Нафта»', scope: 'in', byNo: '1', tests: [/^нафта$/iu] },
+    { id: 'in2', title: 'Надходження ст. 2 «Газ природний»', scope: 'in', byNo: '2', tests: [/^газ\s+природний$/iu] },
+    { id: 'in3', title: 'Надходження ст. 3 «Нафтопродукти ОПТ»', scope: 'in', byNo: '3', tests: [/^нафтопродукти\s+опт$/iu] },
+    { id: 'in4', title: 'Надходження ст. 4 «Нафтопродукти АОЗ»', scope: 'in', byNo: '4', tests: [/^нафтопродукти\s+аоз/iu], optional: true },
+    { id: 'in5', title: 'Надходження ст. 5 «Нафтопродукти роздріб АЗС»', scope: 'in', byNo: '5', tests: [/роздріб\s+азс/iu] },
+    { id: 'in6', title: 'Надходження ст. 6 «Непаливні продажі АЗС»', scope: 'in', byNo: '6', tests: [/^непаливні\s+продажі/iu], optional: true },
+    { id: 'inTotal', title: 'Всього надходжень', scope: 'in', kind: 'total', tests: [/^всього\s+надходжень$/iu] },
+    { id: 'supOil', title: 'Придбання нафти (2.2.04.01)', scope: 'out', sumCodes: ['2.2.04.01'], tests: [], optional: true },
+    { id: 'supGas', title: 'Придбання газу (2.2.04.03, 2.2.04.21)', scope: 'out', sumCodes: ['2.2.04.03', '2.2.04.21'], tests: [], optional: true },
+    { id: 'supNpDom', title: 'Придбання НП внутр. ринок (2.2.04.15.07, 2.2.04.15.06, 2.2.04.02, 2.2.04.07)', scope: 'out',
+      sumCodes: ['2.2.04.15.07', '2.2.04.15.06', '2.2.04.02', '2.2.04.07'], tests: [], optional: true },
+    { id: 'supNpImp', title: 'Придбання НП імпорт (2.2.04.15.08)', scope: 'out', sumCodes: ['2.2.04.15.08'], tests: [], optional: true },
+    { id: 'supCustoms', title: 'Митне оформлення НП (2.2.04.15.09)', scope: 'out', sumCodes: ['2.2.04.15.09'], tests: [], optional: true },
+    { id: 'opMand', title: 'Видатки ст. 1 «Обов’язкові платежі»', scope: 'out', byNo: '1', tests: [/^обов.?язкові\s+платежі/iu] },
+    { id: 'opProc', title: 'Видатки ст. 2 «Переробка»', scope: 'out', byNo: '2', tests: [/^переробка$/iu] },
+    { id: 'opTaxes', title: 'Податки (усі, вкл. ренту)', scope: 'out', kind: 'total', tests: [/^податки$/iu] },
+    { id: 'opRent', title: 'Рентна плата', scope: 'out', kind: 'total', tests: [/^рентна\s+плата$/iu], optional: true },
+    { id: 'opSalary', title: 'Заробітна плата', scope: 'out', kind: 'total', tests: [/^заробітна\s+плата$/iu] },
+    { id: 'outTotal', title: 'Всього витрат (1+2+3+4+5)', scope: 'out', kind: 'total', tests: [/^всього\s+витрат\s*\(1\+2\+3\+4\+5\)/iu] },
     { id: 'balTotal', title: 'Залишки коштів всього', scope: 'any',
       tests: [/залиш(ки|ок)(?!\p{L}).*на\s+кінець/iu, /^залиш(ки|ок)\s+(грошових\s+)?коштів\s*,?\s*(всього|разом)?$/iu, /^залиш(ки|ок)\s+(грошових\s+)?коштів/iu],
       exclude: /доступн|обмежен|початок|ліміт|заборгован|покритт/iu },
@@ -237,7 +260,30 @@ const ROWS = [
     { id: 'balDelta',  label: 'довідково: зміна залишків за період', type: 'delta', lvl: 1, cls: 'delta' },
     { id: 'tax',       label: 'Податок на прибуток', type: 'flow', dir: -1, lvl: 0, sep: true }
 ];
-const FLOW_IDS = ROWS.filter(r => r.type === 'flow' || r.type === 'net').map(r => r.id);
+// Прямий CF (казначейство) — ті самі періоди
+const ROWS2 = [
+    { id: 'rcv',        label: 'Надходження від покупців', type: 'flow', dir: +1, lvl: 0 },
+    { id: 'rcOil',      label: 'в т.ч. нафта (ст. 1)', type: 'flow', dir: +1, lvl: 1 },
+    { id: 'rcGas',      label: 'в т.ч. газ природний (ст. 2)', type: 'flow', dir: +1, lvl: 1 },
+    { id: 'rcNpWh',     label: 'в т.ч. нафтопродукти опт та АОЗ (ст. 3, 4)', type: 'flow', dir: +1, lvl: 1 },
+    { id: 'rcRetail',   label: 'в т.ч. роздріб АЗС — пальне та непаливні (ст. 5, 6)', type: 'flow', dir: +1, lvl: 1 },
+    { id: 'sup',        label: 'Оплата постачальникам НП, нафти, газу', type: 'flow', dir: -1, lvl: 0, sep: true },
+    { id: 'supOil',     label: 'в т.ч. нафта', type: 'flow', dir: -1, lvl: 1 },
+    { id: 'supGas',     label: 'в т.ч. газ природний', type: 'flow', dir: -1, lvl: 1 },
+    { id: 'supNpDom',   label: 'в т.ч. нафтопродукти — внутрішній ринок', type: 'flow', dir: -1, lvl: 1 },
+    { id: 'supNpImp',   label: 'в т.ч. нафтопродукти — імпорт (грошова оплата)', type: 'flow', dir: -1, lvl: 1 },
+    { id: 'supCustoms', label: 'Митне оформлення імпорту НП', type: 'flow', dir: -1, lvl: 0, sep: true },
+    { id: 'opx',        label: 'Податки, рента, переробка, зарплата (без податку на прибуток)', type: 'flow', dir: -1, lvl: 0, sep: true },
+    { id: 'oTax',       label: 'в т.ч. податки (крім ренти та податку на прибуток)', type: 'flow', dir: -1, lvl: 1 },
+    { id: 'oRent',      label: 'в т.ч. рентна плата', type: 'flow', dir: -1, lvl: 1 },
+    { id: 'oProc',      label: 'в т.ч. переробка (ст. 2, вкл. транспортування сировини)', type: 'flow', dir: -1, lvl: 1 },
+    { id: 'oSal',       label: 'в т.ч. заробітна плата (з ЄСВ, ПДФО)', type: 'flow', dir: -1, lvl: 1 },
+    { id: 'oOther',     label: 'в т.ч. інші обов’язкові платежі (енергія, охорона, банк. послуги)', type: 'flow', dir: -1, lvl: 1 },
+    { id: 'inOther',    label: 'довідково: інші надходження (повернення покриття, інші)', type: 'flow', dir: +1, lvl: 1, sep: true, cls: 'delta' },
+    { id: 'outOther',   label: 'довідково: інші операційні видатки (покриття постімпорту, логістика НП, товари АЗС тощо)', type: 'flow', dir: -1, lvl: 1, cls: 'delta' },
+    { id: 'fcf',        label: 'довідково: потік до фінансової діяльності (надходження − видатки ст. 1–5, з CAPEX)', type: 'net', lvl: 1, cls: 'delta' }
+];
+const FLOW_IDS = ROWS.concat(ROWS2).filter(r => r.type === 'flow' || r.type === 'net').map(r => r.id);
 const BAL_IDS = ['balTotal', 'balAvail', 'balRestr', 'crDebt', 'piDebt', 'debtTotal'];
 const CTRL = [{ id: 'cr', label: 'кредити', debt: 'crDebt', net: 'crNet' }, { id: 'pi', label: 'постімпорт', debt: 'piDebt', net: 'piNet' }];
 const UNITS = { uah: { k: 1, dec: 0, lbl: 'грн' }, th: { k: 1e3, dec: 0, lbl: 'тис. грн' }, mln: { k: 1e6, dec: 1, lbl: 'млн грн' } };
@@ -370,6 +416,17 @@ function resolveNodes(snap) {
         pool = pool.filter(e => e.path.length || s.scope === 'any');   // не брати сам блок
         if (s.kind) pool = pool.filter(e => e.kind === s.kind);
         if (s.exclude) pool = pool.filter(e => !s.exclude.test(e.name));
+        if (s.sumCodes) {                                                // сума рядків за кодами (без дублів)
+            const byCode = new Map();
+            pool.filter(e => s.sumCodes.includes(e.code)).forEach(e => {
+                const prev = byCode.get(e.code);
+                if (!prev || nonZeroCount(e.node) > nonZeroCount(prev.node)) byCode.set(e.code, e);
+            });
+            const list = [...byCode.values()];
+            res[s.id] = list.length ? { multi: list.map(e => e.node), name: list.map(e => e.name).join(' + '), path: list[0].path,
+                                        no: '', code: list.map(e => e.code).join(', '), kind: 'сума', how: 'за кодами', alt: 0 } : null;
+            return;
+        }
         let cands = [], how = '';
         if (s.byNo) { cands = pool.filter(e => e.no === s.byNo && e.kind === 'item'); how = `№ ${s.byNo}`; }
         if (!cands.length && s.byCode) { cands = pool.filter(e => e.code === s.byCode); how = `код ${s.byCode}`; }
@@ -411,7 +468,14 @@ function cell(node, key) {
 }
 function rawValues(ps, col) {
     const raw = {};
-    SPECS.forEach(s => { const r = ps.nodes[s.id]; raw[s.id] = r ? cell(r.node, col) : null; });
+    SPECS.forEach(s => {
+        const r = ps.nodes[s.id];
+        if (!r) { raw[s.id] = null; return; }
+        if (r.multi) {
+            const xs = r.multi.map(n => cell(n, col)).filter(x => x != null);
+            raw[s.id] = xs.length ? xs.reduce((a, b) => a + b, 0) : null;
+        } else raw[s.id] = cell(r.node, col);
+    });
     return raw;
 }
 
@@ -437,6 +501,21 @@ function composeWeek(raw, prev, isFact) {
     if (v.finOther != null && Math.abs(v.finOther) < 1) v.finOther = 0;
     v.tax = raw.tax == null && raw.taxArr == null ? null : z(raw.tax) + z(raw.taxArr);
     v.crDebt = raw.crDebt; v.piDebt = raw.piDebt; v.debtTotal = add2(raw.crDebt, raw.piDebt);
+    // прямий CF
+    v.rcOil = z(raw.in1); v.rcGas = z(raw.in2); v.rcNpWh = z(raw.in3) + z(raw.in4); v.rcRetail = z(raw.in5) + z(raw.in6);
+    v.rcv = v.rcOil + v.rcGas + v.rcNpWh + v.rcRetail;
+    v.supOil = z(raw.supOil); v.supGas = z(raw.supGas); v.supNpDom = z(raw.supNpDom); v.supNpImp = z(raw.supNpImp); v.supCustoms = z(raw.supCustoms);
+    v.sup = v.supOil + v.supGas + v.supNpDom + v.supNpImp;          // митне оформлення — окремим рядком
+    const incTax = z(raw.tax) + z(raw.taxArr);                         // податок на прибуток — лише в першій таблиці
+    v.oRent = z(raw.opRent); v.oTax = z(raw.opTaxes) - v.oRent - incTax; v.oSal = z(raw.opSalary); v.oProc = z(raw.opProc);
+    if (Math.abs(v.oTax) < 1) v.oTax = 0;
+    v.oOther = z(raw.opMand) - z(raw.opTaxes) - v.oSal;
+    if (Math.abs(v.oOther) < 1) v.oOther = 0;
+    v.opx = z(raw.opMand) + v.oProc - incTax;
+    v.inOther = raw.inTotal == null ? null : raw.inTotal - v.rcv;
+    v.outOther = raw.outTotal == null ? null : raw.outTotal - v.sup - v.supCustoms - v.opx - incTax - z(raw.capex);
+    if (v.outOther != null && Math.abs(v.outOther) < 1) v.outOther = 0;
+    v.fcf = raw.inTotal == null || raw.outTotal == null ? null : raw.inTotal - raw.outTotal;
     v.balTotal = raw.balTotal; v.balAvail = raw.balAvail;
     if (raw.balRestr != null) { v.balRestr = raw.balRestr; v.restrDerived = false; }
     else { v.balRestr = raw.balTotal != null && raw.balAvail != null ? raw.balTotal - raw.balAvail : null; v.restrDerived = true; }
@@ -640,27 +719,9 @@ const periodTxt = m => `${dm(m.start)}–${dmy(m.end)}`;
 const missTip = list => [...new Map(list.map(x => [x.mon, x])).values()].map(x => `${dm(x.mon)}–${dm(x.sun)}: ${x.why}`).join('; ');
 const rowVisible = r => !r.gross || document.getElementById('showGross').checked;
 
-// ---------- рендер ----------
-function render() {
-    if (!CAL || !AGG) return;
-    const u = unit(), cur = SNAPS[D];
-    document.getElementById('navDate').textContent = dmy(D);
-    document.getElementById('hdrSub').textContent =
-        `Зріз прогнозу ${dmy(D)} (тиждень ${dm(D)}–${dmy(isoAdd(D, 6))}). ` +
-        `Факт — по ${dmy(CAL.lastFactDay)}, прогноз — ${dmy(D)}–${dmy(CAL.horizonEnd)}. ` +
-        (isWeekMode() ? 'Місяці — цілими тижнями.' : 'Місяці — календарні.');
-    document.getElementById('hdrUnit').innerHTML = `${u.lbl}<br>` +
-        (document.getElementById('signed').checked ? 'надходження «+», видатки «−»' : 'потоки за модулем');
-
-    let h = `<thead><tr><th>Показник</th><th class="c-open">Початок</th>` +
-        CAL.months.map(m => `<th class="${colCls(m)}">${m.label}<br>${statusBadge(m)}</th>`).join('') + `</tr>` +
-        `<tr><th></th><th class="c-open">на ${dmy(CAL.openDate)}</th>` +
-        CAL.months.map(m => `<th class="${colCls(m)}">${periodTxt(m)}` +
-            (m.partial ? `<br>горизонт до ${dmy(CAL.horizonEnd)}`
-             : isWeekMode() && m.end !== m.calEnd ? `<br>кінець місяця ${dm(m.calEnd)} → ${dm(m.end)}` : '') + `</th>`).join('') +
-        `</tr></thead><tbody>`;
-
-    ROWS.filter(rowVisible).forEach(r => {
+function monthRowsHtml(rows) {
+    let h = '';
+    rows.filter(rowVisible).forEach(r => {
         h += `<tr class="lvl${r.lvl} ${r.sep ? 'sep' : ''} ${r.cls || ''}"><td>${esc(r.label)}` +
              (r.id === 'balRestr' && AGG.months.some(m => m.restrDerived) ? ' <span class="text-[9px] text-amber-600">(розрах.: всього − доступні)</span>' : '') + `</td>`;
         const openVal = r.type === 'bal' ? AGG.open[r.id] : null;
@@ -676,6 +737,29 @@ function render() {
         });
         h += `</tr>`;
     });
+    return h;
+}
+
+// ---------- рендер ----------
+function render() {
+    if (!CAL || !AGG) return;
+    const u = unit(), cur = SNAPS[D];
+    document.getElementById('navDate').textContent = dmy(D);
+    document.getElementById('hdrSub').textContent =
+        `Зріз прогнозу ${dmy(D)} (тиждень ${dm(D)}–${dmy(isoAdd(D, 6))}). ` +
+        `Факт — по ${dmy(CAL.lastFactDay)}, прогноз — ${dmy(D)}–${dmy(CAL.horizonEnd)}. ` +
+        (isWeekMode() ? 'Місяці — цілими тижнями.' : 'Місяці — календарні.');
+    document.getElementById('hdrUnit').innerHTML = `${u.lbl}<br>` +
+        (document.getElementById('signed').checked ? 'надходження «+», видатки «−»' : 'потоки за модулем');
+
+    const thead = `<thead><tr><th>Показник</th><th class="c-open">Початок</th>` +
+        CAL.months.map(m => `<th class="${colCls(m)}">${m.label}<br>${statusBadge(m)}</th>`).join('') + `</tr>` +
+        `<tr><th></th><th class="c-open">на ${dmy(CAL.openDate)}</th>` +
+        CAL.months.map(m => `<th class="${colCls(m)}">${periodTxt(m)}` +
+            (m.partial ? `<br>горизонт до ${dmy(CAL.horizonEnd)}`
+             : isWeekMode() && m.end !== m.calEnd ? `<br>кінець місяця ${dm(m.calEnd)} → ${dm(m.end)}` : '') + `</th>`).join('') +
+        `</tr></thead><tbody>`;
+    let h = thead + monthRowsHtml(ROWS);
     if (document.getElementById('showCtrl').checked) CTRL.forEach((c, j) => {
         h += `<tr class="ctrl ${j === 0 ? 'sep' : ''}"><td>контроль ${c.label}: Δ боргу − чисте залучення</td><td class="c-open"></td>`;
         AGG.months.forEach((a, i) => {
@@ -687,6 +771,7 @@ function render() {
         h += `</tr>`;
     });
     document.getElementById('monthTable').innerHTML = h + '</tbody>';
+    document.getElementById('directTable').innerHTML = thead + monthRowsHtml(ROWS2) + '</tbody>';
 
     const nm = id => cur.nodes[id] ? `«${esc(cur.nodes[id].name)}»` : 'не знайдено';
     document.getElementById('note').innerHTML =
@@ -697,6 +782,11 @@ function render() {
         `CAPEX = ${nm('capex')}. «Залучення боргу» — чисте: (6.1.1 − 6.2.1) + (6.1.3 − 6.2.3); у фактичних тижнях постімпорт — зміна ${nm('piDebt')}, бо безготівкове фінансування не потрапляє у виписку. ` +
         `«Дивіденди / обслуговування боргу» = дивіденди (6.2.14–6.2.16) + відсотки 6.2.2 + комісії 6.2.11, 6.2.12; тіло кредитів і постімпорту сюди не входить. ` +
         `Інші статті 6.2 (лізинг, акредитиви, курсові) — окремим довідковим рядком. Податок на прибуток = 2.2.01.06 + 2.2.01.07. ` +
+        `<br><b>Прямий CF:</b> надходження від покупців = статті 1–6 блоку «Надходження» (без повернення покриття та інших надходжень); ` +
+        `оплата постачальникам = придбання нафти, газу, НП (коди 2.2.04.01, .02, .03, .07, .21, .15.06–.15.08), без СП УКО (згорнуто у F13) та без погашення постімпорту — воно у фінансовому блоці (6.2.3); ` +
+        `митне оформлення імпорту НП (2.2.04.15.09) — окремим рядком; ` +
+        `податки, рента, переробка, зарплата = ст. 1 «Обов’язкові платежі» + ст. 2 «Переробка» без податку на прибуток (він показаний у першій таблиці). ` +
+        `Сума: надходження від покупців + інші надходження − оплата постачальникам − митне оформлення − податки/переробка/зарплата − інші операційні видатки − CAPEX − податок на прибуток = потік до фінансової діяльності. ` +
         `Помаранчевим позначено періоди з неповними даними — наведіть курсор, щоб побачити причину.`;
 
     const showW = document.getElementById('showWeeks').checked;
@@ -725,7 +815,9 @@ function renderWeeks() {
     let h = `<thead><tr><th>Показник</th>` + list.map(w =>
         `<th class="${cls(w)}">${dm(w.mon)}–${dm(w.sun)}<br><span class="font-normal text-slate-400">` +
         `${w.opening ? 'відкриття; ' : ''}${w.ok ? esc(w.srcLabel) : 'немає'}</span></th>`).join('') + `</tr></thead><tbody>`;
-    ROWS.filter(r => r.type !== 'delta').forEach(r => {
+    const wRows = [...ROWS, { hdr: 'Прямий CF (казначейство)' }, ...ROWS2];
+    wRows.filter(r => r.hdr || r.type !== 'delta').forEach(r => {
+        if (r.hdr) { h += `<tr><td class="font-bold text-slate-800 pt-2" colspan="${list.length + 1}">${r.hdr}</td></tr>`; return; }
         h += `<tr><td class="${r.lvl ? 'text-slate-500 pl-4' : 'font-semibold'}">${esc(r.label)}</td>` + list.map(w => {
             const show = !w.opening || r.type === 'bal';
             const v = w.ok && show ? w.v[r.id] : null;
@@ -766,11 +858,12 @@ function tableAoa() {
     const hdr1 = ['Показник', 'Початок', ...CAL.months.map(m => m.label)];
     const hdr2 = ['', `на ${dmy(CAL.openDate)}`, ...CAL.months.map(m => `${dmy(m.start)}–${dmy(m.end)}`)];
     const hdr3 = ['Тип даних', 'факт', ...CAL.months.map(statusTxt)];
-    const body = ROWS.filter(rowVisible).map(r => [(r.lvl ? '   '.repeat(r.lvl) : '') + r.label,
+    const rowsAoa = rows => rows.filter(rowVisible).map(r => [(r.lvl ? '   '.repeat(r.lvl) : '') + r.label,
         r.type === 'bal' ? shown(r, AGG.open[r.id]) : null, ...AGG.months.map(a => shown(r, a[r.id]))]);
+    const body = rowsAoa(ROWS);
     const ctrl = CTRL.map(c => [`контроль ${c.label}: Δ боргу − чисте залучення`, null,
         ...AGG.months.map(a => a.ctrl[c.id] == null ? null : shown({ type: 'net' }, a.ctrl[c.id]))]);
-    return [hdr1, hdr2, hdr3, ...body, ...ctrl];
+    return [hdr1, hdr2, hdr3, ...body, ...ctrl, [], ['Прямий CF (казначейство)'], ...rowsAoa(ROWS2)];
 }
 
 function exportXlsx() {
@@ -789,7 +882,7 @@ function exportXlsx() {
     const wl = weekList();
     const aoaW = [['Показник', ...wl.map(w => `${dmy(w.mon)}–${dmy(w.sun)}`)],
                   ['Джерело', ...wl.map(w => (w.opening ? 'відкриття; ' : '') + (w.ok ? w.srcLabel : 'немає: ' + w.why))],
-                  ...ROWS.filter(r => r.type !== 'delta').map(r => [r.label, ...wl.map(w => w.ok && (!w.opening || r.type === 'bal') ? shown(r, w.v[r.id]) : null)])];
+                  ...[...ROWS, ...ROWS2].filter(r => r.type !== 'delta').map(r => [r.label, ...wl.map(w => w.ok && (!w.opening || r.type === 'bal') ? shown(r, w.v[r.id]) : null)])];
     const ws2 = XLSX.utils.aoa_to_sheet(aoaW);
     ws2['!cols'] = [{ wch: 60 }, ...wl.map(() => ({ wch: 16 }))];
     XLSX.utils.book_append_sheet(wb, ws2, 'Тижні');
@@ -810,7 +903,29 @@ async function copyTable() {
     catch { setStatus('Браузер заборонив доступ до буфера обміну', 'bg-red-100 text-red-800'); }
 }
 
+// ---------- навігація ----------
+function highlightActiveNav() {
+    const currentPath = window.location.pathname.toLowerCase();
+    const links = document.querySelectorAll('#navLinks a');
+    // поточна сторінка — sop-home
+    const isHome = currentPath.includes('sop-home') || currentPath.includes('monthly') ||
+                   currentPath.endsWith('/') || currentPath.endsWith('/dashbrd_cf');
+    links.forEach(a => {
+        const href = (a.getAttribute('href') || '').toLowerCase();
+        const matchesThis = href.includes('sop-home') ? isHome : (!isHome && currentPath.includes('sop-credit'));
+        if (matchesThis) {
+            a.className = 'text-slate-800 font-bold text-xs cursor-default pointer-events-none';   // активна — без переходу
+            if (href.includes('sop-home')) a.classList.add('mr-3');
+            a.removeAttribute('href');
+        } else {
+            a.className = 'text-blue-600 hover:underline text-xs font-semibold';
+            if (href.includes('sop-home')) a.classList.add('mr-3');
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    highlightActiveNav();
     const t = new Date();
     const today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
     loadReport(today);

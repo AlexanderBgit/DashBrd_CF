@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#1E3A8A">
+    <meta name="format-detection" content="telephone=no">
+    <title>F13 · Встановити застосунок</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="F13">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        :root {
+            --navy: #1E3A8A; --navy-2: #172554; --ink: #0f172a; --muted: #64748b;
+            --line: #e2e8f0; --bg: #f1f5f9; --card: #ffffff; --ok: #047857; --warn: #b45309;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased;
+            min-height: 100vh; min-height: 100dvh;
+        }
+        .hero {
+            background: linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 100%); color: #fff;
+            padding: calc(28px + env(safe-area-inset-top, 0px)) 20px 72px; text-align: center;
+        }
+        .hero img { width: 88px; height: 88px; border-radius: 22px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+        .hero h1 { font-size: 24px; line-height: 1.2; margin: 16px 0 6px; font-weight: 800; letter-spacing: -.01em; }
+        .hero p { margin: 0 auto; max-width: 30em; color: #cbd5e1; font-size: 15px; line-height: 1.45; }
+        .wrap { max-width: 480px; margin: -52px auto 0; padding: 0 16px calc(28px + env(safe-area-inset-bottom, 0px)); }
+        .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.08); padding: 18px; }
+        .card + .card { margin-top: 14px; }
+
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+            min-height: 54px; border: 0; border-radius: 14px; font: inherit; font-size: 17px; font-weight: 700;
+            cursor: pointer; text-decoration: none; transition: transform .08s ease, background .15s ease;
+        }
+        .btn:active { transform: scale(.985); }
+        .btn svg { width: 22px; height: 22px; flex: none; }
+        .btn-primary { background: var(--navy); color: #fff; }
+        .btn-primary:hover { background: #1e40af; }
+        .btn-primary[disabled] { background: #94a3b8; cursor: default; }
+        .btn-ghost { background: #eef2ff; color: var(--navy); margin-top: 10px; font-size: 16px; min-height: 48px; }
+        .status { margin: 12px 2px 0; font-size: 13.5px; color: var(--muted); text-align: center; line-height: 1.4; min-height: 1.4em; }
+        .status.ok { color: var(--ok); font-weight: 600; }
+        .status.warn { color: var(--warn); }
+
+        .steps { margin: 16px 0 0; }
+        .steps ol { margin: 0; padding: 0; list-style: none; counter-reset: s; }
+        .steps[hidden] { display: none; }
+        .steps h2 { font-size: 15px; margin: 0 0 10px; }
+        .steps li { counter-increment: s; display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.45; }
+        .steps li::before {
+            content: counter(s); flex: none; width: 26px; height: 26px; border-radius: 50%;
+            background: #eef2ff; color: var(--navy); font-weight: 800; font-size: 13px;
+            display: inline-flex; align-items: center; justify-content: center; margin-top: 1px;
+        }
+        .ico { display: inline-flex; vertical-align: -4px; width: 20px; height: 20px; color: var(--navy); }
+        kbd { font: inherit; font-weight: 700; background: #f1f5f9; border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; white-space: nowrap; }
+
+        .copy-row { display: flex; gap: 8px; margin-top: 12px; }
+        .copy-row input { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: #f8fafc; }
+        .copy-row button { font: inherit; font-weight: 700; font-size: 14px; border: 0; border-radius: 10px; padding: 0 14px; background: var(--navy); color: #fff; cursor: pointer; min-height: 44px; }
+
+        .feat { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+        .feat li { display: flex; gap: 12px; align-items: flex-start; font-size: 14.5px; line-height: 1.45; }
+        .feat b { display: block; font-size: 15px; }
+        .feat span { color: var(--muted); }
+        .feat .fi { flex: none; width: 40px; height: 40px; border-radius: 12px; background: #eef2ff; color: var(--navy); display: flex; align-items: center; justify-content: center; }
+        .feat .fi svg { width: 22px; height: 22px; }
+
+        .qr { display: none; text-align: center; }
+        .qr.show { display: block; }
+        .qr h2 { font-size: 15px; margin: 0 0 4px; }
+        .qr p { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; }
+        #qrBox { display: inline-block; padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+        #qrBox img, #qrBox canvas { display: block; }
+
+        .foot { text-align: center; color: var(--muted); font-size: 12.5px; line-height: 1.5; margin-top: 16px; padding: 0 8px; }
+        .foot a { color: var(--navy); font-weight: 600; }
+        @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+    </style>
+</head>
+<body>
+    <header class="hero">
+        <img src="icons/icon-192.png" alt="Іконка F13" width="88" height="88">
+        <h1>F13 на головному екрані</h1>
+        <p>Дашборд прогнозу ліквідності відкриватиметься однією іконкою, на весь екран, без адресного рядка та панелей браузера.</p>
+    </header>
+
+    <main class="wrap">
+        <section class="card" aria-labelledby="installBtn">
+            <button type="button" class="btn btn-primary" id="installBtn">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>
+                <span id="installTxt">Встановити на головний екран</span>
+            </button>
+            <a class="btn btn-ghost" id="openBtn" href="./">Відкрити дашборд у браузері</a>
+            <p class="status" id="status" role="status" aria-live="polite"></p>
+
+            <!-- Інструкції показуються лише там, де браузер не має кнопки встановлення -->
+            <div class="steps" id="stepsIos" hidden>
+                <h2>Як додати на iPhone / iPad</h2>
+                <ol>
+                <li><span>Натисніть <span class="ico"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0-12-4 4m4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg></span> <kbd>Поділитися</kbd> — внизу екрана в Safari (або вгорі на iPad).</span></li>
+                <li><span>Прокрутіть список і оберіть <kbd>На початковий екран</kbd>. Якщо пункту не видно — <kbd>Редагувати дії</kbd> і додайте його.</span></li>
+                <li><span>Натисніть <kbd>Додати</kbd>. Іконка F13 з’явиться на робочому столі.</span></li>
+            </ol></div>
+            <div class="steps" id="stepsAndroid" hidden>
+                <h2>Як додати на Android</h2>
+                <ol>
+                <li><span>Відкрийте меню браузера <kbd>⋮</kbd> (у правому верхньому куті).</span></li>
+                <li><span>Оберіть <kbd>Встановити застосунок</kbd> або <kbd>Додати на головний екран</kbd>.</span></li>
+                <li><span>Підтвердьте — іконка F13 з’явиться на робочому столі.</span></li>
+            </ol></div>
+            <div class="steps" id="stepsDesktop" hidden>
+                <h2>Як встановити на комп’ютері</h2>
+                <ol>
+                <li><span>У Chrome або Edge натисніть значок встановлення <kbd>⊕</kbd> праворуч в адресному рядку.</span></li>
+                <li><span>Або меню <kbd>⋮</kbd> → <kbd>Зберегти й поділитися</kbd> → <kbd>Встановити сторінку як застосунок</kbd>.</span></li>
+                <li><span>F13 відкриватиметься окремим вікном, як звичайна програма.</span></li>
+            </ol></div>
+            <div class="steps" id="stepsInApp" hidden>
+                <h2>Відкрийте сторінку у браузері</h2>
+                <p style="margin:0;font-size:15px;line-height:1.45">Вбудований переглядач (Teams, Outlook, месенджер) не вміє встановлювати застосунки. Скопіюйте посилання і відкрийте його в <b>Safari</b> (iPhone) або <b>Chrome</b> (Android).</p>
+                <div class="copy-row">
+                    <input id="pageUrl" readonly aria-label="Посилання на сторінку">
+                    <button type="button" id="copyBtn">Копіювати</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card qr" id="qrCard" aria-labelledby="qrTitle">
+            <h2 id="qrTitle">Відкрити на телефоні</h2>
+            <p>Наведіть камеру телефону на код — і встановіть F13 уже там.</p>
+            <div id="qrBox"></div>
+        </section>
+
+        <section class="card">
+            <ul class="feat">
+                <li>
+                    <span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/></svg></span>
+                    <div><b>На весь екран</b><span>Без адресного рядка й вкладок — більше місця для графіка й таблиць.</span></div>
+                </li>
+                <li>
+                    <span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 3 4 14h7l-1 7 9-11h-7l1-7z"/></svg></span>
+                    <div><b>Швидкий запуск</b><span>Оболонка й бібліотеки зберігаються на пристрої, дані щоразу підтягуються свіжі.</span></div>
+                </li>
+                <li>
+                    <span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path stroke-linecap="round" d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+                    <div><b>Той самий захист</b><span>Редагування, як і раніше, лише за PIN-кодом. Фінансові дані на телефоні не зберігаються.</span></div>
+                </li>
+                <li>
+                    <span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h7"/></svg></span>
+                    <div><b>Ярлики на іконці</b><span>Утримуйте іконку F13 (Android / ПК) — «Перегляд» або «Редагування».</span></div>
+                </li>
+            </ul>
+        </section>
+
+        <p class="foot">АТ «Укрнафта» · Казначейство · F13 Executive Cash Flow Dashboard<br>
+            <a href="./">Перейти до дашборду</a></p>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+    <script>
+    (function () {
+        'use strict';
+        var $ = function (id) { return document.getElementById(id); };
+        var ua = navigator.userAgent || '';
+        var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var isAndroid = /Android/i.test(ua);
+        var isMobile = isIOS || isAndroid || /Mobi/i.test(ua);
+        var inApp = /Teams|MSTeams|Outlook|FBAN|FBAV|Instagram|Line\/|Telegram|Viber|WhatsApp|LinkedInApp|; wv\)/i.test(ua);
+        var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        var deferred = null;
+
+        function status(msg, cls) { var s = $('status'); s.textContent = msg || ''; s.className = 'status' + (cls ? ' ' + cls : ''); }
+        function show(id) { ['stepsIos', 'stepsAndroid', 'stepsDesktop', 'stepsInApp'].forEach(function (k) { $(k).hidden = (k !== id); }); }
+        function scrollTo(el) { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }
+
+        function setInstalled() {
+            $('installTxt').textContent = 'Відкрити F13';
+            $('installBtn').onclick = function () { location.href = './?source=pwa'; };
+            $('openBtn').style.display = 'none';
+            show(null);
+            status('Застосунок уже встановлено на цьому пристрої.', 'ok');
+        }
+
+        // Реєстрація service worker — умова встановлюваності в Chrome / Edge
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            navigator.serviceWorker.register('sw.js').catch(function () {});
+        }
+
+        if (standalone) { setInstalled(); }
+
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            deferred = e;
+            $('installBtn').disabled = false;
+            show(null);
+            status('');
+        });
+        window.addEventListener('appinstalled', function () { deferred = null; setInstalled(); });
+
+        $('installBtn').addEventListener('click', function () {
+            if (standalone) return;
+            if (deferred) {
+                deferred.prompt();
+                deferred.userChoice.then(function (r) {
+                    if (r && r.outcome === 'accepted') status('Встановлюємо… Іконка з’явиться на головному екрані.', 'ok');
+                    else status('Встановлення скасовано. Можна повторити будь-коли.');
+                    deferred = null;
+                });
+                return;
+            }
+            var target;
+            if (inApp) target = 'stepsInApp';
+            else if (isIOS) target = 'stepsIos';
+            else if (isAndroid) target = 'stepsAndroid';
+            else target = 'stepsDesktop';
+            show(target);
+            if (target === 'stepsIos' && /CriOS|FxiOS|EdgiOS/i.test(ua)) {
+                status('На iPhone найнадійніше встановлювати з Safari; у Chrome/Edge (iOS 16.4+) — через «Поділитися».', 'warn');
+            } else if (target === 'stepsDesktop' && !/Chrome|Edg\//.test(ua)) {
+                status('Цей браузер не підтримує встановлення. Відкрийте сторінку в Chrome або Edge.', 'warn');
+            } else {
+                status('');
+            }
+            scrollTo($(target));
+        });
+
+        // Одразу підказати користувачу вбудованого переглядача
+        if (!standalone && inApp) { show('stepsInApp'); status('Відкрийте сторінку у звичайному браузері.', 'warn'); }
+
+        // Копіювання посилання
+        $('pageUrl').value = location.href.split('#')[0];
+        $('copyBtn').addEventListener('click', function () {
+            var url = $('pageUrl').value, done = function () { $('copyBtn').textContent = 'Скопійовано ✓'; setTimeout(function () { $('copyBtn').textContent = 'Копіювати'; }, 2000); };
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { $('pageUrl').select(); });
+            else { $('pageUrl').select(); try { document.execCommand('copy'); done(); } catch (e) {} }
+        });
+
+        // QR-код на комп'ютері — щоб перейти на телефон
+        window.addEventListener('load', function () {
+            if (isMobile || standalone || typeof QRCode === 'undefined') return;
+            try {
+                new QRCode($('qrBox'), { text: location.href.split('#')[0], width: 168, height: 168, colorDark: '#0f172a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+                $('qrCard').classList.add('show');
+            } catch (e) {}
+        });
+    })();
+    </script>
+</body>
+</html>

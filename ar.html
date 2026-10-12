@@ -113,6 +113,7 @@
     const norm = (s) => String(s || '').toLowerCase().replace(/[’'`ʼ]/g, "'").replace(/\s+/g, ' ').trim();
     const fmt = (n) => typeof n === 'number' && !isNaN(n) ? Math.round(n).toLocaleString('uk-UA').replace(/\u202F/g, ' ') : '—';
     const dmy = (iso) => iso ? iso.split('-').reverse().join('.') : '';
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     function extractCleanDate(item) {
         if (!item) return null;
@@ -124,69 +125,113 @@
         return null;
     }
 
+    // Генерація понеділків за останні ~26 тижнів на випадок збою отримання переліку
+    function generateFallbackMondays(weeksCount = 26) {
+        const d = new Date();
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const lastMon = new Date(d.setDate(diff));
+
+        const list = [];
+        for (let i = 0; i < weeksCount; i++) {
+            const cur = new Date(lastMon);
+            cur.setDate(lastMon.getDate() - (i * 7));
+            list.push(cur.toISOString().slice(0, 10));
+        }
+        return list.reverse();
+    }
+
+    // Безпечний запит з retry
+    async function safePost(payload, retries = 2) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const res = await fetch(FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) return await res.json();
+                if (res.status === 502 || res.status === 504) {
+                    if (attempt < retries) {
+                        await sleep(1500 * attempt);
+                        continue;
+                    }
+                }
+                return null;
+            } catch (err) {
+                if (attempt < retries) {
+                    await sleep(1500 * attempt);
+                    continue;
+                }
+                return null;
+            }
+        }
+        return null;
+    }
+
     async function fetchHistoricalData() {
         const loader = document.getElementById('loaderBox');
         const loaderMsg = document.getElementById('loaderMsg');
         const loaderProgress = document.getElementById('loaderProgress');
         const reloadIcon = document.getElementById('reloadIcon');
 
+        loader.className = "bg-indigo-50 border border-indigo-200 text-indigo-900 px-4 py-3 rounded-xl flex items-center justify-between text-xs font-medium";
         loader.classList.remove('hidden');
         reloadIcon.classList.add('animate-spin');
         loaderMsg.textContent = "Отримання списку дат звітів...";
         loaderProgress.textContent = "";
 
         try {
-            // 1. Отримуємо перелік доступних дат
-            const resDates = await fetch(FLOW_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reportDate: "" })
-            });
+            // 1. Спроба отримати доступні дати
+            let targetDates = [];
+            const datesPayload = await safePost({ reportDate: "" }, 2);
+            const rawDates = Array.isArray(datesPayload?.availableDates) ? datesPayload.availableDates : [];
 
-            if (!resDates.ok) throw new Error(`HTTP ${resDates.status} під час запиту дат`);
-            const datesPayload = await resDates.json();
-            const rawDates = Array.isArray(datesPayload.availableDates) ? datesPayload.availableDates : [];
+            if (rawDates.length > 0) {
+                const allCleanDates = [...new Set(rawDates.map(extractCleanDate))].filter(Boolean).sort();
+                const latestIso = allCleanDates[allCleanDates.length - 1];
+                const [ly, lm, ld] = latestIso.split('-').map(Number);
+                const cutoffDate = new Date(Date.UTC(ly, lm - 1 - 6, ld)).toISOString().slice(0, 10);
+                targetDates = allCleanDates.filter(d => d >= cutoffDate);
+            } else {
+                console.warn("Список дат від Power Automate недоступний (502/null). Використовується календарний розрахунок понеділків.");
+                targetDates = generateFallbackMondays(26);
+            }
 
-            // 2. Фільтруємо унікальні за останні 6 місяців
-            const allCleanDates = [...new Set(rawDates.map(extractCleanDate))].filter(Boolean).sort();
-            if (!allCleanDates.length) throw new Error("Не знайдено жодної дати в базі");
-
-            const latestIso = allCleanDates[allCleanDates.length - 1];
-            const [ly, lm, ld] = latestIso.split('-').map(Number);
-            const cutoffDate = new Date(Date.UTC(ly, lm - 1 - 6, ld)).toISOString().slice(0, 10);
-
-            const targetDates = allCleanDates.filter(d => d >= cutoffDate);
             historicalData = [];
 
-            // 3. Паралельно-пакетне завантаження даних (по 4 одночасно, щоб не перевантажити потік)
-            const BATCH_SIZE = 4;
+            // 2. Послідовно-пакетне завантаження (по 2 паралельно з інтервалом 400мс для запобігання 502)
+            const BATCH_SIZE = 2;
             for (let i = 0; i < targetDates.length; i += BATCH_SIZE) {
                 const batch = targetDates.slice(i, i + BATCH_SIZE);
-                loaderMsg.textContent = `Завантаження показників: ${i + 1}–${Math.min(i + BATCH_SIZE, targetDates.length)} з ${targetDates.length}...`;
+                loaderMsg.textContent = `Завантаження даних: ${i + 1}–${Math.min(i + BATCH_SIZE, targetDates.length)} з ${targetDates.length}...`;
                 loaderProgress.textContent = `${Math.round(((i + batch.length) / targetDates.length) * 100)}%`;
 
                 const results = await Promise.all(batch.map(async (iso) => {
-                    try {
-                        const r = await fetch(FLOW_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
-                        });
-                        if (!r.ok) return null;
-                        const data = await r.json();
-                        return parseMetricsForDate(iso, data);
-                    } catch (e) {
-                        console.warn(`Помилка для дати ${iso}:`, e);
-                        return null;
-                    }
+                    const data = await safePost({ reportDate: iso, reportDateDot: dmy(iso) }, 2);
+                    if (!data) return null;
+                    return parseMetricsForDate(iso, data);
                 }));
 
-                results.forEach(res => { if (res) historicalData.push(res); });
+                results.forEach(res => {
+                    // додаємо лише якщо дата має фактичні дані
+                    if (res && (res.total > 0 || res.naftogaz > 0 || res.mou > 0)) {
+                        historicalData.push(res);
+                    }
+                });
+
+                if (i + BATCH_SIZE < targetDates.length) {
+                    await sleep(400);
+                }
+            }
+
+            if (!historicalData.length) {
+                throw new Error("Не вдалося завантажити показники для вказаних дат або на сервері відсутні записи.");
             }
 
             historicalData.sort((a, b) => a.date.localeCompare(b.date));
 
-            // 4. Оновлення інтерфейсу
+            // 3. Рендер UI
             renderSummaryCards();
             renderChart();
             renderTable();
@@ -224,7 +269,6 @@
             }
         });
 
-        // Якщо рядок "Дебіторська заборгованість" не знайдено, пробуємо взяти з дерева зрізу (якщо воно є)
         if (total === null && payload.snapshotTree?.tree) {
             const findNode = (nodes, name) => {
                 for (const n of nodes) {

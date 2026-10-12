@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Динаміка дебіторської заборгованості (6 місяців)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        * { font-style: normal !important; }
+        body { font-family: 'Helvetica', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body class="p-6 md:p-10">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        <!-- Шапка -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-200 gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="bg-indigo-600 text-white font-black text-sm px-2.5 py-0.5 rounded">F13</span>
+                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Динаміка дебіторської заборгованості</h1>
+                </div>
+                <p class="text-xs md:text-sm text-slate-500 mt-1">
+                    Аналіз структури заборгованості (Загальна ДЗ, НАК Нафтогаз, МОУ / АОЗ) за останні 6 місяців · млн грн
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="fetchHistoricalData()" id="btnReload" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
+                    <svg id="reloadIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Оновити дані</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Статус завантаження -->
+        <div id="loaderBox" class="bg-indigo-50 border border-indigo-200 text-indigo-900 px-4 py-3 rounded-xl flex items-center justify-between text-xs font-medium">
+            <div class="flex items-center gap-2">
+                <svg class="animate-spin w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                <span id="loaderMsg">Ініціалізація та пошук звітних дат...</span>
+            </div>
+            <span id="loaderProgress" class="font-bold tabular-nums"></span>
+        </div>
+
+        <!-- Підсумкові картки (на останню звітну дату) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="kpiStats">
+            <div class="stat-card">
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Всього дебіторська</div>
+                <div class="text-3xl font-extrabold text-slate-900 mt-2" id="kpiTotal">—</div>
+                <div class="text-[11px] text-slate-400 mt-1" id="kpiTotalDelta">млн грн</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-xs font-semibold text-amber-600 uppercase tracking-wide">НАК Нафтогаз</div>
+                <div class="text-3xl font-extrabold text-amber-600 mt-2" id="kpiNaftogaz">—</div>
+                <div class="text-[11px] text-slate-400 mt-1" id="kpiNaftogazShare">— % від загальної ДЗ</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wide">МОУ / АОЗ</div>
+                <div class="text-3xl font-extrabold text-emerald-600 mt-2" id="kpiMou">—</div>
+                <div class="text-[11px] text-slate-400 mt-1" id="kpiMouShare">— % від загальної ДЗ</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Інші контрагенти</div>
+                <div class="text-3xl font-extrabold text-slate-700 mt-2" id="kpiOther">—</div>
+                <div class="text-[11px] text-slate-400 mt-1" id="kpiOtherShare">— % від загальної ДЗ</div>
+            </div>
+        </div>
+
+        <!-- Графік -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-base font-bold text-slate-800">Історична динаміка по щотижневих зрізах (млн грн)</h2>
+                <div class="text-xs text-slate-400 font-medium" id="chartDateRange">—</div>
+            </div>
+            <div class="relative w-full h-[430px]">
+                <canvas id="receivablesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Таблиця зрізів -->
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-3.5 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Таблиця історичних значень</h3>
+                <span class="text-xs text-slate-400" id="tableRowCount">Звітів: 0</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-right">
+                            <th class="py-2.5 px-4 text-left">Звітна дата</th>
+                            <th class="py-2.5 px-4">НАК Нафтогаз</th>
+                            <th class="py-2.5 px-4">МОУ / АОЗ</th>
+                            <th class="py-2.5 px-4">Інша ДЗ</th>
+                            <th class="py-2.5 px-4 text-slate-900 font-extrabold">Всього дебіторська</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="divide-y divide-slate-100 text-right font-medium"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+    Chart.register(ChartDataLabels);
+
+    const FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/28/workflows/76596625557146c6882e837e2fb46961/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mWBVsXd5FLyjoME7JGEBX1Zo4zfdQKt1Fi46spXVdFU";
+
+    let chartInstance = null;
+    let historicalData = [];
+
+    const norm = (s) => String(s || '').toLowerCase().replace(/[’'`ʼ]/g, "'").replace(/\s+/g, ' ').trim();
+    const fmt = (n) => typeof n === 'number' && !isNaN(n) ? Math.round(n).toLocaleString('uk-UA').replace(/\u202F/g, ' ') : '—';
+    const dmy = (iso) => iso ? iso.split('-').reverse().join('.') : '';
+
+    function extractCleanDate(item) {
+        if (!item) return null;
+        let str = String((typeof item === 'object') ? (item.ReportDate || item.reportDate || Object.values(item)[0] || '') : item).trim();
+        const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+        const parts = str.split('.');
+        if (parts.length === 3 && parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        return null;
+    }
+
+    async function fetchHistoricalData() {
+        const loader = document.getElementById('loaderBox');
+        const loaderMsg = document.getElementById('loaderMsg');
+        const loaderProgress = document.getElementById('loaderProgress');
+        const reloadIcon = document.getElementById('reloadIcon');
+
+        loader.classList.remove('hidden');
+        reloadIcon.classList.add('animate-spin');
+        loaderMsg.textContent = "Отримання списку дат звітів...";
+        loaderProgress.textContent = "";
+
+        try {
+            // 1. Отримуємо перелік доступних дат
+            const resDates = await fetch(FLOW_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reportDate: "" })
+            });
+
+            if (!resDates.ok) throw new Error(`HTTP ${resDates.status} під час запиту дат`);
+            const datesPayload = await resDates.json();
+            const rawDates = Array.isArray(datesPayload.availableDates) ? datesPayload.availableDates : [];
+
+            // 2. Фільтруємо унікальні за останні 6 місяців
+            const allCleanDates = [...new Set(rawDates.map(extractCleanDate))].filter(Boolean).sort();
+            if (!allCleanDates.length) throw new Error("Не знайдено жодної дати в базі");
+
+            const latestIso = allCleanDates[allCleanDates.length - 1];
+            const [ly, lm, ld] = latestIso.split('-').map(Number);
+            const cutoffDate = new Date(Date.UTC(ly, lm - 1 - 6, ld)).toISOString().slice(0, 10);
+
+            const targetDates = allCleanDates.filter(d => d >= cutoffDate);
+            historicalData = [];
+
+            // 3. Паралельно-пакетне завантаження даних (по 4 одночасно, щоб не перевантажити потік)
+            const BATCH_SIZE = 4;
+            for (let i = 0; i < targetDates.length; i += BATCH_SIZE) {
+                const batch = targetDates.slice(i, i + BATCH_SIZE);
+                loaderMsg.textContent = `Завантаження показників: ${i + 1}–${Math.min(i + BATCH_SIZE, targetDates.length)} з ${targetDates.length}...`;
+                loaderProgress.textContent = `${Math.round(((i + batch.length) / targetDates.length) * 100)}%`;
+
+                const results = await Promise.all(batch.map(async (iso) => {
+                    try {
+                        const r = await fetch(FLOW_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reportDate: iso, reportDateDot: dmy(iso) })
+                        });
+                        if (!r.ok) return null;
+                        const data = await r.json();
+                        return parseMetricsForDate(iso, data);
+                    } catch (e) {
+                        console.warn(`Помилка для дати ${iso}:`, e);
+                        return null;
+                    }
+                }));
+
+                results.forEach(res => { if (res) historicalData.push(res); });
+            }
+
+            historicalData.sort((a, b) => a.date.localeCompare(b.date));
+
+            // 4. Оновлення інтерфейсу
+            renderSummaryCards();
+            renderChart();
+            renderTable();
+
+            loader.classList.add('hidden');
+        } catch (err) {
+            console.error(err);
+            loaderMsg.textContent = `Помилка: ${err.message}`;
+            loader.className = "bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs font-semibold";
+        } finally {
+            reloadIcon.classList.remove('animate-spin');
+        }
+    }
+
+    function parseMetricsForDate(iso, payload) {
+        const metrics = Array.isArray(payload?.metrics) ? payload.metrics : [];
+
+        let total = null;
+        let naftogaz = 0;
+        let mou = 0;
+
+        metrics.forEach(m => {
+            const cat = String((typeof m.Category === 'object' && m.Category) ? m.Category.Value : (m.Category ?? m.CategoryValue ?? '')).toLowerCase();
+            if (!cat.includes('оборотн')) return;
+
+            const t = norm(m.Title);
+            const val = parseFloat(m.Value) || 0;
+
+            if (t.includes('нафтогаз')) {
+                naftogaz = val;
+            } else if (t.includes('моу') || t.includes('аоз')) {
+                mou = val;
+            } else if (t.includes('дебіторськ') && !t.startsWith('-')) {
+                total = val;
+            }
+        });
+
+        // Якщо рядок "Дебіторська заборгованість" не знайдено, пробуємо взяти з дерева зрізу (якщо воно є)
+        if (total === null && payload.snapshotTree?.tree) {
+            const findNode = (nodes, name) => {
+                for (const n of nodes) {
+                    if (norm(n.name).includes(name)) return n;
+                    if (n.children) {
+                        const sub = findNode(n.children, name);
+                        if (sub) return sub;
+                    }
+                }
+                return null;
+            };
+            const debNode = findNode(payload.snapshotTree.tree, 'дебіторськ');
+            if (debNode && debNode.values) {
+                const k = debNode.values.Tm1_fact !== undefined ? 'Tm1_fact' : 'T0';
+                const v = parseFloat(debNode.values[k]);
+                if (!isNaN(v)) total = Math.round(v / 1e6);
+            }
+        }
+
+        if (total === null) total = naftogaz + mou;
+        const other = Math.max(0, total - (naftogaz + mou));
+
+        return {
+            date: iso,
+            label: dmy(iso),
+            total: total,
+            naftogaz: naftogaz,
+            mou: mou,
+            other: other
+        };
+    }
+
+    function renderSummaryCards() {
+        if (!historicalData.length) return;
+        const last = historicalData[historicalData.length - 1];
+
+        document.getElementById('kpiTotal').textContent = fmt(last.total);
+        document.getElementById('kpiNaftogaz').textContent = fmt(last.naftogaz);
+        document.getElementById('kpiMou').textContent = fmt(last.mou);
+        document.getElementById('kpiOther').textContent = fmt(last.other);
+
+        if (last.total > 0) {
+            document.getElementById('kpiNaftogazShare').textContent = `${Math.round((last.naftogaz / last.total) * 100)}% від загальної ДЗ`;
+            document.getElementById('kpiMouShare').textContent = `${Math.round((last.mou / last.total) * 100)}% від загальної ДЗ`;
+            document.getElementById('kpiOtherShare').textContent = `${Math.round((last.other / last.total) * 100)}% від загальної ДЗ`;
+        }
+
+        if (historicalData.length > 1) {
+            const prev = historicalData[historicalData.length - 2];
+            const diff = last.total - prev.total;
+            const sign = diff > 0 ? '+' : '';
+            document.getElementById('kpiTotalDelta').textContent = `Δ до минулого зрізу: ${sign}${fmt(diff)} млн грн`;
+        }
+    }
+
+    function renderChart() {
+        const labels = historicalData.map(d => d.label);
+        const dataTotal = historicalData.map(d => d.total);
+        const dataNaftogaz = historicalData.map(d => d.naftogaz);
+        const dataMou = historicalData.map(d => d.mou);
+        const dataOther = historicalData.map(d => d.other);
+
+        document.getElementById('chartDateRange').textContent = `${labels[0]} — ${labels[labels.length - 1]}`;
+
+        if (chartInstance) chartInstance.destroy();
+        const ctx = document.getElementById('receivablesChart').getContext('2d');
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Загальна ДЗ',
+                        data: dataTotal,
+                        borderColor: '#1e3a8a',
+                        backgroundColor: '#1e3a8a',
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.15,
+                        order: 1,
+                        datalabels: {
+                            align: 'top',
+                            anchor: 'end',
+                            offset: 6,
+                            color: '#0f172a',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (v) => fmt(v)
+                        }
+                    },
+                    {
+                        type: 'bar',
+                        label: 'НАК Нафтогаз',
+                        data: dataNaftogaz,
+                        backgroundColor: '#f59e0b',
+                        stack: 'stack1',
+                        borderRadius: 2,
+                        order: 2,
+                        datalabels: { display: false }
+                    },
+                    {
+                        type: 'bar',
+                        label: 'МОУ / АОЗ',
+                        data: dataMou,
+                        backgroundColor: '#10b981',
+                        stack: 'stack1',
+                        borderRadius: 2,
+                        order: 2,
+                        datalabels: { display: false }
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Інші контрагенти',
+                        data: dataOther,
+                        backgroundColor: '#cbd5e1',
+                        stack: 'stack1',
+                        borderRadius: 2,
+                        order: 2,
+                        datalabels: { display: false }
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: { boxWidth: 12, font: { size: 11, weight: '600' }, padding: 15 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (c) => ` ${c.dataset.label}: ${fmt(c.raw)} млн грн`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { font: { size: 11 }, callback: (v) => fmt(v) }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('dataTableBody');
+        document.getElementById('tableRowCount').textContent = `Звітів: ${historicalData.length}`;
+        tbody.innerHTML = '';
+
+        [...historicalData].reverse().forEach(row => {
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-2 px-4 text-left font-bold text-slate-700">${row.label}</td>
+                    <td class="py-2 px-4 text-amber-600 font-semibold">${fmt(row.naftogaz)}</td>
+                    <td class="py-2 px-4 text-emerald-600 font-semibold">${fmt(row.mou)}</td>
+                    <td class="py-2 px-4 text-slate-500">${fmt(row.other)}</td>
+                    <td class="py-2 px-4 text-slate-900 font-extrabold bg-slate-50/50">${fmt(row.total)}</td>
+                </tr>
+            `;
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', fetchHistoricalData);
+</script>
+</body>
+</html>

@@ -81,7 +81,11 @@
         .mznn-note b { color: #334155; font-weight: 600; }
         .mznn-note .neg { color: #C2410C; font-weight: 600; }
         .mznn-synced { border-bottom: 1px dotted #C2410C; }
-        .mznn-side { position: absolute; z-index: 45; width: 270px; background: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #C2410C; border-radius: 6px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); padding: 8px 10px; font-family: inherit; }
+        .mznn-dock { position: absolute; z-index: 45; width: 270px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+        .mznn-dock.hidden { display: none !important; }
+        body.preview-mode .mznn-dock { display: none !important; }
+        @media print { .mznn-dock { display: none !important; } }
+        .mznn-side { position: static; width: 100%; box-sizing: border-box; background: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #C2410C; border-radius: 6px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); padding: 8px 10px; font-family: inherit; }
         .mznn-side.hidden { display: none !important; }
         .mznn-side .ms-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 4px; }
         .mznn-side .ms-title { font-size: 11px; font-weight: 700; color: #9a3412; text-transform: uppercase; letter-spacing: .03em; }
@@ -385,10 +389,6 @@
                     <div class="flex justify-between items-start mb-1">
                         <h2 class="block-title" style="margin-bottom: 0;" id="titleSummary"></h2>
                         <div class="print-hide flex items-center space-x-1.5 z-30">
-                            <label class="mznn-toggle pdf-hide" id="mznnToggleWrap" title="Розподіл витрат на МЗНН та стратрезерв: вимкнено — за графіком із зрізу; увімкнено — пропорційно імпорту НП. Не друкується.">
-                                <input type="checkbox" id="chk_mznn_prop" onchange="setMznnMode(this.checked ? 'prop' : 'schedule')">
-                                <span>МЗНН ∝ закупці</span>
-                            </label>
                             <button onclick="openSummaryEditor()" class="editor-only pdf-hide bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1">
                                 ✏️ Редагувати
                             </button>
@@ -3342,10 +3342,19 @@
     function ensureMznnSide() {
         let el = document.getElementById('mznnSidePanel');
         if (!el) {
+            const dock = document.createElement('div');
+            dock.id = 'mznnSideDock';
+            dock.className = 'mznn-dock print-hide pdf-hide hidden';
+            dock.innerHTML = `
+                <label class="mznn-toggle" id="mznnToggleWrap" title="Розподіл витрат на МЗНН та стратрезерв: вимкнено — за графіком із зрізу; увімкнено — пропорційно імпорту НП. Не друкується.">
+                    <input type="checkbox" id="chk_mznn_prop" onchange="setMznnMode(this.checked ? 'prop' : 'schedule')">
+                    <span>МЗНН ∝ закупці</span>
+                </label>`;
             el = document.createElement('div');
             el.id = 'mznnSidePanel';
-            el.className = 'mznn-side print-hide pdf-hide hidden';
-            document.body.appendChild(el);
+            el.className = 'mznn-side hidden';
+            dock.appendChild(el);
+            document.body.appendChild(dock);
             const reposition = () => positionMznnSide();
             window.addEventListener('resize', reposition);
             window.addEventListener('scroll', reposition, true);
@@ -3355,7 +3364,7 @@
         return el;
     }
     function positionMznnSide() {
-        const el = document.getElementById('mznnSidePanel');
+        const el = document.getElementById('mznnSideDock');
         const blk = document.getElementById('blockSummary');
         if (!el || !blk || el.classList.contains('hidden')) return;
         const r = blk.getBoundingClientRect();
@@ -3370,10 +3379,13 @@
     }
     function renderMznnSide(lang) {
         const el = ensureMznnSide();
+        const dock = document.getElementById('mznnSideDock');
         const r = window._mznnRes;
         const content = document.getElementById('dashboardContent');
-        const visible = r && !mznnSideClosed && !(content && content.classList.contains('hidden'));
-        if (!visible) { el.classList.add('hidden'); return; }
+        const dockVisible = r && !(content && content.classList.contains('hidden'));
+        dock.classList.toggle('hidden', !dockVisible);
+        syncMznnToggleUi();
+        if (!dockVisible || mznnSideClosed) { el.classList.add('hidden'); positionMznnSide(); return; }
         const en = lang === 'en';
         const unit = en ? 'UAH mln' : 'млн грн';
         const neg = v => `<span class="${v < 0 ? 'neg' : ''}">${mznnFmt(v)}</span>`;

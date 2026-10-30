@@ -81,6 +81,19 @@
         .mznn-note b { color: #334155; font-weight: 600; }
         .mznn-note .neg { color: #C2410C; font-weight: 600; }
         .mznn-synced { border-bottom: 1px dotted #C2410C; }
+        .mznn-side { position: absolute; z-index: 45; width: 270px; background: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #C2410C; border-radius: 6px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); padding: 8px 10px; font-family: inherit; }
+        .mznn-side.hidden { display: none !important; }
+        .mznn-side .ms-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .mznn-side .ms-title { font-size: 11px; font-weight: 700; color: #9a3412; text-transform: uppercase; letter-spacing: .03em; }
+        .mznn-side .ms-badge { font-size: 10px; font-weight: 600; color: #9a3412; background: #ffedd5; border-radius: 9999px; padding: 1px 6px; white-space: nowrap; }
+        .mznn-side .ms-close { color: #c2410c; font-weight: 700; cursor: pointer; line-height: 1; padding: 0 2px; }
+        .mznn-side .mznn-note { border-top: none; margin-top: 0; padding-top: 0; font-size: 12px; color: #475569; line-height: 1.3; }
+        .mznn-side table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; font-size: 12px; }
+        .mznn-side td { padding: 1px 0; color: #475569; }
+        .mznn-side td.v { text-align: right; font-variant-numeric: tabular-nums; color: #0f172a; font-weight: 600; }
+        .mznn-side tr.tot td { border-top: 1px solid #fdba74; padding-top: 3px; }
+        body.preview-mode .mznn-side { display: none !important; }
+        @media print { .mznn-side { display: none !important; } }
         .mznn-toggle { display: inline-flex; align-items: center; gap: 4px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 9999px; padding: 1px 8px 1px 4px; font-size: 11px; font-weight: 600; cursor: pointer; user-select: none; }
         .mznn-toggle input { width: 12px; height: 12px; accent-color: #C2410C; cursor: pointer; }
 
@@ -1717,6 +1730,7 @@
         globalData.creditLimits = defaultCreditLimits();
         globalData.summary = { uk: ["—"], en: ["—"] };
         window._mznnCtx = null; window._mznnRes = null; syncMznnToggleUi();
+        if (typeof renderMznnSide === 'function') renderMznnSide(currentLang);
 
         window.globalData = globalData;
         syncHeaderDate();
@@ -2477,7 +2491,7 @@
 
     function scheduleSummaryFit(force) {
         if (_summaryFitRaf) cancelAnimationFrame(_summaryFitRaf);
-        _summaryFitRaf = requestAnimationFrame(() => requestAnimationFrame(() => { _summaryFitRaf = 0; autoFitSummary(force); }));
+        _summaryFitRaf = requestAnimationFrame(() => requestAnimationFrame(() => { _summaryFitRaf = 0; autoFitSummary(force); if (typeof positionMznnSide === 'function') positionMznnSide(); }));
     }
 
     function toggleSummaryAutoFit() {
@@ -3277,6 +3291,7 @@
 
     function setMznnMode(mode) {
         mznnMode = mode === 'prop' ? 'prop' : 'schedule';
+        mznnSideClosed = false;
         try { localStorage.setItem('f13_mznn_mode', mznnMode); } catch (e) {}
         if (!recalcMznnSeries()) { syncMznnToggleUi(); return; }
         updateLanguageDOM();
@@ -3322,7 +3337,64 @@
         }).join('\n'));
     }
 
-    // Примітка внизу резюме, що пояснює розрахунок дефіциту МЗНН (друкується)
+    // ---- Недрукована панель праворуч від «Управлінського резюме» ----
+    var mznnSideClosed = false;
+    function ensureMznnSide() {
+        let el = document.getElementById('mznnSidePanel');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'mznnSidePanel';
+            el.className = 'mznn-side print-hide pdf-hide hidden';
+            document.body.appendChild(el);
+            const reposition = () => positionMznnSide();
+            window.addEventListener('resize', reposition);
+            window.addEventListener('scroll', reposition, true);
+            const blk = document.getElementById('blockSummary');
+            if (blk && window.ResizeObserver) new ResizeObserver(reposition).observe(blk);
+        }
+        return el;
+    }
+    function positionMznnSide() {
+        const el = document.getElementById('mznnSidePanel');
+        const blk = document.getElementById('blockSummary');
+        if (!el || !blk || el.classList.contains('hidden')) return;
+        const r = blk.getBoundingClientRect();
+        if (!r.width) { el.style.visibility = 'hidden'; return; }
+        el.style.visibility = 'visible';
+        const w = el.offsetWidth || 270, gap = 12;
+        // праворуч від блоку; якщо місця не вистачає — притискаємо до правого краю вікна
+        let left = r.right + gap;
+        if (left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - w - 8);
+        el.style.left = (left + window.scrollX) + 'px';
+        el.style.top = (r.top + window.scrollY) + 'px';
+    }
+    function renderMznnSide(lang) {
+        const el = ensureMznnSide();
+        const r = window._mznnRes;
+        const content = document.getElementById('dashboardContent');
+        const visible = r && !mznnSideClosed && !(content && content.classList.contains('hidden'));
+        if (!visible) { el.classList.add('hidden'); return; }
+        const en = lang === 'en';
+        const unit = en ? 'UAH mln' : 'млн грн';
+        const neg = v => `<span class="${v < 0 ? 'neg' : ''}">${mznnFmt(v)}</span>`;
+        const badge = r.mode === 'prop' ? (en ? 'pro rata to imports' : '∝ імпорту НП') : (en ? 'per schedule' : 'за графіком');
+        el.innerHTML = `
+            <div class="ms-head">
+                <span class="ms-title">${en ? 'MOS gap' : 'Дефіцит МЗНН'}</span>
+                <span class="ms-badge">${badge}</span>
+                <span class="ms-close" title="${en ? 'Hide' : 'Сховати'}" onclick="mznnSideClosed=true;renderMznnSide(currentLang)">×</span>
+            </div>
+            <table>
+                <tr><td>${en ? 'Available cash' : 'Доступні залишки'} <span style="color:#94a3b8">(${r.yeRange})</span></td><td class="v">${mznnFmt(r.yeAvail)}</td></tr>
+                <tr><td>${en ? 'MOS & reserve, cumulative' : 'МЗНН і стратрезерв, накопич.'} <span style="color:#94a3b8">${en ? 'of' : 'із'} ${mznnFmt(r.total)}</span></td><td class="v">−${mznnFmt(r.yeCum)}</td></tr>
+                <tr class="tot"><td><b>${en ? 'Year-end gap' : 'Дефіцит на кінець року'}</b>, ${unit}</td><td class="v">${neg(r.yeValue)}</td></tr>
+            </table>
+            ${mznnNoteHtml(lang)}`;
+        el.classList.remove('hidden');
+        positionMznnSide();
+    }
+
+    // Текст пояснення дефіциту МЗНН (виводиться в недрукованій панелі)
     function mznnNoteHtml(lang) {
         const r = window._mznnRes;
         if (!r) return '';
@@ -3332,14 +3404,14 @@
             const how = r.mode === 'prop'
                 ? `allocated pro rata to oil-product imports (${(r.share * 100).toFixed(1)}% of purchases)`
                 : `per the MOS purchase schedule in the forecast`;
-            html = `* MOS gap: available cash for week ${r.yeRange} <b>${mznnFmt(r.yeAvail)}</b> less cumulative MOS/strategic reserve purchases <b>${mznnFmt(r.yeCum)}</b> of ${mznnFmt(r.total)} = <b>${neg(r.yeValue)}</b> UAH mln; ${how}. Peak: ${neg(r.minValue)} (${r.minRange}); end of horizon: ${neg(r.endValue)}.`;
+            html = `Method: ${how}.<br>Peak gap: ${neg(r.minValue)} (${r.minRange}).<br>End of horizon: ${neg(r.endValue)}.`;
         } else {
             const how = r.mode === 'prop'
                 ? `розподіл пропорційно імпорту НП (${(r.share * 100).toFixed(1).replace('.', ',')}% від закупки)`
                 : `за графіком закупівлі МЗНН зі зрізу`;
-            html = `* Дефіцит МЗНН: доступні залишки тижня ${r.yeRange} <b>${mznnFmt(r.yeAvail)}</b> мінус накопичені витрати на МЗНН і стратрезерв <b>${mznnFmt(r.yeCum)}</b> із ${mznnFmt(r.total)} = <b>${neg(r.yeValue)}</b> млн грн; ${how}. Пік: ${neg(r.minValue)} (${r.minRange}); на кінець горизонту: ${neg(r.endValue)}.`;
+            html = `Метод: ${how}.<br>Пік дефіциту: ${neg(r.minValue)} (${r.minRange}).<br>На кінець горизонту: ${neg(r.endValue)}.`;
         }
-        return `<div class="summary-row"><div class="summary-cell" style="padding:0 !important;margin:0 !important;"><div class="mznn-note">${html}</div></div></div>`;
+        return `<div class="mznn-note">${html}</div>`;
     }
 
     function processSnapshotJson(snapshot) {
@@ -3618,8 +3690,9 @@
             if (inList) htmlContent += '</ul>';
 
             return `<div class="summary-row"><div class="summary-cell" style="padding: 0px !important; margin: 0px !important;">${htmlContent}</div></div>`;
-        }).join('') + mznnNoteHtml(lang);
+        }).join('');
         syncMznnToggleUi();
+        renderMznnSide(lang);
         
         applySummaryFontSize(); 
         applySummaryGap();

@@ -7,126 +7,171 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-    * { font-style: normal !important; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { font-family: 'Helvetica', sans-serif; background: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
-    .executive-container { width: 1587px; margin: 0 auto; background: #fff; padding: 24px 30px 20px; border-radius: 8px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,.1); display: flex; flex-direction: column; gap: 16px; }
+    * { 
+        font-style: normal !important; 
+        box-sizing: border-box; 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+    }
+    html, body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+    body { 
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; 
+        background: #f1f5f9; 
+        color: #1e293b; 
+        padding: 16px; 
+        margin: 0; 
+    }
+    .executive-container { 
+        max-width: 1680px;
+        width: 100%;
+        margin: 0 auto; 
+        background: #ffffff; 
+        padding: 24px 28px 24px; 
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06); 
+        display: flex; 
+        flex-direction: column; 
+        gap: 18px; 
+    }
 
-    .kpi { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; background: #f8fafc; min-width: 0; }
-    .kpi .l { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
-    .kpi .v { font-size: 20px; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; margin-top: 2px; }
-    .kpi .s { font-size: 10.5px; color: #64748b; margin-top: 1px; }
+    .kpi { 
+        border: 1px solid #cbd5e1; 
+        border-radius: 8px; 
+        padding: 10px 14px; 
+        background: #f8fafc; 
+        min-width: 0; 
+    }
+    .kpi .l { font-size: 10.5px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .kpi .v { font-size: 21px; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; margin-top: 3px; }
+    .kpi .s { font-size: 11px; color: #64748b; margin-top: 2px; }
     .kpi.bad .v { color: #b91c1c; }
     .kpi.good .v { color: #047857; }
 
-    .s-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; font-variant-numeric: tabular-nums; }
-    .s-table th { font-weight: 600; color: #475569; padding: 5px 8px; text-align: right; border-bottom: 1.5px solid #94a3b8; vertical-align: bottom; font-size: 8.5pt; }
-    .s-table td { padding: 4px 8px; text-align: right; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+    .s-table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+    .s-table th { 
+        font-weight: 700; 
+        color: #334155; 
+        padding: 6px 10px; 
+        text-align: right; 
+        border-bottom: 2px solid #64748b; 
+        vertical-align: bottom; 
+        font-size: 11.5px; 
+        background: #f8fafc;
+    }
+    .s-table td { padding: 5px 10px; text-align: right; border-bottom: 1px solid #cbd5e1; white-space: nowrap; color: #1e293b; }
     .s-table th.l, .s-table td.l { text-align: left; }
-    .s-table tr.sub td { background: #f1f5f9; color: #475569; font-weight: 600; font-size: 8.5pt; }
-    .s-table tr.tot td { border-top: 1.5px solid #94a3b8; font-weight: 700; color: #1e293b; }
-    .s-table tr.fact td { color: #94a3b8; }
+    .s-table tr.sub td { background: #f1f5f9; color: #1e293b; font-weight: 700; font-size: 12px; border-bottom: 1px solid #94a3b8; }
+    .s-table tr.tot td { border-top: 2px solid #475569; border-bottom: 2px solid #475569; font-weight: 800; color: #0f172a; background: #f8fafc; }
+    .s-table tr.fact td { color: #64748b; }
     .s-table tr.deficit td { background: #fef2f2; }
-    .s-table td.bad { color: #b91c1c; font-weight: 600; }
-    .s-table td.warn { color: #b45309; }
+    .s-table td.bad { color: #b91c1c; font-weight: 700; }
+    .s-table td.warn { color: #b45309; font-weight: 600; }
     .s-table td.muted { color: #94a3b8; }
-    .s-table input.res { width: 150px; border: 1px solid transparent; border-radius: 4px; padding: 1px 4px; font-size: 9pt; background: transparent; }
-    .s-table input.res:hover { border-color: #cbd5e1; background: #fff; }
-    .s-table input.res.auto { color: #64748b; }
+    .s-table input.res { width: 150px; border: 1px solid transparent; border-radius: 4px; padding: 2px 6px; font-size: 12px; background: transparent; }
+    .s-table input.res:hover { border-color: #94a3b8; background: #fff; }
+    .s-table input.res.auto { color: #475569; }
 
-    .badge { display: inline-block; font-size: 7.5pt; font-weight: 600; padding: 1px 6px; border-radius: 9px; }
-    .b-fact { background: #e2e8f0; color: #334155; }
-    .b-fc { background: #ecfdf5; color: #047857; }
-    .b-bad { background: #fee2e2; color: #b91c1c; }
-    .use-sel { border: 1.5px solid #a5b4fc; color: #3730a3; font-weight: 600; }
+    .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1.5px 7px; border-radius: 6px; border: 1px solid transparent; }
+    .b-fact { background: #e2e8f0; color: #1e293b; border-color: #cbd5e1; }
+    .b-fc { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .b-bad { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+    .use-sel { border: 1.5px solid #6366f1; color: #312e81; font-weight: 700; }
 
     [data-tip] { cursor: help; }
-    .s-table td[data-tip] { text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px; }
-    #tip { position: fixed; z-index: 50; display: none; pointer-events: none; background: #1e293b; color: #f8fafc; font-size: 10.5px;
-        border-radius: 6px; padding: 8px 10px; box-shadow: 0 10px 20px -5px rgba(0,0,0,.35); max-width: 460px; font-variant-numeric: tabular-nums; }
-    #tip .h { font-weight: 700; margin-bottom: 4px; color: #fff; }
+    .s-table td[data-tip] { text-decoration: underline dotted #94a3b8; text-underline-offset: 3px; }
+    #tip { 
+        position: fixed; z-index: 50; display: none; pointer-events: none; background: #0f172a; color: #f8fafc; font-size: 11px;
+        border-radius: 6px; padding: 10px 12px; box-shadow: 0 10px 25px -3px rgba(0,0,0,.45); max-width: 480px; font-variant-numeric: tabular-nums; 
+        border: 1px solid #334155;
+    }
+    #tip .h { font-weight: 700; margin-bottom: 6px; color: #fff; font-size: 11.5px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
     #tip table { border-collapse: collapse; width: 100%; }
-    #tip td { padding: 1px 4px; text-align: right; white-space: nowrap; }
-    #tip td:first-child { text-align: left; color: #cbd5e1; padding-right: 14px; }
-    #tip tr.t td { border-top: 1px solid #64748b; font-weight: 700; color: #fff; }
+    #tip td { padding: 2px 5px; text-align: right; white-space: nowrap; }
+    #tip td:first-child { text-align: left; color: #cbd5e1; padding-right: 16px; }
+    #tip tr.t td { border-top: 1px solid #64748b; font-weight: 700; color: #fff; padding-top: 4px; }
     #tip tr.r td { color: #fcd34d; }
-    #tip tr.s td { padding-top: 6px; color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 9px; }
-    #tip .n { color: #94a3b8; margin-top: 4px; font-size: 9.5px; white-space: normal; }
-    h3.sec { font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 6px; }
+    #tip tr.s td { padding-top: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase; font-size: 9.5px; }
+    #tip .n { color: #cbd5e1; margin-top: 6px; font-size: 10px; white-space: normal; line-height: 1.35; }
+    h3.sec { font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.02em; }
     button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #4f46e5; outline-offset: 1px; }
 
     @media print {
         @page { size: A3 landscape; margin: 8mm; }
         body { background: #fff; padding: 0; }
         .print-hide { display: none !important; }
-        .executive-container { box-shadow: none; border-radius: 0; width: 100% !important; }
+        .executive-container { box-shadow: none; border: none; width: 100% !important; max-width: 100% !important; }
         .s-table input.res { border: none; }
     }
 </style>
 </head>
 <body>
 
-<nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
+<nav class="bg-white shadow-sm border border-slate-300 p-3.5 mb-4 rounded-xl max-w-[1680px] w-full mx-auto flex justify-between items-center print-hide">
     <div>
-        <h1 class="text-lg font-bold text-slate-800">Постімпорт — графік отримання і ліміти банків</h1>
-        <p class="text-xs text-slate-500 mt-0.5">Дані: <span id="navDate" class="font-semibold text-indigo-600">--</span>
+        <h1 class="text-base font-bold text-slate-900 tracking-tight">Постімпорт — графік отримання і ліміти банків</h1>
+        <p class="text-[11px] text-slate-500 mt-0.5">Дані: <span id="navDate" class="font-semibold text-indigo-700">--</span>
             <span id="navFile" class="ml-2 text-slate-400"></span></p>
     </div>
     <div class="flex items-center gap-4">
-        <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 max-w-[360px] truncate" title="">Підготовка…</span>
+        <span id="dataStatus" class="text-xs font-semibold px-3 py-1 rounded-full bg-amber-100 text-amber-900 max-w-[360px] truncate" title="">Підготовка…</span>
         <div class="flex items-center gap-2">
-            <button onclick="loadCred()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Оновити CRED</button>
-            <label class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer">
+            <button onclick="loadCred()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm transition-colors">Оновити CRED</button>
+            <label class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer transition-colors">
                 Файл CRED…<input type="file" accept=".json" class="hidden" onchange="loadLocal(this)">
             </label>
         </div>
-        <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
-            <button onclick="exportXlsx()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Excel</button>
-            <button onclick="copySchedule()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Копіювати графік</button>
-            <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк</button>
+        <div class="flex items-center gap-1.5 border-l pl-4 border-slate-300">
+            <button onclick="exportXlsx()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm transition-colors">Excel</button>
+            <button onclick="copySchedule()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm transition-colors">Копіювати графік</button>
+            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm transition-colors">Друк</button>
         </div>
-        <div id="navLinks" class="flex items-center">
-            <a href="sop-home" class="mr-3 text-xs font-semibold text-blue-600 hover:underline">CF Показники</a>
-            <a href="sop-credit" class="mr-3 text-xs font-semibold text-blue-600 hover:underline">Кредити</a>
-            <a href="sop-pi-sched.html" class="mr-3 text-xs font-bold text-slate-800 cursor-default">Графік ПІ</a>
-            <a href="sop-pi-weeks.html" class="text-xs font-semibold text-blue-600 hover:underline">Тижневі ліміти</a>
+        <div id="navLinks" class="flex items-center font-medium">
+            <a href="sop-home" class="mr-3 text-xs text-indigo-600 hover:underline">CF Показники</a>
+            <a href="sop-credit" class="mr-3 text-xs text-indigo-600 hover:underline">Кредити</a>
+            <a href="sop-pi-sched.html" class="mr-3 text-xs font-bold text-slate-900 cursor-default">Графік ПІ</a>
+            <a href="sop-pi-weeks.html" class="text-xs text-indigo-600 hover:underline">Тижневі ліміти</a>
         </div>
     </div>
 </nav>
 
 <div class="executive-container" id="dashboardContent">
-    <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+    <div class="flex justify-between items-end border-b border-slate-300 pb-2.5">
         <div>
-            <h1 class="text-xl font-bold text-slate-800">Графік отримання постімпорту та вільні ліміти</h1>
-            <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Завантаження даних CRED…</p>
+            <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Графік отримання постімпорту та вільні ліміти</h1>
+            <p class="text-xs text-slate-600 mt-0.5" id="hdrSub">Завантаження даних CRED…</p>
         </div>
-        <div class="text-right text-[10.5px] text-slate-500" id="hdrUnit">--</div>
+        <div class="text-right text-[11px] font-medium text-slate-600" id="hdrUnit">--</div>
     </div>
 
-    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-x-6 gap-y-2 items-center print-hide">
+    <div class="bg-slate-50 p-3 rounded-lg border border-slate-300 flex flex-wrap gap-x-6 gap-y-2 items-center print-hide">
         <div class="flex items-center gap-2">
-            <label for="startInp" class="text-xs font-bold text-slate-600">Показувати з:</label>
-            <input type="date" id="startInp" onchange="savePrefs(); render()" class="border border-slate-300 rounded px-2 py-1 text-xs">
+            <label for="startInp" class="text-xs font-bold text-slate-700">Показувати з:</label>
+            <input type="date" id="startInp" onchange="savePrefs(); render()" class="border border-slate-300 bg-white rounded px-2.5 py-1 text-xs text-slate-800 font-medium shadow-sm">
         </div>
         <div class="flex items-center gap-2">
-            <label for="unitSel" class="text-xs font-bold text-slate-600">Одиниці:</label>
-            <select id="unitSel" onchange="savePrefs(); render()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
+            <label for="unitSel" class="text-xs font-bold text-slate-700">Одиниці:</label>
+            <select id="unitSel" onchange="savePrefs(); render()" class="border border-slate-300 rounded px-2.5 py-1 text-xs bg-white text-slate-800 font-medium shadow-sm">
                 <option value="th" selected>тис. грн</option>
                 <option value="mln">млн грн, 0,0</option>
                 <option value="mln0">млн грн</option>
             </select>
         </div>
         <div class="flex items-center gap-2">
-            <label for="priceInp" class="text-xs font-bold text-slate-600">Тонни: тис. грн за 1 т</label>
-            <input type="number" id="priceInp" step="0.1" min="1" value="67.5" onchange="savePrefs(); render()" class="border border-slate-300 rounded px-2 py-1 text-xs w-20">
+            <label for="priceInp" class="text-xs font-bold text-slate-700">Тонни: тис. грн за 1 т</label>
+            <input type="number" id="priceInp" step="0.1" min="1" value="67.5" onchange="savePrefs(); render()" class="border border-slate-300 bg-white rounded px-2 py-1 text-xs w-20 text-slate-800 font-medium shadow-sm">
         </div>
         <div class="flex items-center gap-2">
-            <label for="thrInp" class="text-xs font-bold text-slate-600">Поріг «малий ліміт», млн</label>
-            <input type="number" id="thrInp" step="10" min="0" value="50" onchange="savePrefs(); render()" class="border border-slate-300 rounded px-2 py-1 text-xs w-20">
+            <label for="thrInp" class="text-xs font-bold text-slate-700">Поріг «малий ліміт», млн</label>
+            <input type="number" id="thrInp" step="10" min="0" value="50" onchange="savePrefs(); render()" class="border border-slate-300 bg-white rounded px-2 py-1 text-xs w-20 text-slate-800 font-medium shadow-sm">
         </div>
         <div class="flex items-center gap-2">
-            <label for="useSel" class="text-xs font-bold text-slate-600">Використання ліміту ПІ:</label>
-            <select id="useSel" onchange="savePrefs(); applyFactor(); render()" class="use-sel rounded px-2 py-1 text-xs bg-white">
+            <label for="useSel" class="text-xs font-bold text-slate-700">Використання ліміту ПІ:</label>
+            <select id="useSel" onchange="savePrefs(); applyFactor(); render()" class="use-sel rounded px-2.5 py-1 text-xs bg-white text-slate-900 shadow-sm">
                 <option value="1">100% — без резерву</option>
                 <option value="0.99">99% — резерв 1% від ліміту</option>
                 <option value="0.98" selected>98% — резерв 2% від ліміту</option>
@@ -134,27 +179,27 @@
                 <option value="0.95">95% — резерв 5% від ліміту</option>
             </select>
         </div>
-        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-            <input type="checkbox" id="showSub" onchange="savePrefs(); render()"> Підсумки тижнів
+        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+            <input type="checkbox" id="showSub" onchange="savePrefs(); render()" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"> Підсумки тижнів
         </label>
     </div>
 
-    <div id="warnBox" class="hidden bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2 text-[11px]"></div>
+    <div id="warnBox" class="hidden bg-amber-50 border border-amber-300 text-amber-900 rounded-lg px-3.5 py-2.5 text-xs font-medium"></div>
 
     <!-- 1. Плитки KPI -->
-    <div class="grid grid-cols-5 gap-3" id="kpis"></div>
+    <div class="grid grid-cols-5 gap-3.5" id="kpis"></div>
 
     <!-- 2. Таблиця: Графік отримання постімпорту -->
     <div>
         <h3 class="sec">Графік отримання постімпорту</h3>
-        <div class="overflow-x-auto"><table class="s-table" id="schedTable"></table></div>
-        <p class="text-[10px] text-slate-500 mt-1">«Ресурс» підтягується з назви рядка покриття, розміщеного в день отримання. Червоним позначено транші понад 100% ліміту. Наведіть курсор на ліміт для перегляду розрахунку.</p>
+        <div class="overflow-x-auto border border-slate-300 rounded-lg"><table class="s-table" id="schedTable"></table></div>
+        <p class="text-[11px] text-slate-500 mt-1.5 font-medium">«Ресурс» підтягується з назви рядка покриття, розміщеного в день отримання. Червоним позначено транші понад 100% ліміту. Наведіть курсор на ліміт для перегляду розрахунку.</p>
     </div>
 
-    <!-- 3. Таблиця: Вільний ліміт постімпорту за банками (під Графіком) -->
+    <!-- 3. Таблиця: Вільний ліміт постімпорту за банками -->
     <div>
         <h3 class="sec">Вільний ліміт постімпорту за банками</h3>
-        <div class="overflow-x-auto"><table class="s-table" id="bankTable"></table></div>
+        <div class="overflow-x-auto border border-slate-300 rounded-lg"><table class="s-table" id="bankTable"></table></div>
     </div>
 </div>
 
@@ -219,7 +264,7 @@ let SNAP = null, IDX = null, VIEW = null;
 function setStatus(text, cls) {
     const el = $('dataStatus');
     el.textContent = text; el.title = text;
-    el.className = 'text-xs font-medium px-2.5 py-1 rounded-full max-w-[360px] truncate ' + cls;
+    el.className = 'text-xs font-semibold px-3 py-1 rounded-full max-w-[360px] truncate ' + cls;
 }
 async function loadCred() {
     setStatus('Завантаження останнього CRED…', 'bg-indigo-100 text-indigo-800');
@@ -415,7 +460,6 @@ function loadPrefs() {
     if (p) $('priceInp').value = p;
     if (t) $('thrInp').value = t;
     if (use && [...$('useSel').options].some(o => o.value === use)) $('useSel').value = use;
-    // За замовчуванням (коли ключ відсутній) прапорець вимкнено (false)
     $('showSub').checked = sub === '1';
 }
 
@@ -554,13 +598,13 @@ function renderSchedule(V) {
                               : (fact ? '<span class="badge b-fact">факт</span>' : '<span class="badge b-fc">прогноз</span>');
 
         h += `<tr class="${def ? 'deficit' : ''} ${fact ? 'fact' : ''}">
-            <td class="l">${esc(r.bank)}</td><td class="l">${weekLbl(w)}</td><td class="l">${dm(r.date)}</td>
-            <td>${fu(r.amount)}</td><td>${fmtNum(t, 0)}</td>
+            <td class="l font-semibold text-slate-900">${esc(r.bank)}</td><td class="l text-slate-600">${weekLbl(w)}</td><td class="l font-medium">${dm(r.date)}</td>
+            <td class="font-bold text-slate-900">${fu(r.amount)}</td><td class="text-slate-600">${fmtNum(t, 0)}</td>
             <td class="l"><input class="res ${isAuto ? 'auto' : ''}" data-k="${esc(resKey(r))}" value="${esc(res)}" placeholder="—"
                 title="${esc(r.cover ? 'Покриття: ' + r.cover.name : 'Покриття в день отримання не знайдено')}" onchange="saveRes(this)"></td>
             <td title="${esc(r.cover ? r.cover.name : '')}">${cov}</td>
-            <td${limTip}>${fu(Math.max(0, r.limBefore))}</td>
-            <td class="${def ? 'bad' : after < -TOL || after < thr() ? 'warn' : ''}"${limTip}>${fu(after)}</td>
+            <td${limTip} class="text-slate-700">${fu(Math.max(0, r.limBefore))}</td>
+            <td class="${def ? 'bad' : after < -TOL || after < thr() ? 'warn' : 'text-slate-700'}"${limTip}>${fu(after)}</td>
             <td class="l">${typeBadge}</td></tr>`;
         wSum += r.amount; wT += t; tot += r.amount;
     });
@@ -592,21 +636,21 @@ function renderBanks(V) {
         const minVal = Math.max(0, b.minV);
         T.atStart += startVal; T.sumIn += b.sumIn; T.end += endVal;
         const recs = V.recs.filter(r => r.key === b.key);
-        h += `<tr><td class="l">${esc(b.name)}</td>
+        h += `<tr><td class="l font-semibold text-slate-900">${esc(b.name)}</td>
             <td${limTip(`${b.name}, на ${dmy(IDX.dates[V.i0])}`, b.atStartRaw, b.atStart)}>${fu(startVal)}</td>
-            <td${recs.length ? recTip(`${b.name}: отримання з ${dmy(V.start)}`, recs, false) : ''}>${b.sumIn ? fu(b.sumIn) + ` <span class="text-slate-400">(${b.cnt})</span>` : '<span class="text-slate-300">–</span>'}</td>
-            <td class="${minVal < thr() ? 'warn' : ''}" title="${b.minD ? 'на кінець ' + dmy(b.minD) : ''}">${fu(minVal)}<span class="text-slate-400 text-[8pt]"> ${b.minD ? dm(b.minD) : ''}</span></td>
+            <td${recs.length ? recTip(`${b.name}: отримання з ${dmy(V.start)}`, recs, false) : ''}>${b.sumIn ? fu(b.sumIn) + ` <span class="text-slate-500 font-normal">(${b.cnt})</span>` : '<span class="text-slate-400">–</span>'}</td>
+            <td class="${minVal < thr() ? 'warn' : ''}" title="${b.minD ? 'на кінець ' + dmy(b.minD) : ''}">${fu(minVal)}<span class="text-slate-500 text-[10.5px]"> ${b.minD ? dm(b.minD) : ''}</span></td>
             <td${limTip(`${b.name}, на кінець ${dmy(IDX.to)}`, b.endRaw, b.end)}>${fu(endVal)}</td>
-            <td class="l">${b.next ? dmy(b.next) : '<span class="text-slate-300">–</span>'}</td></tr>`;
+            <td class="l">${b.next ? dmy(b.next) : '<span class="text-slate-400">–</span>'}</td></tr>`;
     });
     const byBankTip = tip(tipTable(`Отримання з ${dmy(V.start)} за банками`, [
         ...V.banks.filter(b => b.sumIn).map(b => [`${b.name} (${b.cnt})`, fu(b.sumIn)]),
         [`Разом, ${V.recs.length} транш(ів) · ~${fmtNum(T.sumIn / 1e3 / price(), 0)} т`, fu(T.sumIn), 't']]));
     h += `<tr class="tot"><td class="l">Разом постімпорт</td><td${limTip(`Разом, на ${dmy(IDX.dates[V.i0])}`, IDX.piLimRaw[V.i0], IDX.piLim[V.i0])}>${fu(T.atStart)}</td><td${V.recs.length ? byBankTip : ''}>${fu(T.sumIn)}</td>
-          <td class="${V.minTot < thr() ? 'warn' : ''}">${fu(Math.max(0, V.minTot))}<span class="text-slate-400 text-[8pt] font-normal"> ${V.minTotD ? dm(V.minTotD) : ''}</span></td>
+          <td class="${V.minTot < thr() ? 'warn' : ''}">${fu(Math.max(0, V.minTot))}<span class="text-slate-500 text-[10.5px] font-normal"> ${V.minTotD ? dm(V.minTotD) : ''}</span></td>
           <td>${fu(T.end)}</td><td></td></tr>`;
-    h += `<tr><td class="l text-slate-500">Вільний кредитний ліміт</td><td class="text-slate-500">${fu(IDX.crLim[V.i0])}</td><td></td><td></td>
-          <td class="text-slate-500">${fu(IDX.crLim[V.iEnd])}</td><td></td></tr>`;
+    h += `<tr><td class="l text-slate-600 font-medium">Вільний кредитний ліміт</td><td class="text-slate-600 font-medium">${fu(IDX.crLim[V.i0])}</td><td></td><td></td>
+          <td class="text-slate-600 font-medium">${fu(IDX.crLim[V.iEnd])}</td><td></td></tr>`;
     $('bankTable').innerHTML = h + '</tbody>';
 }
 

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Каталог дашбордів | DashBrd_CF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+
+  <div class="max-w-6xl mx-auto space-y-8">
+    
+    <!-- Заголовок і пошук -->
+    <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Реєстр дашбордів Cash Flow</h1>
+        <p class="text-sm text-slate-500 mt-1">Швидкий доступ до всіх звітів, модулів аналітики та лімітів</p>
+      </div>
+      <div class="w-full md:w-80">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Пошук дашборду чи опису..." 
+          class="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+          oninput="filterLinks()"
+        >
+      </div>
+    </header>
+
+    <!-- Секція: Комерційний блок (commerce) -->
+    <section class="category-block space-y-4">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Комерція та постімпорт (/commerce)
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/commerce/pi-sched" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">pi-sched</span>
+            <span class="text-xs font-mono text-slate-400">/commerce/pi-sched</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Графік отримання траншів постімпорту та вільні ліміти за банками.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/commerce/pi-sched2" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">pi-sched2</span>
+            <span class="text-xs font-mono text-slate-400">/commerce/pi-sched2</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Альтернативна версія графіку отримання фінансування постімпорту.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/commerce/pi-weeks" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">pi-weeks</span>
+            <span class="text-xs font-mono text-slate-400">/commerce/pi-weeks</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Тижнева аналітика лімітів та сума фінансування для комерційних контрактів.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/commerce/pi-weeks2" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">pi-weeks2</span>
+            <span class="text-xs font-mono text-slate-400">/commerce/pi-weeks2</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Тижневий звіт вільних лімітів (альтернативний розрахунок/вигляд).</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/commerce/postimp" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">postimp</span>
+            <span class="text-xs font-mono text-slate-400">/commerce/postimp</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Постімпорт: зведений модуль лімітів та заборгованості.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/commerce/postimp2" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">postimp2</span>
+            <span class="text-xs font-mono text-slate-400">/commerce/postimp2</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Оновлена версія зведеного постімпорту.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/commerce/compare" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">compare</span>
+            <span class="text-xs font-mono text-slate-400">/commerce/compare</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Порівняння комерційних показників та умов.</p>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Секція: Cash Flow (cf) -->
+    <section class="category-block space-y-4">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-blue-500"></span> Cash Flow прогнози та моделі (/cf)
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/cf/analytics" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">analytics</span>
+            <span class="text-xs font-mono text-slate-400">/cf/analytics</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Глибока аналітика грошових потоків та динаміки.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/cf/f13w" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">f13w</span>
+            <span class="text-xs font-mono text-slate-400">/cf/f13w</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">13-тижневий ковзний прогноз ліквідності (Rolling Forecast).</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/cf/f13w2" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">f13w2</span>
+            <span class="text-xs font-mono text-slate-400">/cf/f13w2</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Версія 2 ковзного прогнозу на 13 тижнів.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/cf/f13w-edit" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">f13w-edit</span>
+            <span class="text-xs font-mono text-slate-400">/cf/f13w-edit</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Форма редагування та коригування прогнозних значень 13W.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/cf/f13w-stocks" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">f13w-stocks</span>
+            <span class="text-xs font-mono text-slate-400">/cf/f13w-stocks</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Залишки товарних запасів та їхній вплив на прогноз ліквідності.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/cf/forecast" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">forecast</span>
+            <span class="text-xs font-mono text-slate-400">/cf/forecast</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Загальний прогноз грошових потоків.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/cf/forecast-mnt" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">forecast-mnt</span>
+            <span class="text-xs font-mono text-slate-400">/cf/forecast-mnt</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Місячний розріз прогнозування CF.</p>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Секція: Планування та бюджет (plan-budg) -->
+    <section class="category-block space-y-4">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-violet-500"></span> Планування, бюджет та SOP (/plan-budg)
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/plan-budg/sop-home" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">sop-home</span>
+            <span class="text-xs font-mono text-slate-400">/plan-budg/sop-home</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Головна панель SOP: ключові індикатори Cash Flow.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/plan-budg/sop-credit" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">sop-credit</span>
+            <span class="text-xs font-mono text-slate-400">/plan-budg/sop-credit</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Кредитний портфель, заборгованість та доступні ліміти банків.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/plan-budg/sop2" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">sop2</span>
+            <span class="text-xs font-mono text-slate-400">/plan-budg/sop2</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Оновлений інтерфейс оперативних стандартів планування.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/plan-budg/forecast-rk" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">forecast-rk</span>
+            <span class="text-xs font-mono text-slate-400">/plan-budg/forecast-rk</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Прогноз руху коштів за розрахунковими рахунками.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/plan-budg/rk-present" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">rk-present</span>
+            <span class="text-xs font-mono text-slate-400">/plan-budg/rk-present</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Презентаційний вигляд стану розрахункових рахунків.</p>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Секція: Мобільні версії (mobile/cf) -->
+    <section class="category-block space-y-4">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span> Мобільні інтерфейси (/mobile/cf)
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/mobile/cf/f13w-m" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">f13w-m</span>
+            <span class="text-xs font-mono text-slate-400">/mobile/cf/f13w-m</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Адаптований мобільний вигляд 13-тижневого прогнозу.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/mobile/cf/forecast-m" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">forecast-m</span>
+            <span class="text-xs font-mono text-slate-400">/mobile/cf/forecast-m</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Мобільна версія перегляду зведеного прогнозу.</p>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Секція: Розробка та експерименти (dev) -->
+    <section class="category-block space-y-4">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-sky-500"></span> Інженерні та аналітичні модулі (/dev)
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/dev/liquidity" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">liquidity</span>
+            <span class="text-xs font-mono text-slate-400">/dev/liquidity</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Моделювання та контроль загальної ліквідності компанії.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/dev/trends" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">trends</span>
+            <span class="text-xs font-mono text-slate-400">/dev/trends</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Тренди надходжень та платежів у часі.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/dev/f13w-rsrv" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">f13w-rsrv</span>
+            <span class="text-xs font-mono text-slate-400">/dev/f13w-rsrv</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Розрахунок та оптимізація резервів у ковзному прогнозі.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/dev/sop" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">sop</span>
+            <span class="text-xs font-mono text-slate-400">/dev/sop</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Тестова версія модулю SOP.</p>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Секція: Кореневі та допоміжні дашборди (root) -->
+    <section class="category-block space-y-4">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-slate-400"></span> Загальні та презентаційні дашборди (root)
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/freecash" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">freecash</span>
+            <span class="text-xs font-mono text-slate-400">/freecash</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Вільні залишки коштів (Free Cash) на банківських рахунках.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/structure" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">structure</span>
+            <span class="text-xs font-mono text-slate-400">/structure</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Структура надходжень та виплат за категоріями.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/structure2" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">structure2</span>
+            <span class="text-xs font-mono text-slate-400">/structure2</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Оновлена деталізація структури грошових потоків.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/f13pptx" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">f13pptx</span>
+            <span class="text-xs font-mono text-slate-400">/f13pptx</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Експорт або презентаційний слайд-вигляд 13W для звітів.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/comparet" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">comparet</span>
+            <span class="text-xs font-mono text-slate-400">/comparet</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Порівняння планових та фактичних показників ліквідності.</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/ar" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">ar</span>
+            <span class="text-xs font-mono text-slate-400">/ar</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Дебіторська заборгованість (Accounts Receivable).</p>
+        </a>
+
+        <a href="https://cashflow-ukrnafta.unft.workers.dev/at" target="_blank" rel="noopener noreferrer" class="link-card block p-4 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">at</span>
+            <span class="text-xs font-mono text-slate-400">/at</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Аналітичний дашборд трейдингу / активів.</p>
+        </a>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    function filterLinks() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const cards = document.querySelectorAll('.link-card');
+      
+      cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        card.style.display = text.includes(q) ? 'block' : 'none';
+      });
+
+      // Приховати секції, в яких не залишилося карток
+      document.querySelectorAll('.category-block').forEach(sec => {
+        const visible = Array.from(sec.querySelectorAll('.link-card')).some(c => c.style.display !== 'none');
+        sec.style.display = visible ? 'block' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>

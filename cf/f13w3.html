@@ -339,6 +339,12 @@
                                 <option value="gap_cost">Ліквідність з урахуванням власних запасів (млн грн)</option>
                                 <option value="coverage">Покриття МЗНН пальним (тис. т)</option>
                             </select>
+                            <span id="fuelPlanBox" class="print-hide pdf-hide items-center gap-1 text-[11px] font-semibold text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-2 py-0.5" style="display:none" title="Прогнозний запас пального на кінець періоду (T12). Усе понад незнижувальний залишок (ДП 40 / бензин 35) перекриває МЗНН і стратрезерв. Не друкується.">
+                                Запас на кінець T12, тис. т: ДП
+                                <input id="inpPlanDiesel" type="number" min="0" step="1" placeholder="—" onchange="setFuelPlan()" class="w-14 border border-amber-300 rounded px-1 py-0 text-[11px] text-right bg-white">
+                                бензин
+                                <input id="inpPlanPetrol" type="number" min="0" step="1" placeholder="—" onchange="setFuelPlan()" class="w-14 border border-amber-300 rounded px-1 py-0 text-[11px] text-right bg-white">
+                            </span>
                         </div>
                         <div class="print-hide flex space-x-1.5 opacity-60 hover:opacity-100 transition-opacity z-10">
                             <button onclick="changeChartPadding(-5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X-</button>
@@ -1350,9 +1356,54 @@
     // 'liquidity' — як у зрізі; 'gap_cost' — лінія МЗНН з урахуванням перекриття власними запасами; 'coverage' — фізичний баланс, тис. т
     var currentMznnViewMode = 'liquidity';
 
-    // Фізичний баланс з блоку «Запаси, тис. т»
-    function calcFuelPhysicalCoverage(which) {
+    // Прогнозний запас на кінець періоду (вводиться вручну; у зрізі тоннажу немає)
+    var fuelPlan = (() => { try { const o = JSON.parse(localStorage.getItem('f13_fuel_plan') || '{}'); return { diesel: (o.diesel ?? null), petrol: (o.petrol ?? null) }; } catch (e) { return { diesel: null, petrol: null }; } })();
+
+    function setFuelPlan() {
+        const rd = id => { const v = (document.getElementById(id) || {}).value; return (v === '' || v === undefined || v === null || !isFinite(+v)) ? null : +v; };
+        fuelPlan = { diesel: rd('inpPlanDiesel'), petrol: rd('inpPlanPetrol') };
+        try { localStorage.setItem('f13_fuel_plan', JSON.stringify(fuelPlan)); } catch (e) {}
+        mznnSideClosed = false;
+        recalcMznnSeries();
+        updateLanguageDOM();
+        buildChart();
+    }
+
+    function syncFuelPlanUi() {
+        const box = document.getElementById('fuelPlanBox');
+        if (box) box.style.display = currentMznnViewMode === 'liquidity' ? 'none' : 'inline-flex';
+        const d = document.getElementById('inpPlanDiesel'), pt = document.getElementById('inpPlanPetrol');
+        if (d && document.activeElement !== d) d.value = fuelPlan.diesel ?? '';
+        if (pt && document.activeElement !== pt) pt.value = fuelPlan.petrol ?? '';
+    }
+
+    function fuelCoverageFrom(petrol, diesel, hasData) {
         const L = FUEL_MIN_LIMITS;
+        const total = petrol + diesel;
+        // Незнижувальний залишок — окремо по продуктах: надлишок ДП не закриває нестачу бензину
+        const floorFilled = Math.min(petrol, L.petrolTechMin) + Math.min(diesel, L.dieselTechMin);
+        const free        = Math.max(0, petrol - L.petrolTechMin) + Math.max(0, diesel - L.dieselTechMin);
+        const covered     = Math.min(L.mznnTargetAdd, free);
+        return {
+            hasData: !!hasData && total > 0,
+            petrol, diesel, totalCurrentFuel: total,
+            floorFilled, floorShort: L.techTotal - floorFilled,
+            coveredThsT: covered, gapThsT: L.mznnTargetAdd - covered, surplusThsT: free - covered,
+            percentCovered: Math.round(covered / L.mznnTargetAdd * 100),
+            gapShare: (L.mznnTargetAdd - covered) / L.mznnTargetAdd
+        };
+    }
+
+    // which: 'cur' — поточний (блок «Запаси»), 'prev' — попередній (current − delta), 'plan' — прогноз на кінець T12
+    function calcFuelPhysicalCoverage(which) {
+        if (which === 'plan') {
+            const has = fuelPlan.diesel !== null || fuelPlan.petrol !== null;
+            if (!has) return fuelCoverageFrom(0, 0, false);
+            // не введений продукт вважаємо на рівні його незнижувального залишку (не додає й не віднімає покриття)
+            const d = fuelPlan.diesel !== null ? fuelPlan.diesel : FUEL_MIN_LIMITS.dieselTechMin;
+            const pt = fuelPlan.petrol !== null ? fuelPlan.petrol : FUEL_MIN_LIMITS.petrolTechMin;
+            return fuelCoverageFrom(pt, d, true);
+        }
         const rows = (globalData && Array.isArray(globalData.fuelInventories)) ? globalData.fuelInventories : [];
         const t = r => String((r.title && (r.title.uk || r.title.en)) || '').toLowerCase();
         const val = r => { const c = Number(r.current) || 0; return which === 'prev' ? c - (Number(r.delta) || 0) : c; };
@@ -1363,25 +1414,21 @@
             if (n.includes('бензин') || n.includes('gasoline')) { petrol += val(r); found++; }
             else if (n.includes('дизел') || n.includes('diesel')) { diesel += val(r); found++; }   // ДП + арктичний
         });
-        const total = petrol + diesel;
-        // Незнижувальний залишок — окремо по продуктах: надлишок ДП не закриває нестачу бензину
-        const floorFilled = Math.min(petrol, L.petrolTechMin) + Math.min(diesel, L.dieselTechMin);
-        const floorShort  = L.techTotal - floorFilled;
-        const free        = Math.max(0, petrol - L.petrolTechMin) + Math.max(0, diesel - L.dieselTechMin);
-        const covered     = Math.min(L.mznnTargetAdd, free);
-        const gap         = L.mznnTargetAdd - covered;
-        const surplus     = free - covered;
-        return {
-            hasData: found > 0 && total > 0,
-            petrol, diesel, totalCurrentFuel: total,
-            floorFilled, floorShort, coveredThsT: covered, gapThsT: gap, surplusThsT: surplus,
-            percentCovered: Math.round(covered / L.mznnTargetAdd * 100),
-            gapShare: gap / L.mznnTargetAdd
-        };
+        return fuelCoverageFrom(petrol, diesel, found > 0);
+    }
+
+    // Покриття по тижнях T0..T12 (тис. т): від поточного запасу лінійно до прогнозу на кінець T12
+    function fuelCoveragePath(n) {
+        const cur = calcFuelPhysicalCoverage('cur'), plan = calcFuelPhysicalCoverage('plan');
+        const start = cur.hasData ? cur.coveredThsT : 0;
+        const end = plan.hasData ? plan.coveredThsT : start;
+        const path = Array.from({ length: n }, (_, i) => n > 1 ? start + (end - start) * i / (n - 1) : end);
+        return { path, start, end, cur, plan, hasAny: cur.hasData || plan.hasData };
     }
 
     function changeMznnCoverageMode(mode) {
         currentMznnViewMode = ['liquidity', 'gap_cost', 'coverage'].includes(mode) ? mode : 'liquidity';
+        syncFuelPlanUi();
         const sel = document.getElementById('selMznnCoverageView');
         if (sel && sel.value !== currentMznnViewMode) sel.value = currentMznnViewMode;
         mznnSideClosed = false;
@@ -1392,8 +1439,8 @@
 
     function mznnLineLabel(lang) {
         if (currentMznnViewMode === 'gap_cost') {
-            return lang === 'en' ? 'Own cash incl. MOS & Strat reserve, net of own fuel stock'
-                                 : 'Грошові залишки (МЗНН та Страт резерву з урахуванням власних запасів)';
+            return lang === 'en' ? 'Own cash incl. MOS & Strat reserve, net of own fuel stock coverage'
+                                 : 'Грошові залишки (МЗНН та Страт резерву за вирахуванням перекриття власними запасами)';
         }
         return chartTranslations[lang].ownCashMznn;
     }
@@ -1407,6 +1454,8 @@
         const cols = [];
         if (hasPrev) cols.push({ lbl: en ? 'Previous' : 'Попередній', c: prev });
         cols.push({ lbl: en ? 'Current' : 'Поточний', c: cur });
+        const plan = calcFuelPhysicalCoverage('plan');
+        if (plan.hasData) cols.push({ lbl: en ? 'Plan end T12' : 'Прогноз на кінець T12', c: plan });
         const labels = cols.map(x => [x.lbl, `${formatNum(Math.round(x.c.totalCurrentFuel))} ${u}`]).concat([[en ? 'Target 31.12' : 'Ціль на 31.12', `${L.targetTotal} ${u}`]]);
         const pick = (f, target) => cols.map(x => f(x.c)).concat([target]);
 
@@ -1438,9 +1487,10 @@
 
         const maxStack = Math.max(L.targetTotal, ...labels.map((_, i) => datasets.reduce((a, d) => a + (d.data[i] || 0), 0)));
         const yTop = Math.ceil(maxStack * 1.12 / 20) * 20;
-        const title = cur.hasData
-            ? (en ? `Own stock covers ${formatNum(Math.round(cur.coveredThsT))} of ${L.mznnTargetAdd} ths t (${cur.percentCovered}%); to purchase ${formatNum(Math.round(cur.gapThsT))} ths t` + (pricePerT > 0 ? ` ≈ UAH ${formatNum(Math.round(cur.gapThsT * pricePerT))} mln` : '')
-                  : `Власні запаси перекривають ${formatNum(Math.round(cur.coveredThsT))} із ${L.mznnTargetAdd} тис. т (${cur.percentCovered}%); докупити ${formatNum(Math.round(cur.gapThsT))} тис. т` + (pricePerT > 0 ? ` ≈ ${formatNum(Math.round(cur.gapThsT * pricePerT))} млн грн` : ''))
+        const head = plan.hasData ? plan : cur;
+        const title = head.hasData
+            ? (en ? `${plan.hasData ? 'Plan end T12' : 'Now'}: own stock covers ${formatNum(Math.round(head.coveredThsT))} of ${L.mznnTargetAdd} ths t (${head.percentCovered}%) ≈ UAH ${formatNum(Math.round(head.coveredThsT * pricePerT))} mln; to purchase ${formatNum(Math.round(head.gapThsT))} ths t` + (pricePerT > 0 ? ` ≈ UAH ${formatNum(Math.round(head.gapThsT * pricePerT))} mln` : '')
+                  : `${plan.hasData ? 'Прогноз на кінець T12' : 'Зараз'}: власні запаси перекривають ${formatNum(Math.round(head.coveredThsT))} із ${L.mznnTargetAdd} тис. т (${head.percentCovered}%) ≈ ${formatNum(Math.round(head.coveredThsT * pricePerT))} млн грн; докупити ${formatNum(Math.round(head.gapThsT))} тис. т` + (pricePerT > 0 ? ` ≈ ${formatNum(Math.round(head.gapThsT * pricePerT))} млн грн` : ''))
             : (en ? 'No fuel inventory data for this date' : 'Немає даних блоку «Запаси» на цю дату');
 
         myLiquidityChart = new Chart(ctx, {
@@ -1456,7 +1506,7 @@
                          ticks: { stepSize: 20, font: { size: 13 }, callback: v => v === 0 ? '0' : `${formatNum(v)} ${u}` } }
                 },
                 plugins: {
-                    title: { display: true, text: title, color: cur.gapThsT > 0 ? '#9a3412' : '#047857', font: { size: 15, weight: '700' }, padding: { bottom: 10 } },
+                    title: { display: true, text: title, color: head.gapThsT > 0 ? '#9a3412' : '#047857', font: { size: 15, weight: '700' }, padding: { bottom: 10 } },
                     datalabels: { clamp: true, clip: false, anchor: 'center', align: 'center' },
                     legend: { display: true, position: 'bottom', align: 'start',
                               labels: { boxWidth: 16, boxHeight: 10, font: { size: 13 }, padding: 18,
@@ -2768,6 +2818,7 @@
         const paleColor = '#94a3b8';
 
         recalcMznnSeries();
+        syncFuelPlanUi();
         if (currentMznnViewMode === 'coverage') { buildFuelCoverageChart(ctx); return; }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -3416,29 +3467,36 @@
 
     function mznnCompute(ctx, mode) {
         const useProp = mode === 'prop' && ctx.baseSum > 0;
-        // gap_cost: власні запаси понад незнижувальний залишок зменшують потребу в коштах пропорційно
-        const cov = (typeof calcFuelPhysicalCoverage === 'function') ? calcFuelPhysicalCoverage('cur') : null;
-        const netOfStock = (typeof currentMznnViewMode !== 'undefined') && currentMznnViewMode === 'gap_cost' && cov && cov.hasData;
-        const factor = netOfStock ? cov.gapShare : 1;
-        const weekly = ctx.spend.map((v, i) => (useProp ? ctx.total * ctx.base[i] / ctx.baseSum : v) * factor);
-        let fullCum = 0; const fullSeries = ctx.spend.map((v, i) => { fullCum += useProp ? ctx.total * ctx.base[i] / ctx.baseSum : v; return ctx.avail[i] - fullCum; });
+        const n = ctx.spend.length;
+        const weekly = ctx.spend.map((v, i) => useProp ? ctx.total * ctx.base[i] / ctx.baseSum : v);
+        const price = ctx.total / FUEL_MIN_LIMITS.mznnTargetAdd;                  // млн грн за тис. т (з бюджету МЗНН)
+        const fp = fuelCoveragePath(n);
         let cum = 0;
-        const cumArr = [], series = [];
-        weekly.forEach((w, i) => { cum += w; cumArr.push(cum); series.push(ctx.avail[i] - cum); });
-        const ye = ctx.yeIdx;
+        const cumArr = [], fullSeries = [], netSeries = [], covMln = [], netCum = [];
+        weekly.forEach((w, i) => {
+            cum += w; cumArr.push(cum);
+            const c = Math.min(cum, fp.path[i] * price);   // перекладений запас замінює закупівлю, але не більше вже запланованих витрат
+            covMln.push(c); netCum.push(cum - c);
+            fullSeries.push(ctx.avail[i] - cum);
+            netSeries.push(ctx.avail[i] - (cum - c));
+        });
+        const netOfStock = (typeof currentMznnViewMode !== 'undefined') && currentMznnViewMode === 'gap_cost' && fp.hasAny;
+        const series = netOfStock ? netSeries : fullSeries;
+        const usedCum = netOfStock ? netCum : cumArr;
+        const ye = ctx.yeIdx, last = n - 1;
         let minIdx = 0; series.forEach((v, i) => { if (v < series[minIdx]) minIdx = i; });
         return {
             mode: useProp ? 'prop' : 'schedule',
-            weekly, cum: cumArr, series,
-            ye, yeValue: series[ye], yeAvail: ctx.avail[ye], yeCum: cumArr[ye], yeRange: ctx.ranges[ye],
+            weekly, cum: usedCum, series, fullSeries, netSeries, covMln, price, fp,
+            ye, yeValue: series[ye], yeAvail: ctx.avail[ye], yeCum: usedCum[ye], yeRange: ctx.ranges[ye],
             minIdx, minValue: series[minIdx], minRange: ctx.ranges[minIdx],
             share: ctx.baseSum > 0 ? ctx.total / ctx.baseSum : 0,
             total: ctx.total,
-            netOfStock, factor, cov,
-            coveredMln: ctx.total * (1 - factor),
-            needMln: ctx.total * factor,
-            fullYeValue: fullSeries[ye],
-            endValue: series[series.length - 1]
+            netOfStock, cov: fp.plan.hasData ? fp.plan : fp.cur,
+            fullYeValue: fullSeries[ye], netYeValue: netSeries[ye], yeCovMln: covMln[ye], yeCovThs: fp.path[ye],
+            fullEndValue: fullSeries[last], netEndValue: netSeries[last], endCovMln: covMln[last], endCovThs: fp.path[last],
+            endRange: ctx.ranges[last], endAvail: ctx.avail[last],
+            endValue: series[last]
         };
     }
 
@@ -3480,11 +3538,11 @@
     function mznnSentence(lang, r) {
         if (lang === 'en') {
             return r.yeValue < 0
-                ? `Funding gap for Min. Oil Stock and strategic reserve to year-end: UAH ${mznnBln(r.yeValue, 'en')} bn` + (r.netOfStock ? ` (net of ${formatNum(Math.round(r.cov.coveredThsT))} ths t of own stock).` : '.')
+                ? `Funding gap for Min. Oil Stock and strategic reserve to year-end: UAH ${mznnBln(r.yeValue, 'en')} bn` + (r.netOfStock ? ` (net of ${formatNum(Math.round(r.yeCovThs))} ths t of own stock ≈ UAH ${mznnBln(r.yeCovMln, 'en')} bn).` : '.')
                 : `No funding gap for Min. Oil Stock and strategic reserve to year-end (surplus UAH ${mznnBln(r.yeValue, 'en')} bn).`;
         }
         return r.yeValue < 0
-            ? `Дефіцит коштів на закупівлю МЗНН та стратрезерв до кінця року — ${mznnBln(r.yeValue)} млрд грн` + (r.netOfStock ? ` (з урахуванням ${formatNum(Math.round(r.cov.coveredThsT))} тис. т власних запасів).` : '.')
+            ? `Дефіцит коштів на закупівлю МЗНН та стратрезерв до кінця року — ${mznnBln(r.yeValue)} млрд грн` + (r.netOfStock ? ` (з урахуванням перекриття власними запасами ${formatNum(Math.round(r.yeCovThs))} тис. т ≈ ${mznnBln(r.yeCovMln)} млрд грн).` : '.')
             : `Дефіциту коштів на закупівлю МЗНН та стратрезерв до кінця року немає (профіцит ${mznnBln(r.yeValue)} млрд грн).`;
     }
 
@@ -3568,31 +3626,32 @@
             : (en ? 'per schedule' : 'за графіком')) + (r.netOfStock ? (en ? ' · net of stock' : ' · з урах. запасів') : '');
 
         // Фізичний баланс і його грошовий еквівалент
-        const cov = calcFuelPhysicalCoverage('cur');
         const L = FUEL_MIN_LIMITS, tu = en ? 'ths t' : 'тис. т';
-        const pricePerT = r.total / L.mznnTargetAdd;
-        const stockSummaryHtml = !cov.hasData
-            ? `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed #fdba74;font-size:11.5px;color:#94a3b8;">${en ? 'No fuel inventory data — own-stock coverage not applied.' : 'Немає даних блоку «Запаси» — перекриття власними запасами не враховано.'}</div>`
+        const fp = r.fp, cur = fp.cur, plan = fp.plan;
+        const col = (c) => c.hasData ? formatNum(Math.round(c.totalCurrentFuel)) : '—';
+        const covd = (c) => c.hasData ? `${formatNum(Math.round(c.coveredThsT))} (${c.percentCovered}%)` : '—';
+        const stockSummaryHtml = !fp.hasAny
+            ? `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed #fdba74;font-size:11.5px;color:#94a3b8;">${en ? 'Enter planned fuel stock at T12 in the chart header to net the MOS gap.' : 'Введіть прогнозний запас на кінець T12 у шапці графіка (режим «з урахуванням власних запасів»).'}</div>`
             : `
             <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #fdba74; font-size: 11.5px; line-height: 1.35;">
                 <div style="font-weight: 700; color: #9a3412; margin-bottom: 3px; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.02em;">
-                    ${en ? 'Physical coverage, ' + tu : 'Фізичне перекриття, тис. т'}
+                    ${en ? 'Own-stock coverage, ' + tu : 'Перекриття власними запасами, тис. т'}
                 </div>
                 <table style="margin:0;">
-                    <tr><td>${en ? 'Fuel stock (gasoline + diesel)' : 'Запас пального (бензин + ДП)'}</td><td class="v">${formatNum(Math.round(cov.totalCurrentFuel))}</td></tr>
-                    <tr><td>${en ? 'Unreduced floor' : 'Незнижувальний залишок'} <span style="color:#94a3b8">(35+40)</span></td><td class="v">−${L.techTotal}</td></tr>
-                    ${cov.floorShort > 0 ? `<tr><td style="color:#991B1B">${en ? 'incl. floor shortfall' : 'у т.ч. нестача до незнижувального'}</td><td class="v" style="color:#991B1B">${formatNum(Math.round(cov.floorShort))}</td></tr>` : ''}
-                    <tr><td>${en ? 'Covered MOS & reserve' : 'Перекрито МЗНН і стратрезерву'} <span style="color:#94a3b8">${en ? 'of' : 'із'} ${L.mznnTargetAdd}</span></td><td class="v" style="color:#059669">${formatNum(Math.round(cov.coveredThsT))} (${cov.percentCovered}%)</td></tr>
-                    <tr class="tot"><td><b>${en ? 'To purchase' : 'Докупити'}</b></td><td class="v" style="color:${cov.gapThsT > 0 ? '#C2410C' : '#059669'}">${formatNum(Math.round(cov.gapThsT))}</td></tr>
+                    <tr><td></td><td class="v" style="color:#94a3b8;font-weight:500">${en ? 'now' : 'зараз'}</td><td class="v" style="color:#94a3b8;font-weight:500">T12</td></tr>
+                    <tr><td>${en ? 'Fuel stock' : 'Запас пального'}</td><td class="v">${col(cur)}</td><td class="v">${col(plan)}</td></tr>
+                    <tr><td>${en ? 'Floor' : 'Незнижувальний'} <span style="color:#94a3b8">(40+35)</span></td><td class="v">−${L.techTotal}</td><td class="v">−${L.techTotal}</td></tr>
+                    <tr class="tot"><td>${en ? 'Covers MOS' : 'Перекриває МЗНН'} <span style="color:#94a3b8">${en ? 'of' : 'із'} ${L.mznnTargetAdd}</span></td><td class="v" style="color:#059669">${covd(cur)}</td><td class="v" style="color:#059669">${covd(plan)}</td></tr>
                 </table>
-                <div style="color:#475569;margin-top:2px;">
-                    ${en ? 'Money equivalent' : 'У грошах'} (${formatNum(Math.round(pricePerT))} ${en ? 'UAH mln per ths t' : 'млн грн / тис. т'}):
-                    ${en ? 'covered' : 'перекрито'} <b style="color:#059669">${mznnFmt(r.total * (1 - cov.gapShare))}</b>,
-                    ${en ? 'to fund' : 'профінансувати'} <b style="color:#C2410C">${mznnFmt(r.total * cov.gapShare)}</b> ${unit}.
+                <div style="color:#475569;margin-top:4px;">
+                    ${en ? 'Price' : 'Ціна'}: ${formatNum(Math.round(r.price))} ${en ? 'UAH mln / ths t' : 'млн грн / тис. т'} (${mznnFmt(r.total)} / ${L.mznnTargetAdd})
                 </div>
-                <div style="color:#475569;margin-top:2px;">
-                    ${en ? 'Year-end gap' : 'Дефіцит на кінець року'}: ${en ? 'w/o stock' : 'без запасів'} ${neg(r.fullYeValue)} → ${en ? 'net of stock' : 'з урахуванням запасів'} <b>${neg(r.yeAvail - (r.yeAvail - r.fullYeValue) * cov.gapShare)}</b>
-                </div>
+                <table style="margin:2px 0 0;">
+                    <tr><td></td><td class="v" style="color:#94a3b8;font-weight:500">${r.yeRange.split('-')[0]}…</td><td class="v" style="color:#94a3b8;font-weight:500">T12</td></tr>
+                    <tr><td>${en ? 'Gap w/o stock' : 'Дефіцит без запасів'}</td><td class="v">${neg(r.fullYeValue)}</td><td class="v">${neg(r.fullEndValue)}</td></tr>
+                    <tr><td>${en ? '+ stock coverage' : '+ перекриття запасами'}</td><td class="v" style="color:#059669">+${mznnFmt(r.yeCovMln)}</td><td class="v" style="color:#059669">+${mznnFmt(r.endCovMln)}</td></tr>
+                    <tr class="tot"><td><b>${en ? 'Gap net of stock' : 'Дефіцит з урах. запасів'}</b></td><td class="v">${neg(r.netYeValue)}</td><td class="v">${neg(r.netEndValue)}</td></tr>
+                </table>
             </div>`;
 
         el.innerHTML = `

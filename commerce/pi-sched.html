@@ -316,7 +316,7 @@ function indexCred(snap) {
         for (let i = 0; i < n; i++) if (b.inn[i] >= 1) {
             const cover = findCover(covers, b.key, dates[i]);
             receipts.push({ key: b.key, bank: b.name, date: dates[i], i, amount: b.inn[i], limRaw: b.lim[i], limBefore: b.lim[i],
-                            cover, auto: cover ? counterparty(cover.name) : '' });
+                            cover, auto: '' });
         }
     });
     receipts.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.bank.localeCompare(b.bank, 'uk'));

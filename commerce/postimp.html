@@ -46,6 +46,11 @@
     .w-table td.low { background: #fffbeb; color: #92400e; }
     .w-table td.neg { background: #fef2f2; color: #b91c1c; font-weight: 600; }
     .w-table td .rc { display: block; font-size: 7pt; color: #4f46e5; font-weight: 600; }
+    .w-table td .l100 { display: block; font-size: 7pt; color: #94a3b8; font-weight: 400; }
+    .w-table tr.contract td { background: #eef2ff; color: #3730a3; font-weight: 700; font-size: 8.5pt; border-top: 1px solid #c7d2fe; border-bottom: 1.5px solid #a5b4fc; }
+    .w-table tr.contract td:first-child { background: #eef2ff; }
+    .w-table tr.contract td.low { background: #fef3c7; color: #92400e; }
+    .w-table tr.short td { color: #b91c1c; }
     .w-table .f { background: #f1f5f9; }
     .w-table .cur { box-shadow: inset 2px 0 0 #4f46e5; }
 
@@ -144,10 +149,10 @@
             <label for="useSel" class="text-xs font-bold text-slate-600">Використання ліміту ПІ:</label>
             <select id="useSel" onchange="savePrefs(); applyFactor(); render()" class="use-sel rounded px-2 py-1 text-xs bg-white">
                 <option value="1">100% — без резерву</option>
-                <option value="0.99">99% — резерв 1% на курс</option>
-                <option value="0.98" selected>98% — резерв 2% на курс</option>
-                <option value="0.97">97% — резерв 3% на курс</option>
-                <option value="0.95">95% — резерв 5% на курс</option>
+                <option value="0.99">99% — резерв 1% від ліміту</option>
+                <option value="0.98" selected>98% — резерв 2% від ліміту</option>
+                <option value="0.97">97% — резерв 3% від ліміту</option>
+                <option value="0.95">95% — резерв 5% від ліміту</option>
             </select>
         </div>
         <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
@@ -182,10 +187,11 @@
     </div>
 
     <div>
-        <h3 class="sec">Вільний ліміт на кінець тижня (неділя), <span id="wUnit">--</span></h3>
+        <h3 class="sec">Вільний ліміт на кінець тижня (неділя) — сума для контрактів з урахуванням резерву, <span id="wUnit">--</span></h3>
         <div class="overflow-x-auto border border-slate-200 rounded-lg"><table class="w-table" id="weekTable"></table></div>
-        <p class="text-[10px] text-slate-500 mt-1">Синім під значенням показано отримання постімпорту за тиждень. Жовтим позначено ліміт, менший за поріг; червоним — від’ємний ліміт.
-            Сірим позначено фактичні тижні.</p>
+        <p class="text-[10px] text-slate-500 mt-1">У клітинці банку — сума для контрактів з урахуванням резерву, під нею сірим — вільний ліміт 100%, синім — отримання за тиждень.
+            Рядок «Сума для контрактів» — те, що можна передати комерційному відділу: сума додатних залишків за банками. Червоним позначено банки, де резерв не забезпечено.
+            Жовтим — сума, менша за поріг. Сірим фоном — фактичні тижні. Наведіть курсор, щоб побачити розрахунок.</p>
     </div>
 
     <details class="border border-slate-200 rounded-lg px-4 py-2 text-[11px] text-slate-600 leading-relaxed">
@@ -197,8 +203,10 @@
             <p><b>Вільний ліміт до отримання</b> — «Доступний ліміт постімпорт …» банку на дату отримання. У CRED він показаний до списання траншу цього дня.
                <b>Після</b> = до − сума траншу.</p>
             <p><b>Вільний ліміт на кінець дня</b> = доступний ліміт на дату − отримання цього дня. Порожні клітинки CRED у межах файлу вважаються нулем.</p>
-            <p><b>Використання ліміту ПІ</b> — частка вільного ліміту, яку дозволено вибирати (за замовчуванням 98%). Решта — резерв на коливання курсу,
-               щоб не доформовувати покриття. Ліміт «до використання» = доступний ліміт × частку (від’ємний ліміт не зменшується).
+            <p><b>Використання ліміту ПІ</b> — частка ліміту, яку дозволено вибирати (за замовчуванням 98%). Решта — резерв на коливання курсу,
+               щоб не доформовувати покриття. Резерв закладається від <b>загального ліміту банку</b> = заборгованість постімпорту + вільний ліміт,
+               бо курс змінює гривневий еквівалент усієї заборгованості. Тому резерв є і тоді, коли вільний ліміт уже вибрано повністю.
+               Сума для контрактів = вільний ліміт 100% − резерв. Від’ємне значення означає, що резерв не забезпечено. Тонни рахуються від суми траншу, без резерву.
                Транш позначається <span class="badge b-res">у зоні резерву</span>, якщо він більший за ліміт до використання, але вміщується у 100% ліміту,
                і <span class="badge b-bad">понад ліміт</span>, якщо перевищує навіть 100%.</p>
             <p><b>Розшифровка вільного ліміту на кінець тижня</b> (наведіть курсор на клітинку): ліміт на кінець попереднього дня + погашення постімпорту
@@ -394,17 +402,27 @@ function applyFactor() {
     if (!IDX) return;
     const F = factor(), n = IDX.n;
     const piLim = new Float64Array(n), piLimRaw = new Float64Array(n), piEod = new Float64Array(n), piEodRaw = new Float64Array(n);
+    // Резерв закладається від загального ліміту банку = заборгованість постімпорту + вільний ліміт (100%).
+    // Курс змінює гривневий еквівалент усієї заборгованості, тому резерв потрібен і коли вільний ліміт вже вибрано.
+    const R = 1 - F;
     IDX.pi.forEach(b => {
         b.limE = new Float64Array(n); b.eod = new Float64Array(n); b.eodRaw = new Float64Array(n);
+        b.totS = new Float64Array(n); b.totE = new Float64Array(n);
         for (let i = 0; i < n; i++) {
             const l = b.lim[i];
-            b.limE[i] = l > 0 ? l * F : l;
-            b.eod[i] = b.limE[i] - b.inn[i];
             b.eodRaw[i] = l - b.inn[i];
+            b.totS[i] = (i > 0 ? b.debt[i - 1] : b.debt[i]) + l;   // на початок дня, до траншу
+            b.totE[i] = b.debt[i] + b.eodRaw[i];                    // на кінець дня
+            b.limE[i] = l - R * Math.max(0, b.totS[i]);
+            b.eod[i] = b.eodRaw[i] - R * Math.max(0, b.totE[i]);
             piLim[i] += b.limE[i]; piLimRaw[i] += l; piEod[i] += b.eod[i]; piEodRaw[i] += b.eodRaw[i];
         }
     });
-    IDX.receipts.forEach(r => { const b = IDX.pi.get(r.key); r.limRaw = b.lim[r.i]; r.limBefore = b.limE[r.i]; });
+    IDX.receipts.forEach(r => {
+        const b = IDX.pi.get(r.key);
+        r.limRaw = b.lim[r.i]; r.limBefore = b.limE[r.i]; r.tot = b.totS[r.i];
+        r.debtBefore = r.i > 0 ? b.debt[r.i - 1] : b.debt[r.i];
+    });
     Object.assign(IDX, { F, piLim, piLimRaw, piEod, piEodRaw });
 }
 
@@ -515,12 +533,15 @@ function buildView() {
             w.piEow[k] = bk.eod[b];
             // розшифровка: початок (кінець попереднього дня) + погашення − отримання ± інше = 100% → − резерв = до використання
             const prev = a > 0 ? bk.eodRaw[a - 1] : bk.lim[a];
-            const x = { prev, out: o, inn: s, raw: bk.eodRaw[b], eff: bk.eod[b], ins };
+            const x = { prev, out: o, inn: s, raw: bk.eodRaw[b], eff: bk.eod[b], debt: bk.debt[b], tot: bk.totE[b], ins };
             x.resid = x.raw - prev - o + s;
             w.br[k] = x;
-            ['prev', 'out', 'inn', 'resid', 'raw', 'eff'].forEach(f => T[f] += x[f]);
+            ['prev', 'out', 'inn', 'resid', 'raw', 'eff', 'debt', 'tot'].forEach(f => T[f] = (T[f] || 0) + x[f]);
         });
         w.brTot = T;
+        // сума для контрактів = додатні залишки банків; нестача резерву = від’ємні залишки
+        w.contract = 0; w.shortfall = 0;
+        Object.values(w.br).forEach(x => { if (x.eff >= 1) w.contract += x.eff; else if (x.eff < -TOL) w.shortfall += x.eff; });
         IDX.cr.forEach((bk, k) => w.crEow[k] = bk.lim[b]);
         w.piEowTot = IDX.piEod[b]; w.crEowTot = IDX.crLim[b];
         weeks.push(w);
@@ -540,7 +561,9 @@ function buildView() {
     let minTot = Infinity, minTotD = null;
     for (let i = i0; i <= iEnd; i++) if (IDX.piEod[i] < minTot) { minTot = IDX.piEod[i]; minTotD = IDX.dates[i]; }
 
-    return { start, i0, iEnd, factUntil, recs, weeks, banks, minTot, minTotD,
+    let short = 0, shortW = null;
+    weeks.forEach(w => { if (w.shortfall < short) { short = w.shortfall; shortW = w; } });
+    return { start, i0, iEnd, factUntil, recs, weeks, banks, minTot, minTotD, short, shortW,
              deficit: recs.filter(isOver), reserve: recs.filter(isReserve) };
 }
 // понад 100% вільного ліміту / у зоні резерву (вміщується у 100%, але більше за частку до використання)
@@ -570,8 +593,9 @@ function render() {
     if (m.forecast_date && toMonday(m.forecast_date) < toMonday(todayIso()))
         warns.push(`останній CRED сформовано на ${dmy(m.forecast_date)}, а поточний тиждень — ${dmy(toMonday(todayIso()))}`);
     if (V.deficit.length) warns.push(`${V.deficit.length} транш(і) перевищують 100% вільного ліміту банку на дату отримання`);
-    if (V.reserve.length) warns.push(`${V.reserve.length} транш(і) використовують резерв ${pct(F)}% на суму ${fm(V.reserve.reduce((s, r) => s + r.amount - r.limBefore, 0))} млн — ` +
-        `за зростання курсу можливе доформування покриття`);
+    if (V.reserve.length) warns.push(`${V.reserve.length} транш(і) зачіпають резерв ${pct(F)}%` +
+        (V.short < -TOL ? `; нестача резерву досягає ${fm(-V.short)} млн (тиждень ${weekLbl(V.shortW.mon)})` : '') +
+        ` — за зростання курсу можливе доформування покриття`);
     $('warnBox').classList.toggle('hidden', !warns.length);
     $('warnBox').innerHTML = warns.length ? '<b>Увага:</b> ' + warns.map(esc).join('; ') : '';
 
@@ -593,13 +617,13 @@ function renderKpis(V) {
     $('kpis').innerHTML =
         card(`Отримання постімпорту з ${dm(V.start)}`, `${fm(sum)} млн`, `${V.recs.length} траншів · ~${fmtNum(sum / 1e3 / price(), 0)} т`) +
         card(`Вільний ліміт ПІ на ${dm(IDX.dates[V.i0])}`, `${fm(IDX.piLim[V.i0])} млн`,
-             F < 1 ? `${fmtNum(F * 100, 0)}% від ${fm(IDX.piLimRaw[V.i0])} млн · резерв ${fm(IDX.piLimRaw[V.i0] - IDX.piLim[V.i0])} млн` : 'до отримань цього дня, 100%') +
+             F < 1 ? `з резервом ${pct(F)}% · 100%: ${fm(IDX.piLimRaw[V.i0])} млн · резерв ${fm(IDX.piLimRaw[V.i0] - IDX.piLim[V.i0])} млн` : 'до отримань цього дня, 100%') +
         card(`Мінімальний вільний ліміт ПІ${F < 1 ? ` (${fmtNum(F * 100, 0)}%)` : ''}`, `${fm(V.minTot)} млн`, V.minTotD ? `на кінець ${dmy(V.minTotD)}` : '', V.minTot < thr() ? 'bad' : '') +
         card(`Вільний кредитний ліміт на ${dm(IDX.dates[V.i0])}`, `${fm(IDX.crLim[V.i0])} млн`, `${IDX.cr.size} банків`) +
         card('Транші понад ліміт / у зоні резерву', `${V.deficit.length} / ${V.reserve.length}`,
              V.deficit.length + V.reserve.length
                  ? (V.deficit.length ? `понад 100%: ${V.deficit.map(r => `${r.bank} ${dm(r.date)}`).join(', ')}. ` : '') +
-                   (V.reserve.length ? `використовують резерв: ${fm(V.reserve.reduce((s, r) => s + r.amount - r.limBefore, 0))} млн` : '')
+                   (V.short < -TOL ? `нестача резерву до ${fm(-V.short)} млн (тиждень ${weekLbl(V.shortW.mon)})` : '')
                  : `усі транші в межах ${fmtNum(F * 100, 0)}% ліміту`,
              V.deficit.length ? 'bad' : V.reserve.length ? '' : 'good');
 }
@@ -657,7 +681,9 @@ function renderSchedule(V) {
         const F = IDX.F;
         const limTip = tip(tipTable(`${r.bank}, ${dmy(r.date)}`, [
             ['Вільний ліміт 100%', fu(r.limRaw)],
-            ...(F < 1 ? [[`− резерв ${pct(F)}% на коливання курсу`, fu(r.limBefore - r.limRaw), 'r'],
+            ...(F < 1 ? [['заборгованість постімпорту до траншу', fu(r.debtBefore)],
+                         ['загальний ліміт (заборгованість + вільний)', fu(r.tot)],
+                         [`− резерв ${pct(F)}% від загального ліміту`, fu(r.limBefore - r.limRaw), 'r'],
                          [`= до використання ${fmtNum(F * 100, 0)}%`, fu(r.limBefore), 't']] : []),
             ['− транш', fu(-r.amount)],
             ['= після траншу', fu(after), 't'],
@@ -734,8 +760,11 @@ function renderWeeks(V) {
         ['− отримання постімпорту', fu(-x.inn)],
         ['± зміна ліміту / курсові різниці', fu(x.resid)],
         [`= вільний ліміт 100% на ${dmy(w.endD)}`, fu(x.raw), 't'],
-        ...(F < 1 ? [[`− резерв ${pct(F)}% на коливання курсу`, fu(x.eff - x.raw), 'r'],
-                     [`= до використання ${fmtNum(F * 100, 0)}%`, fu(x.eff), 't']] : [])
+        ...(F < 1 ? [['Резерв на курс', '', 's'],
+                     ['заборгованість постімпорту', fu(x.debt)],
+                     ['загальний ліміт (заборгованість + вільний)', fu(x.tot)],
+                     [`− резерв ${pct(F)}% від загального ліміту`, fu(x.eff - x.raw), 'r'],
+                     [`= сума для контрактів (${fmtNum(F * 100, 0)}%)`, fu(x.eff), 't']] : [])
     ];
     piBanks.forEach(b => {
         h += `<tr><td>${esc(b.name)}</td>` + V.weeks.map(w => {
@@ -748,19 +777,40 @@ function renderWeeks(V) {
                     rows.push([`${dmy(d)}${r && resOf(r) ? ' · ' + resOf(r) : ''}`, fu(a)]);
                 });
             }
-            return `<td class="${wc(w)} ${lvl(v)}"${tip(tipTable(`${b.name} · ${weekLbl(w.mon)}`, rows))}>${fu(v)}${rc ? `<span class="rc">отр. ${fu(rc)}</span>` : ''}</td>`;
+            const sub = F < 1 && Math.abs(x.raw - v) >= 1 ? `<span class="l100">100%: ${fu(x.raw)}</span>` : '';
+            return `<td class="${wc(w)} ${lvl(v)}"${tip(tipTable(`${b.name} · ${weekLbl(w.mon)}`, rows,
+                v < -TOL ? `Резерв не забезпечено на ${fu(-v)}: вільного ліміту менше, ніж ${pct(F)}% від загального ліміту. Нових контрактів у цьому банку немає; за зростання курсу можливе доформування покриття.` : ''))}>` +
+                   `${fu(v)}${sub}${rc ? `<span class="rc">отр. ${fu(rc)}</span>` : ''}</td>`;
         }).join('') + '</tr>';
     });
-    h += `<tr class="tot"><td>Вільний ліміт ПІ, всього</td>` + V.weeks.map(w => {
+    // підсумки: 100% та сума для контрактів (від’ємні банки не зменшують доступну суму інших банків)
+    h += `<tr class="tot"><td>Вільний ліміт ПІ 100%, всього</td>` + V.weeks.map(w => {
         const rows = brRows(w, w.brTot);
         rows.push([`Мінімум за тиждень (кінець ${w.piMinD ? dmy(w.piMinD) : '--'})`, fu(w.piMin)]);
-        rows.push([`За банками, до використання ${fmtNum(F * 100, 0)}%`, '', 's']);
-        piBanks.forEach(b => {
-            const x = w.br[b.key];
-            if (Math.abs(x.eff) >= 1 || x.inn >= 1) rows.push([`${b.name}${x.inn >= 1 ? ` (отр. ${fu(x.inn)})` : ''}`, fu(x.eff)]);
-        });
-        return `<td class="${wc(w)} ${lvl(w.piEowTot)}"${tip(tipTable(`Вільний ліміт ПІ, всього · ${weekLbl(w.mon)}`, rows))}>${fu(w.piEowTot)}${w.inTot ? `<span class="rc">отр. ${fu(w.inTot)}</span>` : ''}</td>`;
+        return `<td class="${wc(w)}"${tip(tipTable(`Вільний ліміт ПІ, всього · ${weekLbl(w.mon)}`, rows))}>${fu(w.brTot.raw)}${w.inTot ? `<span class="rc">отр. ${fu(w.inTot)}</span>` : ''}</td>`;
     }).join('') + '</tr>';
+    if (F < 1) {
+        h += `<tr class="contract"><td>Сума для контрактів (${fmtNum(F * 100, 0)}%), всього</td>` + V.weeks.map(w => {
+            const rows = [];
+            let pos = 0, neg = 0;
+            piBanks.forEach(b => {
+                const x = w.br[b.key];
+                if (x.eff >= 1) { pos += x.eff; rows.push([b.name, fu(x.eff)]); }
+                else if (x.eff < -TOL) neg += x.eff;
+            });
+            rows.push(['= сума для нових контрактів', fu(pos), 't']);
+            if (neg < -TOL) {
+                rows.push(['Резерв не забезпечено', '', 's']);
+                piBanks.forEach(b => { const x = w.br[b.key]; if (x.eff < -TOL) rows.push([b.name, fu(x.eff), 'r']); });
+                rows.push(['разом нестача резерву', fu(neg), 'r']);
+            }
+            return `<td class="${wc(w)} ${pos < thr() ? 'low' : ''}"${tip(tipTable(`Сума для контрактів · ${weekLbl(w.mon)}`, rows,
+                `Резерв ${pct(F)}% від загального ліміту кожного банку (заборгованість + вільний ліміт). Банки з нестачею резерву в суму не входять.`))}>${fu(pos)}</td>`;
+        }).join('') + '</tr>';
+        if (V.weeks.some(w => w.shortfall < -TOL))
+            h += `<tr class="short"><td>Нестача резерву на курс</td>` + V.weeks.map(w =>
+                `<td class="${wc(w)} ${w.shortfall < -TOL ? 'neg' : ''}">${w.shortfall < -TOL ? fu(w.shortfall) : '<span class="text-slate-300">–</span>'}</td>`).join('') + '</tr>';
+    }
     h += `<tr class="cr first"><td>Вільний кредитний ліміт, всього</td>` + V.weeks.map(w => `<td class="${wc(w)}">${fu(w.crEowTot)}</td>`).join('') + '</tr>';
     if ($('showCrBanks').checked) [...IDX.cr.values()].sort((a, b) => a.name.localeCompare(b.name, 'uk')).forEach(b => {
         h += `<tr class="crb"><td>&nbsp;&nbsp;&nbsp;${esc(b.name)}</td>` + V.weeks.map(w => {
@@ -823,8 +873,12 @@ function exportXlsx() {
         ['   − отримання постімпорту', ...VIEW.weeks.map(w => uv(-w.brTot.inn))],
         ['   ± зміна ліміту / курсові різниці', ...VIEW.weeks.map(w => uv(w.brTot.resid))],
         ['   = вільний ліміт 100%', ...VIEW.weeks.map(w => uv(w.brTot.raw))],
-        [`   − резерв ${pct(IDX.F)}%`, ...VIEW.weeks.map(w => uv(w.brTot.eff - w.brTot.raw))],
-        [`   = до використання ${fmtNum(IDX.F * 100, 0)}%`, ...VIEW.weeks.map(w => uv(w.brTot.eff))],
+        ['   заборгованість постімпорту', ...VIEW.weeks.map(w => uv(w.brTot.debt))],
+        ['   загальний ліміт (заборгованість + вільний)', ...VIEW.weeks.map(w => uv(w.brTot.tot))],
+        [`   − резерв ${pct(IDX.F)}% від загального ліміту`, ...VIEW.weeks.map(w => uv(w.brTot.eff - w.brTot.raw))],
+        [`   = до використання ${fmtNum(IDX.F * 100, 0)}% (сальдо банків)`, ...VIEW.weeks.map(w => uv(w.brTot.eff))],
+        [`Сума для контрактів (${fmtNum(IDX.F * 100, 0)}%)`, ...VIEW.weeks.map(w => uv(w.contract ?? Math.max(0, w.brTot.eff)))],
+        ['Нестача резерву', ...VIEW.weeks.map(w => uv(w.shortfall ?? 0))],
         ['Отримання ПІ за тиждень', ...VIEW.weeks.map(w => uv(w.inTot))],
         [],
         ['Вільний кредитний ліміт, всього', ...VIEW.weeks.map(w => uv(w.crEowTot))],

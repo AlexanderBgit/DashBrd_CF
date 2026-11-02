@@ -3643,6 +3643,7 @@
                     <tr><td>${en ? 'Floor' : 'Незнижувальний'} <span style="color:#94a3b8">(40+35)</span></td><td class="v">−${L.techTotal}</td><td class="v">−${L.techTotal}</td></tr>
                     <tr class="tot"><td>${en ? 'Covers MOS' : 'Перекриває МЗНН'} <span style="color:#94a3b8">${en ? 'of' : 'із'} ${L.mznnTargetAdd}</span></td><td class="v" style="color:#059669">${covd(cur)}</td><td class="v" style="color:#059669">${covd(plan)}</td></tr>
                 </table>
+                ${!plan.hasData ? `<div style="color:#C2410C;font-weight:600;margin-top:4px;">${en ? 'Planned T12 stock not entered: enter it in the chart header (mode “net of own stock”).' : 'Прогноз запасу на кінець T12 не введено: введіть ДП/бензин у шапці графіка (режим «з урахуванням власних запасів»).'}</div>` : ''}
                 <div style="color:#475569;margin-top:4px;">
                     ${en ? 'Price' : 'Ціна'}: ${formatNum(Math.round(r.price))} ${en ? 'UAH mln / ths t' : 'млн грн / тис. т'} (${mznnFmt(r.total)} / ${L.mznnTargetAdd})
                 </div>

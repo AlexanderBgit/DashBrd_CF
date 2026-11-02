@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Постімпорт — графік і вільні ліміти</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+    * { font-style: normal !important; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: 'Helvetica', sans-serif; background: #f3f4f6; color: #334155; padding: 12px; margin: 0; }
+    .executive-container { width: 1587px; margin: 0 auto; background: #fff; padding: 24px 30px 20px; border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,.1); display: flex; flex-direction: column; gap: 16px; }
+
+    .kpi { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; background: #f8fafc; min-width: 0; }
+    .kpi .l { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+    .kpi .v { font-size: 20px; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi .s { font-size: 10.5px; color: #64748b; margin-top: 1px; }
+    .kpi.bad .v { color: #b91c1c; }
+    .kpi.good .v { color: #047857; }
+
+    .s-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; font-variant-numeric: tabular-nums; }
+    .s-table th { font-weight: 600; color: #475569; padding: 5px 8px; text-align: right; border-bottom: 1.5px solid #94a3b8; vertical-align: bottom; font-size: 8.5pt; }
+    .s-table td { padding: 4px 8px; text-align: right; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+    .s-table th.l, .s-table td.l { text-align: left; }
+    .s-table tr.sub td { background: #f1f5f9; color: #475569; font-weight: 600; font-size: 8.5pt; }
+    .s-table tr.tot td { border-top: 1.5px solid #94a3b8; font-weight: 700; color: #1e293b; }
+    .s-table tr.fact td { color: #94a3b8; }
+    .s-table tr.deficit td { background: #fef2f2; }
+    .s-table td.bad { color: #b91c1c; font-weight: 600; }
+    .s-table td.warn { color: #b45309; }
+    .s-table td.muted { color: #94a3b8; }
+    .s-table input.res { width: 150px; border: 1px solid transparent; border-radius: 4px; padding: 1px 4px; font-size: 9pt; background: transparent; }
+    .s-table input.res:hover { border-color: #cbd5e1; background: #fff; }
+    .s-table input.res.auto { color: #64748b; }
+
+    .w-table { border-collapse: collapse; font-size: 8pt; font-variant-numeric: tabular-nums; width: 100%; }
+    .w-table th, .w-table td { padding: 3px 7px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap; vertical-align: top; }
+    .w-table th { color: #475569; font-weight: 600; vertical-align: bottom; }
+    .w-table th:first-child, .w-table td:first-child { text-align: left; position: sticky; left: 0; background: #fff; z-index: 1; }
+    .w-table tr.tot td { border-top: 1.5px solid #94a3b8; font-weight: 700; color: #1e293b; }
+    .w-table tr.cr td { color: #475569; }
+    .w-table tr.cr.first td { border-top: 1.5px solid #cbd5e1; }
+    .w-table tr.crb td { color: #94a3b8; }
+    .w-table td.low { background: #fffbeb; color: #92400e; }
+    .w-table td.neg { background: #fef2f2; color: #b91c1c; font-weight: 600; }
+    .w-table td .rc { display: block; font-size: 7pt; color: #4f46e5; font-weight: 600; }
+    .w-table td .l100 { display: block; font-size: 7pt; color: #94a3b8; font-weight: 400; }
+    .w-table tr.contract td { background: #eef2ff; color: #3730a3; font-weight: 700; font-size: 8.5pt; border-top: 1px solid #c7d2fe; border-bottom: 1.5px solid #a5b4fc; }
+    .w-table tr.contract td:first-child { background: #eef2ff; }
+    .w-table tr.contract td.low { background: #fef3c7; color: #92400e; }
+    .w-table .f { background: #f1f5f9; }
+    .w-table .cur { box-shadow: inset 2px 0 0 #4f46e5; }
+
+    .badge { display: inline-block; font-size: 7.5pt; font-weight: 600; padding: 1px 6px; border-radius: 9px; }
+    .b-fact { background: #e2e8f0; color: #334155; }
+    .b-fc { background: #ecfdf5; color: #047857; }
+    .b-bad { background: #fee2e2; color: #b91c1c; }
+    .b-res { background: #fef3c7; color: #92400e; }
+    .use-sel { border: 1.5px solid #a5b4fc; color: #3730a3; font-weight: 600; }
+
+    [data-tip] { cursor: help; }
+    .s-table td[data-tip], .w-table td[data-tip] { text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px; }
+    #tip { position: fixed; z-index: 50; display: none; pointer-events: none; background: #1e293b; color: #f8fafc; font-size: 10.5px;
+        border-radius: 6px; padding: 8px 10px; box-shadow: 0 10px 20px -5px rgba(0,0,0,.35); max-width: 460px; font-variant-numeric: tabular-nums; }
+    #tip .h { font-weight: 700; margin-bottom: 4px; color: #fff; }
+    #tip table { border-collapse: collapse; width: 100%; }
+    #tip td { padding: 1px 4px; text-align: right; white-space: nowrap; }
+    #tip td:first-child { text-align: left; color: #cbd5e1; padding-right: 14px; }
+    #tip tr.t td { border-top: 1px solid #64748b; font-weight: 700; color: #fff; }
+    #tip tr.r td { color: #fcd34d; }
+    #tip tr.s td { padding-top: 6px; color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 9px; }
+    #tip .n { color: #94a3b8; margin-top: 4px; font-size: 9.5px; white-space: normal; }
+    h3.sec { font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 6px; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #4f46e5; outline-offset: 1px; }
+
+    @media print {
+        @page { size: A3 landscape; margin: 8mm; }
+        body { background: #fff; padding: 0; }
+        .print-hide { display: none !important; }
+        .executive-container { box-shadow: none; border-radius: 0; width: 100% !important; }
+        .s-table input.res { border: none; }
+    }
+</style>
+</head>
+<body>
+
+<nav class="bg-white shadow p-3 mb-4 rounded-lg w-[1587px] mx-auto flex justify-between items-center print-hide">
+    <div>
+        <h1 class="text-lg font-bold text-slate-800">Постімпорт — графік отримання і вільні ліміти</h1>
+        <p class="text-xs text-slate-500 mt-0.5">Дані: <span id="navDate" class="font-semibold text-indigo-600">--</span>
+            <span id="navFile" class="ml-2 text-slate-400"></span></p>
+    </div>
+    <div class="flex items-center gap-4">
+        <span id="dataStatus" class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 max-w-[360px] truncate" title="">Підготовка…</span>
+        <div class="flex items-center gap-2">
+            <button onclick="loadCred()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Оновити CRED</button>
+            <label class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer">
+                Файл CRED…<input type="file" accept=".json" class="hidden" onchange="loadLocal(this)">
+            </label>
+        </div>
+        <div class="flex items-center gap-1.5 border-l pl-4 border-slate-200">
+            <button onclick="exportXlsx()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Excel</button>
+            <button onclick="copySchedule()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Копіювати графік</button>
+            <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm">Друк</button>
+        </div>
+        <div id="navLinks">
+            <a href="sop-home" class="mr-3 text-xs font-semibold">CF Показники</a>
+            <a href="sop-credit" class="mr-3 text-xs font-semibold">Кредити</a>
+            <a href="sop-pi" class="text-xs font-semibold">Постімпорт</a>
+        </div>
+    </div>
+</nav>
+
+<div class="executive-container" id="dashboardContent">
+    <div class="flex justify-between items-end border-b border-slate-200 pb-2">
+        <div>
+            <h1 class="text-xl font-bold text-slate-800">Графік отримання постімпорту та вільні ліміти</h1>
+            <p class="text-xs text-slate-500 mt-0.5" id="hdrSub">Завантаження даних CRED…</p>
+        </div>
+        <div class="text-right text-[10.5px] text-slate-500" id="hdrUnit">--</div>
+    </div>
+
+    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-x-6 gap-y-2 items-center print-hide">
+        <div class="flex items-center gap-2">
+            <label for="startInp" class="text-xs font-bold text-slate-600">Показувати з:</label>
+            <input type="date" id="startInp" onchange="render()" class="border border-slate-300 rounded px-2 py-1 text-xs">
+        </div>
+        <div class="flex items-center gap-2">
+            <label for="unitSel" class="text-xs font-bold text-slate-600">Одиниці:</label>
+            <select id="unitSel" onchange="render()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
+                <option value="th" selected>тис. грн</option>
+                <option value="mln">млн грн, 0,0</option>
+                <option value="mln0">млн грн</option>
+            </select>
+        </div>
+        <div class="flex items-center gap-2">
+            <label for="priceInp" class="text-xs font-bold text-slate-600">Тонни: тис. грн за 1 т</label>
+            <input type="number" id="priceInp" step="0.1" min="1" value="67.5" onchange="savePrefs(); render()" class="border border-slate-300 rounded px-2 py-1 text-xs w-20">
+        </div>
+        <div class="flex items-center gap-2">
+            <label for="thrInp" class="text-xs font-bold text-slate-600">Поріг «малий ліміт», млн</label>
+            <input type="number" id="thrInp" step="10" min="0" value="50" onchange="savePrefs(); render()" class="border border-slate-300 rounded px-2 py-1 text-xs w-20">
+        </div>
+        <div class="flex items-center gap-2">
+            <label for="useSel" class="text-xs font-bold text-slate-600">Використання ліміту ПІ:</label>
+            <select id="useSel" onchange="savePrefs(); applyFactor(); render()" class="use-sel rounded px-2 py-1 text-xs bg-white">
+                <option value="1">100% — без резерву</option>
+                <option value="0.99">99% — резерв 1% від ліміту</option>
+                <option value="0.98" selected>98% — резерв 2% від ліміту</option>
+                <option value="0.97">97% — резерв 3% від ліміту</option>
+                <option value="0.95">95% — резерв 5% від ліміту</option>
+            </select>
+        </div>
+        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+            <input type="checkbox" id="showSub" checked onchange="render()"> Підсумки тижнів
+        </label>
+        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+            <input type="checkbox" id="showCrBanks" onchange="render()"> Кредитні ліміти за банками
+        </label>
+    </div>
+
+    <div id="warnBox" class="hidden bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2 text-[11px]"></div>
+
+    <div class="grid grid-cols-5 gap-3" id="kpis"></div>
+
+    <div>
+        <h3 class="sec">Отримання постімпорту за тижнями та вільний ліміт на кінець тижня</h3>
+        <div class="border border-slate-200 rounded-lg p-3" style="height: 320px;"><canvas id="chart"></canvas></div>
+    </div>
+
+    <!-- Таблиця 1: Графік отримання постімпорту -->
+    <div>
+        <h3 class="sec">Графік отримання постімпорту</h3>
+        <div class="overflow-x-auto"><table class="s-table" id="schedTable"></table></div>
+        <p class="text-[10px] text-slate-500 mt-1">«Ресурс» підтягується з назви рядка покриття, розміщеного в день отримання. Його можна виправити вручну:
+            зміни зберігаються лише в цьому браузері. Червоним позначено транші, що перевищують 100% вільного ліміту.
+            Наведіть курсор на ліміт, щоб побачити розрахунок.</p>
+    </div>
+
+    <!-- Таблиця 2: Вільний ліміт постімпорту за банками (зміщено під Графік отримання) -->
+    <div>
+        <h3 class="sec">Вільний ліміт постімпорту за банками</h3>
+        <div class="overflow-x-auto"><table class="s-table" id="bankTable"></table></div>
+    </div>
+
+    <!-- Таблиця 3: Вільний ліміт на кінець тижня -->
+    <div>
+        <h3 class="sec">Вільний ліміт на кінець тижня (неділя) — сума для контрактів з урахуванням резерву, <span id="wUnit">--</span></h3>
+        <div class="overflow-x-auto border border-slate-200 rounded-lg"><table class="w-table" id="weekTable"></table></div>
+        <p class="text-[10px] text-slate-500 mt-1">У клітинці банку — сума можливого фінансування (вільний ліміт − резерв на курс). Під нею сірим — вільний ліміт 100%, синім — отримання за тиждень.
+            Рядок «Сума для контрактів» — доступний обсяг фінансування для передачі комерційному відділу. Сірим фоном — фактичні тижні. Наведіть курсор, щоб побачити розрахунок.</p>
+    </div>
+
+    <details class="border border-slate-200 rounded-lg px-4 py-2 text-[11px] text-slate-600 leading-relaxed">
+        <summary class="font-bold text-xs text-slate-700 cursor-pointer">Довідка: як рахуються показники</summary>
+        <div class="mt-2 space-y-1.5 max-w-[1100px]">
+            <p>Джерело — останній файл CRED_*.json у теці snapshots_cred, отриманий через потік Get_CRED_Latest (так само, як на сторінці «Кредити»).
+               Можна також завантажити файл CRED вручну кнопкою «Файл CRED…».</p>
+            <p><b>Отримання</b> — рядки «Отримано постімпортне фінансування …» (6.1.3) за датами.</p>
+            <p><b>Вільний ліміт до отримання</b> — «Доступний ліміт постімпорт …» банку на дату отримання. У CRED він показаний до списання траншу цього дня.
+               <b>Після</b> = до − сума траншу.</p>
+            <p><b>Вільний ліміт на кінець дня</b> = доступний ліміт на дату − отримання цього дня. Порожні клітинки CRED у межах файлу вважаються нулем.</p>
+            <p><b>Використання ліміту ПІ та резерв</b> — резерв закладається як захисний буфер (похибка) на випадок коливання валютного курсу від <b>загального ліміту банку</b> (заборгованість постімпорту + вільний ліміт), щоб уникнути вимоги банку щодо доформування грошового покриття.
+               <b>Сума можливого фінансування (для контрактів)</b> = Вільний ліміт 100% − Резерв на курс (якщо значення від'ємне, доступний обсяг дорівнює нулю).</p>
+            <p><b>Розшифровка вільного ліміту на кінець тижня</b> (наведіть курсор на клітинку): ліміт на кінець попереднього дня + погашення постімпорту
+               − отримання постімпорту ± зміна ліміту (курсові різниці, зміна розміру ліміту, інші рухи у CRED) = вільний ліміт 100% − резерв = сума можливого фінансування.</p>
+            <p><b>Кредитний ліміт</b> — «Доступний кредитний ліміт …» (сума за банками).</p>
+            <p><b>Тонни</b> = сума, тис. грн ÷ ціна за тонну, тис. грн (за замовчуванням 67,5).</p>
+        </div>
+    </details>
+</div>
+
+<div id="tip" role="tooltip"></div>
+
+<script>
+// =====================================================================
+// Джерело: Get_CRED_Latest — останній CRED_*.json у теці snapshots_cred
+// =====================================================================
+const CRED_FLOW_URL = "https://defaultce629f5605df43c6b9798b0b7992fc.55.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/01/workflows/d4c4e8fdf2ff4593a36836b3c5434c43/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=yyyFwxCC6UXV90I6t9f-n1NKFdTdNJRd8jneEF8d5lQ";
+const UNITS = { th: { k: 1e3, dec: 0, lbl: 'тис. грн' }, mln: { k: 1e6, dec: 1, lbl: 'млн грн' }, mln0: { k: 1e6, dec: 0, lbl: 'млн грн' } };
+const PALETTE = ['#4f46e5', '#0891b2', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#65a30d', '#0f766e', '#9333ea'];
+const COUNTERPARTIES = [[/orlen/i, 'Орлен'], [/unimot|унімот/i, 'Унімот'], [/d-?\s?tra[iy]?ding|д\s?трейд/i, 'Д Трейдінг'],
+                        [/constant/i, 'Constant Oil'], [/phil+ips/i, 'Philips BP']];
+
+// ---------- дати ----------
+const DAY = 86400000;
+const isoAdd = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * DAY).toISOString().slice(0, 10);
+const dow = iso => new Date(iso + 'T00:00:00Z').getUTCDay();
+const toMonday = iso => isoAdd(iso, -((dow(iso) + 6) % 7));
+const dmy = iso => iso ? iso.split('-').reverse().join('.') : '--';
+const dm = iso => { const [, m, d] = iso.split('-'); return `${d}.${m}`; };
+const yy = iso => iso.slice(2, 4);
+const weekLbl = mon => { const sun = isoAdd(mon, 6); return yy(mon) === yy(sun) ? `${dm(mon)}-${dm(sun)}.${yy(sun)}` : `${dm(mon)}.${yy(mon)}-${dm(sun)}.${yy(sun)}`; };
+const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim();
+const todayIso = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+const $ = id => document.getElementById(id);
+
+// ---------- розпаковка відповіді потоку ----------
+function b64json(obj) {
+    if (obj && typeof obj['$content'] === 'string') {
+        try { return JSON.parse(new TextDecoder('utf-8').decode(Uint8Array.from(atob(obj['$content']), c => c.charCodeAt(0)))); }
+        catch { return null; }
+    }
+    return null;
+}
+function unwrapBy(test) {
+    const f = (obj, depth = 0) => {
+        if (obj == null || depth > 6) return null;
+        if (typeof obj === 'string') { try { return f(JSON.parse(obj), depth + 1); } catch { return null; } }
+        if (Array.isArray(obj)) { for (const x of obj) { const r = f(x, depth + 1); if (r) return r; } return null; }
+        if (typeof obj !== 'object') return null;
+        if (test(obj)) return obj;
+        const dec = b64json(obj); if (dec) { const r = f(dec, depth + 1); if (r) return r; }
+        for (const k of ['snapshot', 'body', 'data', 'content', 'value', 'result']) {
+            if (obj[k] != null) { const r = f(obj[k], depth + 1); if (r) return r; }
+        }
+        return null;
+    };
+    return f;
+}
+const unwrapCred = unwrapBy(o => Array.isArray(o.rows) && o.meta && o.meta.schema === 'cred_daily');
+
+async function postJson(url, body) {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) {
+        let msg = '';
+        try { const e = await res.json(); msg = e.message || e.error || ''; } catch { /* порожнє тіло */ }
+        const err = new Error(`HTTP ${res.status}${msg ? ' — ' + msg : ''}`); err.status = res.status; throw err;
+    }
+    const txt = await res.text();
+    if (!txt.trim()) throw new Error('порожня відповідь потоку');
+    try { return JSON.parse(txt); } catch { throw new Error('відповідь потоку не є JSON'); }
+}
+
+// =====================================================================
+// Стан і завантаження
+// =====================================================================
+let SNAP = null, IDX = null, CHART = null, VIEW = null;
+
+function setStatus(text, cls) {
+    const el = $('dataStatus');
+    el.textContent = text; el.title = text;
+    el.className = 'text-xs font-medium px-2.5 py-1 rounded-full max-w-[360px] truncate ' + cls;
+}
+async function loadCred() {
+    setStatus('Завантаження останнього CRED…', 'bg-indigo-100 text-indigo-800');
+    try {
+        let raw;
+        try { raw = await postJson(CRED_FLOW_URL, { kind: 'cred', latest: true }); }
+        catch (e) { if (e.status === 404) throw new Error('у теці snapshots_cred немає файлів CRED_*.json'); throw e; }
+        const snap = unwrapCred(raw);
+        if (!snap) throw new Error('відповідь Get_CRED_Latest не схожа на CRED-snapshot');
+        snap.__file = raw && raw.fileName ? { name: raw.fileName, modified: raw.modified } : null;
+        useSnap(snap);
+    } catch (e) {
+        setStatus('CRED не завантажено: ' + e.message, 'bg-red-100 text-red-800');
+        $('hdrSub').textContent = 'Не вдалося отримати CRED: ' + e.message + '. Можна завантажити файл вручну кнопкою «Файл CRED…».';
+    }
+}
+function loadLocal(input) {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+        try {
+            const snap = unwrapCred(JSON.parse(rd.result));
+            if (!snap) throw new Error('файл не схожий на CRED-snapshot (schema cred_daily)');
+            snap.__file = { name: f.name, local: true };
+            useSnap(snap);
+        } catch (e) { setStatus('Файл не прочитано: ' + e.message, 'bg-red-100 text-red-800'); }
+        input.value = '';
+    };
+    rd.readAsText(f, 'utf-8');
+}
+function useSnap(snap) {
+    SNAP = snap;
+    IDX = indexCred(snap);
+    applyFactor();
+    const fd = snap.meta.forecast_date || IDX.from;
+    let start = toMonday(todayIso());
+    if (start < fd) start = fd;
+    if (start > IDX.to) start = fd;
+    $('startInp').value = start;
+    $('startInp').min = IDX.from; $('startInp').max = IDX.to;
+    render();
+}
+
+// =====================================================================
+// Індекс CRED
+// =====================================================================
+function indexCred(snap) {
+    const dates = (snap.dates || []).slice().sort();
+    const n = dates.length, pos = new Map(dates.map((d, i) => [d, i]));
+    const keyOf = r => r.bank_key || cleanName(r.bank).toLowerCase().replace(/[\s()\-]/g, '');
+    const addTo = (arr, r) => { for (const [d, v] of Object.entries(r.values || {})) { const i = pos.get(d); if (i != null && typeof v === 'number' && isFinite(v)) arr[i] += v; } };
+    const items = t => (snap.rows || []).filter(r => r.kind === 'item' && r.type === t);
+
+    const pi = new Map();
+    const piBank = r => {
+        const k = keyOf(r); if (!k) return null;
+        let b = pi.get(k);
+        if (!b) pi.set(k, b = { key: k, name: cleanName(r.bank) || k, lim: new Float64Array(n), inn: new Float64Array(n), out: new Float64Array(n), debt: new Float64Array(n) });
+        return b;
+    };
+    items('pi_limit').forEach(r => { const b = piBank(r); if (b) addTo(b.lim, r); });
+    items('pi_in').forEach(r => { const b = piBank(r); if (b) addTo(b.inn, r); });
+    items('pi_out').forEach(r => { const b = piBank(r); if (b) addTo(b.out, r); });
+    items('pi_debt').forEach(r => { const b = piBank(r); if (b) addTo(b.debt, r); });
+    const nz = a => a.some(v => Math.abs(v) >= 1);
+    for (const [k, b] of pi) if (!nz(b.lim) && !nz(b.inn) && !nz(b.debt)) pi.delete(k);
+
+    const cr = new Map();
+    items('credit_limit').forEach(r => {
+        const k = keyOf(r); if (!k) return;
+        let b = cr.get(k);
+        if (!b) cr.set(k, b = { key: k, name: cleanName(r.bank) || k, lim: new Float64Array(n) });
+        addTo(b.lim, r);
+    });
+    for (const [k, b] of cr) if (!nz(b.lim)) cr.delete(k);
+
+    const covers = (snap.rows || []).filter(r => r.type === 'restricted' && /пост-?імпорт/i.test(r.name || '')).map(r => {
+        const e = Object.entries(r.values || {}).filter(([, v]) => typeof v === 'number' && Math.abs(v) >= 1).sort((a, b) => a[0] < b[0] ? -1 : 1);
+        return { key: keyOf(r), name: cleanName(r.name), start: e.length ? e[0][0] : null, end: e.length ? e[e.length - 1][0] : null, amount: e.length ? e[0][1] : 0 };
+    }).filter(c => c.start);
+
+    const sumOf = (map, field) => { const a = new Float64Array(n); map.forEach(b => { for (let i = 0; i < n; i++) a[i] += b[field][i]; }); return a; };
+    const rawLim = sumOf(pi, 'lim'), crLim = sumOf(cr, 'lim');
+
+    const warns = [];
+    const tot = (snap.rows || []).find(r => r.kind === 'total' && r.type === 'pi_limit');
+    if (tot) {
+        const t = new Float64Array(n); addTo(t, tot);
+        const bad = dates.filter((d, i) => Math.abs(t[i] - rawLim[i]) >= 1000);
+        if (bad.length) warns.push(`сума лімітів постімпорту за банками не збігається з рядком «Всього» на ${bad.length} дат (перша — ${dmy(bad[0])})`);
+    }
+
+    const receipts = [];
+    pi.forEach(b => {
+        for (let i = 0; i < n; i++) if (b.inn[i] >= 1) {
+            const cover = findCover(covers, b.key, dates[i]);
+            receipts.push({ key: b.key, bank: b.name, date: dates[i], i, amount: b.inn[i], limRaw: b.lim[i], limBefore: b.lim[i],
+                            cover, auto: cover ? counterparty(cover.name) : '' });
+        }
+    });
+    receipts.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.bank.localeCompare(b.bank, 'uk'));
+
+    return { dates, pos, n, from: dates[0], to: dates[n - 1], pi, cr, covers, crLim, receipts, warns, F: 1 };
+}
+
+const factor = () => { const f = parseFloat($('useSel').value); return f > 0 && f <= 1 ? f : 1; };
+const pct = f => fmtNum((1 - f) * 100, 0);
+
+function applyFactor() {
+    if (!IDX) return;
+    const F = factor(), n = IDX.n;
+    const piLim = new Float64Array(n), piLimRaw = new Float64Array(n), piEod = new Float64Array(n), piEodRaw = new Float64Array(n);
+    const R = 1 - F;
+    IDX.pi.forEach(b => {
+        b.limE = new Float64Array(n); b.eod = new Float64Array(n); b.eodRaw = new Float64Array(n);
+        b.totS = new Float64Array(n); b.totE = new Float64Array(n);
+        for (let i = 0; i < n; i++) {
+            const l = b.lim[i];
+            b.eodRaw[i] = l - b.inn[i];
+            b.totS[i] = (i > 0 ? b.debt[i - 1] : b.debt[i]) + l;
+            b.totE[i] = b.debt[i] + b.eodRaw[i];
+            b.limE[i] = l - R * Math.max(0, b.totS[i]);
+            b.eod[i] = b.eodRaw[i] - R * Math.max(0, b.totE[i]);
+            piLim[i] += b.limE[i]; piLimRaw[i] += l; piEod[i] += b.eod[i]; piEodRaw[i] += b.eodRaw[i];
+        }
+    });
+    IDX.receipts.forEach(r => {
+        const b = IDX.pi.get(r.key);
+        r.limRaw = b.lim[r.i]; r.limBefore = b.limE[r.i]; r.tot = b.totS[r.i];
+        r.debtBefore = r.i > 0 ? b.debt[r.i - 1] : b.debt[r.i];
+    });
+    Object.assign(IDX, { F, piLim, piLimRaw, piEod, piEodRaw });
+}
+
+// ---------- підказки при наведенні ----------
+let TIPS = [];
+const tip = html => { TIPS.push(html); return ` data-tip="${TIPS.length - 1}"`; };
+const tipTable = (title, rows, note) => `<div class="h">${esc(title)}</div><table>` +
+    rows.map(r => `<tr class="${r[2] || ''}"><td>${esc(r[0])}</td><td>${r[1] ?? ''}</td></tr>`).join('') + '</table>' +
+    (note ? `<div class="n">${esc(note)}</div>` : '');
+function initTip() {
+    const el = $('tip');
+    const place = e => {
+        const w = el.offsetWidth, h = el.offsetHeight;
+        let x = e.clientX + 14, y = e.clientY + 14;
+        if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+        if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+        el.style.left = Math.max(8, x) + 'px'; el.style.top = Math.max(8, y) + 'px';
+    };
+    document.addEventListener('mouseover', e => {
+        const t = e.target.closest && e.target.closest('[data-tip]');
+        if (!t || TIPS[+t.dataset.tip] == null) { el.style.display = 'none'; return; }
+        el.innerHTML = TIPS[+t.dataset.tip];
+        el.style.display = 'block';
+        place(e);
+    });
+    document.addEventListener('mousemove', e => { if (el.style.display === 'block') place(e); });
+    window.addEventListener('scroll', () => el.style.display = 'none', true);
+}
+function findCover(covers, key, date) {
+    const subl = /субліміт/i.test(key);
+    const c = covers.filter(x => x.start === date && (subl
+        ? key.startsWith(x.key) && /субліміт/i.test(x.name)
+        : x.key === key && !/субліміт/i.test(x.name)));
+    return c.sort((a, b) => b.amount - a.amount)[0] || null;
+}
+function counterparty(name) {
+    const m = String(name || '').match(/\((.*)\)/);
+    const s = m ? m[1] : '';
+    for (const [rx, lbl] of COUNTERPARTIES) if (rx.test(s)) return lbl;
+    return '';
+}
+
+// ---------- налаштування в браузері ----------
+const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { if (v == null || v === '') localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* недоступно */ } }
+};
+const resKey = r => `piRes:${r.key}:${r.date}`;
+const resOf = r => { const v = store.get(resKey(r)); return v != null ? v : r.auto; };
+function saveRes(el) { store.set(el.dataset.k, el.value.trim()); el.classList.remove('auto'); }
+function savePrefs() { store.set('piPrice', $('priceInp').value); store.set('piThr', $('thrInp').value); store.set('piUse', $('useSel').value); }
+function loadPrefs() {
+    const p = store.get('piPrice'), t = store.get('piThr'), u = store.get('piUse');
+    if (p) $('priceInp').value = p;
+    if (t) $('thrInp').value = t;
+    if (u && [...$('useSel').options].some(o => o.value === u)) $('useSel').value = u;
+}
+
+// =====================================================================
+// Розрахунок вигляду
+// =====================================================================
+const unit = () => UNITS[$('unitSel').value];
+const price = () => { const p = parseFloat($('priceInp').value); return isFinite(p) && p > 0 ? p : 67.5; };
+const thr = () => { const t = parseFloat($('thrInp').value); return isFinite(t) && t >= 0 ? t * 1e6 : 50e6; };
+function fmtNum(x, dec) {
+    if (x == null || !isFinite(x)) return '–';
+    const r = Math.round(x * 10 ** dec) / 10 ** dec;
+    if (r === 0) return '0';
+    return (r < 0 ? '−' : '') + Math.abs(r).toLocaleString('uk-UA', { minimumFractionDigits: dec, maximumFractionDigits: dec }).replace(/[\u202F\u00A0]/g, ' ');
+}
+const fu = v => v == null ? '–' : fmtNum(v / unit().k, unit().dec);
+const fm = v => fmtNum(v / 1e6, 1);
+const tonnes = amt => Math.round(amt / 1e3 / price());
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const clampIdx = d => {
+    if (d <= IDX.from) return 0;
+    if (d >= IDX.to) return IDX.n - 1;
+    let i = IDX.pos.get(d);
+    if (i == null) { i = IDX.dates.findIndex(x => x > d); i = i < 0 ? IDX.n - 1 : i; }
+    return i;
+};
+
+function buildView() {
+    const start = $('startInp').value || IDX.from;
+    const i0 = clampIdx(start), iEnd = IDX.n - 1;
+    const factUntil = SNAP.meta.fact_until || isoAdd(SNAP.meta.forecast_date || IDX.from, -1);
+    const recs = IDX.receipts.filter(r => r.date >= start);
+
+    const weeks = [];
+    for (let mon = toMonday(IDX.dates[i0]); mon <= IDX.to; mon = isoAdd(mon, 7)) {
+        const sun = isoAdd(mon, 6);
+        const a = Math.max(clampIdx(mon), i0), b = clampIdx(sun);
+        const w = { mon, sun, a, b, partial: sun > IDX.to, fact: sun <= factUntil, inBy: {}, inTot: 0, piEow: {}, crEow: {}, br: {},
+                    prevD: a > 0 ? IDX.dates[a - 1] : null, endD: IDX.dates[b] };
+        let minV = Infinity, minD = null;
+        for (let i = a; i <= b; i++) if (IDX.piEod[i] < minV) { minV = IDX.piEod[i]; minD = IDX.dates[i]; }
+        w.piMin = minV; w.piMinD = minD;
+        const T = { prev: 0, out: 0, inn: 0, resid: 0, raw: 0, eff: 0 };
+        IDX.pi.forEach((bk, k) => {
+            let s = 0, o = 0; const ins = [];
+            for (let i = a; i <= b; i++) {
+                s += bk.inn[i]; o += bk.out[i];
+                if (bk.inn[i] >= 1) ins.push([IDX.dates[i], bk.inn[i]]);
+            }
+            if (s >= 1) { w.inBy[k] = s; w.inTot += s; }
+            w.piEow[k] = bk.eod[b];
+            const prev = a > 0 ? bk.eodRaw[a - 1] : bk.lim[a];
+            const x = { prev, out: o, inn: s, raw: bk.eodRaw[b], eff: bk.eod[b], debt: bk.debt[b], tot: bk.totE[b], ins };
+            x.resid = x.raw - prev - o + s;
+            w.br[k] = x;
+            ['prev', 'out', 'inn', 'resid', 'raw', 'eff', 'debt', 'tot'].forEach(f => T[f] = (T[f] || 0) + x[f]);
+        });
+        w.brTot = T;
+        w.contract = 0;
+        Object.values(w.br).forEach(x => { if (x.eff >= 1) w.contract += x.eff; });
+        IDX.cr.forEach((bk, k) => w.crEow[k] = bk.lim[b]);
+        w.piEowTot = IDX.piEod[b]; w.crEowTot = IDX.crLim[b];
+        weeks.push(w);
+    }
+
+    const banks = [...IDX.pi.values()].map(b => {
+        let minV = Infinity, minD = null, sumIn = 0, cnt = 0, next = null;
+        for (let i = i0; i <= iEnd; i++) {
+            if (b.eod[i] < minV) { minV = b.eod[i]; minD = IDX.dates[i]; }
+            if (b.inn[i] >= 1) { sumIn += b.inn[i]; cnt++; if (!next) next = IDX.dates[i]; }
+        }
+        return { key: b.key, name: b.name, atStart: b.limE[i0], atStartRaw: b.lim[i0], sumIn, cnt, minV, minD,
+                 end: b.eod[iEnd], endRaw: b.eodRaw[iEnd], next };
+    }).sort((x, y) => x.name.localeCompare(y.name, 'uk'));
+
+    let minTot = Infinity, minTotD = null;
+    for (let i = i0; i <= iEnd; i++) if (IDX.piEod[i] < minTot) { minTot = IDX.piEod[i]; minTotD = IDX.dates[i]; }
+
+    return { start, i0, iEnd, factUntil, recs, weeks, banks, minTot, minTotD,
+             deficit: recs.filter(isOver), reserve: recs.filter(isReserve) };
+}
+
+const TOL = 1000;
+const isOver = r => r.amount > r.limRaw + TOL;
+const isReserve = r => !isOver(r) && r.amount > r.limBefore + TOL;
+
+// =====================================================================
+// Рендер
+// =====================================================================
+function render() {
+    if (!IDX) return;
+    TIPS = [];
+    VIEW = buildView();
+    const V = VIEW, u = unit(), m = SNAP.meta, F = IDX.F;
+    $('navDate').textContent = `CRED на ${dmy(m.forecast_date)}`;
+    const fname = SNAP.__file && SNAP.__file.name ? SNAP.__file.name : '';
+    const created = m.created_utc ? new Date(m.created_utc).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    $('navFile').textContent = `· ${fname || 'CRED'}${SNAP.__file && SNAP.__file.local ? ' (локальний файл)' : ''}${created ? ` · сформовано ${created}` : ''}`;
+    $('hdrSub').textContent = `Прогноз CRED на ${dmy(m.forecast_date)}, факт по ${dmy(V.factUntil)}, дані до ${dmy(IDX.to)}. ` +
+        `Показано з ${dmy(V.start)}. Курс USD ${m.fx && m.fx.USD ? fmtNum(m.fx.USD, 4) : '--'} на ${dmy(m.fx_date)}. ` +
+        (F < 1 ? `Ліміт ПІ — ${fmtNum(F * 100, 0)}% вільного, резерв ${pct(F)}% як буфер на коливання курсу.` : 'Ліміт ПІ — 100% вільного, без резерву.');
+    $('hdrUnit').innerHTML = `${u.lbl}<br>тонни — за ${fmtNum(price(), 1)} тис. грн/т<br>ліміт ПІ до використання — ${fmtNum(F * 100, 0)}%`;
+    $('wUnit').textContent = u.lbl;
+
+    const warns = [...IDX.warns];
+    if (m.forecast_date && toMonday(m.forecast_date) < toMonday(todayIso()))
+        warns.push(`останній CRED сформовано на ${dmy(m.forecast_date)}, а поточний тиждень — ${dmy(toMonday(todayIso()))}`);
+    if (V.deficit.length) warns.push(`${V.deficit.length} транш(і) перевищують 100% вільного ліміту банку на дату отримання`);
+    if (V.reserve.length) {
+        warns.push(`${V.reserve.length} транш(і) зачіпають буфер резерву ${pct(F)}% (розрахункова похибка на зміну курсу)`);
+    }
+    $('warnBox').classList.toggle('hidden', !warns.length);
+    $('warnBox').innerHTML = warns.length ? '<b>Увага:</b> ' + warns.map(esc).join('; ') : '';
+
+    renderKpis(V);
+    renderChart(V);
+    renderSchedule(V);
+    renderBanks(V);
+    renderWeeks(V);
+
+    if (V.deficit.length) setStatus(`Сформовано; ${V.deficit.length} транш(і) понад вільний ліміт`, 'bg-red-100 text-red-800');
+    else if (V.reserve.length) setStatus(`Сформовано; ${V.reserve.length} транш(і) зачіпають резерв ${pct(F)}%`, 'bg-amber-100 text-amber-800');
+    else if (warns.length) setStatus('Сформовано з попередженнями', 'bg-amber-100 text-amber-800');
+    else setStatus(`Сформовано: ${V.recs.length} траншів, ліміти в межах`, 'bg-emerald-100 text-emerald-800');
+}
+
+function renderKpis(V) {
+    const sum = V.recs.reduce((s, r) => s + r.amount, 0), F = IDX.F;
+    const card = (l, v, s, cls = '') => `<div class="kpi ${cls}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+    $('kpis').innerHTML =
+        card(`Отримання постімпорту з ${dm(V.start)}`, `${fm(sum)} млн`, `${V.recs.length} траншів · ~${fmtNum(sum / 1e3 / price(), 0)} т`) +
+        card(`Вільний ліміт ПІ на ${dm(IDX.dates[V.i0])}`, `${fm(Math.max(0, IDX.piLim[V.i0]))} млн`,
+             F < 1 ? `з резервом ${pct(F)}% · 100%: ${fm(IDX.piLimRaw[V.i0])} млн` : 'до отримань цього дня, 100%') +
+        card(`Мінімальний вільний ліміт ПІ${F < 1 ? ` (${fmtNum(F * 100, 0)}%)` : ''}`, `${fm(Math.max(0, V.minTot))} млн`, V.minTotD ? `на кінець ${dmy(V.minTotD)}` : '', V.minTot < thr() ? 'bad' : '') +
+        card(`Вільний кредитний ліміт на ${dm(IDX.dates[V.i0])}`, `${fm(IDX.crLim[V.i0])} млн`, `${IDX.cr.size} банків`) +
+        card('Транші понад 100% ліміту', `${V.deficit.length}`,
+             V.deficit.length
+                 ? `понад 100%: ${V.deficit.map(r => `${r.bank} ${dm(r.date)}`).join(', ')}`
+                 : `усі транші в межах 100% ліміту`,
+             V.deficit.length ? 'bad' : 'good');
+}
+
+function bankColors() {
+    const keys = [...IDX.pi.keys()].sort((a, b) => IDX.pi.get(a).name.localeCompare(IDX.pi.get(b).name, 'uk'));
+    return new Map(keys.map((k, i) => [k, PALETTE[i % PALETTE.length]]));
+}
+function renderChart(V) {
+    const ctx = $('chart');
+    if (!window.Chart) { ctx.parentElement.innerHTML = '<p class="text-xs text-slate-500">Бібліотека графіків не завантажилась.</p>'; return; }
+    const col = bankColors();
+    const labels = V.weeks.map(w => weekLbl(w.mon));
+    const used = [...IDX.pi.keys()].filter(k => V.weeks.some(w => w.inBy[k]));
+    const ds = used.map(k => ({ type: 'bar', label: IDX.pi.get(k).name, stack: 'in', backgroundColor: col.get(k), order: 2,
+                                data: V.weeks.map(w => (w.inBy[k] || 0) / 1e6) }));
+    ds.push({ type: 'line', label: `Вільний ліміт ПІ (${fmtNum(IDX.F * 100, 0)}%), кінець тижня`, stack: 'l1', data: V.weeks.map(w => Math.max(0, w.piEowTot) / 1e6),
+              borderColor: '#1e293b', backgroundColor: '#1e293b', borderWidth: 2, pointRadius: 3, tension: .2, order: 1 });
+    ds.push({ type: 'line', label: 'Мінімальний вільний ліміт ПІ за тиждень', stack: 'l2', data: V.weeks.map(w => Math.max(0, w.piMin) / 1e6),
+              borderColor: '#dc2626', backgroundColor: '#dc2626', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 2, tension: .2, order: 1 });
+    ds.push({ type: 'line', label: 'Вільний кредитний ліміт', stack: 'l3', data: V.weeks.map(w => w.crEowTot / 1e6),
+              borderColor: '#94a3b8', backgroundColor: '#94a3b8', borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, tension: .2, order: 1 });
+    if (CHART) CHART.destroy();
+    CHART = new Chart(ctx, {
+        type: 'bar', data: { labels, datasets: ds },
+        options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                tooltip: { callbacks: { label: c => c.raw ? `${c.dataset.label}: ${fmtNum(c.raw, 1)} млн` : null } }
+            },
+            scales: {
+                x: { stacked: true, ticks: { font: { size: 9 } }, grid: { display: false } },
+                y: { stacked: true, ticks: { font: { size: 9 }, callback: v => fmtNum(v, 0) }, title: { display: true, text: 'млн грн', font: { size: 9 } } }
+            }
+        }
+    });
+}
+
+function renderSchedule(V) {
+    const showSub = $('showSub').checked;
+    let h = `<thead><tr><th class="l">Банк</th><th class="l">Тиждень</th><th class="l">Дата</th><th>Сума</th><th>т</th>
+             <th class="l">Ресурс</th><th>Покриття</th><th>Вільний ліміт<br>до</th><th>Вільний ліміт<br>після</th><th class="l">Тип</th></tr></thead><tbody>`;
+    let curW = null, wSum = 0, wT = 0, tot = 0;
+    const flush = () => {
+        if (showSub && curW) h += `<tr class="sub"><td class="l" colspan="3">Разом ${weekLbl(curW)}</td><td>${fu(wSum)}</td><td>${fmtNum(wT, 0)}</td><td colspan="5"></td></tr>`;
+        wSum = 0; wT = 0;
+    };
+    V.recs.forEach(r => {
+        const w = toMonday(r.date);
+        if (w !== curW) { flush(); curW = w; }
+        const t = tonnes(r.amount), after = r.limBefore - r.amount;
+        const def = isOver(r), fact = r.date <= V.factUntil;
+        const F = IDX.F;
+        const limTip = tip(tipTable(`${r.bank}, ${dmy(r.date)}`, [
+            ['Вільний ліміт 100%', fu(r.limRaw)],
+            ...(F < 1 ? [['заборгованість постімпорту до траншу', fu(r.debtBefore)],
+                         ['загальний ліміт (заборгованість + вільний)', fu(r.tot)],
+                         [`− резерв на курс ${pct(F)}%`, fu(r.limBefore - r.limRaw), 'r'],
+                         [`= сума можливого фінансування`, fu(Math.max(0, r.limBefore)), 't']] : []),
+            ['− транш', fu(-r.amount)],
+            ['= залишок після траншу', fu(after), 't'],
+            ...(F < 1 ? [['залишок від 100% ліміту', fu(r.limRaw - r.amount)]] : [])
+        ], def ? `Транш перевищує 100% вільного ліміту на ${fu(r.amount - r.limRaw)}.` : ''));
+
+        const res = resOf(r), isAuto = store.get(resKey(r)) == null;
+        const cov = r.cover ? `${fu(r.cover.amount)} <span class="text-slate-400">(${fmtNum(r.cover.amount / r.amount * 100, 0)}%)</span>` : '<span class="text-slate-300">–</span>';
+        
+        // Колонка ТИП: тільки статус "понад ліміт", "факт" або "прогноз" (без "у зоні резерву")
+        const typeBadge = def ? `<span class="badge b-bad">понад ліміт ${fu(r.amount - r.limRaw)}</span>`
+                              : (fact ? '<span class="badge b-fact">факт</span>' : '<span class="badge b-fc">прогноз</span>');
+
+        h += `<tr class="${def ? 'deficit' : ''} ${fact ? 'fact' : ''}">
+            <td class="l">${esc(r.bank)}</td><td class="l">${weekLbl(w)}</td><td class="l">${dm(r.date)}</td>
+            <td>${fu(r.amount)}</td><td>${fmtNum(t, 0)}</td>
+            <td class="l"><input class="res ${isAuto ? 'auto' : ''}" data-k="${esc(resKey(r))}" value="${esc(res)}" placeholder="—"
+                title="${esc(r.cover ? 'Покриття: ' + r.cover.name : 'Покриття в день отримання не знайдено')}" onchange="saveRes(this)"></td>
+            <td title="${esc(r.cover ? r.cover.name : '')}">${cov}</td>
+            <td${limTip}>${fu(Math.max(0, r.limBefore))}</td>
+            <td class="${def ? 'bad' : after < -TOL || after < thr() ? 'warn' : ''}"${limTip}>${fu(after)}</td>
+            <td class="l">${typeBadge}</td></tr>`;
+        wSum += r.amount; wT += t; tot += r.amount;
+    });
+    flush();
+    if (!V.recs.length) h += `<tr><td class="l muted" colspan="10">З ${dmy(V.start)} отримань постімпорту в CRED немає.</td></tr>`;
+    else h += `<tr class="tot"><td class="l" colspan="3">Разом</td><td>${fu(tot)}</td><td>~${fmtNum(tot / 1e3 / price(), 0)}</td><td colspan="5"></td></tr>`;
+    $('schedTable').innerHTML = h + '</tbody>';
+}
+
+function renderBanks(V) {
+    const d0 = dm(IDX.dates[V.i0]);
+    let h = `<thead><tr><th class="l">Банк</th><th>На ${d0}</th><th>Отримання</th><th>Мін. вільний<br>(кінець дня)</th><th>На ${dm(IDX.to)}</th><th class="l">Наступне<br>отримання</th></tr></thead><tbody>`;
+    const T = { atStart: 0, sumIn: 0, end: 0 }, F = IDX.F;
+    const recTip = (title, recs, withBank) => {
+        const rows = recs.map(r => [`${dmy(r.date)}${withBank ? ' · ' + r.bank : ''}${resOf(r) ? ' · ' + resOf(r) : ''}`, fu(r.amount),
+                                    isOver(r) ? 'r' : '']);
+        const sum = recs.reduce((s, r) => s + r.amount, 0);
+        rows.push([`Разом, ${recs.length} транш(ів) · ~${fmtNum(sum / 1e3 / price(), 0)} т`, fu(sum), 't']);
+        return tip(tipTable(title, rows, ''));
+    };
+    const limTip = (name, raw, eff) => F < 1 ? tip(tipTable(name, [
+        ['Вільний ліміт 100%', fu(raw)],
+        [`− резерв на курс ${pct(F)}%`, fu(eff - raw), 'r'],
+        [`= сума можливого фінансування`, fu(Math.max(0, eff)), 't']
+    ])) : '';
+
+    V.banks.forEach(b => {
+        const startVal = Math.max(0, b.atStart);
+        const endVal = Math.max(0, b.end);
+        const minVal = Math.max(0, b.minV);
+        T.atStart += startVal; T.sumIn += b.sumIn; T.end += endVal;
+        const recs = V.recs.filter(r => r.key === b.key);
+        h += `<tr><td class="l">${esc(b.name)}</td>
+            <td${limTip(`${b.name}, на ${dmy(IDX.dates[V.i0])}`, b.atStartRaw, b.atStart)}>${fu(startVal)}</td>
+            <td${recs.length ? recTip(`${b.name}: отримання з ${dmy(V.start)}`, recs, false) : ''}>${b.sumIn ? fu(b.sumIn) + ` <span class="text-slate-400">(${b.cnt})</span>` : '<span class="text-slate-300">–</span>'}</td>
+            <td class="${minVal < thr() ? 'warn' : ''}" title="${b.minD ? 'на кінець ' + dmy(b.minD) : ''}">${fu(minVal)}<span class="text-slate-400 text-[8pt]"> ${b.minD ? dm(b.minD) : ''}</span></td>
+            <td${limTip(`${b.name}, на кінець ${dmy(IDX.to)}`, b.endRaw, b.end)}>${fu(endVal)}</td>
+            <td class="l">${b.next ? dmy(b.next) : '<span class="text-slate-300">–</span>'}</td></tr>`;
+    });
+    const byBankTip = tip(tipTable(`Отримання з ${dmy(V.start)} за банками`, [
+        ...V.banks.filter(b => b.sumIn).map(b => [`${b.name} (${b.cnt})`, fu(b.sumIn)]),
+        [`Разом, ${V.recs.length} транш(ів) · ~${fmtNum(T.sumIn / 1e3 / price(), 0)} т`, fu(T.sumIn), 't']]));
+    h += `<tr class="tot"><td class="l">Разом постімпорт</td><td${limTip(`Разом, на ${dmy(IDX.dates[V.i0])}`, IDX.piLimRaw[V.i0], IDX.piLim[V.i0])}>${fu(T.atStart)}</td><td${V.recs.length ? byBankTip : ''}>${fu(T.sumIn)}</td>
+          <td class="${V.minTot < thr() ? 'warn' : ''}">${fu(Math.max(0, V.minTot))}<span class="text-slate-400 text-[8pt] font-normal"> ${V.minTotD ? dm(V.minTotD) : ''}</span></td>
+          <td>${fu(T.end)}</td><td></td></tr>`;
+    h += `<tr><td class="l text-slate-500">Вільний кредитний ліміт</td><td class="text-slate-500">${fu(IDX.crLim[V.i0])}</td><td></td><td></td>
+          <td class="text-slate-500">${fu(IDX.crLim[V.iEnd])}</td><td></td></tr>`;
+    $('bankTable').innerHTML = h + '</tbody>';
+}
+
+function renderWeeks(V) {
+    const curMon = toMonday(todayIso());
+    const wc = w => `${w.fact ? 'f' : ''} ${w.mon === curMon ? 'cur' : ''}`;
+    const lvl = v => v < 1 ? '' : v < thr() ? 'low' : '';
+    let h = `<thead><tr><th>Банк</th>` + V.weeks.map(w =>
+        `<th class="${wc(w)}">${weekLbl(w.mon)}${w.partial ? `<br><span class="font-normal text-slate-400">до ${dm(IDX.to)}</span>` : ''}</th>`).join('') + `</tr></thead><tbody>`;
+    const F = IDX.F;
+    const piBanks = [...IDX.pi.values()].sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+
+    const brRows = (w, x) => [
+        [w.prevD ? `Вільний ліміт на кінець ${dmy(w.prevD)}` : `Вільний ліміт на ${dmy(w.endD)} (початок даних)`, fu(x.prev)],
+        ['+ погашення постімпорту', fu(x.out)],
+        ['− отримання постімпорту', fu(-x.inn)],
+        ['± зміна ліміту / курсові різниці', fu(x.resid)],
+        [`= вільний ліміт 100% на ${dmy(w.endD)}`, fu(x.raw), 't'],
+        ...(F < 1 ? [['Резерв на курс', '', 's'],
+                     ['заборгованість постімпорту', fu(x.debt)],
+                     ['загальний ліміт (заборгованість + вільний)', fu(x.tot)],
+                     [`− резерв на курс ${pct(F)}%`, fu(x.eff - x.raw), 'r'],
+                     [`= сума можливого фінансування`, fu(Math.max(0, x.eff)), 't']] : [])
+    ];
+    piBanks.forEach(b => {
+        h += `<tr><td>${esc(b.name)}</td>` + V.weeks.map(w => {
+            const x = w.br[b.key];
+            // Без від'ємних значень на візуалі: якщо x.eff < 0, то доступне фінансування = 0
+            const dispVal = Math.max(0, x.eff);
+            const rc = w.inBy[b.key];
+            const rows = brRows(w, x);
+            if (x.ins.length) {
+                rows.push(['Отримання за датами', '', 's']);
+                x.ins.forEach(([d, a]) => {
+                    const r = IDX.receipts.find(z => z.key === b.key && z.date === d);
+                    rows.push([`${dmy(d)}${r && resOf(r) ? ' · ' + resOf(r) : ''}`, fu(a)]);
+                });
+            }
+            const sub = F < 1 && Math.abs(x.raw - dispVal) >= 1 ? `<span class="l100">100%: ${fu(x.raw)}</span>` : '';
+            return `<td class="${wc(w)} ${lvl(dispVal)}"${tip(tipTable(`${b.name} · ${weekLbl(w.mon)}`, rows, ''))}>` +
+                   `${fu(dispVal)}${sub}${rc ? `<span class="rc">отр. ${fu(rc)}</span>` : ''}</td>`;
+        }).join('') + '</tr>';
+    });
+
+    // Підсумок 100%
+    h += `<tr class="tot"><td>Вільний ліміт ПІ 100%, всього</td>` + V.weeks.map(w => {
+        const rows = brRows(w, w.brTot);
+        rows.push([`Мінімум за тиждень (кінець ${w.piMinD ? dmy(w.piMinD) : '--'})`, fu(Math.max(0, w.piMin))]);
+        return `<td class="${wc(w)}"${tip(tipTable(`Вільний ліміт ПІ, всього · ${weekLbl(w.mon)}`, rows))}>${fu(w.brTot.raw)}${w.inTot ? `<span class="rc">отр. ${fu(w.inTot)}</span>` : ''}</td>`;
+    }).join('') + '</tr>';
+
+    if (F < 1) {
+        h += `<tr class="contract"><td>Сума для контрактів (${fmtNum(F * 100, 0)}%), всього</td>` + V.weeks.map(w => {
+            const rows = [];
+            let pos = 0;
+            piBanks.forEach(b => {
+                const x = w.br[b.key];
+                const avail = Math.max(0, x.eff);
+                if (avail >= 1) { pos += avail; rows.push([b.name, fu(avail)]); }
+            });
+            rows.push(['= сума для нових контрактів', fu(pos), 't']);
+            return `<td class="${wc(w)} ${pos < thr() ? 'low' : ''}"${tip(tipTable(`Сума для контрактів · ${weekLbl(w.mon)}`, rows,
+                `Резерв ${pct(F)}% закладено як похибку на курс.`))}>${fu(pos)}</td>`;
+        }).join('') + '</tr>';
+    }
+    h += `<tr class="cr first"><td>Вільний кредитний ліміт, всього</td>` + V.weeks.map(w => `<td class="${wc(w)}">${fu(w.crEowTot)}</td>`).join('') + '</tr>';
+    if ($('showCrBanks').checked) [...IDX.cr.values()].sort((a, b) => a.name.localeCompare(b.name, 'uk')).forEach(b => {
+        h += `<tr class="crb"><td>&nbsp;&nbsp;&nbsp;${esc(b.name)}</td>` + V.weeks.map(w => {
+            const v = w.crEow[b.key];
+            return `<td class="${wc(w)}">${fu(Math.max(0, v))}</td>`;
+        }).join('') + '</tr>';
+    });
+    $('weekTable').innerHTML = h + '</tbody>';
+}
+
+// =====================================================================
+// Вивантаження
+// =====================================================================
+const uv = v => v == null || !isFinite(v) ? null : Math.round(v / unit().k * 10 ** unit().dec) / 10 ** unit().dec;
+function scheduleAoa() {
+    const u = unit().lbl;
+    const p = fmtNum(IDX.F * 100, 0);
+    const rows = [['Банк', 'Тиждень', 'Дата', `Сума, ${u}`, 'т', 'Ресурс', `Покриття, ${u}`, `Вільний ліміт 100%, ${u}`,
+                   `Вільний ліміт до (${p}%), ${u}`, `Вільний ліміт після (${p}%), ${u}`, 'Тип']];
+    let tot = 0;
+    VIEW.recs.forEach(r => {
+        tot += r.amount;
+        rows.push([r.bank, weekLbl(toMonday(r.date)), dmy(r.date), uv(r.amount), tonnes(r.amount), resOf(r),
+                   r.cover ? uv(r.cover.amount) : null, uv(r.limRaw), uv(Math.max(0, r.limBefore)), uv(r.limBefore - r.amount),
+                   isOver(r) ? 'понад ліміт' : (r.date <= VIEW.factUntil ? 'факт' : 'прогноз')]);
+    });
+    rows.push(['Разом', '', '', uv(tot), Math.round(tot / 1e3 / price()), '', null, null, null, null, '']);
+    return rows;
+}
+function exportXlsx() {
+    if (!VIEW) return;
+    if (!window.XLSX) { setStatus('Бібліотека Excel не завантажилась — скористайтесь «Копіювати графік»', 'bg-red-100 text-red-800'); return; }
+    const wb = XLSX.utils.book_new(), u = unit().lbl;
+    const title = [`Постімпорт: графік отримання і вільні ліміти, ${u}`],
+          sub = [`CRED на ${dmy(SNAP.meta.forecast_date)}; факт по ${dmy(VIEW.factUntil)}; з ${dmy(VIEW.start)}; тонни за ${price()} тис. грн/т; ` +
+                 `ліміт ПІ до використання ${fmtNum(IDX.F * 100, 0)}% (резерв ${pct(IDX.F)}%)`];
+    const s1 = scheduleAoa();
+    const ws1 = XLSX.utils.aoa_to_sheet([title, sub, [], ...s1]);
+    ws1['!cols'] = [{ wch: 28 }, { wch: 18 }, { wch: 11 }, { wch: 14 }, { wch: 9 }, { wch: 18 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Графік');
+
+    const s2 = [['Банк', `На ${dmy(IDX.dates[VIEW.i0])}`, 'Отримання', 'К-сть', 'Мін. вільний (кінець дня)', 'Дата мінімуму', `На ${dmy(IDX.to)}`, 'Наступне отримання'],
+        ...VIEW.banks.map(b => [b.name, uv(Math.max(0, b.atStart)), uv(b.sumIn), b.cnt, uv(Math.max(0, b.minV)), b.minD ? dmy(b.minD) : '', uv(Math.max(0, b.end)), b.next ? dmy(b.next) : '']),
+        ['Разом постімпорт', uv(Math.max(0, IDX.piLim[VIEW.i0])), uv(VIEW.recs.reduce((s, r) => s + r.amount, 0)), VIEW.recs.length, uv(Math.max(0, VIEW.minTot)), VIEW.minTotD ? dmy(VIEW.minTotD) : '', uv(Math.max(0, IDX.piEod[VIEW.iEnd])), ''],
+        ['Вільний кредитний ліміт', uv(IDX.crLim[VIEW.i0]), null, null, null, '', uv(IDX.crLim[VIEW.iEnd]), '']];
+    const ws2 = XLSX.utils.aoa_to_sheet([title, sub, [], ...s2]);
+    ws2['!cols'] = [{ wch: 28 }, ...s2[0].slice(1).map(() => ({ wch: 16 }))];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Ліміти за банками');
+
+    const piBanks = [...IDX.pi.values()].sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+    const crBanks = [...IDX.cr.values()].sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+    const s3 = [['Вільний ліміт на кінець тижня', ...VIEW.weeks.map(w => weekLbl(w.mon))],
+        ...piBanks.map(b => [b.name, ...VIEW.weeks.map(w => uv(Math.max(0, w.br[b.key].eff)))]),
+        [`Вільний ліміт ПІ, всього (${fmtNum(IDX.F * 100, 0)}%)`, ...VIEW.weeks.map(w => uv(w.contract))],
+        ['Мінімум за тиждень, ПІ', ...VIEW.weeks.map(w => uv(Math.max(0, w.piMin)))],
+        [],
+        ['Розшифровка, всього ПІ:'],
+        ['   ліміт на початок тижня (100%)', ...VIEW.weeks.map(w => uv(w.brTot.prev))],
+        ['   + погашення постімпорту', ...VIEW.weeks.map(w => uv(w.brTot.out))],
+        ['   − отримання постімпорту', ...VIEW.weeks.map(w => uv(-w.brTot.inn))],
+        ['   ± зміна ліміту / курсові різниці', ...VIEW.weeks.map(w => uv(w.brTot.resid))],
+        ['   = вільний ліміт 100%', ...VIEW.weeks.map(w => uv(w.brTot.raw))],
+        ['   заборгованість постімпорту', ...VIEW.weeks.map(w => uv(w.brTot.debt))],
+        ['   загальний ліміт (заборгованість + вільний)', ...VIEW.weeks.map(w => uv(w.brTot.tot))],
+        [`   − резерв на курс ${pct(IDX.F)}%`, ...VIEW.weeks.map(w => uv(w.brTot.eff - w.brTot.raw))],
+        [`   = сума для контрактів (${fmtNum(IDX.F * 100, 0)}%)`, ...VIEW.weeks.map(w => uv(w.contract))],
+        ['Отримання ПІ за тиждень', ...VIEW.weeks.map(w => uv(w.inTot))],
+        [],
+        ['Вільний кредитний ліміт, всього', ...VIEW.weeks.map(w => uv(w.crEowTot))],
+        ...crBanks.map(b => ['   ' + b.name, ...VIEW.weeks.map(w => uv(w.crEow[b.key]))])];
+    const ws3 = XLSX.utils.aoa_to_sheet([title, sub, [], ...s3]);
+    ws3['!cols'] = [{ wch: 32 }, ...VIEW.weeks.map(() => ({ wch: 14 }))];
+    XLSX.utils.book_append_sheet(wb, ws3, 'Тижні');
+    XLSX.writeFile(wb, `Постімпорт_ліміти_${dmy(SNAP.meta.forecast_date)}.xlsx`);
+}
+async function copySchedule() {
+    if (!VIEW) return;
+    const rows = scheduleAoa().map(r => r.slice(0, 6));
+    const tsv = rows.map(r => r.map(v => v == null ? '' : typeof v === 'number' ? String(v).replace('.', ',') : v).join('\t')).join('\n');
+    try { await navigator.clipboard.writeText(tsv); setStatus('Графік скопійовано — вставте в Excel', 'bg-emerald-100 text-emerald-800'); }
+    catch { setStatus('Браузер заборонив доступ до буфера обміну', 'bg-red-100 text-red-800'); }
+}
+
+function highlightActiveNav() {
+    const path = window.location.pathname.toLowerCase();
+    document.querySelectorAll('#navLinks a').forEach(a => {
+        const href = (a.getAttribute('href') || '').toLowerCase();
+        const mr = a.classList.contains('mr-3');
+        if (href && path.includes(href)) {
+            a.className = 'text-slate-800 font-bold text-xs cursor-default pointer-events-none';
+            a.removeAttribute('href');
+        } else a.className = 'text-blue-600 hover:underline text-xs font-semibold';
+        if (mr) a.classList.add('mr-3');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    highlightActiveNav();
+    initTip();
+    loadPrefs();
+    loadCred();
+});
+</script>
+</body>
+</html>

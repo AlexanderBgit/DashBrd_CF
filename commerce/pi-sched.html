@@ -106,11 +106,11 @@
     <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap gap-x-6 gap-y-2 items-center print-hide">
         <div class="flex items-center gap-2">
             <label for="startInp" class="text-xs font-bold text-slate-600">Показувати з:</label>
-            <input type="date" id="startInp" onchange="render()" class="border border-slate-300 rounded px-2 py-1 text-xs">
+            <input type="date" id="startInp" onchange="savePrefs(); render()" class="border border-slate-300 rounded px-2 py-1 text-xs">
         </div>
         <div class="flex items-center gap-2">
             <label for="unitSel" class="text-xs font-bold text-slate-600">Одиниці:</label>
-            <select id="unitSel" onchange="render()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
+            <select id="unitSel" onchange="savePrefs(); render()" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white">
                 <option value="th" selected>тис. грн</option>
                 <option value="mln">млн грн, 0,0</option>
                 <option value="mln0">млн грн</option>
@@ -135,7 +135,7 @@
             </select>
         </div>
         <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-            <input type="checkbox" id="showSub" checked onchange="render()"> Підсумки тижнів
+            <input type="checkbox" id="showSub" onchange="savePrefs(); render()"> Підсумки тижнів
         </label>
     </div>
 
@@ -256,7 +256,8 @@ function useSnap(snap) {
     IDX = indexCred(snap);
     applyFactor();
     const fd = snap.meta.forecast_date || IDX.from;
-    let start = toMonday(todayIso());
+    const savedStart = store.get('piStart');
+    let start = savedStart || toMonday(todayIso());
     if (start < fd) start = fd;
     if (start > IDX.to) start = fd;
     $('startInp').value = start;
@@ -397,13 +398,34 @@ const store = {
 const resKey = r => `piRes:${r.key}:${r.date}`;
 const resOf = r => { const v = store.get(resKey(r)); return v != null ? v : r.auto; };
 function saveRes(el) { store.set(el.dataset.k, el.value.trim()); el.classList.remove('auto'); }
-function savePrefs() { store.set('piPrice', $('priceInp').value); store.set('piThr', $('thrInp').value); store.set('piUse', $('useSel').value); }
+
+function savePrefs() {
+    store.set('piStart', $('startInp').value);
+    store.set('piUnit', $('unitSel').value);
+    store.set('piPrice', $('priceInp').value);
+    store.set('piThr', $('thrInp').value);
+    store.set('piUse', $('useSel').value);
+    store.set('piShowSub', $('showSub').checked ? '1' : '0');
+}
 function loadPrefs() {
-    const p = store.get('piPrice'), t = store.get('piThr'), u = store.get('piUse');
+    const s = store.get('piStart'), u = store.get('piUnit'), p = store.get('piPrice');
+    const t = store.get('piThr'), use = store.get('piUse'), sub = store.get('piShowSub');
+    if (s && $('startInp')) $('startInp').value = s;
+    if (u && [...$('unitSel').options].some(o => o.value === u)) $('unitSel').value = u;
     if (p) $('priceInp').value = p;
     if (t) $('thrInp').value = t;
-    if (u && [...$('useSel').options].some(o => o.value === u)) $('useSel').value = u;
+    if (use && [...$('useSel').options].some(o => o.value === use)) $('useSel').value = use;
+    // За замовчуванням (коли ключ відсутній) прапорець вимкнено (false)
+    $('showSub').checked = sub === '1';
 }
+
+window.addEventListener('storage', e => {
+    if (['piStart', 'piUnit', 'piPrice', 'piThr', 'piUse', 'piShowSub'].includes(e.key)) {
+        loadPrefs();
+        applyFactor();
+        if (IDX) render();
+    }
+});
 
 const unit = () => UNITS[$('unitSel').value];
 const price = () => { const p = parseFloat($('priceInp').value); return isFinite(p) && p > 0 ? p : 67.5; };

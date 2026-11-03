@@ -1755,8 +1755,9 @@
             { title: { uk: "Дизельне пальне", en: "Diesel fuel" }, current: 0, delta: 0 },
             { title: { uk: "Арктичний дизель", en: "Arctic diesel" }, current: 0, delta: 0 },
             { title: { uk: "Газ комерційний (млн м³)", en: "Commercial gas (mln m³)" }, current: 0, delta: 0 },
+            { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 0, delta: 0 },
             { title: { uk: "Газ в заставі (млн м³)", en: "Gas pledged as collateral (mln m³)" }, current: 0, delta: 0 },
-            { title: { uk: "Товарна нафта", en: "Stock-tank oil" }, current: 0, delta: 0 }
+            { title: { uk: "Нафта в заставі", en: "Oil pledged as collateral" }, current: 0, delta: 0 }
         ];
     }
     function defaultCreditLimits() {
@@ -1845,6 +1846,11 @@
             globalData.workingCapital = wcRows;
         }
         if (fuelRows.length) {
+            // додаємо стандартні позиції, яких немає в SharePoint на цю дату (щоб їх можна було внести)
+            defaultFuelInventories().forEach(d => {
+                const key = normMetricTitle(d.title.uk);
+                if (!fuelRows.some(r => normMetricTitle(r.title.uk) === key)) fuelRows.push(d);
+            });
             globalData.fuelInventories = fuelRows;
         }
         if (finRows.length) {
@@ -2344,7 +2350,8 @@
         "Переробка та виробництво":"Refining and production",
         "Закупівля нафтопродуктів":"Purchase of petroleum products",
         "Інші виплати":"Other payments",
-        "Газ комерційний (млн м³)":"Commercial gas (mln m³)"
+        "Газ комерційний (млн м³)":"Commercial gas (mln m³)",
+        "Нафта в заставі": "Oil pledged as collateral"
     };
 
     function toggleDropdown(id) { document.getElementById(id).classList.toggle('hidden'); }

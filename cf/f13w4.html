@@ -2808,7 +2808,8 @@
                             boxHeight: 3, 
                             font: { size: 13 }, 
                             padding: 24, 
-                            filter: (item) => item.text !== chartTranslations[currentLang].minLimit 
+                            filter: (item) => item.text !== chartTranslations[currentLang].minLimit
+                  && isLineOn(DS_KEYS[item.datasetIndex])
                         } 
                     },
                     tooltip: { enabled: false }

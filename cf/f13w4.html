@@ -312,6 +312,10 @@
                         <div class="print-hide flex space-x-1.5 opacity-60 hover:opacity-100 transition-opacity z-10">
                             <button onclick="changeChartPadding(-5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X-</button>
                             <button onclick="changeChartPadding(5)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer">X+</button>
+                            <button onclick="changeYMax(-1)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Зменшити верхню межу осі Y">Y-</button>
+                            <button onclick="changeYMax(1)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Збільшити верхню межу осі Y">Y+</button>
+                            <button onclick="resetYMax()" id="btnYAuto" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Автопідбір верхньої межі осі Y">Y↺</button>
+                            <span id="lblYMax" class="pdf-hide text-[11px] font-semibold text-slate-500 self-center tabular-nums px-1"></span>
                             <button onclick="changeStackGap(-2)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Щільніше підписи (менший спільний відступ)">⇕-</button>
                             <button onclick="changeStackGap(2)" class="pdf-hide bg-slate-300 hover:bg-slate-400 text-slate-700 px-2 py-0.5 rounded shadow-sm text-sm font-bold cursor-pointer" title="Розрідити підписи (більший спільний відступ)">⇕+</button>
                         </div>
@@ -718,6 +722,21 @@
     // ---- Підписи ліній графіка ----
     let currentLabelSpread = 0;
     let currentStackGap = 20;
+    // ---- Ручна корекція верхньої межі осі Y ----
+    let yAxisAdjust = 0;   // кількість півподілок відносно автопідбору (0 = авто)
+    try { const s = parseInt(localStorage.getItem('f13_y_adjust'), 10); if (isFinite(s)) yAxisAdjust = s; } catch (e) {}
+
+    function changeYMax(delta) {
+        yAxisAdjust += delta;
+        if (globalData) buildChart();   // buildChart → calcYAxis сам обмежить і нормалізує значення
+        try { localStorage.setItem('f13_y_adjust', String(yAxisAdjust)); } catch (e) {}
+    }
+    function resetYMax() {
+        yAxisAdjust = 0;
+        try { localStorage.removeItem('f13_y_adjust'); } catch (e) {}
+        if (globalData) buildChart();
+    }
+
     let lineLabelConfig = {
         totalLiquidity:      { align: 'top',    offset: 8 },
         ownCash:              { align: 'bottom', offset: 8 },
@@ -2620,10 +2639,23 @@
                 isLineOn('minLimit') ? [c.minThreshold] : []
             ).filter(v => typeof v === 'number' && isFinite(v));
         const dataMax = all.length ? Math.max(...all) : 1000;
+
         const HEADROOM = 1.30;
         const step = niceStep(dataMax * HEADROOM, 6);
         const half = step / 2;
-        return { step: step, max: Math.ceil((dataMax * HEADROOM) / half) * half };
+
+        const autoMax = Math.ceil((dataMax * HEADROOM) / half) * half;
+        const minMax  = Math.max(half, Math.ceil(dataMax / half) * half);   // не нижче за дані
+
+        let max = autoMax + yAxisAdjust * half;
+        if (max < minMax) {
+            max = minMax;
+            yAxisAdjust = Math.round((minMax - autoMax) / half);   // щоб Y+ одразу піднімав межу
+        }
+
+        // якщо межа не кратна поділці — сітка по півподілках, щоб верхня мітка була рівною
+        const tickStep = (Math.abs(max % step) < 1e-6) ? step : half;
+        return { step: tickStep, max, autoMax, isAuto: max === autoMax };
     }
 
     function hasPeriods() {
@@ -2664,6 +2696,10 @@
         const ctx = document.getElementById('liquidityChart').getContext('2d');
         const paleColor = '#94a3b8';
         const yAxis = calcYAxis();
+        const lblY = document.getElementById('lblYMax');
+        if (lblY) lblY.textContent = `Y: ${formatNum(yAxis.max)}${yAxis.isAuto ? ' (авто)' : ''}`;
+        const btnYA = document.getElementById('btnYAuto');
+        if (btnYA) btnYA.style.opacity = yAxis.isAuto ? '0.5' : '1';
 
         const getHighlightColor = (data, index, mainColor) => {
             const nums = data.filter(v => typeof v === 'number' && isFinite(v));

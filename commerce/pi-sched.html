@@ -576,7 +576,7 @@ function renderSchedule(V) {
         <th>Сума</th>
         <th>т</th>
         <th class="l">Ресурс</th>
-        <th class="bg-indigo-50/80 text-indigo-950 font-extrabold border-x border-indigo-200">Вільний ліміт<br>до</th>
+        <th style="background:#f1f5f9;">Вільний ліміт<br>до</th>
         <th>Вільний ліміт<br>після</th>
         <th>Покриття</th>
         <th class="l">Тип</th>
@@ -630,8 +630,8 @@ function renderSchedule(V) {
                 <input class="res ${isAuto ? 'auto' : ''}" data-k="${esc(resKey(r))}" value="${esc(res)}" placeholder="—"
                     title="${esc(r.cover ? 'Покриття: ' + r.cover.name : 'Покриття в день отримання не знайдено')}" onchange="saveRes(this)">
             </td>
-            <!-- Виділений стовпець «Вільний ліміт до» -->
-            <td${limTip} class="bg-indigo-50/40 font-semibold text-indigo-900 border-x border-indigo-100">${fu(Math.max(0, r.limBefore))}</td>
+            <!-- Вільний ліміт до: стандартний шрифт, лише ледь помітне тонування фону -->
+            <td${limTip} class="text-slate-700" style="background:#f8fafc;">${fu(Math.max(0, r.limBefore))}</td>
             <!-- Вільний ліміт після -->
             <td class="${def ? 'bad' : after < -TOL || after < thr() ? 'warn' : 'text-slate-700'}"${limTip}>${fu(after)}</td>
             <!-- Покриття -->

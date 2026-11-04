@@ -76,6 +76,13 @@
     .s-table input.res:hover { border-color: #94a3b8; background: #fff; }
     .s-table input.res.auto { color: #475569; }
 
+    /* Підсвічування стовпця "Вільний ліміт до" */
+    .s-table th.col-lim-before { background: #eef2f6; }
+    .s-table td.col-lim-before { background: #f8fafc; }
+    .s-table tr.deficit td.col-lim-before { background: #fee2e2; }
+    .s-table tr.sub td.col-lim-before { background: #e2e8f0; }
+    .s-table tr.tot td.col-lim-before { background: #eef2f6; }
+
     .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1.5px 7px; border-radius: 6px; border: 1px solid transparent; }
     .b-fact { background: #e2e8f0; color: #1e293b; border-color: #cbd5e1; }
     .b-fc { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
@@ -570,10 +577,10 @@ function renderKpis(V) {
 function renderSchedule(V) {
     const showSub = $('showSub').checked;
     let h = `<thead><tr><th class="l">Банк</th><th class="l">Тиждень</th><th class="l">Дата</th><th>Сума</th><th>т</th>
-             <th class="l">Ресурс</th><th style="background:#f1f5f9;">Вільний ліміт<br>до</th><th>Вільний ліміт<br>після</th><th>Покриття</th><th class="l">Тип</th></tr></thead><tbody>`;
+             <th class="l">Ресурс</th><th class="col-lim-before">Вільний ліміт<br>до</th><th>Вільний ліміт<br>після</th><th>Покриття</th><th class="l">Тип</th></tr></thead><tbody>`;
     let curW = null, wSum = 0, wT = 0, tot = 0;
     const flush = () => {
-        if (showSub && curW) h += `<tr class="sub"><td class="l" colspan="3">Разом ${weekLbl(curW)}</td><td>${fu(wSum)}</td><td>${fmtNum(wT, 0)}</td><td colspan="5"></td></tr>`;
+        if (showSub && curW) h += `<tr class="sub"><td class="l" colspan="3">Разом ${weekLbl(curW)}</td><td>${fu(wSum)}</td><td>${fmtNum(wT, 0)}</td><td></td><td class="col-lim-before"></td><td colspan="3"></td></tr>`;
         wSum = 0; wT = 0;
     };
     V.recs.forEach(r => {
@@ -602,7 +609,7 @@ function renderSchedule(V) {
             <td class="font-bold text-slate-900">${fu(r.amount)}</td><td class="text-slate-600">${fmtNum(t, 0)}</td>
             <td class="l"><input class="res ${isAuto ? 'auto' : ''}" data-k="${esc(resKey(r))}" value="${esc(res)}" placeholder="—"
                 title="${esc(r.cover ? 'Покриття: ' + r.cover.name : 'Покриття в день отримання не знайдено')}" onchange="saveRes(this)"></td>
-            <td${limTip} class="text-slate-700" style="background:#f8fafc;">${fu(Math.max(0, r.limBefore))}</td>
+            <td${limTip} class="text-slate-700 col-lim-before">${fu(Math.max(0, r.limBefore))}</td>
             <td class="${def ? 'bad' : after < -TOL || after < thr() ? 'warn' : 'text-slate-700'}"${limTip}>${fu(after)}</td>
             <td title="${esc(r.cover ? r.cover.name : '')}">${cov}</td>
             <td class="l">${typeBadge}</td></tr>`;
@@ -610,7 +617,7 @@ function renderSchedule(V) {
     });
     flush();
     if (!V.recs.length) h += `<tr><td class="l muted" colspan="10">З ${dmy(V.start)} отримань постімпорту в CRED немає.</td></tr>`;
-    else h += `<tr class="tot"><td class="l" colspan="3">Разом</td><td>${fu(tot)}</td><td>~${fmtNum(tot / 1e3 / price(), 0)}</td><td colspan="5"></td></tr>`;
+    else h += `<tr class="tot"><td class="l" colspan="3">Разом</td><td>${fu(tot)}</td><td>~${fmtNum(tot / 1e3 / price(), 0)}</td><td></td><td class="col-lim-before"></td><td colspan="3"></td></tr>`;
     $('schedTable').innerHTML = h + '</tbody>';
 }
 
@@ -663,19 +670,10 @@ function scheduleAoa() {
     let tot = 0;
     VIEW.recs.forEach(r => {
         tot += r.amount;
-        rows.push([
-            r.bank, 
-            weekLbl(toMonday(r.date)), 
-            dmy(r.date), 
-            uv(r.amount), 
-            tonnes(r.amount), 
-            resOf(r),
-            uv(r.limRaw), 
-            uv(Math.max(0, r.limBefore)), 
-            uv(r.limBefore - r.amount),
-            r.cover ? uv(r.cover.amount) : null,
-            isOver(r) ? 'понад ліміт' : (r.date <= VIEW.factUntil ? 'факт' : 'прогноз')
-        ]);
+        rows.push([r.bank, weekLbl(toMonday(r.date)), dmy(r.date), uv(r.amount), tonnes(r.amount), resOf(r),
+                   uv(r.limRaw), uv(Math.max(0, r.limBefore)), uv(r.limBefore - r.amount),
+                   r.cover ? uv(r.cover.amount) : null,
+                   isOver(r) ? 'понад ліміт' : (r.date <= VIEW.factUntil ? 'факт' : 'прогноз')]);
     });
     rows.push(['Разом', '', '', uv(tot), Math.round(tot / 1e3 / price()), '', null, null, null, null, '']);
     return rows;
